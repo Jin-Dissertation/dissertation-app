@@ -44,6 +44,7 @@
   <div class="wrap">
     <h1>Dissertation Prompt App</h1>
     <p class="sub">Single-page tool for context → prompts → final prompt → submission (plain-text copy by default).</p>
+    <div class="small muted" id="buildInfo"></div>
 <div class="card" id="accessGate">
   <h2 style="margin:0 0 10px; font-size:16px;">Study Access</h2>
   <p class="muted small" style="margin:0 0 10px;">
@@ -188,6 +189,7 @@
   <div class="toast" id="toast"></div>
 
   <script>
+    const BUILD_TIME = "2026-03-04 20:45 PST";
     // ---------- Storage keys ----------
     const KEYS = {
       participantId: "dissertation.participantId",
@@ -451,6 +453,7 @@ Do not include extra commentary before or after the table unless the user explic
 
     // ---------- Initialize ----------
     function init() {
+      $("buildInfo").textContent = "Build: " + BUILD_TIME;
       // Access gate initialization
 const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
 if (alreadyVerified) {
