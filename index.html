@@ -204,8 +204,38 @@
     };
 // ---------- Access code allowlist (replace with your real codes) ----------
 const ACCESS_CODES = {
-  "7KQ2-P9D4": { pid: "P012" },
-  "9M3R-T1X8": { pid: "P013" }
+  const ACCESS_CODES = {
+  "blue-sky": { pid: "P001" },
+  "green-grass": { pid: "P002" },
+  "bright-light": { pid: "P003" },
+  "calm-water": { pid: "P004" },
+  "morning-sun": { pid: "P005" },
+  "quiet-night": { pid: "P006" },
+  "tall-tree": { pid: "P007" },
+  "warm-breeze": { pid: "P008" },
+  "clear-path": { pid: "P009" },
+  "soft-cloud": { pid: "P010" },
+  "deep-ocean": { pid: "P011" },
+  "fresh-air": { pid: "P012" },
+  "open-field": { pid: "P013" },
+  "gentle-rain": { pid: "P014" },
+  "golden-hour": { pid: "P015" },
+  "rising-tide": { pid: "P016" },
+  "distant-hill": { pid: "P017" },
+  "summer-wind": { pid: "P018" },
+  "early-dawn": { pid: "P019" },
+  "cool-shade": { pid: "P020" },
+  "wide-river": { pid: "P021" },
+  "bright-star": { pid: "P022" },
+  "falling-leaf": { pid: "P023" },
+  "white-sand": { pid: "P024" },
+  "silver-moon": { pid: "P025" },
+  "calm-harbor": { pid: "P026" },
+  "quiet-forest": { pid: "P027" },
+  "warm-sunlight": { pid: "P028" },
+  "soft-snow": { pid: "P029" },
+  "open-horizon": { pid: "P030" }
+};
 };
     // ---------- Minimal prompt library (we will replace with your real prompts later) ----------
     // Each prompt has an id, title, description, and a template that gets context injected.
@@ -256,7 +286,7 @@ function setLockedState(isLocked, msg = "") {
 }
 
 function normalizeCode(s) {
-  return (s || "").trim().toUpperCase();
+return (s || "").trim().toLowerCase();
 }
 
 function verifyAccessCode() {
