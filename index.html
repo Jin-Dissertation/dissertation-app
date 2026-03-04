@@ -197,8 +197,14 @@
       events: "dissertation.events",
       preview: "dissertation.preview",
       finalPrompt: "dissertation.finalPrompt",
+      accessVerified: "dissertation.accessVerified",
+      accessCode: "dissertation.accessCode",
     };
-
+// ---------- Access code allowlist (replace with your real codes) ----------
+const ACCESS_CODES = {
+  "7KQ2-P9D4": { pid: "P012" },
+  "9M3R-T1X8": { pid: "P013" }
+};
     // ---------- Minimal prompt library (we will replace with your real prompts later) ----------
     // Each prompt has an id, title, description, and a template that gets context injected.
     const PROMPTS = [
@@ -241,6 +247,42 @@ Return the revised items as a table.`
       setTimeout(() => t.style.display = "none", 1400);
     };
 
+function setLockedState(isLocked, msg = "") {
+  $("appShell").style.display = isLocked ? "none" : "block";
+  $("accessGate").style.display = isLocked ? "block" : "none";
+  if ($("accessMsg")) $("accessMsg").textContent = msg;
+}
+
+function normalizeCode(s) {
+  return (s || "").trim().toUpperCase();
+}
+
+function verifyAccessCode() {
+  const code = normalizeCode($("accessCodeInput").value);
+  const hit = ACCESS_CODES[code];
+
+  if (!hit) {
+    setLockedState(true, "Access code not recognized. Please contact the study team.");
+    logEvent("access_denied", { code_entered: code });
+    return false;
+  }
+
+  localStorage.setItem(KEYS.accessVerified, "true");
+  localStorage.setItem(KEYS.accessCode, code);
+
+  // Auto-fill Participant ID
+  localStorage.setItem(KEYS.participantId, hit.pid);
+  $("participantId").value = hit.pid;
+
+  setLockedState(false);
+  refreshHeaderPills();
+  enableFinalizeIfReady();
+  toast("Access verified ✅");
+  logEvent("access_verified", { accessCode: code, participantId: hit.pid });
+
+  return true;
+}
+    
     const nowIso = () => new Date().toISOString();
 
     function loadJSON(key, fallback) {
@@ -409,6 +451,15 @@ Do not include extra commentary before or after the table unless the user explic
 
     // ---------- Initialize ----------
     function init() {
+      // Access gate initialization
+const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
+if (alreadyVerified) {
+  setLockedState(false);
+} else {
+  setLockedState(true);
+  $("btnVerifyAccess").addEventListener("click", () => verifyAccessCode());
+}
+      
       // hydrate stored values
       $("participantId").value = localStorage.getItem(KEYS.participantId) || "";
       $("modelUsed").value = localStorage.getItem(KEYS.modelUsed) || "ChatGPT";
