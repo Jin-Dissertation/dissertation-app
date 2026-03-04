@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>AI Prompt Tool</title>
+<meta charset="UTF-8">
+</head>
+
+<body>
+
+<h1>AI Prompt Tool</h1>
+
+<button id="startSession">Start Session</button>
+
+<p id="sessionDisplay"></p>
+
+<script>
+
+document.getElementById("startSession").onclick = function(){
+
+    let sessionID = "S-" + Date.now()
+
+    localStorage.setItem("sessionID", sessionID)
+
+    document.getElementById("sessionDisplay").innerText =
+        "Session ID: " + sessionID
+}
+
+</script>
+
+</body>
+</html>
