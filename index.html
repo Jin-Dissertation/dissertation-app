@@ -55,7 +55,7 @@
   <div class="row">
     <div style="flex:1; min-width: 260px;">
       <label>Access code</label>
-      <input id="accessCodeInput" placeholder="e.g., 7KQ2-P9D4" />
+      <input id="accessCodeInput" placeholder="e.g., cold-water" />
     </div>
     <div class="row" style="margin-top: 22px;">
       <button class="btn primary" id="btnVerifyAccess">Ready to begin session</button>
@@ -189,7 +189,6 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const BUILD_TIME = "2026-03-04 20:45 PST";
     // ---------- Storage keys ----------
     const KEYS = {
       participantId: "dissertation.participantId",
@@ -204,7 +203,6 @@
     };
 // ---------- Access code allowlist (replace with your real codes) ----------
 const ACCESS_CODES = {
-  const ACCESS_CODES = {
   "blue-sky": { pid: "P001" },
   "green-grass": { pid: "P002" },
   "bright-light": { pid: "P003" },
@@ -235,7 +233,6 @@ const ACCESS_CODES = {
   "warm-sunlight": { pid: "P028" },
   "soft-snow": { pid: "P029" },
   "open-horizon": { pid: "P030" }
-};
 };
     // ---------- Minimal prompt library (we will replace with your real prompts later) ----------
     // Each prompt has an id, title, description, and a template that gets context injected.
@@ -483,8 +480,7 @@ Do not include extra commentary before or after the table unless the user explic
 
     // ---------- Initialize ----------
     function init() {
-      $("buildInfo").textContent =
-  "Build: " + new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" }) + " PST";
+      $("buildInfo").textContent = "Last updated: " + document.lastModified;
       // Access gate initialization
 const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
 if (alreadyVerified) {
