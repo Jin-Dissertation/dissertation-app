@@ -44,7 +44,27 @@
   <div class="wrap">
     <h1>Dissertation Prompt App</h1>
     <p class="sub">Single-page tool for context → prompts → final prompt → submission (plain-text copy by default).</p>
+<div class="card" id="accessGate">
+  <h2 style="margin:0 0 10px; font-size:16px;">Study Access</h2>
+  <p class="muted small" style="margin:0 0 10px;">
+    This tool is for participants who have completed consent, the opening interview, and the training session.
+    Enter the access code provided by the study team to begin.
+  </p>
 
+  <div class="row">
+    <div style="flex:1; min-width: 260px;">
+      <label>Access code</label>
+      <input id="accessCodeInput" placeholder="e.g., 7KQ2-P9D4" />
+    </div>
+    <div class="row" style="margin-top: 22px;">
+      <button class="btn primary" id="btnVerifyAccess">Ready to begin session</button>
+    </div>
+  </div>
+
+  <p id="accessMsg" class="muted small" style="margin:10px 0 0;"></p>
+</div>
+
+<div id="appShell" style="display:none;">
     <div class="card">
       <div class="row" style="justify-content: space-between;">
         <div class="row">
@@ -164,7 +184,7 @@
       </p>
     </div>
   </div>
-
+</div>
   <div class="toast" id="toast"></div>
 
   <script>
