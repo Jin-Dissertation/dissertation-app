@@ -616,9 +616,44 @@ if (alreadyVerified) {
         logEvent("final_prompt_copied", {});
       });
 
-      // Submit session (Google Form)
-$("btnSubmitForm").addEventListener("click", async () => {
-  alert("Submit is not wired yet — next step will add the Google Form POST code.");
+   // Submit session (opens Google Form prefilled)
+$("btnSubmitForm").addEventListener("click", () => {
+  const events = loadJSON(KEYS.events, []);
+  const llm = ($("llmResponse").value || "").trim();
+
+  if (!events.length) { alert("No event log found. Did you start the session?"); return; }
+  if (!llm) { alert("Please paste the LLM Final Response before submitting."); return; }
+
+  // Build a simple CSV for the Event Log field
+  const header = ["t","type","promptId","participantId","sessionId","modelUsed","accessCode"].join(",");
+  const rows = events.map(e => {
+    const cols = [
+      e.t || "",
+      e.type || "",
+      e.promptId || "",
+      e.participantId || localStorage.getItem(KEYS.participantId) || "",
+      e.sessionId || localStorage.getItem(KEYS.sessionId) || "",
+      e.modelUsed || localStorage.getItem(KEYS.modelUsed) || "",
+      e.accessCode || localStorage.getItem(KEYS.accessCode) || ""
+    ];
+    // CSV-escape: wrap in quotes and double-up any quotes
+    return cols.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",");
+  });
+
+  const csv = [header, ...rows].join("\n");
+
+  // Your form + entry IDs (from your prefill URL)
+  const FORM_BASE =
+    "https://docs.google.com/forms/d/e/1FAIpQLSeSkJtABOlLhpP2_lywUseUT017l9qmtuW8vUv7GQXODR89Sg/viewform?usp=pp_url";
+
+  const url =
+    `${FORM_BASE}` +
+    `&entry.252595248=${encodeURIComponent(csv)}` +      // Event Log
+    `&entry.86462815=${encodeURIComponent(llm)}`;        // LLM Final Response
+
+  logEvent("form_prefill_opened", { approx_csv_chars: csv.length, llm_chars: llm.length });
+  window.open(url, "_blank", "noopener,noreferrer");
+  toast("Opened Google Form (prefilled) ✅");
 });
 
       // Download session record
