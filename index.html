@@ -71,6 +71,7 @@
         <div class="row">
           <span class="pill" id="pillParticipant">Participant: —</span>
           <span class="pill" id="pillSession">Session: —</span>
+          <span class="pill" id="pillStarted">Started: —</span>
         </div>
         <div class="row">
           <button class="btn" id="btnClearAll" title="Clears saved session + context in this browser">Clear (this browser)</button>
@@ -80,7 +81,7 @@
       <div class="row">
         <div style="flex:1; min-width: 220px;">
           <label>Participant ID (e.g., P012)</label>
-          <input id="participantId" placeholder="P###" />
+          <input id="participantId" placeholder="e.g., cold-water" />
         </div>
         <div style="flex:1; min-width: 220px;">
           <label>Model used</label>
@@ -177,8 +178,47 @@
       </div>
 
       <div class="row" style="margin-top:12px;">
-        <button class="btn" id="btnDownload" disabled>Download session record (.json)</button>
-      </div>
+  <button class="btn primary" id="btnSubmitForm" disabled>Submit session</button>
+</div>
+
+<details class="card" style="margin-top:12px; padding:12px;">
+  <summary class="btn" style="display:inline-block;">
+    Click here if the Google Form failed to be filled properly
+  </summary>
+
+  <div style="margin-top:12px;">
+    <p class="muted small" style="margin:0 0 10px;">
+      If the Google Form did not populate (or you are unsure), use this backup method:
+    </p>
+
+    <ol class="muted small" style="margin:0 0 10px; padding-left:18px;">
+      <li>Click <strong>Download backup file (.json)</strong> below.</li>
+      <li>Email the downloaded file to <strong>tjin@crimson.ua.edu</strong>.</li>
+      <li>Complete your recorded reflection using the instructions below.</li>
+    </ol>
+
+    <div class="row" style="margin-top:10px;">
+      <button class="btn" id="btnDownload" disabled>Download backup file (.json)</button>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="muted small">
+      <p style="margin:0 0 8px;"><strong>Recorded reflection:</strong></p>
+      <p style="margin:0 0 8px;">Please create a brief audio or video recording reflecting on today's session. Address at least one point for each prompt:</p>
+      <ol style="margin:0 0 8px; padding-left:18px;">
+        <li>In your own words, how do you understand the purpose of this activity and what it is intended to help educators accomplish?</li>
+        <li>To what extent do you see yourself or other educators being willing to use an approach like this when creating exam questions?</li>
+        <li>Thinking about your own teaching context, how practical would it be to incorporate a process like this into your workflow?</li>
+        <li>After completing today's session, how do you evaluate the usefulness of this approach for generating multiple-choice questions?</li>
+      </ol>
+      <p style="margin:0 0 8px;">A single, unscripted take is preferred. Please do not feel the need to prepare, re-record, or edit your response.</p>
+      <p style="margin:0;">
+        You may submit your recording by uploading it to the shared drive, emailing it to <strong>tjin@crimson.ua.edu</strong>, or sharing a cloud link with <strong>tjin@crimson.ua.edu</strong>.
+      </p>
+    </div>
+  </div>
+</details>
 
       <p class="muted small" style="margin:10px 0 0;">
         After download, you can upload the file wherever you collect study materials (LMS, OneDrive, Google Form, etc.).
@@ -470,6 +510,9 @@ Do not include extra commentary before or after the table unless the user explic
     function refreshHeaderPills() {
       $("pillParticipant").textContent = `Participant: ${localStorage.getItem(KEYS.participantId) || "—"}`;
       $("pillSession").textContent = `Session: ${localStorage.getItem(KEYS.sessionId) || "—"}`;
+      const start = localStorage.getItem("sessionStartTime");
+$("pillStarted").textContent =
+  "Started: " + (start ? new Date(start).toLocaleTimeString() : "—");
     }
 
     function enableFinalizeIfReady() {
@@ -517,6 +560,7 @@ if (alreadyVerified) {
 
         const sid = makeSessionId(pid);
         localStorage.setItem(KEYS.sessionId, sid);
+        localStorage.setItem("sessionStartTime", new Date().toISOString());
 
         // Reset events for this session
         saveJSON(KEYS.events, []);
@@ -561,6 +605,7 @@ if (alreadyVerified) {
         localStorage.setItem(KEYS.finalPrompt, fp);
         $("btnCopyFinal").disabled = false;
         $("btnDownload").disabled = false;
+        $("btnSubmitForm").disabled = false;
         toast("Final prompt ready ✅");
         logEvent("final_prompt_ready", {});
       });
@@ -570,6 +615,11 @@ if (alreadyVerified) {
         await copyPlainText(fp);
         logEvent("final_prompt_copied", {});
       });
+
+      // Submit session (Google Form)
+$("btnSubmitForm").addEventListener("click", async () => {
+  alert("Submit is not wired yet — next step will add the Google Form POST code.");
+});
 
       // Download session record
       $("btnDownload").addEventListener("click", () => {
