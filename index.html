@@ -483,7 +483,8 @@ Do not include extra commentary before or after the table unless the user explic
 
     // ---------- Initialize ----------
     function init() {
-      $("buildInfo").textContent = "Build: " + BUILD_TIME;
+      $("buildInfo").textContent =
+  "Build: " + new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" }) + " PST";
       // Access gate initialization
 const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
 if (alreadyVerified) {
