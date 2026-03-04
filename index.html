@@ -652,7 +652,11 @@ $("btnSubmitForm").addEventListener("click", () => {
     `&entry.86462815=${encodeURIComponent(llm)}`;        // LLM Final Response
 
   logEvent("form_prefill_opened", { approx_csv_chars: csv.length, llm_chars: llm.length });
-  window.open(url, "_blank", "noopener,noreferrer");
+  const w = window.open(url, "_blank", "noopener,noreferrer");
+if (!w) {
+  // Popup blocked → fall back to opening in the same tab
+  window.location.href = url;
+}
   toast("Opened Google Form (prefilled) ✅");
 });
 
