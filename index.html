@@ -91,19 +91,15 @@
 <body>
   <div class="wrap">
     <h1>Dissertation Prompt App</h1>
-    <p class="sub">Single-page tool for context → prompts → final prompt → submission.</p>
-    <div class="small muted" id="buildInfo"></div>
 
     <!-- Access gate -->
     <div class="card" id="accessGate">
-      <h2 style="margin:0 0 10px; font-size:16px;">Study Access</h2>
       <p class="muted small" style="margin:0 0 10px;">
-        Enter the access code provided by the study team to begin. Your access code is your participant identifier for this app.
+        Please enter your code:
       </p>
 
       <div class="row">
         <div style="flex:1; min-width: 260px;">
-          <label>Access code</label>
           <input id="accessCodeInput" placeholder="e.g., blue-sky" />
         </div>
         <div class="row" style="margin-top: 22px;">
@@ -329,6 +325,8 @@
       </details>
     </div>
   </div>
+
+  <footer class="small muted" style="text-align:center; padding: 8px 24px 20px;" id="buildInfo"></footer>
 
   <div class="toast" id="toast"></div>
 
@@ -813,9 +811,9 @@ Do not include extra commentary before or after the table unless the user explic
     // -----------------------------
     function verifyAccessCode() {
       const code = normalizeCode($("accessCodeInput").value);
-      const hit = ACCESS_CODES[code];
+      const isValidCode = Object.hasOwn(ACCESS_CODES, code);
 
-      if (!hit) {
+      if (!isValidCode) {
         setLockedState(true, "Access code not recognized. Please contact the study team.");
         logEvent("access_denied", { code_entered: code });
         return false;
@@ -913,6 +911,9 @@ Do not include extra commentary before or after the table unless the user explic
       }
 
       $("btnVerifyAccess").addEventListener("click", () => verifyAccessCode());
+      $("accessCodeInput").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") verifyAccessCode();
+      });
 
       // Lockable summaries (Option C behavior)
       lockableSummary(
