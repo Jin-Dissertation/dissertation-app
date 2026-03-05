@@ -960,6 +960,8 @@ Do not include extra commentary before or after the table unless the user explic
         let chipLabel = p.title;
         if (p.id === "next_question") chipLabel = "Accept";
 
+        if (p.id === "replace_question") return;
+
         const target = containers[p.id];
         if (!target) return;
         target.appendChild(makeChip(p.id, chipLabel, p.title));
