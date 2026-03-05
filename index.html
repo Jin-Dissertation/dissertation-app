@@ -96,16 +96,6 @@
     .logo-claude{ background:#d97706; }
     .logo-other{ background:#64748b; }
     .disabledBtn { opacity:.55; cursor:not-allowed; }
-    .accessRow { display:flex; align-items:center; gap:10px; }
-    .accessInput { max-width: 220px; font-size: 22px; font-weight:700; letter-spacing:.3px; text-align:center; padding: 12px 10px; }
-    .accessBtn { margin-top:0 !important; }
-    .subBand { border:1px solid var(--border); border-radius: 12px; background:#f8fbff; padding:12px; margin-top:10px; }
-    .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:800; }
-    .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
-    @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
-    .centerCard { max-width:420px; margin: 0 auto; }
-    #btnSubmitForm[disabled] { background:#d6e1f3; color:#678; border-color:#c8d8f0; cursor:not-allowed; }
-
   </style>
 </head>
 <body>
@@ -118,9 +108,13 @@
         Please enter your code:
       </p>
 
-      <div class="accessRow">
-        <input class="accessInput" id="accessCodeInput" maxlength="14" placeholder="code" />
-        <button class="btn primary accessBtn" id="btnVerifyAccess">Continue</button>
+      <div class="row">
+        <div style="flex:1; min-width: 260px;">
+          <input id="accessCodeInput" placeholder="e.g., blue-sky" />
+        </div>
+        <div class="row" style="margin-top: 22px;">
+          <button class="btn primary" id="btnVerifyAccess">Continue</button>
+        </div>
       </div>
 
       <p id="accessMsg" class="muted small" style="margin:10px 0 0;"></p>
@@ -175,14 +169,18 @@
 
             <div class="row" style="margin-top:10px;">
               <div style="flex:1; min-width: 240px;">
-                <label>Any additional desired instructions or parameters (optional)</label>
-                <input id="ctxNotes" placeholder="Optional guidance (e.g., difficulty level, tone, formatting preferences)" />
-              </div>
-              <div style="flex:1; min-width: 240px;">
                 <label>Desired number of questions</label>
                 <input id="ctxQuestionCount" type="number" min="1" value="10" />
               </div>
+              <div style="flex:1; min-width: 240px;">
+                <label>Any additional desired instructions or parameters (optional)</label>
+                <input id="ctxNotes" placeholder="Optional guidance (e.g., difficulty level, tone, formatting preferences)" />
+              </div>
             </div>
+
+            <p class="muted small" style="margin:10px 0 0;">
+              Click <strong>Copy starter prompt</strong>, paste it into your selected LLM, then click the button below to continue.
+            </p>
 
             <div class="row" style="margin-top:12px;">
               <button class="btn primary" id="btnCopyStarter">Copy starter prompt</button>
@@ -190,9 +188,6 @@
             </div>
 
             <p class="muted small" id="setupMsg" style="margin:10px 0 0;"></p>
-            <div class="row" style="margin-top:8px;">
-              <button class="btn" id="btnGoPrompts" disabled>Proceed to 2) Prompts</button>
-            </div>
           </div>
         </div>
       </details>
@@ -203,11 +198,11 @@
             <strong>2) Prompts</strong>
             <span class="tag lock" id="tagPrompts">Locked</span>
           </div>
-          <span class="muted small" id="sumPromptsHint">Unlocked after setup + proceed</span>
+          <span class="muted small" id="sumPromptsHint">Unlocked after setup + continue</span>
         </summary>
         <div class="bandBody">
           <div class="lockMsg" id="lockPrompts">
-            Complete <strong>1) Set up</strong>, copy the starter prompt, and click Proceed to unlock prompts.
+            Complete <strong>1) Set up</strong>, copy the starter prompt, and click Continue to unlock prompts.
           </div>
 
           <div id="promptsInner" style="display:none;">
@@ -219,31 +214,19 @@
 
               <div class="hr"></div>
 
-              <div class="centerCard" id="promptListNext"></div>
+              <div class="promptGroups">
+  <div class="groupCard">
+    <div class="groupTitle">Question Refinement</div>
+    <div class="groupSub">Create, revise, and improve MCQs and distractors.</div>
+    <div id="promptListRefine" class="grid" style="grid-template-columns: 1fr; gap:10px;"></div>
+  </div>
 
-              <div class="subBand">
-                <div class="subBandTitle">Accept or replace</div>
-                <div class="twoCol">
-                  <div id="promptListAccept"></div>
-                  <div id="promptListReplace"></div>
-                </div>
-              </div>
-
-              <div class="subBand">
-                <div class="subBandTitle">Option refinement</div>
-                <div class="twoCol">
-                  <div id="promptListCorrect"></div>
-                  <div id="promptListDistractor"></div>
-                </div>
-              </div>
-
-              <div class="subBand">
-                <div class="subBandTitle">Pause and audit prompts</div>
-                <div class="twoCol">
-                  <div id="promptListAuditLeft"></div>
-                  <div id="promptListAuditRight"></div>
-                </div>
-              </div>
+  <div class="groupCard">
+    <div class="groupTitle">Pause and Audit</div>
+    <div class="groupSub">Quality checks, alignment checks, and safety/audit prompts.</div>
+    <div id="promptListAudit" class="grid" style="grid-template-columns: 1fr; gap:10px;"></div>
+  </div>
+</div>
 
               <div class="hr"></div>
               <h3 style="margin:0 0 8px; font-size:14px;">Prompt Preview</h3>
@@ -257,7 +240,7 @@
 
               <div class="row" style="justify-content: space-between; margin-top:10px;">
                 <span class="muted small">When you’re done using prompts, move to the final prompt step.</span>
-                <button class="btn primary" id="btnReadyFinal">I'm done making questions and am ready for my final prompt</button>
+                <button class="btn primary" id="btnReadyFinal">I'm ready for the final prompt</button>
               </div>
             </div>
           </div>
@@ -270,31 +253,36 @@
             <strong>3) Finalize & submit</strong>
             <span class="tag lock" id="tagFinalize">Locked</span>
           </div>
-          <span class="muted small" id="sumFinalizeHint">Unlocked after “I'm done making questions…”</span>
+          <span class="muted small" id="sumFinalizeHint">Unlocked after “I’m ready…”</span>
         </summary>
         <div class="bandBody">
           <div class="lockMsg" id="lockFinalize">
-            Complete <strong>2) Prompts</strong> and click <strong>I'm done making questions and am ready for my final prompt</strong> to unlock final submission.
+            Complete <strong>2) Prompts</strong> and click <strong>I’m ready for the final prompt</strong> to unlock final submission.
           </div>
 
           <div id="finalizeInner" style="display:none;">
             <div class="card">
               <div class="row" style="justify-content: space-between;">
-                <button class="btn primary" id="btnCopyFinal">Copy final prompt</button>
                 <button class="btn" id="btnBackToPrompts">Go back to prompts</button>
+                <button class="btn primary" id="btnCopyFinal">Copy final prompt</button>
               </div>
 
-              <p class="muted small" id="finalPasteMsg" style="margin:10px 0 0; display:none;">
-                Final prompt copied. Paste it into your selected LLM, then paste the LLM final response below.
+              <p class="muted small" style="margin:10px 0 0;">
+                After you use the final prompt in your model, paste the model’s final output below.
               </p>
 
-              <div id="finalResponseWrap" style="margin-top:12px; display:none;">
+              <div style="margin-top:12px;">
                 <label>Paste the LLM Final Response *</label>
                 <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
               </div>
 
+              <div style="margin-top:10px;">
+                <label>Recording link (optional)</label>
+                <input id="recordingLink" placeholder="Optional: paste a share link to your audio/video reflection" />
+              </div>
+
               <div class="row" style="margin-top:12px;">
-                <button class="btn primary" id="btnSubmitForm" disabled>Submit session (Google Form)</button>
+                <button class="btn primary" id="btnSubmitForm">Submit session (Google Form)</button>
               </div>
 
               <details style="margin-top:12px;">
@@ -310,7 +298,7 @@
                   <ol class="muted small" style="margin:0 0 10px; padding-left:18px;">
                     <li>Click <strong>Download backup file (.json)</strong> below.</li>
                     <li>Email the downloaded file to <strong>tjin@crimson.ua.edu</strong>.</li>
-                    <li>Complete your reflection using your usual submission method.</li>
+                    <li>Complete your recorded reflection using your usual submission method.</li>
                   </ol>
 
                   <div class="row" style="margin-top:10px;">
@@ -396,10 +384,18 @@ const PROMPTS = [
   {
     id: "next_question",
     group: "Question Refinement",
-    title: "Accept Question and Proceed",
-    description: "Accepts the current question and proceeds to the next question",
+    title: "Next Question",
+    description: "Proceeds to creating the next question",
     template:
 `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
+  },
+  {
+    id: "replace_question",
+    group: "Question Refinement",
+    title: "Replace Question",
+    description: "Replaces the current question with a different one",
+    template:
+`Please discard this question and try again, aiming for the same parameters.`
   },
   {
     id: "replace_question_variety",
@@ -773,63 +769,37 @@ After the table, provide a list of 5 subtopics within the content area that have
     }
 
     function renderPromptList() {
-  const containers = {
-    next_question: $("promptListNext"),
-    replace_question_variety: $("promptListReplace"),
-    correct_answer_options: $("promptListCorrect"),
-    distractor_options: $("promptListDistractor"),
-    pause_review: $("promptListAuditLeft"),
-    rebalance_content: $("promptListAuditLeft"),
-    core_or_peripheral: $("promptListAuditLeft"),
-    rebalance_question_type: $("promptListAuditRight"),
-    difficulty_audit: $("promptListAuditRight"),
-    blooms_taxonomy_audit: $("promptListAuditRight")
-  };
+  const refine = $("promptListRefine");
+  const audit  = $("promptListAudit");
 
-  ["promptListNext","promptListAccept","promptListReplace","promptListCorrect","promptListDistractor","promptListAuditLeft","promptListAuditRight"]
-    .forEach((id) => { const el=$(id); if (el) el.innerHTML=""; });
+  refine.innerHTML = "";
+  audit.innerHTML = "";
 
   const makeCard = (prompt) => {
     const div = document.createElement("div");
     div.className = "promptCard";
-    div.style.marginBottom = "10px";
 
     const title = document.createElement("div");
     title.className = "promptTitle";
     title.textContent = prompt.title;
 
-    return div;
-  };
+    const desc = document.createElement("div");
+    desc.className = "promptDesc";
+    desc.textContent = prompt.description;
 
-  PROMPTS.forEach((p) => {
-    const target = containers[p.id];
-    if (!target) return;
-    target.appendChild(makeCard(p));
+    const row = document.createElement("div");
+    row.className = "row";
 
-    if (p.id === "next_question") {
-      const acceptClone = { ...p, title: "Accept", description: "Accepts the current question." };
-      $("promptListAccept")?.appendChild(makeCard(acceptClone));
-    }
-  });
+    const previewBtn = document.createElement("button");
+    previewBtn.className = "btn";
+    previewBtn.type = "button";
+    previewBtn.textContent = "Preview";
 
-  const wrapper = $("promptsInner");
-  wrapper.addEventListener("click", async (e) => {
-    const btn = e.target.closest("button");
-    if (!btn) return;
-
-    const action = btn.dataset.action;
-    const id = btn.dataset.id;
-    if (!action || !id) return;
-    const prompt = PROMPTS.find(x => x.id === id);
-    if (!prompt) return;
-
-    const starter = buildStarterPrompt();
-    const body = fillTemplate(prompt.template);
-    const full = `${starter}
-
----
-
-${body}`;
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "btn primary";
+    copyBtn.type = "button";
+    copyBtn.textContent = "Copy";
+    const buildPromptText = () => fillTemplate(prompt.template);
 
     previewBtn.addEventListener("click", () => {
       const full = buildPromptText();
@@ -841,8 +811,17 @@ ${body}`;
       const full = buildPromptText();
       await copyPlainText(full);
       setPreview(full);
-      logEvent("prompt_copied", { promptId: id });
-    }
+      logEvent("prompt_copied", { promptId: prompt.id });
+    });
+
+    row.append(previewBtn, copyBtn);
+    div.append(title, desc, row);
+    return div;
+  };
+
+  PROMPTS.forEach(prompt => {
+    const target = (prompt.group === "Pause and Audit") ? audit : refine;
+    target.appendChild(makeCard(prompt));
   });
 }
 
@@ -964,7 +943,7 @@ ${body}`;
         $("sumFinalize"),
         () => !isFinalizeUnlocked(),
         "bandPrompts",
-        "Finalize is locked until you click “I'm done making questions and am ready for my final prompt.”"
+        "Finalize is locked until you click “I’m ready for the final prompt.”"
       );
 
       // Hydrate fields
@@ -1044,7 +1023,7 @@ ${body}`;
         if (ok) {
           logEvent("starter_copied", {});
           localStorage.setItem(KEYS.starterCopied, "true");
-          $("setupMsg").textContent = "Starter prompt copied. Paste it into your selected LLM, then click Proceed to 2) Prompts.";
+          $("setupMsg").textContent = "Starter prompt copied. Paste it into your LLM, then click Continue to 2) Prompts.";
         }
 
         applyStageUI();
@@ -1084,17 +1063,8 @@ ${body}`;
 
       $("btnCopyFinal").addEventListener("click", async () => {
         const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
-        const ok = await copyPlainText(fp);
-        if (ok) {
-          logEvent("final_prompt_copied", {});
-          $("finalPasteMsg").style.display = "block";
-          $("finalResponseWrap").style.display = "block";
-        }
-      });
-
-      $("llmResponse").addEventListener("input", () => {
-        const hasText = !!($("llmResponse").value || "").trim();
-        $("btnSubmitForm").disabled = !hasText;
+        await copyPlainText(fp);
+        logEvent("final_prompt_copied", {});
       });
 
       $("btnSubmitForm").addEventListener("click", () => {
@@ -1113,7 +1083,8 @@ ${body}`;
           last_preview: $("preview").value || "",
           final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
           llm_response: $("llmResponse").value || "",
-                    exported_at: nowIso()
+          recording_link: $("recordingLink").value || "",
+          exported_at: nowIso()
         };
 
         const blob = new Blob([JSON.stringify(record, null, 2)], { type: "application/json" });
