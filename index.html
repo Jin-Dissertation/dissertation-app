@@ -1129,6 +1129,9 @@ Do not include extra commentary before or after the table unless the user explic
         location.reload();
       });
 
+      // Always show footer status immediately (even before access is verified)
+      refreshFooterInfo();
+
       // Finally apply stage UI if already verified
       if (alreadyVerified) {
         // Ensure stage exists
