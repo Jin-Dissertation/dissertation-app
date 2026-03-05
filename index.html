@@ -130,16 +130,16 @@
     .centerCard { max-width:420px; margin: 0 auto; }
     .layoutGrid {
       display: grid;
-      grid-template-columns: minmax(640px, 1fr) 300px;
-      gap: 20px;
+      grid-template-columns: minmax(0, 1fr) 280px;
+      gap: 16px;
       align-items: start;
     }
-    .mainColumn { max-width: 860px; width: 100%; }
-    .previewPanel {
+    .main { min-width: 0; }
+    .sidebar {
+      width: 280px;
       position: sticky;
       top: 16px;
       align-self: start;
-      z-index: 2;
     }
     .stickySidebar {
       display: flex;
@@ -147,7 +147,7 @@
       max-height: calc(100vh - 32px);
       overflow: hidden;
     }
-    .copyMeta { margin:0 0 10px; color: var(--muted); font-size:12px; }
+    .copyMeta { margin:0 0 8px; color: var(--muted); font-size:12px; }
     .copiedText {
       width: 100%;
       height: 140px;
@@ -156,44 +156,31 @@
       word-break: break-word;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
     }
-    .promptBar { display:grid; gap:10px; }
-    .promptGroup { border:1px solid var(--border); border-radius:10px; background:#f8fbff; padding:8px; }
-    .groupLabel {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      margin-bottom: 4px;
-    }
-    .chipGrid { display:flex; flex-wrap:wrap; gap:6px; }
-    .promptChip {
-      height: 32px;
-      padding: 5px 10px;
-      border-radius: 6px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background:#f1f7ff;
+    .promptSections { display:grid; gap:8px; }
+    .promptSection {
       border:1px solid var(--border);
-      color:var(--text);
-      cursor:pointer;
-      font-size:12px;
+      border-radius:10px;
+      background:#f8fbff;
+      padding:7px;
     }
-    .chipIcon { font-size: 12px; opacity: .8; }
-
-    @media (max-width: 1100px) {
-      .layoutGrid { grid-template-columns: 1fr; }
-      .previewPanel {
-        order: -1;
-        top: 12px;
-        z-index: 10;
-      }
-      .promptChip { height: 30px; padding: 4px 8px; font-size:11px; }
-      .promptArea {
-        max-height: calc(100vh - 300px);
-        overflow: auto;
-        padding-right: 4px;
-      }
+    .promptSectionTitle { margin:0 0 6px; font-size:13px; font-weight:700; }
+    .promptListCompact { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:6px; }
+    .promptCard {
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:#fff;
+      padding:6px 7px;
+    }
+    .promptTitle { font-weight:700; font-size:12px; margin:0 0 2px; line-height:1.25; }
+    .promptDesc { margin:0 0 5px; font-size:11px; color:var(--muted); line-height:1.25; }
+    @media (max-width: 960px) {
+      .promptCard { padding: 6px; }
+      .promptDesc { font-size: 10.5px; }
+      .btn { padding: 6px 8px; }
+      .promptArea { max-height: calc(100vh - 260px); overflow:auto; padding-right:4px; }
+    }
+    @media (max-width: 700px) {
+      .promptListCompact { grid-template-columns: 1fr; }
     }
     .copy-indicator { font-size: 0.8em; margin-left: 6px; color: var(--accent); display:inline-flex; align-items:center; }
     #btnSubmitForm[disabled] { background:#d6e1f3; color:#678; border-color:#c8d8f0; cursor:not-allowed; }
@@ -221,7 +208,7 @@
     <!-- Main app -->
     <div id="appShell" style="display:none;">
       <div class="layoutGrid">
-        <div class="mainColumn">
+        <div class="main">
           <div class="card">
             <div class="row" style="justify-content:flex-end;">
               <button class="btn danger" id="btnClearAll" title="Clears saved session + context in this browser">Clear (this browser)</button>
@@ -317,18 +304,18 @@
               <div class="hr"></div>
 
               <div class="promptArea">
-                <div class="promptBar">
-                  <div class="promptGroup">
-                    <div class="groupLabel">BUILD</div>
-                    <div id="promptGroupBuild" class="chipGrid"></div>
+                <div class="promptSections">
+                  <div class="promptSection">
+                    <h4 class="promptSectionTitle">Accept or Replace Question</h4>
+                    <div id="promptGroupAcceptReplace" class="promptListCompact"></div>
                   </div>
-                  <div class="promptGroup">
-                    <div class="groupLabel">EDIT</div>
-                    <div id="promptGroupEdit" class="chipGrid"></div>
+                  <div class="promptSection">
+                    <h4 class="promptSectionTitle">Refine Options</h4>
+                    <div id="promptGroupRefine" class="promptListCompact"></div>
                   </div>
-                  <div class="promptGroup">
-                    <div class="groupLabel">AUDIT</div>
-                    <div id="promptGroupAudit" class="chipGrid"></div>
+                  <div class="promptSection">
+                    <h4 class="promptSectionTitle">Pause and Audit</h4>
+                    <div id="promptGroupAudit" class="promptListCompact"></div>
                   </div>
                 </div>
 
@@ -424,7 +411,7 @@
       </details>
         </div>
 
-        <aside class="previewPanel">
+        <aside class="sidebar">
           <div class="card stickySidebar">
             <h3 style="margin:0 0 6px; font-size:16px;">Most Recently Copied</h3>
             <p class="copyMeta" id="recentCopiedMeta">Nothing copied yet. Click any Copy button to see it here.</p>
@@ -497,7 +484,7 @@ const PROMPTS = [
     group: "Question Refinement",
     title: "Next Question",
     description: "Proceeds to creating the next question",
-    template:
+    prompt:
 `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
   },
   {
@@ -505,7 +492,7 @@ const PROMPTS = [
     group: "Question Refinement",
     title: "Replace Question",
     description: "Offers a variety of replacement questions",
-    template:
+    prompt:
 `Write five possible replacements for this question. Begin with three new questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
   },
   {
@@ -513,7 +500,7 @@ const PROMPTS = [
     group: "Question Refinement",
     title: "Distractor Options",
     description: "Offers a list of distractor options",
-    template:
+    prompt:
 `I want to improve the distractors for this question. Please list the 3 you already provided, then add 10 more plausible distractors that fit the same parameters. Number them 1-13 so I can tell you which ones to keep.`
   },
   {
@@ -521,7 +508,7 @@ const PROMPTS = [
     group: "Question Refinement",
     title: "Correct Answer Options",
     description: "Offers a list of correct answer options",
-    template:
+    prompt:
 `Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors.`
   },
 
@@ -533,7 +520,7 @@ const PROMPTS = [
     group: "Pause and Audit",
     title: "Pause & Review",
     description: "Shows the questions so far",
-    template:
+    prompt:
 `Pause and show me all of the questions that have been generated so far in this session. Organize them in the same table format as before so I can review them before moving on.`
   },
   {
@@ -541,7 +528,7 @@ const PROMPTS = [
     group: "Pause and Audit",
     title: "Rebalance Content",
     description: "Shows covered and underrepresented subtopics",
-    template:
+    prompt:
 `Pause and audit how the questions are balanced between potential subtopics. Please break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance.`
   },
   {
@@ -549,7 +536,7 @@ const PROMPTS = [
     group: "Pause and Audit",
     title: "Core or Peripheral",
     description: "Shows whether question content is core or peripheral",
-    template:
+    prompt:
 `Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
 Core: The most common, obvious, first-line, or 'go-to' fact or intervention.
 Peripheral: A less obvious but still clinically important area.
@@ -565,7 +552,7 @@ Provide the results in a table with the following columns:
     group: "Pause and Audit",
     title: "Rebalance Question Type",
     description: "Shows used and underrepresented question types",
-    template:
+    prompt:
 `I would like to pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I rebalance the types of questions.`
   },
   {
@@ -573,7 +560,7 @@ Provide the results in a table with the following columns:
     group: "Pause and Audit",
     title: "Difficulty Audit",
     description: "Categorizes questions by difficulty level",
-    template:
+    prompt:
 `Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix.`
   },
   {
@@ -581,7 +568,7 @@ Provide the results in a table with the following columns:
     group: "Pause and Audit",
     title: "Bloom’s Taxonomy Audit",
     description: "Categorizes questions by Bloom’s level",
-    template:
+    prompt:
 `Please pause and audit my current MCQ set for Bloom’s taxonomy alignment. For each question, assign the primary level (Remember, Understand, Apply, Analyze, Evaluate, or Create). Show me the counts and percentages in each category. Then, suggest underrepresented levels and give me ideas for how to add or revise questions to cover them.`
   }
 ];
@@ -907,64 +894,72 @@ Do not include extra commentary before or after the table unless the user explic
     }
 
     function renderPromptList() {
-      const containers = {
-        starter_prompt: $("promptGroupBuild"),
-        final_prompt: $("promptGroupBuild"),
-        next_question: $("promptGroupEdit"),
-        replace_question: $("promptGroupEdit"),
-        correct_answer_options: $("promptGroupEdit"),
-        distractor_options: $("promptGroupEdit"),
-        pause_review: $("promptGroupAudit"),
-        rebalance_content: $("promptGroupAudit"),
-        core_or_peripheral: $("promptGroupAudit"),
-        rebalance_question_type: $("promptGroupAudit"),
-        difficulty_audit: $("promptGroupAudit"),
-        blooms_taxonomy_audit: $("promptGroupAudit")
-      };
+      const groupedPrompts = [
+        {
+          group: "Accept or Replace Question",
+          container: $("promptGroupAcceptReplace"),
+          items: ["next_question", "replace_question"]
+        },
+        {
+          group: "Refine Options",
+          container: $("promptGroupRefine"),
+          items: ["correct_answer_options", "distractor_options"]
+        },
+        {
+          group: "Pause and Audit",
+          container: $("promptGroupAudit"),
+          items: ["pause_review", "rebalance_content", "core_or_peripheral", "rebalance_question_type", "difficulty_audit", "blooms_taxonomy_audit"]
+        }
+      ];
 
-      ["promptGroupBuild", "promptGroupEdit", "promptGroupAudit"]
+      ["promptGroupAcceptReplace", "promptGroupRefine", "promptGroupAudit"]
         .forEach((id) => { const el = $(id); if (el) el.innerHTML = ""; });
 
-      const makeChip = (id, label, indicatorLabel) => {
-        const wrap = document.createElement("div");
-        wrap.className = "row";
+      const makePromptCard = (prompt) => {
+        const card = document.createElement("div");
+        card.className = "promptCard";
+
+        const title = document.createElement("div");
+        title.className = "promptTitle";
+        title.textContent = prompt.title;
+        card.appendChild(title);
+
+        if (prompt.description) {
+          const desc = document.createElement("p");
+          desc.className = "promptDesc";
+          desc.textContent = prompt.description;
+          card.appendChild(desc);
+        }
+
+        const row = document.createElement("div");
+        row.className = "row";
 
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "promptChip";
+        btn.className = "btn primary";
         btn.dataset.action = "copy";
-        btn.dataset.id = id;
-        btn.textContent = label;
+        btn.dataset.id = prompt.id;
+        btn.textContent = "Copy";
+        row.appendChild(btn);
 
-        const icon = document.createElement("span");
-        icon.className = "chipIcon";
-        icon.textContent = "📋";
-        btn.appendChild(icon);
-
-        wrap.appendChild(btn);
-
-        if (indicatorLabel && indicatorLabel === lastCopiedLabel) {
+        if (prompt.title === lastCopiedLabel) {
           const indicator = document.createElement("span");
           indicator.className = "copy-indicator";
           indicator.textContent = "✓";
-          wrap.appendChild(indicator);
+          row.appendChild(indicator);
         }
 
-        return wrap;
+        card.appendChild(row);
+        return card;
       };
 
-      containers.starter_prompt?.appendChild(makeChip("starter_prompt", "Starter prompt", "Starter prompt"));
-      containers.final_prompt?.appendChild(makeChip("final_prompt", "Final prompt", "Final prompt"));
-
-      PROMPTS.forEach((p) => {
-        let chipLabel = p.title;
-        if (p.id === "next_question") chipLabel = "Accept";
-
-        if (p.id === "replace_question") return;
-
-        const target = containers[p.id];
-        if (!target) return;
-        target.appendChild(makeChip(p.id, chipLabel, p.title));
+      groupedPrompts.forEach((group) => {
+        if (!group.container) return;
+        group.items.forEach((id) => {
+          const prompt = PROMPTS.find((p) => p.id === id);
+          if (!prompt) return;
+          group.container.appendChild(makePromptCard(prompt));
+        });
       });
 
       const wrapper = $("promptsInner");
@@ -974,27 +969,12 @@ Do not include extra commentary before or after the table unless the user explic
 
         const action = btn.dataset.action;
         const id = btn.dataset.id;
-        if (!action || !id) return;
+        if (action !== "copy" || !id) return;
 
-        if (action !== "copy") return;
-
-        if (id === "starter_prompt") {
-          const ok = await copyToClipboard(buildStarterPrompt(), "Starter prompt");
-          if (ok) renderPromptList();
-          return;
-        }
-
-        if (id === "final_prompt") {
-          const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
-          const ok = await copyToClipboard(fp, "Final prompt");
-          if (ok) renderPromptList();
-          return;
-        }
-
-        const prompt = PROMPTS.find(x => x.id === id);
+        const prompt = PROMPTS.find((x) => x.id === id);
         if (!prompt) return;
 
-        const promptText = fillTemplate(prompt.template);
+        const promptText = fillTemplate(prompt.prompt);
         const ok = await copyToClipboard(promptText, prompt.title);
         if (ok) {
           logEvent("prompt_copied", { promptId: id });
