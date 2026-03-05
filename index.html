@@ -96,9 +96,8 @@
     .logo-claude{ background:#d97706; }
     .logo-other{ background:#64748b; }
     .disabledBtn { opacity:.55; cursor:not-allowed; }
-    .accessPrompt { font-size: 18px; font-weight: 600; color: var(--text); margin:0 0 10px; }
     .accessRow { display:flex; align-items:center; gap:10px; }
-    .accessInput { max-width: 220px; font-size: 24px; font-weight:700; letter-spacing:.3px; text-align:center; padding: 12px 10px; }
+    .accessInput { max-width: 220px; font-size: 22px; font-weight:700; letter-spacing:.3px; text-align:center; padding: 12px 10px; }
     .accessBtn { margin-top:0 !important; }
     .subBand { border:1px solid var(--border); border-radius: 12px; background:#f8fbff; padding:12px; margin-top:10px; }
     .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:800; }
@@ -115,14 +114,14 @@
 
     <!-- Access gate -->
     <div class="card" id="accessGate">
-      <p class="accessPrompt" style="margin:0 0 10px;">
+      <p class="muted small" style="margin:0 0 10px;">
         Please enter your code:
       </p>
 
-      <form class="accessRow" id="accessForm">
-        <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" />
-        <button class="btn primary accessBtn" id="btnVerifyAccess" type="submit">Continue</button>
-      </form>
+      <div class="accessRow">
+        <input class="accessInput" id="accessCodeInput" maxlength="14" placeholder="code" />
+        <button class="btn primary accessBtn" id="btnVerifyAccess">Continue</button>
+      </div>
 
       <p id="accessMsg" class="muted small" style="margin:10px 0 0;"></p>
     </div>
@@ -949,9 +948,9 @@ ${body}`;
         setLockedState(true);
       }
 
-      $("accessForm").addEventListener("submit", (e) => {
-        e.preventDefault();
-        verifyAccessCode();
+      $("btnVerifyAccess").addEventListener("click", () => verifyAccessCode());
+      $("accessCodeInput").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") verifyAccessCode();
       });
 
       // Lockable summaries (Option C behavior)
