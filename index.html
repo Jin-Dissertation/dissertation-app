@@ -7,7 +7,7 @@
   <style>
     :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; }
     body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 24px; }
+    .pageShell { max-width: 1200px; margin: 0 auto; padding: 24px; }
     h1 { font-size: 22px; margin: 0 0 8px; }
     .sub { color: var(--muted); margin: 0 0 18px; }
     .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
@@ -128,22 +128,39 @@
     .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
     @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
     .centerCard { max-width:420px; margin: 0 auto; }
-    .appLayout { display:block; }
-    .sidebarCol { display:none; }
-    @media (min-width: 1100px){
-      .appLayout { display:grid; grid-template-columns: minmax(0, 1fr) 360px; gap:16px; align-items:start; }
-      .sidebarCol { display:block; }
+    .layoutGrid {
+      display: grid;
+      grid-template-columns: minmax(720px, 1fr) 300px;
+      gap: 20px;
+      align-items: start;
     }
-    .stickySidebar { position: sticky; top:16px; max-height: calc(100vh - 32px); overflow-y:auto; }
+    .mainColumn { max-width: 860px; width: 100%; }
+    .stickySidebar {
+      position: sticky;
+      top: 16px;
+      max-height: calc(100vh - 32px);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
     .copyMeta { margin:0 0 10px; color: var(--muted); font-size:12px; }
-    #recentCopiedText { min-height: 280px; }
+    .copiedText {
+      width: 100%;
+      resize: none;
+      min-height: 180px;
+      max-height: calc(100vh - 220px);
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
     .copy-indicator { font-size: 0.8em; margin-left: 6px; color: var(--accent); display:inline-flex; align-items:center; }
     #btnSubmitForm[disabled] { background:#d6e1f3; color:#678; border-color:#c8d8f0; cursor:not-allowed; }
 
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <div class="pageShell">
     <h1>Dissertation Prompt App</h1>
 
     <!-- Access gate -->
@@ -162,8 +179,8 @@
 
     <!-- Main app -->
     <div id="appShell" style="display:none;">
-      <div class="appLayout">
-        <div>
+      <div class="layoutGrid">
+        <div class="mainColumn">
           <div class="card">
             <div class="row" style="justify-content:flex-end;">
               <button class="btn danger" id="btnClearAll" title="Clears saved session + context in this browser">Clear (this browser)</button>
@@ -374,11 +391,11 @@
       </details>
         </div>
 
-        <aside class="sidebarCol">
+        <aside>
           <div class="card stickySidebar">
             <h3 style="margin:0 0 6px; font-size:16px;">Most Recently Copied</h3>
             <p class="copyMeta" id="recentCopiedMeta">Nothing copied yet. Click any Copy button to see it here.</p>
-            <textarea id="recentCopiedText" readonly placeholder="Nothing copied yet. Click any Copy button to see it here."></textarea>
+            <textarea id="recentCopiedText" class="copiedText" readonly placeholder="Nothing copied yet. Click any Copy button to see it here."></textarea>
             <div class="row" style="margin-top:10px;">
               <button class="btn" id="btnCopyAgain" disabled>Copy again</button>
               <button class="btn" id="btnClearRecent" disabled>Clear</button>
@@ -904,11 +921,6 @@ Do not include extra commentary before or after the table unless the user explic
 
         if (p.id === "replace_question") {
           containers.replace_question?.appendChild(makeCard(p, { primaryLabel: "Replace Question", indicatorLabel: "Replace Question" }));
-          return;
-        }
-
-        if (p.id === "replace_question") {
-          containers.replace_question?.appendChild(makeCard(p, { primaryLabel: "Replace Question" }));
           return;
         }
 
