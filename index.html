@@ -780,16 +780,21 @@ Do not include extra commentary before or after the table unless the user explic
     copyBtn.className = "btn primary";
     copyBtn.type = "button";
     copyBtn.textContent = "Copy";
-    const buildPromptText = () => fillTemplate(prompt.template);
+
+    const buildFullPrompt = () => {
+      const starter = buildStarterPrompt();
+      const body = fillTemplate(prompt.template);
+      return `${starter}\n\n---\n\n${body}`;
+    };
 
     previewBtn.addEventListener("click", () => {
-      const full = buildPromptText();
+      const full = buildFullPrompt();
       setPreview(full);
       logEvent("prompt_previewed", { promptId: prompt.id });
     });
 
     copyBtn.addEventListener("click", async () => {
-      const full = buildPromptText();
+      const full = buildFullPrompt();
       await copyPlainText(full);
       setPreview(full);
       logEvent("prompt_copied", { promptId: prompt.id });
