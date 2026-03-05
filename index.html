@@ -898,6 +898,13 @@ Do not include extra commentary before or after the table unless the user explic
           return;
         }
 
+        if (p.id === "replace_question") {
+          containers.replace_question?.appendChild(makeCard(p, { primaryLabel: "Replace Question" }));
+          return;
+        }
+
+        if (p.id === "replace_question") return;
+
         const target = containers[p.id];
         if (!target) return;
         target.appendChild(makeCard(p));
