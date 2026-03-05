@@ -435,6 +435,14 @@ const PROMPTS = [
 `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
   },
   {
+    id: "replace_question",
+    group: "Question Refinement",
+    title: "Replace Question",
+    description: "Offers a variety of replacement questions",
+    template:
+`Write five possible replacements for this question. Begin with three new questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
+  },
+  {
     id: "distractor_options",
     group: "Question Refinement",
     title: "Distractor Options",
@@ -782,6 +790,7 @@ Do not include extra commentary before or after the table unless the user explic
     function renderPromptList() {
       const containers = {
         accept: $("promptListAccept"),
+        replace_question: $("promptListAcceptSpacer"),
         correct_answer_options: $("promptListCorrect"),
         distractor_options: $("promptListDistractor"),
         pause_review: $("promptListAuditLeft"),
@@ -815,21 +824,13 @@ Do not include extra commentary before or after the table unless the user explic
         const row = document.createElement("div");
         row.className = "row";
 
-        const previewBtn = document.createElement("button");
-        previewBtn.type = "button";
-        previewBtn.className = "btn";
-        previewBtn.dataset.action = "preview";
-        previewBtn.dataset.id = prompt.id;
-        previewBtn.textContent = "Preview";
-
         const copyBtn = document.createElement("button");
         copyBtn.type = "button";
         copyBtn.className = "btn primary";
         copyBtn.dataset.action = "copy";
         copyBtn.dataset.id = prompt.id;
-        copyBtn.textContent = "Copy";
+        copyBtn.textContent = prompt.id === "next_question" || prompt.id === "replace_question" ? prompt.title : "Copy";
 
-        row.appendChild(previewBtn);
         row.appendChild(copyBtn);
         div.appendChild(row);
 
@@ -840,6 +841,11 @@ Do not include extra commentary before or after the table unless the user explic
         if (p.id === "next_question") {
           const acceptPrompt = { ...p, id: "next_question", title: "Accept" };
           containers.accept?.appendChild(makeCard(acceptPrompt));
+          return;
+        }
+
+        if (p.id === "replace_question") {
+          containers.replace_question?.appendChild(makeCard(p));
           return;
         }
 
@@ -867,12 +873,6 @@ Do not include extra commentary before or after the table unless the user explic
 ---
 
 ${body}`;
-
-        if (action === "preview") {
-          setPreview(full);
-          logEvent("prompt_previewed", { promptId: id });
-          return;
-        }
 
         if (action === "copy") {
           const ok = await copyPlainText(full);
