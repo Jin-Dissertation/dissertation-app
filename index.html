@@ -128,6 +128,11 @@
     .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
     @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
     .centerCard { max-width:420px; margin: 0 auto; }
+    .appHeaderBar { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:6px 2px; }
+    .btn.ghost { background:transparent; border-color:transparent; color:var(--muted); padding:6px 8px; }
+    .userLabel { font-size:12px; color:var(--muted); }
+    .modalBackdrop { position:fixed; inset:0; background:rgba(16,33,61,.35); display:none; align-items:center; justify-content:center; z-index:10000; }
+    .modalCard { width:min(460px, calc(100vw - 24px)); background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; }
     .layoutGrid {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 280px;
@@ -207,17 +212,12 @@
 
     <!-- Main app -->
     <div id="appShell" style="display:none;">
+      <div class="appHeaderBar">
+        <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
+        <span class="userLabel" id="topUser">User</span>
+      </div>
       <div class="layoutGrid">
         <div class="main">
-          <div class="card">
-            <div class="row" style="justify-content:flex-end;">
-              <button class="btn danger" id="btnClearAll" title="Clears saved session + context in this browser">Clear (this browser)</button>
-            </div>
-            <p class="muted small" style="margin:10px 0 0;">
-              Data is stored only in this browser until you submit the Google Form (and/or download a backup file).
-            </p>
-          </div>
-
           <!-- Accordion bands -->
       <details class="band" id="bandSetup">
         <summary id="sumSetup">
@@ -405,6 +405,10 @@
               </details>
 
               <p class="muted small" id="finalizeMsg" style="margin:10px 0 0;"></p>
+
+              <div class="row" id="endSessionRow" style="margin-top:10px; display:none;">
+                <button class="btn danger" id="btnEndSession" type="button">End session</button>
+              </div>
             </div>
           </div>
         </div>
@@ -422,6 +426,29 @@
             </div>
           </div>
         </aside>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modalBackdrop" id="modalReset">
+    <div class="modalCard">
+      <h3 style="margin:0 0 8px;">Reset this device?</h3>
+      <p class="muted" style="margin:0 0 12px;">This clears saved settings and history in this browser only.</p>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn" id="btnResetCancel" type="button">Cancel</button>
+        <button class="btn danger" id="btnResetConfirm" type="button">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBackdrop" id="modalEnd">
+    <div class="modalCard">
+      <h3 style="margin:0 0 8px;">End session?</h3>
+      <p class="muted" style="margin:0 0 12px;">Before ending, make sure you have submitted your info in the Google Form or downloaded/saved your work. Ending the session will clear this browser’s stored data.</p>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn" id="btnEndCancel" type="button">Cancel</button>
+        <button class="btn danger" id="btnEndConfirm" type="button">I saved it — end session</button>
       </div>
     </div>
   </div>
@@ -586,7 +613,9 @@ Provide the results in a table with the following columns:
       starterCopied: "dissertation.starterCopied",
       stage: "dissertation.stage", // "setup" | "prompts" | "finalize"
       events: "dissertation.events",
-      finalPrompt: "dissertation.finalPrompt"
+      finalPrompt: "dissertation.finalPrompt",
+      anyCopy: "dissertation.anyCopy",
+      finalizeVisited: "dissertation.finalizeVisited"
     };
 
     // -----------------------------
@@ -652,6 +681,31 @@ Provide the results in a table with the following columns:
       localStorage.setItem(KEYS.stage, stage);
       logEvent("stage_set", { stage });
       applyStageUI();
+    }
+
+    function markAnyCopy() {
+      localStorage.setItem(KEYS.anyCopy, "true");
+    }
+
+    function markFinalizeVisited() {
+      localStorage.setItem(KEYS.finalizeVisited, "true");
+    }
+
+    function isSessionReadyToEnd() {
+      return localStorage.getItem(KEYS.anyCopy) === "true" && localStorage.getItem(KEYS.finalizeVisited) === "true";
+    }
+
+    function updateEndSessionVisibility() {
+      const row = $("endSessionRow");
+      if (!row) return;
+      row.style.display = isSessionReadyToEnd() ? "flex" : "none";
+    }
+
+    function clearSessionData() {
+      Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+      lastCopiedText = "";
+      lastCopiedLabel = "";
+      lastCopiedAt = null;
     }
 
     // -----------------------------
@@ -757,6 +811,7 @@ Do not include extra commentary before or after the table unless the user explic
         }
       }
 
+      markAnyCopy();
       lastCopiedText = text;
       lastCopiedLabel = label;
       lastCopiedAt = new Date();
@@ -854,8 +909,10 @@ Do not include extra commentary before or after the table unless the user explic
         $("bandSetup").open = false;
         $("bandPrompts").open = false;
         $("bandFinalize").open = true;
+        markFinalizeVisited();
       }
 
+      updateEndSessionVisibility();
       refreshFooterInfo();
       const copied = localStorage.getItem(KEYS.starterCopied) === "true";
       $("btnGoPrompts").disabled = !copied;
@@ -1021,6 +1078,7 @@ Do not include extra commentary before or after the table unless the user explic
       }
 
       setLockedState(false);
+      if ($("topUser")) $("topUser").textContent = code || "User";
       logEvent("access_verified", { accessCode: code });
       toast("Access verified ✅");
 
@@ -1080,6 +1138,12 @@ Do not include extra commentary before or after the table unless the user explic
     function init() {
       // Gate
       const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
+
+      const endedFlag = sessionStorage.getItem("dissertation.ended");
+      if (endedFlag === "true") {
+        sessionStorage.removeItem("dissertation.ended");
+        toast("Session ended. Data cleared on this device.");
+      }
       if (alreadyVerified) {
         setLockedState(false);
       } else {
@@ -1133,6 +1197,7 @@ Do not include extra commentary before or after the table unless the user explic
       renderPromptList();
 
       renderMostRecentCopied();
+      $("topUser").textContent = localStorage.getItem(KEYS.accessCode) || "User";
 
       $("btnCopyAgain").addEventListener("click", async () => {
         if (!lastCopiedText.trim()) return;
@@ -1270,10 +1335,24 @@ Do not include extra commentary before or after the table unless the user explic
         toast("Downloaded ✅");
       });
 
-      // Clear everything
-      $("btnClearAll").addEventListener("click", () => {
-        if (!confirm("Clear saved session + context from THIS browser?")) return;
-        Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+      // Reset session (header)
+      const openModal = (id) => { const m = $(id); if (m) m.style.display = "flex"; };
+      const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
+
+      $("btnResetSession").addEventListener("click", () => openModal("modalReset"));
+      $("btnResetCancel").addEventListener("click", () => closeModal("modalReset"));
+      $("btnResetConfirm").addEventListener("click", () => {
+        clearSessionData();
+        closeModal("modalReset");
+        location.reload();
+      });
+
+      $("btnEndSession").addEventListener("click", () => openModal("modalEnd"));
+      $("btnEndCancel").addEventListener("click", () => closeModal("modalEnd"));
+      $("btnEndConfirm").addEventListener("click", () => {
+        clearSessionData();
+        sessionStorage.setItem("dissertation.ended", "true");
+        closeModal("modalEnd");
         location.reload();
       });
 
