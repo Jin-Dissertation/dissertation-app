@@ -263,12 +263,15 @@
                 </div>
               </div>
 
-  <div class="groupCard">
-    <div class="groupTitle">Pause and Audit</div>
-    <div class="groupSub">Quality checks, alignment checks, and safety/audit prompts.</div>
-    <div id="promptListAudit" class="grid" style="grid-template-columns: 1fr; gap:10px;"></div>
-  </div>
-</div>
+              <div class="groupCard">
+                <div class="groupTitle">Pause and Audit</div>
+                <div class="groupSub">Quality checks, alignment checks, and safety/audit prompts.</div>
+                <div class="twoCol">
+                  <div id="promptListAuditLeft"></div>
+                  <div id="promptListAuditRight"></div>
+                </div>
+              </div>
+
 
               <div class="hr"></div>
               <h3 style="margin:0 0 8px; font-size:14px;">Prompt Preview</h3>
@@ -430,6 +433,14 @@ const PROMPTS = [
     description: "Proceeds to creating the next question",
     template:
 `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
+  },
+  {
+    id: "replace_question",
+    group: "Question Refinement",
+    title: "Replace Question",
+    description: "Offers a variety of replacement questions",
+    template:
+`Write five possible replacements for this question. Begin with three new questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
   },
   {
     id: "distractor_options",
@@ -792,7 +803,17 @@ Do not include extra commentary before or after the table unless the user explic
       ["promptListAccept", "promptListAcceptSpacer", "promptListCorrect", "promptListDistractor", "promptListAuditLeft", "promptListAuditRight"]
         .forEach((id) => { const el = $(id); if (el) el.innerHTML = ""; });
 
-      const makeCard = (prompt) => {
+      const makeCopyButton = (id, label = "Copy") => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn primary";
+        btn.dataset.action = "copy";
+        btn.dataset.id = id;
+        btn.textContent = label;
+        return btn;
+      };
+
+      const makeCard = (prompt, options = {}) => {
         const div = document.createElement("div");
         div.className = "promptCard";
         div.style.marginBottom = "10px";
@@ -812,22 +833,12 @@ Do not include extra commentary before or after the table unless the user explic
         const row = document.createElement("div");
         row.className = "row";
 
-        const previewBtn = document.createElement("button");
-        previewBtn.type = "button";
-        previewBtn.className = "btn";
-        previewBtn.dataset.action = "preview";
-        previewBtn.dataset.id = prompt.id;
-        previewBtn.textContent = "Preview";
+        row.appendChild(makeCopyButton(prompt.id, options.primaryLabel || "Copy"));
 
-        const copyBtn = document.createElement("button");
-        copyBtn.type = "button";
-        copyBtn.className = "btn primary";
-        copyBtn.dataset.action = "copy";
-        copyBtn.dataset.id = prompt.id;
-        copyBtn.textContent = "Copy";
+        if (options.includeReplaceButton) {
+          row.appendChild(makeCopyButton("replace_question", "Replace Question"));
+        }
 
-        row.appendChild(previewBtn);
-        row.appendChild(copyBtn);
         div.appendChild(row);
 
         return div;
@@ -836,9 +847,11 @@ Do not include extra commentary before or after the table unless the user explic
       PROMPTS.forEach((p) => {
         if (p.id === "next_question") {
           const acceptPrompt = { ...p, id: "next_question", title: "Accept" };
-          containers.accept?.appendChild(makeCard(acceptPrompt));
+          containers.accept?.appendChild(makeCard(acceptPrompt, { primaryLabel: "Accept", includeReplaceButton: true }));
           return;
         }
+
+        if (p.id === "replace_question") return;
 
         const target = containers[p.id];
         if (!target) return;
@@ -864,12 +877,6 @@ Do not include extra commentary before or after the table unless the user explic
 ---
 
 ${body}`;
-
-        if (action === "preview") {
-          setPreview(full);
-          logEvent("prompt_previewed", { promptId: id });
-          return;
-        }
 
         if (action === "copy") {
           const ok = await copyPlainText(full);
