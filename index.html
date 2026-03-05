@@ -96,10 +96,34 @@
     .logo-claude{ background:#d97706; }
     .logo-other{ background:#64748b; }
     .disabledBtn { opacity:.55; cursor:not-allowed; }
-    .accessPrompt { font-size: 18px; font-weight: 600; color: var(--text); margin:0 0 10px; }
-    .accessRow { display:flex; align-items:center; gap:10px; }
-    .accessInput { max-width: 220px; font-size: 24px; font-weight:700; letter-spacing:.3px; text-align:center; padding: 12px 10px; }
-    .accessBtn { margin-top:0 !important; }
+    .accessPrompt { font-size: 24px; font-weight: 700; color: var(--text); margin:0 0 14px; line-height:1.3; }
+    .accessRow { display:flex; align-items:stretch; gap:12px; flex-wrap:nowrap; }
+    .accessInput {
+      width: 180px;
+      font-size: 28px;
+      font-weight:700;
+      letter-spacing:.3px;
+      text-align:center;
+      padding: 12px 10px;
+      flex: 0 0 auto;
+    }
+    .accessBtn {
+      margin-top:0 !important;
+      font-size: 20px;
+      font-weight: 700;
+      padding: 12px 20px;
+      align-self: stretch;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+    #accessMsg { font-size: 16px; }
+
+    @media (max-width: 560px) {
+      .accessRow { flex-wrap: wrap; }
+      .accessInput, .accessBtn { width: 100%; }
+    }
     .subBand { border:1px solid var(--border); border-radius: 12px; background:#f8fbff; padding:12px; margin-top:10px; }
     .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:800; }
     .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
