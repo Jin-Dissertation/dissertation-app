@@ -247,12 +247,21 @@
 
               <div class="hr"></div>
 
-              <div class="promptGroups">
-  <div class="groupCard">
-    <div class="groupTitle">Question Refinement</div>
-    <div class="groupSub">Create, revise, and improve MCQs and distractors.</div>
-    <div id="promptListRefine" class="grid" style="grid-template-columns: 1fr; gap:10px;"></div>
-  </div>
+              <div class="subBand">
+                <div class="subBandTitle">Accept or replace</div>
+                <div class="twoCol">
+                  <div id="promptListAccept"></div>
+                  <div id="promptListAcceptSpacer"></div>
+                </div>
+              </div>
+
+              <div class="subBand">
+                <div class="subBandTitle">Option refinement</div>
+                <div class="twoCol">
+                  <div id="promptListCorrect"></div>
+                  <div id="promptListDistractor"></div>
+                </div>
+              </div>
 
   <div class="groupCard">
     <div class="groupTitle">Pause and Audit</div>
@@ -421,22 +430,6 @@ const PROMPTS = [
     description: "Proceeds to creating the next question",
     template:
 `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
-  },
-  {
-    id: "replace_question",
-    group: "Question Refinement",
-    title: "Replace Question",
-    description: "Replaces the current question with a different one",
-    template:
-`Please discard this question and try again, aiming for the same parameters.`
-  },
-  {
-    id: "replace_question_variety",
-    group: "Question Refinement",
-    title: "Replace Question (Variety)",
-    description: "Offers a variety of replacement questions",
-    template:
-`Write five possible replacements for this question. Begin with three new questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
   },
   {
     id: "distractor_options",
@@ -784,61 +777,110 @@ Do not include extra commentary before or after the table unless the user explic
     }
 
     function renderPromptList() {
-  const refine = $("promptListRefine");
-  const audit  = $("promptListAudit");
+      const containers = {
+        accept: $("promptListAccept"),
+        correct_answer_options: $("promptListCorrect"),
+        distractor_options: $("promptListDistractor"),
+        pause_review: $("promptListAuditLeft"),
+        rebalance_content: $("promptListAuditLeft"),
+        core_or_peripheral: $("promptListAuditLeft"),
+        rebalance_question_type: $("promptListAuditRight"),
+        difficulty_audit: $("promptListAuditRight"),
+        blooms_taxonomy_audit: $("promptListAuditRight")
+      };
 
-  refine.innerHTML = "";
-  audit.innerHTML = "";
+      ["promptListAccept", "promptListAcceptSpacer", "promptListCorrect", "promptListDistractor", "promptListAuditLeft", "promptListAuditRight"]
+        .forEach((id) => { const el = $(id); if (el) el.innerHTML = ""; });
 
-  const makeCard = (p) => {
-    const div = document.createElement("div");
-    div.className = "promptCard";
+      const makeCard = (prompt) => {
+        const div = document.createElement("div");
+        div.className = "promptCard";
+        div.style.marginBottom = "10px";
 
-    div.innerHTML = `
-      <div class="promptTitle">${p.title}</div>
-      <div class="promptDesc">${p.description}</div>
-      <div class="row">
-        <button class="btn" data-action="preview" data-id="${p.id}">Preview</button>
-        <button class="btn primary" data-action="copy" data-id="${p.id}">Copy</button>
-      </div>
-    `;
+        const title = document.createElement("div");
+        title.className = "promptTitle";
+        title.textContent = prompt.title;
+        div.appendChild(title);
 
-    return div;
-  };
+        if (prompt.description) {
+          const desc = document.createElement("p");
+          desc.className = "promptDesc";
+          desc.textContent = prompt.description;
+          div.appendChild(desc);
+        }
 
-  PROMPTS.forEach(p => {
-    const target = (p.group === "Pause and Audit") ? audit : refine;
-    target.appendChild(makeCard(p));
-  });
+        const row = document.createElement("div");
+        row.className = "row";
 
-  const wrapper = document.querySelector(".promptGroups");
+        const previewBtn = document.createElement("button");
+        previewBtn.type = "button";
+        previewBtn.className = "btn";
+        previewBtn.dataset.action = "preview";
+        previewBtn.dataset.id = prompt.id;
+        previewBtn.textContent = "Preview";
 
-  wrapper.addEventListener("click", async (e) => {
-    const btn = e.target.closest("button");
-    if (!btn) return;
+        const copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.className = "btn primary";
+        copyBtn.dataset.action = "copy";
+        copyBtn.dataset.id = prompt.id;
+        copyBtn.textContent = "Copy";
 
-    const action = btn.dataset.action;
-    const id = btn.dataset.id;
-    const prompt = PROMPTS.find(x => x.id === id);
-    if (!prompt) return;
+        row.appendChild(previewBtn);
+        row.appendChild(copyBtn);
+        div.appendChild(row);
 
-    const starter = buildStarterPrompt();
-    const body = fillTemplate(prompt.template);
-    const full = `${starter}\n\n---\n\n${body}`;
+        return div;
+      };
 
-    if (action === "preview") {
-      setPreview(full);
-      logEvent("prompt_previewed", { promptId: id });
+      PROMPTS.forEach((p) => {
+        if (p.id === "next_question") {
+          const acceptPrompt = { ...p, id: "next_question", title: "Accept" };
+          containers.accept?.appendChild(makeCard(acceptPrompt));
+          return;
+        }
+
+        const target = containers[p.id];
+        if (!target) return;
+        target.appendChild(makeCard(p));
+      });
+
+      const wrapper = $("promptsInner");
+      wrapper.addEventListener("click", async (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        if (!action || !id) return;
+
+        const prompt = PROMPTS.find(x => x.id === id);
+        if (!prompt) return;
+
+        const starter = buildStarterPrompt();
+        const body = fillTemplate(prompt.template);
+        const full = `${starter}
+
+---
+
+${body}`;
+
+        if (action === "preview") {
+          setPreview(full);
+          logEvent("prompt_previewed", { promptId: id });
+          return;
+        }
+
+        if (action === "copy") {
+          const ok = await copyPlainText(full);
+          if (ok) {
+            setPreview(full);
+            logEvent("prompt_copied", { promptId: id });
+          }
+        }
+      });
     }
 
-    if (action === "copy") {
-      await copyPlainText(full);
-      setPreview(full);
-      logEvent("prompt_copied", { promptId: id });
-    }
-
-  });
-}
 
     // -----------------------------
     // Access verification
