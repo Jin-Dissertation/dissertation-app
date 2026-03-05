@@ -278,38 +278,38 @@
     // ----------------------------
     // Access codes allowlist
     // ----------------------------
-    const ACCESS_CODES = {
-      "blue-sky": { pid: "P001" },
-      "green-grass": { pid: "P002" },
-      "bright-light": { pid: "P003" },
-      "calm-water": { pid: "P004" },
-      "morning-sun": { pid: "P005" },
-      "quiet-night": { pid: "P006" },
-      "tall-tree": { pid: "P007" },
-      "warm-breeze": { pid: "P008" },
-      "clear-path": { pid: "P009" },
-      "soft-cloud": { pid: "P010" },
-      "deep-ocean": { pid: "P011" },
-      "fresh-air": { pid: "P012" },
-      "open-field": { pid: "P013" },
-      "gentle-rain": { pid: "P014" },
-      "golden-hour": { pid: "P015" },
-      "rising-tide": { pid: "P016" },
-      "distant-hill": { pid: "P017" },
-      "summer-wind": { pid: "P018" },
-      "early-dawn": { pid: "P019" },
-      "cool-shade": { pid: "P020" },
-      "wide-river": { pid: "P021" },
-      "bright-star": { pid: "P022" },
-      "falling-leaf": { pid: "P023" },
-      "white-sand": { pid: "P024" },
-      "silver-moon": { pid: "P025" },
-      "calm-harbor": { pid: "P026" },
-      "quiet-forest": { pid: "P027" },
-      "warm-sunlight": { pid: "P028" },
-      "soft-snow": { pid: "P029" },
-      "open-horizon": { pid: "P030" }
-    };
+  const ACCESS_CODES = new Set([
+  "blue-sky",
+  "green-grass",
+  "bright-light",
+  "calm-water",
+  "morning-sun",
+  "quiet-night",
+  "tall-tree",
+  "warm-breeze",
+  "clear-path",
+  "soft-cloud",
+  "deep-ocean",
+  "fresh-air",
+  "open-field",
+  "gentle-rain",
+  "golden-hour",
+  "rising-tide",
+  "distant-hill",
+  "summer-wind",
+  "early-dawn",
+  "cool-shade",
+  "wide-river",
+  "bright-star",
+  "falling-leaf",
+  "white-sand",
+  "silver-moon",
+  "calm-harbor",
+  "quiet-forest",
+  "warm-sunlight",
+  "soft-snow",
+  "open-horizon"
+]);
 
     // ----------------------------
     // Prompt library (MCQ only)
@@ -448,40 +448,29 @@ Return the revised items as a table.`
       }
     }
 
-    function verifyAccessCode() {
-      const code = normalizeCode($("accessCodeInput").value);
-      const hit = ACCESS_CODES[code];
+   function verifyAccessCode() {
+  const code = normalizeCode($("accessCodeInput").value);
 
-      if (!hit) {
-        setLockedState(true, "Access code not recognized. Please contact the study team.");
-        // logEvent requires events list; safe to skip before access
-        return false;
-      }
+  // allowlist check
+  if (!ACCESS_CODES.has(code)) {
+    setLockedState(true, "Access code not recognized. Please contact the study team.");
+    logEvent("access_denied", { code_entered: code });
+    return false;
+  }
 
-      // Store access
-      localStorage.setItem(KEYS.accessVerified, "true");
-      localStorage.setItem(KEYS.accessCode, code);
-      localStorage.setItem(KEYS.participantId, hit.pid);
+  // participantId IS the access code
+  localStorage.setItem(KEYS.accessVerified, "true");
+  localStorage.setItem(KEYS.accessCode, code);
+  localStorage.setItem(KEYS.participantId, code);
 
-      // Start session timestamp + session id immediately upon sign-in (your requirement #5)
-      ensureSessionStarted();
+  // show app
+  setLockedState(false);
+  refreshHeaderPills();
+  toast("Access verified ✅");
+  logEvent("access_verified", { accessCode: code, participantId: code });
 
-      // Log sign-in event (now safe)
-      logEvent("access_verified", { accessCode: code, participantId: hit.pid });
-
-      // Initialize UI
-      setLockedState(false);
-      $("participantIdDisplay").value = hit.pid;
-
-      // Stage default
-      if (!localStorage.getItem(KEYS.stage)) localStorage.setItem(KEYS.stage, "setup");
-      showStage(localStorage.getItem(KEYS.stage));
-
-      refreshHeaderPills();
-      toast("Access verified ✅");
-
-      return true;
-    }
+  return true;
+}
 
     // ----------------------------
     // Prompt building
@@ -727,32 +716,42 @@ Do not include extra commentary before or after the table unless the user explic
 
       // Copy starter + begin (your “start”)
       $("btnCopyStarterAndBegin").addEventListener("click", async () => {
-        // Require context before beginning (your requirement #3)
-        const course = $("ctxCourse").value.trim();
-        const area = $("ctxArea").value.trim();
-        const constraints = $("ctxConstraints").value.trim();
+  try {
+    const course = $("ctxCourse").value.trim();
+    const area = $("ctxArea").value.trim();
+    const constraints = $("ctxConstraints").value.trim();
 
-        if (!course || !area) {
-          alert("Please fill in BOTH required fields: Course / class context and Content area.");
-          return;
-        }
+    if (!course || !area) {
+      alert("Please fill in BOTH required fields: Course / class context and Content area.");
+      return;
+    }
 
-        // Save model + context
-        localStorage.setItem(KEYS.modelUsed, $("modelUsed").value);
-        setContext({ course, area, constraints });
+    // Save model + context
+    localStorage.setItem(KEYS.modelUsed, $("modelUsed").value);
+    setContext({ course, area, constraints });
 
-        // Log “begin” event tied to starter copy (your requirement #4)
-        logEvent("starter_copied", { modelUsed: localStorage.getItem(KEYS.modelUsed) });
+    // Copy starter prompt
+    const starter = buildStarterPrompt();
+    await copyPlainText(starter);
 
-        // Copy starter prompt
-        const starter = buildStarterPrompt();
-        await copyPlainText(starter);
+    // Log AFTER successful copy
+    logEvent("starter_copied", {});
 
-        // Move into prompts stage; hide setup; show prompts (your flow)
-        refreshHeaderPills();
-        showStage("prompts");
-        toast("Starter copied — prompts unlocked ✅");
-      });
+    // HARD switch UI bands
+    showStage("prompts");
+    refreshHeaderPills();
+
+    // Also directly set display as a fallback (in case stage got clobbered)
+    $("setupBand").style.display = "none";
+    $("promptsBand").style.display = "block";
+    $("finalBand").style.display = "none";
+
+    toast("Starter copied — prompts unlocked ✅");
+  } catch (err) {
+    console.error(err);
+    alert("Something went wrong. Open DevTools Console to see the error.");
+  }
+});
 
       // Edit context (back to setup)
       $("btnEditContext").addEventListener("click", () => {
