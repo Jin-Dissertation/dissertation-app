@@ -804,7 +804,17 @@ Do not include extra commentary before or after the table unless the user explic
       ["promptListAccept", "promptListAcceptSpacer", "promptListCorrect", "promptListDistractor", "promptListAuditLeft", "promptListAuditRight"]
         .forEach((id) => { const el = $(id); if (el) el.innerHTML = ""; });
 
-      const makeCard = (prompt) => {
+      const makeCopyButton = (id, label = "Copy") => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn primary";
+        btn.dataset.action = "copy";
+        btn.dataset.id = id;
+        btn.textContent = label;
+        return btn;
+      };
+
+      const makeCard = (prompt, options = {}) => {
         const div = document.createElement("div");
         div.className = "promptCard";
         div.style.marginBottom = "10px";
@@ -824,14 +834,12 @@ Do not include extra commentary before or after the table unless the user explic
         const row = document.createElement("div");
         row.className = "row";
 
-        const copyBtn = document.createElement("button");
-        copyBtn.type = "button";
-        copyBtn.className = "btn primary";
-        copyBtn.dataset.action = "copy";
-        copyBtn.dataset.id = prompt.id;
-        copyBtn.textContent = prompt.id === "next_question" || prompt.id === "replace_question" ? prompt.title : "Copy";
+        row.appendChild(makeCopyButton(prompt.id, options.primaryLabel || "Copy"));
 
-        row.appendChild(copyBtn);
+        if (options.includeReplaceButton) {
+          row.appendChild(makeCopyButton("replace_question", "Replace Question"));
+        }
+
         div.appendChild(row);
 
         return div;
@@ -840,14 +848,11 @@ Do not include extra commentary before or after the table unless the user explic
       PROMPTS.forEach((p) => {
         if (p.id === "next_question") {
           const acceptPrompt = { ...p, id: "next_question", title: "Accept" };
-          containers.accept?.appendChild(makeCard(acceptPrompt));
+          containers.accept?.appendChild(makeCard(acceptPrompt, { primaryLabel: "Accept", includeReplaceButton: true }));
           return;
         }
 
-        if (p.id === "replace_question") {
-          containers.replace_question?.appendChild(makeCard(p));
-          return;
-        }
+        if (p.id === "replace_question") return;
 
         const target = containers[p.id];
         if (!target) return;
