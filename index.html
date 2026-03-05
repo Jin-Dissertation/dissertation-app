@@ -215,10 +215,12 @@
 
             <div class="row" style="margin-top:12px;">
               <button class="btn primary" id="btnCopyStarter">Copy starter prompt</button>
-              <button class="btn" id="btnGoPrompts" disabled>Continue to 2) Prompts</button>
             </div>
 
-            <p class="muted small" id="setupMsg" style="margin:10px 0 0;"></p>
+            <p class="muted small" id="setupMsg" style="margin:10px 0 0; display:none;"></p>
+            <div class="row" style="margin-top:8px;">
+              <button class="btn" id="btnGoPrompts" disabled>Proceed to 2) Prompts</button>
+            </div>
           </div>
         </div>
       </details>
@@ -950,7 +952,7 @@ Do not include extra commentary before or after the table unless the user explic
         $("sumPrompts"),
         () => !isPromptsUnlocked(),
         "bandSetup",
-        "Prompts are locked until you copy the starter prompt and click Continue."
+        "Prompts are locked until you copy the starter prompt and click Proceed."
       );
       lockableSummary(
         $("sumFinalize"),
@@ -989,6 +991,10 @@ Do not include extra commentary before or after the table unless the user explic
       // Render prompts
       renderPromptList();
 
+      if (!($("setupMsg").textContent || "").trim()) {
+        $("setupMsg").style.display = "none";
+      }
+
       ["ctxCourse", "ctxArea", "ctxNotes", "ctxQuestionCount"].forEach((id) => {
         $(id).addEventListener("input", () => {
           localStorage.setItem(KEYS.starterCopied, "false");
@@ -1006,9 +1012,11 @@ Do not include extra commentary before or after the table unless the user explic
         const questionCount = ($("ctxQuestionCount").value || "10").trim() || "10";
 
         $("setupMsg").textContent = "";
+        $("setupMsg").style.display = "none";
 
         if (!model || !course || !area) {
           $("setupMsg").textContent = "Please select a model and fill in course + content area before continuing.";
+          $("setupMsg").style.display = "block";
           toast("Complete required fields");
           return;
         }
@@ -1036,7 +1044,8 @@ Do not include extra commentary before or after the table unless the user explic
         if (ok) {
           logEvent("starter_copied", {});
           localStorage.setItem(KEYS.starterCopied, "true");
-          $("setupMsg").textContent = "Starter prompt copied. Paste it into your LLM, then click Continue to 2) Prompts.";
+          $("setupMsg").textContent = "Starter prompt copied. Paste it into your selected LLM, then click Proceed to 2) Prompts.";
+          $("setupMsg").style.display = "block";
         }
 
         applyStageUI();
@@ -1047,6 +1056,7 @@ Do not include extra commentary before or after the table unless the user explic
           toast("Copy starter prompt first");
           return;
         }
+        $("bandSetup").open = false;
         setStage("prompts");
       });
 
