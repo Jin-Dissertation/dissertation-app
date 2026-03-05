@@ -20,6 +20,7 @@
       border-radius: 10px; padding: 10px; box-sizing:border-box;
     }
     textarea { min-height: 140px; resize: vertical; }
+    #preview { min-height: 260px; }
     .btn {
       background: #0b1220; border:1px solid var(--border); color:var(--text);
       padding:10px 12px; border-radius: 10px; cursor:pointer;
@@ -34,6 +35,25 @@
     .promptCard { border:1px solid var(--border); border-radius: 12px; padding: 12px; background:#0b1220; }
     .promptTitle { font-weight: 700; margin:0 0 6px; }
     .promptDesc { margin:0 0 10px; color: var(--muted); font-size: 13px; }
+
+    .promptGroups{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap:14px;
+}
+@media (min-width: 900px){
+  .promptGroups{ grid-template-columns: 1fr 1fr; }
+}
+
+    .groupCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+.groupTitle { font-weight: 800; margin: 0 0 8px; }
+.groupSub { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+    
     .toast {
       position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
       background: rgba(17,24,39,.95); border:1px solid var(--border); padding: 10px 12px;
