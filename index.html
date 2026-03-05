@@ -187,6 +187,7 @@
 
             <div class="row" style="margin-top:12px;">
               <button class="btn primary" id="btnCopyStarter">Copy starter prompt</button>
+              <button class="btn" id="btnGoPrompts" disabled>Continue to 2) Prompts</button>
             </div>
 
             <p class="muted small" id="setupMsg" style="margin:10px 0 0;"></p>
@@ -213,7 +214,7 @@
           <div id="promptsInner" style="display:none;">
             <div class="card">
               <div class="row" style="justify-content: space-between;">
-                <div class="muted small">Click “Copy” to copy the full prompt (starter + selected prompt).</div>
+                <div class="muted small">Click “Copy” to copy the selected prompt text.</div>
                 <button class="btn" id="btnEditContext">Go back and edit context</button>
               </div>
 
@@ -596,35 +597,43 @@ Provide the results in a table with the following columns:
       return (
 `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
 
-SESSION_ID: ${sid}
-PARTICIPANT_CODE: ${code}
-MODEL_USED: ${model}
+1. Class Context (e.g., subject, course objectives, level, etc.): ${ctx.course || "(not provided)"}
+2. Content Area (specific topic or unit): ${ctx.area || "(not provided)"}
+3. Desired Number of Questions: 10
 
 Course/context: ${ctx.course || "(not provided)"}
 Content area: ${ctx.area || "(not provided)"}
 Desired number of questions: ${ctx.questionCount || "10"}
 ${notesLine}
 
-Follow these rules:
-- Use only the content provided by the user in this chat.
-- Do not add outside facts or new content.
-- If something is missing, ask a single clarifying question.
-- Output must be easy to copy and paste.
+I may attach documents (e.g., lecture notes, flashcards, readings) to guide question creation. Use them as a general reference, but do not rely on them exclusively. Try to create a question set that reflects the concepts within the content area that are most relevant to NCLEX and nursing practice.
 
-Acknowledge these rules briefly, then proceed with the next instruction.`
+When outputting the questions, do not use any interactive widgets, quizzes, or UI tools. I want the output strictly in text form and placed in a table format with the following columns:
+1. Question Name: Number of the question, followed by a 4-word descriptive title, followed by four randomly chosen letters.
+2. Question Stem: The question stem.
+3. Correct Answer: The correct answer.
+4. Distractor 1: The first distractor.
+5. Distractor 2: The second distractor.
+6. Distractor 3: The third distractor.
+You will create 1 question at a time. Pause after each one so I can give feedback on the overall format or on individual questions. Once I respond, adjust if requested, or continue with the next question, until I have reached the goal number of questions.
+
+For now, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`
       );
     }
 
     function buildFinalPrompt() {
       const sid = localStorage.getItem(KEYS.sessionId) || "—";
       return (
-`You are at the final step.
+`Please provide a full table of questions.
 
-Include this line exactly at the very top of your response:
-SESSION_ID: ${sid}
+Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
+1. Question Number
+2. Difficulty – Classify as Easy, Moderate, or Hard.
+3. Bloom’s Level – Classify as Remember, Understand, Apply, Analyze, Evaluate, or Create.
+4. Question Type – 1–2 words (e.g., Assessment, Prioritization, Delegation, Teaching, Pharmacology).
+5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
 
-Now produce the final table output for this session. Keep the table clean and copy/paste friendly.
-Do not include extra commentary before or after the table unless the user explicitly requests it.`
+After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.`
       );
     }
 
@@ -748,10 +757,20 @@ Do not include extra commentary before or after the table unless the user explic
     // -----------------------------
     // Prompt rendering
     // -----------------------------
+    function sanitizePromptPreview(text) {
+      const raw = String(text || "");
+      const sep = "\n\n---\n\n";
+      if (raw.includes(sep)) {
+        return raw.split(sep).slice(-1)[0].trim();
+      }
+      return raw;
+    }
+
     function setPreview(text) {
-      $("preview").value = text;
-      localStorage.setItem(KEYS.preview, text);
-      $("btnCopyPreview").disabled = !text.trim();
+      const cleaned = sanitizePromptPreview(text);
+      $("preview").value = cleaned;
+      localStorage.setItem(KEYS.preview, cleaned);
+      $("btnCopyPreview").disabled = !cleaned.trim();
     }
 
     function renderPromptList() {
@@ -771,19 +790,14 @@ Do not include extra commentary before or after the table unless the user explic
   ["promptListNext","promptListAccept","promptListReplace","promptListCorrect","promptListDistractor","promptListAuditLeft","promptListAuditRight"]
     .forEach((id) => { const el=$(id); if (el) el.innerHTML=""; });
 
-  const makeCard = (p) => {
+  const makeCard = (prompt) => {
     const div = document.createElement("div");
     div.className = "promptCard";
     div.style.marginBottom = "10px";
 
-    div.innerHTML = `
-      <div class="promptTitle">${p.title}</div>
-      <div class="promptDesc">${p.description}</div>
-      <div class="row">
-        <button class="btn" data-action="preview" data-id="${p.id}">Preview</button>
-        <button class="btn primary" data-action="copy" data-id="${p.id}">Copy</button>
-      </div>
-    `;
+    const title = document.createElement("div");
+    title.className = "promptTitle";
+    title.textContent = prompt.title;
 
     return div;
   };
@@ -818,12 +832,14 @@ Do not include extra commentary before or after the table unless the user explic
 
 ${body}`;
 
-    if (action === "preview") {
+    previewBtn.addEventListener("click", () => {
+      const full = buildPromptText();
       setPreview(full);
-      logEvent("prompt_previewed", { promptId: id });
-    }
+      logEvent("prompt_previewed", { promptId: prompt.id });
+    });
 
-    if (action === "copy") {
+    copyBtn.addEventListener("click", async () => {
+      const full = buildPromptText();
       await copyPlainText(full);
       setPreview(full);
       logEvent("prompt_copied", { promptId: id });
