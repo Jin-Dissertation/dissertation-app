@@ -743,10 +743,20 @@ Do not include extra commentary before or after the table unless the user explic
     // -----------------------------
     // Prompt rendering
     // -----------------------------
+    function sanitizePromptPreview(text) {
+      const raw = String(text || "");
+      const sep = "\n\n---\n\n";
+      if (raw.includes(sep)) {
+        return raw.split(sep).slice(-1)[0].trim();
+      }
+      return raw;
+    }
+
     function setPreview(text) {
-      $("preview").value = text;
-      localStorage.setItem(KEYS.preview, text);
-      $("btnCopyPreview").disabled = !text.trim();
+      const cleaned = sanitizePromptPreview(text);
+      $("preview").value = cleaned;
+      localStorage.setItem(KEYS.preview, cleaned);
+      $("btnCopyPreview").disabled = !cleaned.trim();
     }
 
     function renderPromptList() {
@@ -780,21 +790,16 @@ Do not include extra commentary before or after the table unless the user explic
     copyBtn.className = "btn primary";
     copyBtn.type = "button";
     copyBtn.textContent = "Copy";
-
-    const buildFullPrompt = () => {
-      const starter = buildStarterPrompt();
-      const body = fillTemplate(prompt.template);
-      return `${starter}\n\n---\n\n${body}`;
-    };
+    const buildPromptText = () => fillTemplate(prompt.template);
 
     previewBtn.addEventListener("click", () => {
-      const full = buildFullPrompt();
+      const full = buildPromptText();
       setPreview(full);
       logEvent("prompt_previewed", { promptId: prompt.id });
     });
 
     copyBtn.addEventListener("click", async () => {
-      const full = buildFullPrompt();
+      const full = buildPromptText();
       await copyPlainText(full);
       setPreview(full);
       logEvent("prompt_copied", { promptId: prompt.id });
