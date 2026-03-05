@@ -595,7 +595,7 @@ Provide the results in a table with the following columns:
         : `Constraints/notes: (none)`;
 
       return (
-`You are assisting with question-writing for nursing education.
+`I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
 
 SESSION_ID: ${sid}
 PARTICIPANT_CODE: ${code}
@@ -805,7 +805,7 @@ Do not include extra commentary before or after the table unless the user explic
       logEvent("prompt_copied", { promptId: id });
     }
 
-  }, { once: true });
+  });
 }
 
     // -----------------------------
