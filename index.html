@@ -339,7 +339,6 @@
                   <button class="btn primary" id="btnReadyFinal">I'm ready for the final prompt</button>
                 </div>
               </div>
-              </div>
             </div>
           </div>
         </div>
@@ -748,18 +747,41 @@ Do not include extra commentary before or after the table unless the user explic
     // Copy helper
     // -----------------------------
     async function copyToClipboard(text, label) {
+      let copied = false;
+
       try {
         await navigator.clipboard.writeText(text);
-        lastCopiedText = text;
-        lastCopiedLabel = label;
-        lastCopiedAt = new Date();
-        renderMostRecentCopied();
-        toast("Copied ✅");
-        return true;
+        copied = true;
       } catch (e) {
-        alert("Copy failed (browser blocked clipboard). You can still manually select and copy.");
-        return false;
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.setAttribute("readonly", "");
+          ta.style.position = "fixed";
+          ta.style.top = "-1000px";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          copied = document.execCommand("copy");
+          document.body.removeChild(ta);
+        } catch (_) {
+          copied = false;
+        }
       }
+
+      lastCopiedText = text;
+      lastCopiedLabel = label;
+      lastCopiedAt = new Date();
+      renderMostRecentCopied();
+
+      if (copied) {
+        toast("Copied ✅");
+      } else {
+        toast("Clipboard blocked — text saved in panel");
+      }
+
+      return true;
     }
 
     // -----------------------------
@@ -937,21 +959,6 @@ Do not include extra commentary before or after the table unless the user explic
       PROMPTS.forEach((p) => {
         let chipLabel = p.title;
         if (p.id === "next_question") chipLabel = "Accept";
-
-        if (p.id === "replace_question") {
-          containers.replace_question?.appendChild(makeCard(p, { primaryLabel: "Replace Question", indicatorLabel: "Replace Question" }));
-          return;
-        }
-
-        if (p.id === "replace_question") {
-          containers.replace_question?.appendChild(makeCard(p, { primaryLabel: "Replace Question", indicatorLabel: "Replace Question" }));
-          return;
-        }
-
-        if (p.id === "replace_question") {
-          containers.replace_question?.appendChild(makeCard(p, { primaryLabel: "Replace Question" }));
-          return;
-        }
 
         if (p.id === "replace_question") return;
 
