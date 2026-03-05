@@ -130,16 +130,18 @@
     .centerCard { max-width:420px; margin: 0 auto; }
     .layoutGrid {
       display: grid;
-      grid-template-columns: minmax(720px, 1fr) 300px;
+      grid-template-columns: minmax(640px, 1fr) 300px;
       gap: 20px;
       align-items: start;
     }
     .mainColumn { max-width: 860px; width: 100%; }
-    .stickySidebar {
+    .previewPanel {
       position: sticky;
       top: 16px;
-      max-height: calc(100vh - 32px);
-      overflow: hidden;
+      align-self: start;
+      z-index: 2;
+    }
+    .stickySidebar {
       display: flex;
       flex-direction: column;
     }
@@ -153,6 +155,29 @@
       white-space: pre-wrap;
       word-break: break-word;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+    .promptGrid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+
+    @media (max-width: 1100px) {
+      .layoutGrid { grid-template-columns: 1fr; }
+      .previewPanel {
+        order: -1;
+        top: 12px;
+        z-index: 10;
+      }
+      .promptGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .promptCard { padding: 10px; }
+      .promptDesc { margin: 0 0 8px; font-size: 12px; }
+      .btn { padding: 8px 10px; }
+      .subBand { padding: 10px; margin-top: 8px; }
+      .promptArea {
+        max-height: calc(100vh - 320px);
+        overflow: auto;
+        padding-right: 4px;
+      }
     }
     .copy-indicator { font-size: 0.8em; margin-left: 6px; color: var(--accent); display:inline-flex; align-items:center; }
     #btnSubmitForm[disabled] { background:#d6e1f3; color:#678; border-color:#c8d8f0; cursor:not-allowed; }
@@ -275,19 +300,20 @@
 
               <div class="hr"></div>
 
+              <div class="promptArea">
               <div class="subBand">
                 <div class="subBandTitle">Accept or replace</div>
                 <div class="twoCol">
-                  <div id="promptListAccept"></div>
-                  <div id="promptListAcceptSpacer"></div>
+                  <div id="promptListAccept" class="promptGrid"></div>
+                  <div id="promptListAcceptSpacer" class="promptGrid"></div>
                 </div>
               </div>
 
               <div class="subBand">
                 <div class="subBandTitle">Option refinement</div>
                 <div class="twoCol">
-                  <div id="promptListCorrect"></div>
-                  <div id="promptListDistractor"></div>
+                  <div id="promptListCorrect" class="promptGrid"></div>
+                  <div id="promptListDistractor" class="promptGrid"></div>
                 </div>
               </div>
 
@@ -295,8 +321,8 @@
                 <div class="groupTitle">Pause and Audit</div>
                 <div class="groupSub">Quality checks, alignment checks, and safety/audit prompts.</div>
                 <div class="twoCol">
-                  <div id="promptListAuditLeft"></div>
-                  <div id="promptListAuditRight"></div>
+                  <div id="promptListAuditLeft" class="promptGrid"></div>
+                  <div id="promptListAuditRight" class="promptGrid"></div>
                 </div>
               </div>
 
@@ -305,6 +331,7 @@
               <div class="row" style="justify-content: space-between; margin-top:10px;">
                 <span class="muted small">When you’re done using prompts, move to the final prompt step.</span>
                 <button class="btn primary" id="btnReadyFinal">I'm ready for the final prompt</button>
+              </div>
               </div>
             </div>
           </div>
@@ -391,7 +418,7 @@
       </details>
         </div>
 
-        <aside>
+        <aside class="previewPanel">
           <div class="card stickySidebar">
             <h3 style="margin:0 0 6px; font-size:16px;">Most Recently Copied</h3>
             <p class="copyMeta" id="recentCopiedMeta">Nothing copied yet. Click any Copy button to see it here.</p>
@@ -880,7 +907,6 @@ Do not include extra commentary before or after the table unless the user explic
       const makeCard = (prompt, options = {}) => {
         const div = document.createElement("div");
         div.className = "promptCard";
-        div.style.marginBottom = "10px";
 
         const title = document.createElement("div");
         title.className = "promptTitle";
@@ -916,6 +942,11 @@ Do not include extra commentary before or after the table unless the user explic
         if (p.id === "next_question") {
           const acceptPrompt = { ...p, id: "next_question", title: "Accept" };
           containers.accept?.appendChild(makeCard(acceptPrompt, { primaryLabel: "Accept", indicatorLabel: "Next Question" }));
+          return;
+        }
+
+        if (p.id === "replace_question") {
+          containers.replace_question?.appendChild(makeCard(p, { primaryLabel: "Replace Question", indicatorLabel: "Replace Question" }));
           return;
         }
 
