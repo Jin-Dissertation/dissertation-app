@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Dissertation Prompt App</title>
   <style>
-    :root { --bg:#0b0f19; --card:#111827; --muted:#94a3b8; --text:#e5e7eb; --accent:#22c55e; --border:#243041; --warn:#f59e0b; }
+    :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; }
     body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); }
     .wrap { max-width: 980px; margin: 0 auto; padding: 24px; }
     h1 { font-size: 22px; margin: 0 0 8px; }
@@ -16,23 +16,23 @@
     .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     label { font-size: 12px; color: var(--muted); display:block; margin-bottom:6px; }
     input, select, textarea {
-      width:100%; background:#0b1220; border:1px solid var(--border); color:var(--text);
+      width:100%; background:#f8fbff; border:1px solid var(--border); color:var(--text);
       border-radius: 10px; padding: 10px; box-sizing:border-box;
     }
     textarea { min-height: 140px; resize: vertical; }
     #preview { min-height: 260px; }
     .btn {
-      background: #0b1220; border:1px solid var(--border); color:var(--text);
+      background: #f1f7ff; border:1px solid var(--border); color:var(--text);
       padding:10px 12px; border-radius: 10px; cursor:pointer;
     }
-    .btn.primary { background: var(--accent); border-color: var(--accent); color:#052e12; font-weight: 650; }
-    .btn.warn { border-color: var(--warn); color: #fde68a; }
-    .btn.danger { border-color:#ef4444; color:#fecaca; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color:#fff; font-weight: 650; }
+    .btn.warn { border-color: var(--warn); color: #9a5800; background: #fff7e8; }
+    .btn.danger { border-color:#dc2626; color:#991b1b; background:#fef2f2; }
     .pill { font-size: 12px; padding: 6px 10px; border:1px solid var(--border); border-radius: 999px; color: var(--muted); }
     .muted { color: var(--muted); }
     .small { font-size: 12px; }
     .hr { height:1px; background: var(--border); margin: 10px 0; }
-    .promptCard { border:1px solid var(--border); border-radius: 12px; padding: 12px; background:#0b1220; }
+    .promptCard { border:1px solid var(--border); border-radius: 12px; padding: 12px; background:#f8fbff; }
     .promptTitle { font-weight: 700; margin:0 0 6px; }
     .promptDesc { margin:0 0 10px; color: var(--muted); font-size: 13px; }
 
@@ -56,8 +56,8 @@
     
     .toast {
       position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
-      background: rgba(17,24,39,.95); border:1px solid var(--border); padding: 10px 12px;
-      border-radius: 10px; color: var(--text); display:none;
+      background: rgba(16,33,61,.95); border:1px solid #2f6edc; padding: 10px 12px;
+      border-radius: 10px; color: #fff; display:none;
       z-index: 9999;
     }
 
@@ -71,7 +71,7 @@
       padding: 10px 12px;
       border-radius: 10px;
       border: 1px solid var(--border);
-      background: #0b1220;
+      background: #f3f8ff;
     }
     details.band > summary::-webkit-details-marker { display:none; }
     .summaryLeft { display:flex; align-items:center; gap:10px; }
@@ -82,10 +82,20 @@
       border-radius: 999px;
       color: var(--muted);
     }
-    .tag.ok { border-color: rgba(34,197,94,.5); color: #bbf7d0; }
-    .tag.lock { border-color: rgba(245,158,11,.5); color: #fde68a; }
+    .tag.ok { border-color: rgba(47,110,220,.45); color: #1f4ca4; background: var(--accent-soft); }
+    .tag.lock { border-color: rgba(245,158,11,.5); color: #9a5800; background:#fff7e8; }
     .bandBody { padding: 12px 2px 2px; }
-    .lockMsg { border:1px dashed var(--border); border-radius: 10px; padding:10px; color: var(--muted); background: rgba(11,18,32,.4); }
+    .lockMsg { border:1px dashed var(--border); border-radius: 10px; padding:10px; color: var(--muted); background: #f7faff; }
+    .modelGrid { display:grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+    .modelOption { border:1px solid var(--border); border-radius: 10px; padding:10px; background:#f8fbff; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .modelOption.active { border:2px solid var(--accent); background: var(--accent-soft); }
+    .logoDot { width:32px; height:32px; border-radius:999px; display:grid; place-items:center; font-size:11px; font-weight:700; color:#fff; }
+    .logo-openai{ background:#111827; }
+    .logo-gemini{ background:#6d5ef6; }
+    .logo-copilot{ background:#0ea5e9; }
+    .logo-claude{ background:#d97706; }
+    .logo-other{ background:#64748b; }
+    .disabledBtn { opacity:.55; cursor:not-allowed; }
   </style>
 </head>
 <body>
@@ -112,24 +122,9 @@
 
     <!-- Main app -->
     <div id="appShell" style="display:none;">
-      <!-- Header -->
       <div class="card">
-        <div class="row" style="justify-content: space-between;">
-          <div class="row" style="gap:8px;">
-            <span class="pill" id="pillParticipant">Participant: —</span>
-            <span class="pill" id="pillSession">Session: —</span>
-            <span class="pill" id="pillStarted">Started: —</span>
-            <span class="pill" id="pillModel">Model: —</span>
-          </div>
-          <div class="row">
-            <button class="btn danger" id="btnClearAll" title="Clears saved session + context in this browser">Clear (this browser)</button>
-          </div>
-        </div>
-        <div class="hr"></div>
-        <div class="row" style="gap:8px;">
-          <span class="pill" id="pillCourse">Course: —</span>
-          <span class="pill" id="pillArea">Area: —</span>
-          <span class="pill" id="pillNotes">Notes: —</span>
+        <div class="row" style="justify-content:flex-end;">
+          <button class="btn danger" id="btnClearAll" title="Clears saved session + context in this browser">Clear (this browser)</button>
         </div>
         <p class="muted small" style="margin:10px 0 0;">
           Data is stored only in this browser until you submit the Google Form (and/or download a backup file).
@@ -140,7 +135,7 @@
       <details class="band" id="bandSetup">
         <summary id="sumSetup">
           <div class="summaryLeft">
-            <strong>1) Set up this session</strong>
+            <strong>1) Set up</strong>
             <span class="tag" id="tagSetup">In progress</span>
           </div>
           <span class="muted small" id="sumSetupHint">Required: model + course + content area</span>
@@ -150,14 +145,14 @@
             <div class="row">
               <div style="flex:1; min-width: 240px;">
                 <label>Model used *</label>
-                <select id="modelUsed">
-                  <option value="">Select…</option>
-                  <option value="ChatGPT">ChatGPT</option>
-                  <option value="Gemini">Gemini</option>
-                  <option value="Copilot">Copilot</option>
-                  <option value="Claude">Claude</option>
-                  <option value="Other">Other</option>
-                </select>
+                <input type="hidden" id="modelUsed" />
+                <div class="modelGrid" id="modelGrid">
+                  <button class="modelOption" data-model="ChatGPT" type="button"><span class="logoDot logo-openai">GPT</span><span>ChatGPT</span></button>
+                  <button class="modelOption" data-model="Gemini" type="button"><span class="logoDot logo-gemini">G</span><span>Gemini</span></button>
+                  <button class="modelOption" data-model="Copilot" type="button"><span class="logoDot logo-copilot">Co</span><span>Copilot</span></button>
+                  <button class="modelOption" data-model="Claude" type="button"><span class="logoDot logo-claude">Cl</span><span>Claude</span></button>
+                  <button class="modelOption" data-model="Other" type="button"><span class="logoDot logo-other">AI</span><span>Other</span></button>
+                </div>
               </div>
             </div>
 
@@ -172,17 +167,24 @@
               </div>
             </div>
 
-            <div style="margin-top:10px;">
-              <label>Constraints / notes (optional)</label>
-              <input id="ctxNotes" placeholder="Optional notes (e.g., desired difficulty level, formatting constraints, etc.)" />
+            <div class="row" style="margin-top:10px;">
+              <div style="flex:1; min-width: 240px;">
+                <label>Desired number of questions</label>
+                <input id="ctxQuestionCount" type="number" min="1" value="10" />
+              </div>
+              <div style="flex:1; min-width: 240px;">
+                <label>Any additional desired instructions or parameters (optional)</label>
+                <input id="ctxNotes" placeholder="Optional guidance (e.g., difficulty level, tone, formatting preferences)" />
+              </div>
             </div>
 
             <p class="muted small" style="margin:10px 0 0;">
-              After you click <strong>Copy starter prompt</strong>, your setup details are locked in and the prompts section unlocks.
+              Click <strong>Copy starter prompt</strong>, paste it into your selected LLM, then click the button below to continue.
             </p>
 
             <div class="row" style="margin-top:12px;">
               <button class="btn primary" id="btnCopyStarter">Copy starter prompt</button>
+              <button class="btn" id="btnGoPrompts" disabled>Continue to 2) Prompts</button>
             </div>
 
             <p class="muted small" id="setupMsg" style="margin:10px 0 0;"></p>
@@ -196,11 +198,11 @@
             <strong>2) Prompts</strong>
             <span class="tag lock" id="tagPrompts">Locked</span>
           </div>
-          <span class="muted small" id="sumPromptsHint">Unlocked after starter prompt</span>
+          <span class="muted small" id="sumPromptsHint">Unlocked after setup + continue</span>
         </summary>
         <div class="bandBody">
           <div class="lockMsg" id="lockPrompts">
-            Complete <strong>1) Set up this session</strong> and copy the starter prompt to unlock prompts.
+            Complete <strong>1) Set up</strong>, copy the starter prompt, and click Continue to unlock prompts.
           </div>
 
           <div id="promptsInner" style="display:none;">
@@ -491,6 +493,7 @@ Provide the results in a table with the following columns:
       sessionStartTime: "dissertation.sessionStartTime",
       modelUsed: "dissertation.modelUsed",
       context: "dissertation.context",
+      starterCopied: "dissertation.starterCopied",
       stage: "dissertation.stage", // "setup" | "prompts" | "finalize"
       events: "dissertation.events",
       preview: "dissertation.preview",
@@ -539,7 +542,7 @@ Provide the results in a table with the following columns:
     }
 
     function getContext() {
-      return loadJSON(KEYS.context, { course: "", area: "", notes: "" });
+      return loadJSON(KEYS.context, { course: "", area: "", notes: "", questionCount: "10" });
     }
 
     function setContext(ctx) {
@@ -558,25 +561,19 @@ Provide the results in a table with the following columns:
     }
 
     // -----------------------------
-    // Header pills
+    // Footer status
     // -----------------------------
-    function refreshHeaderPills() {
+    function refreshFooterInfo() {
       const code = localStorage.getItem(KEYS.accessCode) || "—";
       const sid = localStorage.getItem(KEYS.sessionId) || "—";
       const startIso = localStorage.getItem(KEYS.sessionStartTime);
       const model = localStorage.getItem(KEYS.modelUsed) || "—";
+      const stage = getStage();
 
       const ctx = getContext();
-
-      $("pillParticipant").textContent = `Participant: ${code || "—"}`;
-      $("pillSession").textContent = `Session: ${sid || "—"}`;
-      $("pillModel").textContent = `Model: ${model || "—"}`;
-
-      $("pillStarted").textContent = "Started: " + (startIso ? new Date(startIso).toLocaleString() : "—");
-
-      $("pillCourse").textContent = `Course: ${ctx.course || "—"}`;
-      $("pillArea").textContent = `Area: ${ctx.area || "—"}`;
-      $("pillNotes").textContent = `Notes: ${ctx.notes || "—"}`;
+      const started = startIso ? new Date(startIso).toLocaleString() : "—";
+      const last = document.lastModified || "—";
+      $("buildInfo").textContent = `Participant: ${code} • Session: ${sid} • Started: ${started} • Model: ${model} • Course: ${ctx.course || "—"} • Area: ${ctx.area || "—"} • Additional instructions: ${ctx.notes || "—"} • Stage: ${stage} • Last updated: ${last}`;
     }
 
     // -----------------------------
@@ -589,8 +586,8 @@ Provide the results in a table with the following columns:
       const ctx = getContext();
 
       const notesLine = (ctx.notes || "").trim()
-        ? `Constraints/notes: ${ctx.notes.trim()}`
-        : `Constraints/notes: (none)`;
+        ? `Additional instructions/parameters: ${ctx.notes.trim()}`
+        : `Additional instructions/parameters: (none)`;
 
       return (
 `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
@@ -599,6 +596,9 @@ Provide the results in a table with the following columns:
 2. Content Area (specific topic or unit): ${ctx.area || "(not provided)"}
 3. Desired Number of Questions: 10
 
+Course/context: ${ctx.course || "(not provided)"}
+Content area: ${ctx.area || "(not provided)"}
+Desired number of questions: ${ctx.questionCount || "10"}
 ${notesLine}
 
 I may attach documents (e.g., lecture notes, flashcards, readings) to guide question creation. Use them as a general reference, but do not rely on them exclusively. Try to create a question set that reflects the concepts within the content area that are most relevant to NCLEX and nursing practice.
@@ -635,8 +635,8 @@ After the table, provide a list of 5 subtopics within the content area that have
     function fillTemplate(template) {
       const ctx = getContext();
       const notesLine = (ctx.notes || "").trim()
-        ? `Constraints: ${ctx.notes.trim()}`
-        : `(No additional constraints.)`;
+        ? `Additional instructions: ${ctx.notes.trim()}`
+        : `(No additional instructions.)`;
 
       return template
         .replaceAll("{{COURSE}}", ctx.course || "the course")
@@ -743,7 +743,10 @@ After the table, provide a list of 5 subtopics within the content area that have
         $("bandFinalize").open = true;
       }
 
-      refreshHeaderPills();
+      refreshFooterInfo();
+      const copied = localStorage.getItem(KEYS.starterCopied) === "true";
+      $("btnGoPrompts").disabled = !copied;
+      $("btnGoPrompts").classList.toggle("disabledBtn", !copied);
     }
 
     // -----------------------------
@@ -916,8 +919,6 @@ After the table, provide a list of 5 subtopics within the content area that have
     // Init
     // -----------------------------
     function init() {
-      $("buildInfo").textContent = "Last updated: " + document.lastModified;
-
       // Gate
       const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
       if (alreadyVerified) {
@@ -936,7 +937,7 @@ After the table, provide a list of 5 subtopics within the content area that have
         $("sumPrompts"),
         () => !isPromptsUnlocked(),
         "bandSetup",
-        "Prompts are locked until you copy the starter prompt."
+        "Prompts are locked until you copy the starter prompt and click Continue."
       );
       lockableSummary(
         $("sumFinalize"),
@@ -951,6 +952,23 @@ After the table, provide a list of 5 subtopics within the content area that have
       $("ctxCourse").value = ctx.course || "";
       $("ctxArea").value = ctx.area || "";
       $("ctxNotes").value = ctx.notes || "";
+      $("ctxQuestionCount").value = ctx.questionCount || "10";
+
+      const selectModel = (model) => {
+        $("modelUsed").value = model;
+        document.querySelectorAll(".modelOption").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.model === model);
+        });
+      };
+
+      document.querySelectorAll(".modelOption").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          selectModel(btn.dataset.model || "");
+          localStorage.setItem(KEYS.starterCopied, "false");
+          applyStageUI();
+        });
+      });
+      selectModel($("modelUsed").value || "");
 
       const prev = localStorage.getItem(KEYS.preview) || "";
       if (prev) setPreview(prev);
@@ -958,13 +976,21 @@ After the table, provide a list of 5 subtopics within the content area that have
       // Render prompts
       renderPromptList();
 
-      // Setup: Copy starter prompt (also locks in setup + advances to prompts)
+      ["ctxCourse", "ctxArea", "ctxNotes", "ctxQuestionCount"].forEach((id) => {
+        $(id).addEventListener("input", () => {
+          localStorage.setItem(KEYS.starterCopied, "false");
+          applyStageUI();
+        });
+      });
+
+      // Setup: Copy starter prompt only
       $("btnCopyStarter").addEventListener("click", async () => {
         // Validate required items
         const model = ($("modelUsed").value || "").trim();
         const course = ($("ctxCourse").value || "").trim();
         const area = ($("ctxArea").value || "").trim();
         const notes = ($("ctxNotes").value || "").trim();
+        const questionCount = ($("ctxQuestionCount").value || "10").trim() || "10";
 
         $("setupMsg").textContent = "";
 
@@ -976,7 +1002,7 @@ After the table, provide a list of 5 subtopics within the content area that have
 
         // Save model + context
         localStorage.setItem(KEYS.modelUsed, model);
-        setContext({ course, area, notes });
+        setContext({ course, area, notes, questionCount });
 
         // Ensure access/session exist (in case someone bypassed sign-in state)
         const code = localStorage.getItem(KEYS.accessCode);
@@ -991,15 +1017,24 @@ After the table, provide a list of 5 subtopics within the content area that have
           localStorage.setItem(KEYS.sessionId, makeSessionId(code));
         }
 
-        // Log + copy + advance
+        // Log + copy only
         logEvent("starter_prepared", { accessCode: code, sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
         const ok = await copyPlainText(buildStarterPrompt());
         if (ok) {
           logEvent("starter_copied", {});
-          setStage("prompts");
+          localStorage.setItem(KEYS.starterCopied, "true");
+          $("setupMsg").textContent = "Starter prompt copied. Paste it into your LLM, then click Continue to 2) Prompts.";
         }
 
         applyStageUI();
+      });
+
+      $("btnGoPrompts").addEventListener("click", () => {
+        if (localStorage.getItem(KEYS.starterCopied) !== "true") {
+          toast("Copy starter prompt first");
+          return;
+        }
+        setStage("prompts");
       });
 
       // Prompts controls
