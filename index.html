@@ -7,7 +7,7 @@
   <style>
     :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; }
     body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 24px; }
+    .pageShell { max-width: 1200px; margin: 0 auto; padding: 24px; }
     h1 { font-size: 22px; margin: 0 0 8px; }
     .sub { color: var(--muted); margin: 0 0 18px; }
     .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
@@ -20,8 +20,7 @@
       border-radius: 10px; padding: 10px; box-sizing:border-box;
     }
     textarea { min-height: 140px; resize: vertical; }
-    #preview { min-height: 260px; }
-    .btn {
+        .btn {
       background: #f1f7ff; border:1px solid var(--border); color:var(--text);
       padding:10px 12px; border-radius: 10px; cursor:pointer;
     }
@@ -129,12 +128,64 @@
     .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
     @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
     .centerCard { max-width:420px; margin: 0 auto; }
+    .layoutGrid {
+      display: grid;
+      grid-template-columns: minmax(640px, 1fr) 300px;
+      gap: 20px;
+      align-items: start;
+    }
+    .mainColumn { max-width: 860px; width: 100%; }
+    .previewPanel {
+      position: sticky;
+      top: 16px;
+      align-self: start;
+      z-index: 2;
+    }
+    .stickySidebar {
+      display: flex;
+      flex-direction: column;
+    }
+    .copyMeta { margin:0 0 10px; color: var(--muted); font-size:12px; }
+    .copiedText {
+      width: 100%;
+      resize: none;
+      min-height: 180px;
+      max-height: calc(100vh - 220px);
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+    .promptGrid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+
+    @media (max-width: 1100px) {
+      .layoutGrid { grid-template-columns: 1fr; }
+      .previewPanel {
+        order: -1;
+        top: 12px;
+        z-index: 10;
+      }
+      .promptGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .promptCard { padding: 10px; }
+      .promptDesc { margin: 0 0 8px; font-size: 12px; }
+      .btn { padding: 8px 10px; }
+      .subBand { padding: 10px; margin-top: 8px; }
+      .promptArea {
+        max-height: calc(100vh - 320px);
+        overflow: auto;
+        padding-right: 4px;
+      }
+    }
+    .copy-indicator { font-size: 0.8em; margin-left: 6px; color: var(--accent); display:inline-flex; align-items:center; }
     #btnSubmitForm[disabled] { background:#d6e1f3; color:#678; border-color:#c8d8f0; cursor:not-allowed; }
 
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <div class="pageShell">
     <h1>Dissertation Prompt App</h1>
 
     <!-- Access gate -->
@@ -153,16 +204,18 @@
 
     <!-- Main app -->
     <div id="appShell" style="display:none;">
-      <div class="card">
-        <div class="row" style="justify-content:flex-end;">
-          <button class="btn danger" id="btnClearAll" title="Clears saved session + context in this browser">Clear (this browser)</button>
-        </div>
-        <p class="muted small" style="margin:10px 0 0;">
-          Data is stored only in this browser until you submit the Google Form (and/or download a backup file).
-        </p>
-      </div>
+      <div class="layoutGrid">
+        <div class="mainColumn">
+          <div class="card">
+            <div class="row" style="justify-content:flex-end;">
+              <button class="btn danger" id="btnClearAll" title="Clears saved session + context in this browser">Clear (this browser)</button>
+            </div>
+            <p class="muted small" style="margin:10px 0 0;">
+              Data is stored only in this browser until you submit the Google Form (and/or download a backup file).
+            </p>
+          </div>
 
-      <!-- Accordion bands -->
+          <!-- Accordion bands -->
       <details class="band" id="bandSetup">
         <summary id="sumSetup">
           <div class="summaryLeft">
@@ -241,41 +294,36 @@
           <div id="promptsInner" style="display:none;">
             <div class="card">
               <div class="row" style="justify-content: space-between;">
-                <div class="muted small">Click “Copy” to copy the full prompt (starter + selected prompt).</div>
+                <div class="muted small">Click “Copy” to copy the selected prompt.</div>
                 <button class="btn" id="btnEditContext">Go back and edit context</button>
               </div>
 
               <div class="hr"></div>
 
+              <div class="promptArea">
               <div class="subBand">
                 <div class="subBandTitle">Accept or replace</div>
                 <div class="twoCol">
-                  <div id="promptListAccept"></div>
-                  <div id="promptListAcceptSpacer"></div>
+                  <div id="promptListAccept" class="promptGrid"></div>
+                  <div id="promptListAcceptSpacer" class="promptGrid"></div>
                 </div>
               </div>
 
               <div class="subBand">
                 <div class="subBandTitle">Option refinement</div>
                 <div class="twoCol">
-                  <div id="promptListCorrect"></div>
-                  <div id="promptListDistractor"></div>
+                  <div id="promptListCorrect" class="promptGrid"></div>
+                  <div id="promptListDistractor" class="promptGrid"></div>
                 </div>
               </div>
 
-  <div class="groupCard">
-    <div class="groupTitle">Pause and Audit</div>
-    <div class="groupSub">Quality checks, alignment checks, and safety/audit prompts.</div>
-    <div id="promptListAudit" class="grid" style="grid-template-columns: 1fr; gap:10px;"></div>
-  </div>
-</div>
-
-              <div class="hr"></div>
-              <h3 style="margin:0 0 8px; font-size:14px;">Prompt Preview</h3>
-              <textarea id="preview" readonly></textarea>
-
-              <div class="row" style="margin-top:10px;">
-                <button class="btn" id="btnCopyPreview" disabled>Copy preview</button>
+              <div class="groupCard">
+                <div class="groupTitle">Pause and Audit</div>
+                <div class="groupSub">Quality checks, alignment checks, and safety/audit prompts.</div>
+                <div class="twoCol">
+                  <div id="promptListAuditLeft" class="promptGrid"></div>
+                  <div id="promptListAuditRight" class="promptGrid"></div>
+                </div>
               </div>
 
               <div class="hr"></div>
@@ -283,6 +331,7 @@
               <div class="row" style="justify-content: space-between; margin-top:10px;">
                 <span class="muted small">When you’re done using prompts, move to the final prompt step.</span>
                 <button class="btn primary" id="btnReadyFinal">I'm ready for the final prompt</button>
+              </div>
               </div>
             </div>
           </div>
@@ -367,6 +416,20 @@
           </div>
         </div>
       </details>
+        </div>
+
+        <aside class="previewPanel">
+          <div class="card stickySidebar">
+            <h3 style="margin:0 0 6px; font-size:16px;">Most Recently Copied</h3>
+            <p class="copyMeta" id="recentCopiedMeta">Nothing copied yet. Click any Copy button to see it here.</p>
+            <textarea id="recentCopiedText" class="copiedText" readonly placeholder="Nothing copied yet. Click any Copy button to see it here."></textarea>
+            <div class="row" style="margin-top:10px;">
+              <button class="btn" id="btnCopyAgain" disabled>Copy again</button>
+              <button class="btn" id="btnClearRecent" disabled>Clear</button>
+            </div>
+          </div>
+        </aside>
+      </div>
     </div>
   </div>
 
@@ -430,6 +493,14 @@ const PROMPTS = [
     description: "Proceeds to creating the next question",
     template:
 `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
+  },
+  {
+    id: "replace_question",
+    group: "Question Refinement",
+    title: "Replace Question",
+    description: "Offers a variety of replacement questions",
+    template:
+`Write five possible replacements for this question. Begin with three new questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
   },
   {
     id: "distractor_options",
@@ -522,7 +593,6 @@ Provide the results in a table with the following columns:
       starterCopied: "dissertation.starterCopied",
       stage: "dissertation.stage", // "setup" | "prompts" | "finalize"
       events: "dissertation.events",
-      preview: "dissertation.preview",
       finalPrompt: "dissertation.finalPrompt"
     };
 
@@ -531,6 +601,11 @@ Provide the results in a table with the following columns:
     // -----------------------------
     const $ = (id) => document.getElementById(id);
     const nowIso = () => new Date().toISOString();
+
+    // Most recently copied state (desktop sidebar)
+    let lastCopiedText = "";
+    let lastCopiedLabel = "";
+    let lastCopiedAt = null;
 
     const toast = (msg) => {
       const t = $("toast");
@@ -665,9 +740,13 @@ Do not include extra commentary before or after the table unless the user explic
     // -----------------------------
     // Copy helper
     // -----------------------------
-    async function copyPlainText(text) {
+    async function copyToClipboard(text, label) {
       try {
         await navigator.clipboard.writeText(text);
+        lastCopiedText = text;
+        lastCopiedLabel = label;
+        lastCopiedAt = new Date();
+        renderMostRecentCopied();
         toast("Copied ✅");
         return true;
       } catch (e) {
@@ -770,15 +849,38 @@ Do not include extra commentary before or after the table unless the user explic
     // -----------------------------
     // Prompt rendering
     // -----------------------------
-    function setPreview(text) {
-      $("preview").value = text;
-      localStorage.setItem(KEYS.preview, text);
-      $("btnCopyPreview").disabled = !text.trim();
+    function formatCopiedTime(dt) {
+      if (!dt) return "—";
+      return dt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+    }
+
+    function renderMostRecentCopied() {
+      const has = !!lastCopiedText.trim();
+      const meta = $("recentCopiedMeta");
+      const text = $("recentCopiedText");
+      const copyAgain = $("btnCopyAgain");
+      const clear = $("btnClearRecent");
+
+      if (!meta || !text || !copyAgain || !clear) return;
+
+      if (!has) {
+        meta.textContent = "Nothing copied yet. Click any Copy button to see it here.";
+        text.value = "";
+        copyAgain.disabled = true;
+        clear.disabled = true;
+        return;
+      }
+
+      meta.textContent = `Source: ${lastCopiedLabel || "Unknown"} · Copied: ${formatCopiedTime(lastCopiedAt)}`;
+      text.value = lastCopiedText;
+      copyAgain.disabled = false;
+      clear.disabled = false;
     }
 
     function renderPromptList() {
       const containers = {
         accept: $("promptListAccept"),
+        replace_question: $("promptListAcceptSpacer"),
         correct_answer_options: $("promptListCorrect"),
         distractor_options: $("promptListDistractor"),
         pause_review: $("promptListAuditLeft"),
@@ -792,10 +894,19 @@ Do not include extra commentary before or after the table unless the user explic
       ["promptListAccept", "promptListAcceptSpacer", "promptListCorrect", "promptListDistractor", "promptListAuditLeft", "promptListAuditRight"]
         .forEach((id) => { const el = $(id); if (el) el.innerHTML = ""; });
 
-      const makeCard = (prompt) => {
+      const makeCopyButton = (id, label = "Copy") => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn primary";
+        btn.dataset.action = "copy";
+        btn.dataset.id = id;
+        btn.textContent = label;
+        return btn;
+      };
+
+      const makeCard = (prompt, options = {}) => {
         const div = document.createElement("div");
         div.className = "promptCard";
-        div.style.marginBottom = "10px";
 
         const title = document.createElement("div");
         title.className = "promptTitle";
@@ -812,22 +923,16 @@ Do not include extra commentary before or after the table unless the user explic
         const row = document.createElement("div");
         row.className = "row";
 
-        const previewBtn = document.createElement("button");
-        previewBtn.type = "button";
-        previewBtn.className = "btn";
-        previewBtn.dataset.action = "preview";
-        previewBtn.dataset.id = prompt.id;
-        previewBtn.textContent = "Preview";
+        row.appendChild(makeCopyButton(prompt.id, options.primaryLabel || "Copy"));
 
-        const copyBtn = document.createElement("button");
-        copyBtn.type = "button";
-        copyBtn.className = "btn primary";
-        copyBtn.dataset.action = "copy";
-        copyBtn.dataset.id = prompt.id;
-        copyBtn.textContent = "Copy";
+        const indicatorLabel = options.indicatorLabel || prompt.title;
+        if (indicatorLabel && indicatorLabel === lastCopiedLabel) {
+          const indicator = document.createElement("span");
+          indicator.className = "copy-indicator";
+          indicator.textContent = "✓";
+          row.appendChild(indicator);
+        }
 
-        row.appendChild(previewBtn);
-        row.appendChild(copyBtn);
         div.appendChild(row);
 
         return div;
@@ -836,7 +941,12 @@ Do not include extra commentary before or after the table unless the user explic
       PROMPTS.forEach((p) => {
         if (p.id === "next_question") {
           const acceptPrompt = { ...p, id: "next_question", title: "Accept" };
-          containers.accept?.appendChild(makeCard(acceptPrompt));
+          containers.accept?.appendChild(makeCard(acceptPrompt, { primaryLabel: "Accept", indicatorLabel: "Next Question" }));
+          return;
+        }
+
+        if (p.id === "replace_question") {
+          containers.replace_question?.appendChild(makeCard(p, { primaryLabel: "Replace Question", indicatorLabel: "Replace Question" }));
           return;
         }
 
@@ -846,7 +956,7 @@ Do not include extra commentary before or after the table unless the user explic
       });
 
       const wrapper = $("promptsInner");
-      wrapper.addEventListener("click", async (e) => {
+      wrapper.onclick = async (e) => {
         const btn = e.target.closest("button");
         if (!btn) return;
 
@@ -857,28 +967,16 @@ Do not include extra commentary before or after the table unless the user explic
         const prompt = PROMPTS.find(x => x.id === id);
         if (!prompt) return;
 
-        const starter = buildStarterPrompt();
-        const body = fillTemplate(prompt.template);
-        const full = `${starter}
-
----
-
-${body}`;
-
-        if (action === "preview") {
-          setPreview(full);
-          logEvent("prompt_previewed", { promptId: id });
-          return;
-        }
+        const promptText = fillTemplate(prompt.template);
 
         if (action === "copy") {
-          const ok = await copyPlainText(full);
+          const ok = await copyToClipboard(promptText, prompt.title);
           if (ok) {
-            setPreview(full);
             logEvent("prompt_copied", { promptId: id });
+            renderPromptList();
           }
         }
-      });
+      };
     }
 
 
@@ -1027,11 +1125,22 @@ ${body}`;
       });
       selectModel($("modelUsed").value || "");
 
-      const prev = localStorage.getItem(KEYS.preview) || "";
-      if (prev) setPreview(prev);
-
       // Render prompts
       renderPromptList();
+
+      renderMostRecentCopied();
+
+      $("btnCopyAgain").addEventListener("click", async () => {
+        if (!lastCopiedText.trim()) return;
+        await copyToClipboard(lastCopiedText, lastCopiedLabel || "Most Recently Copied");
+      });
+
+      $("btnClearRecent").addEventListener("click", () => {
+        lastCopiedText = "";
+        lastCopiedLabel = "";
+        lastCopiedAt = null;
+        renderMostRecentCopied();
+      });
 
       if (!($("setupMsg").textContent || "").trim()) {
         $("setupMsg").style.display = "none";
@@ -1082,7 +1191,7 @@ ${body}`;
 
         // Log + copy only
         logEvent("starter_prepared", { accessCode: code, sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
-        const ok = await copyPlainText(buildStarterPrompt());
+        const ok = await copyToClipboard(buildStarterPrompt(), "Starter prompt");
         if (ok) {
           logEvent("starter_copied", {});
           localStorage.setItem(KEYS.starterCopied, "true");
@@ -1114,13 +1223,6 @@ ${body}`;
         setStage("finalize");
       });
 
-      $("btnCopyPreview").addEventListener("click", async () => {
-        const text = $("preview").value || "";
-        if (!text.trim()) return;
-        await copyPlainText(text);
-        logEvent("preview_copied", {});
-      });
-
       // Finalize controls
       $("btnBackToPrompts").addEventListener("click", () => {
         setStage("prompts");
@@ -1128,7 +1230,7 @@ ${body}`;
 
       $("btnCopyFinal").addEventListener("click", async () => {
         const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
-        await copyPlainText(fp);
+        await copyToClipboard(fp, "Final prompt");
         logEvent("final_prompt_copied", {});
       });
 
@@ -1145,7 +1247,7 @@ ${body}`;
           model_used: localStorage.getItem(KEYS.modelUsed),
           context: getContext(),
           events: loadJSON(KEYS.events, []),
-          last_preview: $("preview").value || "",
+          last_copied_text: lastCopiedText || "",
           final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
           llm_response: $("llmResponse").value || "",
           recording_link: $("recordingLink").value || "",
