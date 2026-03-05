@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,6 +10,8 @@
     body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); }
     .wrap { max-width: 980px; margin: 0 auto; padding: 24px; }
     h1 { font-size: 22px; margin: 0 0 8px; }
+    h2 { margin:0 0 10px; font-size:16px; }
+    h3 { margin:0 0 8px; font-size:14px; }
     .sub { color: var(--muted); margin: 0 0 18px; }
     .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
     @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
@@ -36,200 +39,229 @@
       position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
       background: rgba(17,24,39,.95); border:1px solid var(--border); padding: 10px 12px;
       border-radius: 10px; color: var(--text); display:none;
+      z-index: 9999;
     }
     .small { font-size: 12px; }
+    details.card > summary { list-style: none; }
+    details.card > summary::-webkit-details-marker { display:none; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Dissertation Prompt App</h1>
-    <p class="sub">Single-page tool for context → prompts → final prompt → submission (plain-text copy by default).</p>
+    <p class="sub">Single-page tool for context → prompts → final prompt → submission.</p>
     <div class="small muted" id="buildInfo"></div>
-<div class="card" id="accessGate">
-  <h2 style="margin:0 0 10px; font-size:16px;">Study Access</h2>
-  <p class="muted small" style="margin:0 0 10px;">
-    This tool is for participants who have completed consent, the opening interview, and the training session.
-    Enter the access code provided by the study team to begin.
-  </p>
 
-  <div class="row">
-    <div style="flex:1; min-width: 260px;">
-      <label>Access code</label>
-      <input id="accessCodeInput" placeholder="e.g., cold-water" />
-    </div>
-    <div class="row" style="margin-top: 22px;">
-      <button class="btn primary" id="btnVerifyAccess">Ready to begin session</button>
-    </div>
-  </div>
+    <!-- Access Gate -->
+    <div class="card" id="accessGate">
+      <h2>Study Access</h2>
+      <p class="muted small" style="margin:0 0 10px;">
+        This tool is for participants who have completed consent, the opening interview, and the training session.
+        Enter the access code provided by the study team to begin.
+      </p>
 
-  <p id="accessMsg" class="muted small" style="margin:10px 0 0;"></p>
-</div>
-
-<div id="appShell" style="display:none;">
-    <div class="card">
-      <div class="row" style="justify-content: space-between;">
-        <div class="row">
-          <span class="pill" id="pillParticipant">Participant: —</span>
-          <span class="pill" id="pillSession">Session: —</span>
-          <span class="pill" id="pillStarted">Started: —</span>
-        </div>
-        <div class="row">
-          <button class="btn" id="btnClearAll" title="Clears saved session + context in this browser">Clear (this browser)</button>
-        </div>
-      </div>
-      <div class="hr"></div>
       <div class="row">
-        <div style="flex:1; min-width: 220px;">
-          <label>Participant ID (e.g., P012)</label>
-          <input id="participantId" placeholder="e.g., cold-water" />
-        </div>
-        <div style="flex:1; min-width: 220px;">
-          <label>Model used</label>
-          <select id="modelUsed">
-            <option value="ChatGPT">ChatGPT</option>
-            <option value="Gemini">Gemini</option>
-            <option value="Copilot">Copilot</option>
-            <option value="Other">Other</option>
-          </select>
+        <div style="flex:1; min-width: 260px;">
+          <label>Access code</label>
+          <input id="accessCodeInput" placeholder="e.g., cold-water" />
         </div>
         <div class="row" style="margin-top: 22px;">
-          <button class="btn primary" id="btnStart">Start session</button>
-          <button class="btn" id="btnCopyStarter" disabled>Copy starter prompt</button>
+          <button class="btn primary" id="btnVerifyAccess">Ready to begin session</button>
         </div>
       </div>
-      <p class="muted small" style="margin:10px 0 0;">
-        This app stores data only in your browser until you export a session file at the end.
-      </p>
+
+      <p id="accessMsg" class="muted small" style="margin:10px 0 0;"></p>
     </div>
 
-    <div class="grid">
+    <!-- App Shell -->
+    <div id="appShell" style="display:none;">
+
+      <!-- Header / Status -->
       <div class="card">
-        <h2 style="margin:0 0 10px; font-size:16px;">Context</h2>
+        <div class="row" style="justify-content: space-between;">
+          <div class="row">
+            <span class="pill" id="pillParticipant">Participant: —</span>
+            <span class="pill" id="pillSession">Session: —</span>
+            <span class="pill" id="pillStarted">Started: —</span>
+            <span class="pill" id="pillModel">Model: —</span>
+          </div>
+          <div class="row">
+            <button class="btn" id="btnClearAll" title="Clears saved session + context in this browser">Clear (this browser)</button>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
         <div class="row">
-          <div style="flex:1; min-width: 240px;">
-            <label>Course / class context</label>
-            <input id="ctxCourse" placeholder="e.g., Health Assessment (first semester)" />
-          </div>
-          <div style="flex:1; min-width: 240px;">
-            <label>Content area</label>
-            <input id="ctxArea" placeholder="e.g., Respiratory assessment" />
-          </div>
+          <span class="pill" id="pillCourse">Course: —</span>
+          <span class="pill" id="pillArea">Area: —</span>
+          <span class="pill" id="pillConstraints">Notes: —</span>
         </div>
-        <div class="row" style="margin-top:10px;">
-          <div style="flex:1; min-width: 240px;">
-            <label>Question type</label>
-            <select id="ctxQType">
-              <option value="MCQ">MCQ</option>
-              <option value="SATA">Select-all-that-apply</option>
-              <option value="Fill-in-the-blank">Fill-in-the-blank</option>
-            </select>
-          </div>
-          <div style="flex:1; min-width: 240px;">
-            <label>Difficulty target</label>
-            <select id="ctxDifficulty">
-              <option value="Easy">Easy</option>
-              <option value="Medium" selected>Medium</option>
-              <option value="Hard">Hard</option>
-            </select>
-          </div>
-        </div>
-        <div style="margin-top:10px;">
-          <label>Constraints / notes (optional)</label>
-          <input id="ctxConstraints" placeholder="e.g., no outside knowledge; include rationales; table output" />
-        </div>
-        <div class="row" style="margin-top:12px;">
-          <button class="btn" id="btnSaveContext">Save context</button>
-        </div>
+
         <p class="muted small" style="margin:10px 0 0;">
-          Context is used to auto-fill prompts and improve consistency across tools.
+          This app stores data only in your browser until you submit the Google Form (and/or download a backup file).
         </p>
       </div>
 
-      <div class="card">
-        <h2 style="margin:0 0 10px; font-size:16px;">Prompts</h2>
-        <p class="muted small" style="margin:0 0 12px;">Click “Copy” to copy the full prompt (starter + selected prompt) as plain text.</p>
+      <!-- BAND 1: Setup (model + context + copy starter) -->
+      <div class="card" id="setupBand" style="margin-top:14px;">
+        <h2>Set up this session</h2>
+
+        <div class="row">
+          <div style="flex:1; min-width: 220px;">
+            <label>Participant ID</label>
+            <input id="participantIdDisplay" readonly />
+          </div>
+          <div style="flex:1; min-width: 220px;">
+            <label>Model used</label>
+            <select id="modelUsed">
+              <option value="ChatGPT">ChatGPT</option>
+              <option value="Gemini">Gemini</option>
+              <option value="Copilot">Copilot</option>
+              <option value="Claude">Claude</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="row">
+          <div style="flex:1; min-width: 240px;">
+            <label>Course / class context *</label>
+            <input id="ctxCourse" placeholder="e.g., Health Assessment (first semester)" />
+          </div>
+          <div style="flex:1; min-width: 240px;">
+            <label>Content area *</label>
+            <input id="ctxArea" placeholder="e.g., Respiratory assessment" />
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <label>Constraints / notes (optional)</label>
+          <input id="ctxConstraints" placeholder="Optional notes. Include difficulty target here (e.g., easy/medium/hard) if desired." />
+        </div>
+
+        <p class="muted small" style="margin:10px 0 0;">
+          Required: course and content area. Then click “Copy starter prompt” to begin.
+        </p>
+
+        <div class="row" style="margin-top:12px;">
+          <button class="btn primary" id="btnCopyStarterAndBegin">Copy starter prompt</button>
+        </div>
+      </div>
+
+      <!-- BAND 2: Prompts -->
+      <div class="card" id="promptsBand" style="margin-top:14px; display:none;">
+        <div class="row" style="justify-content: space-between;">
+          <h2 style="margin:0;">Prompts</h2>
+          <button class="btn" id="btnEditContext">Go back and edit context</button>
+        </div>
+
+        <p class="muted small" style="margin:10px 0 12px;">
+          Click “Copy” to copy the full prompt (starter + selected prompt) as plain text.
+        </p>
 
         <div id="promptList" class="grid" style="grid-template-columns: 1fr; gap:10px;"></div>
 
         <div class="hr"></div>
-        <h3 style="margin:0 0 8px; font-size:14px;">Prompt Preview</h3>
+
+        <h3>Prompt Preview</h3>
         <textarea id="preview" readonly></textarea>
+
         <div class="row" style="margin-top:10px;">
           <button class="btn" id="btnCopyPreview" disabled>Copy preview</button>
         </div>
-      </div>
-    </div>
 
-    <div class="card" style="margin-top:14px;">
-      <h2 style="margin:0 0 10px; font-size:16px;">Finalize</h2>
-      <div class="row">
-        <button class="btn primary" id="btnReadyFinal" disabled>I'm ready for the final prompt</button>
-        <button class="btn" id="btnCopyFinal" disabled>Copy final prompt</button>
+        <div class="hr"></div>
+
+        <div class="row" style="justify-content: flex-end;">
+          <button class="btn primary" id="btnReadyFinal">I'm ready for the final prompt</button>
+        </div>
       </div>
 
-      <div style="margin-top:12px;">
-        <label>Paste the LLM response here</label>
-        <textarea id="llmResponse" placeholder="Paste the model output (it should include your SESSION_ID line near the top)."></textarea>
+      <!-- BAND 3: Final + Submit -->
+      <div class="card" id="finalBand" style="margin-top:14px; display:none;">
+        <div class="row" style="justify-content: space-between;">
+          <h2 style="margin:0;">Finalize & Submit</h2>
+          <button class="btn" id="btnBackToPrompts">Go back to prompts</button>
+        </div>
+
+        <p class="muted small" style="margin:10px 0 12px;">
+          Copy the final prompt, paste it into the LLM, then paste the LLM’s final response below and submit.
+        </p>
+
+        <div class="row">
+          <button class="btn primary" id="btnCopyFinal">Copy final prompt</button>
+        </div>
+
+        <div style="margin-top:12px;">
+          <label>Paste the LLM final response here *</label>
+          <textarea id="llmResponse" placeholder="Paste the model output here (it should include your SESSION_ID line near the top)."></textarea>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <button class="btn primary" id="btnSubmitForm">Submit session</button>
+        </div>
+
+        <!-- Backup (hidden until expanded) -->
+        <details class="card" style="margin-top:12px; padding:12px;">
+          <summary class="btn" style="display:inline-block;">
+            Click here if the Google Form failed to be filled properly
+          </summary>
+
+          <div style="margin-top:12px;">
+            <p class="muted small" style="margin:0 0 10px;">
+              If the Google Form did not populate (or you are unsure), use this backup method:
+            </p>
+
+            <ol class="muted small" style="margin:0 0 10px; padding-left:18px;">
+              <li>Click <strong>Download backup file (.json)</strong> below.</li>
+              <li>Email the downloaded file to <strong>tjin@crimson.ua.edu</strong>.</li>
+              <li>Complete your recorded reflection using the instructions below.</li>
+            </ol>
+
+            <div class="row" style="margin-top:10px;">
+              <button class="btn" id="btnDownloadBackup">Download backup file (.json)</button>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="muted small">
+              <p style="margin:0 0 8px;"><strong>Recorded reflection:</strong></p>
+              <p style="margin:0 0 8px;">Please create a brief audio or video recording reflecting on today's session. Address at least one point for each prompt:</p>
+              <ol style="margin:0 0 8px; padding-left:18px;">
+                <li>In your own words, how do you understand the purpose of this activity and what it is intended to help educators accomplish?</li>
+                <li>To what extent do you see yourself or other educators being willing to use an approach like this when creating exam questions?</li>
+                <li>Thinking about your own teaching context, how practical would it be to incorporate a process like this into your workflow?</li>
+                <li>After completing today's session, how do you evaluate the usefulness of this approach for generating multiple-choice questions?</li>
+              </ol>
+              <p style="margin:0 0 8px;">A single, unscripted take is preferred. Please do not feel the need to prepare, re-record, or edit your response.</p>
+              <p style="margin:0;">
+                You may submit your recording by uploading it to the shared drive, emailing it to <strong>tjin@crimson.ua.edu</strong>, or sharing a cloud link with <strong>tjin@crimson.ua.edu</strong>.
+              </p>
+            </div>
+          </div>
+        </details>
       </div>
-
-      <div style="margin-top:10px;">
-        <label>Recording link (OneDrive/Drive/etc.)</label>
-        <input id="recordingLink" placeholder="Paste a share link to your audio/video reflection" />
-      </div>
-
-      <div class="row" style="margin-top:12px;">
-  <button class="btn primary" id="btnSubmitForm" disabled>Submit session</button>
-</div>
-
-<details class="card" style="margin-top:12px; padding:12px;">
-  <summary class="btn" style="display:inline-block;">
-    Click here if the Google Form failed to be filled properly
-  </summary>
-
-  <div style="margin-top:12px;">
-    <p class="muted small" style="margin:0 0 10px;">
-      If the Google Form did not populate (or you are unsure), use this backup method:
-    </p>
-
-    <ol class="muted small" style="margin:0 0 10px; padding-left:18px;">
-      <li>Click <strong>Download backup file (.json)</strong> below.</li>
-      <li>Email the downloaded file to <strong>tjin@crimson.ua.edu</strong>.</li>
-      <li>Complete your recorded reflection using the instructions below.</li>
-    </ol>
-
-    <div class="row" style="margin-top:10px;">
-      <button class="btn" id="btnDownload" disabled>Download backup file (.json)</button>
-    </div>
-
-    <div class="hr"></div>
-
-    <div class="muted small">
-      <p style="margin:0 0 8px;"><strong>Recorded reflection:</strong></p>
-      <p style="margin:0 0 8px;">Please create a brief audio or video recording reflecting on today's session. Address at least one point for each prompt:</p>
-      <ol style="margin:0 0 8px; padding-left:18px;">
-        <li>In your own words, how do you understand the purpose of this activity and what it is intended to help educators accomplish?</li>
-        <li>To what extent do you see yourself or other educators being willing to use an approach like this when creating exam questions?</li>
-        <li>Thinking about your own teaching context, how practical would it be to incorporate a process like this into your workflow?</li>
-        <li>After completing today's session, how do you evaluate the usefulness of this approach for generating multiple-choice questions?</li>
-      </ol>
-      <p style="margin:0 0 8px;">A single, unscripted take is preferred. Please do not feel the need to prepare, re-record, or edit your response.</p>
-      <p style="margin:0;">
-        You may submit your recording by uploading it to the shared drive, emailing it to <strong>tjin@crimson.ua.edu</strong>, or sharing a cloud link with <strong>tjin@crimson.ua.edu</strong>.
-      </p>
     </div>
   </div>
-</details>
 
-      <p class="muted small" style="margin:10px 0 0;">
-        After download, you can upload the file wherever you collect study materials (LMS, OneDrive, Google Form, etc.).
-      </p>
-    </div>
-  </div>
-</div>
   <div class="toast" id="toast"></div>
 
   <script>
-    // ---------- Storage keys ----------
+    // ----------------------------
+    // CONFIG: Google Form prefill
+    // ----------------------------
+    const FORM_BASE =
+      "https://docs.google.com/forms/d/e/1FAIpQLSeSkJtABOlLhpP2_lywUseUT017l9qmtuW8vUv7GQXODR89Sg/viewform?usp=pp_url";
+    // Prefill mapping you already confirmed:
+    // entry.252595248 = Event Log
+    // entry.86462815  = LLM Final Response
+
+    // ----------------------------
+    // Storage keys
+    // ----------------------------
     const KEYS = {
       participantId: "dissertation.participantId",
       sessionId: "dissertation.sessionId",
@@ -240,75 +272,85 @@
       finalPrompt: "dissertation.finalPrompt",
       accessVerified: "dissertation.accessVerified",
       accessCode: "dissertation.accessCode",
+      sessionStartTime: "dissertation.sessionStartTime",
+      stage: "dissertation.stage" // "setup" | "prompts" | "final"
     };
-// ---------- Access code allowlist (replace with your real codes) ----------
-const ACCESS_CODES = {
-  "blue-sky": { pid: "P001" },
-  "green-grass": { pid: "P002" },
-  "bright-light": { pid: "P003" },
-  "calm-water": { pid: "P004" },
-  "morning-sun": { pid: "P005" },
-  "quiet-night": { pid: "P006" },
-  "tall-tree": { pid: "P007" },
-  "warm-breeze": { pid: "P008" },
-  "clear-path": { pid: "P009" },
-  "soft-cloud": { pid: "P010" },
-  "deep-ocean": { pid: "P011" },
-  "fresh-air": { pid: "P012" },
-  "open-field": { pid: "P013" },
-  "gentle-rain": { pid: "P014" },
-  "golden-hour": { pid: "P015" },
-  "rising-tide": { pid: "P016" },
-  "distant-hill": { pid: "P017" },
-  "summer-wind": { pid: "P018" },
-  "early-dawn": { pid: "P019" },
-  "cool-shade": { pid: "P020" },
-  "wide-river": { pid: "P021" },
-  "bright-star": { pid: "P022" },
-  "falling-leaf": { pid: "P023" },
-  "white-sand": { pid: "P024" },
-  "silver-moon": { pid: "P025" },
-  "calm-harbor": { pid: "P026" },
-  "quiet-forest": { pid: "P027" },
-  "warm-sunlight": { pid: "P028" },
-  "soft-snow": { pid: "P029" },
-  "open-horizon": { pid: "P030" }
-};
-    // ---------- Minimal prompt library (we will replace with your real prompts later) ----------
-    // Each prompt has an id, title, description, and a template that gets context injected.
+
+    // ----------------------------
+    // Access codes allowlist
+    // ----------------------------
+    const ACCESS_CODES = {
+      "blue-sky": { pid: "P001" },
+      "green-grass": { pid: "P002" },
+      "bright-light": { pid: "P003" },
+      "calm-water": { pid: "P004" },
+      "morning-sun": { pid: "P005" },
+      "quiet-night": { pid: "P006" },
+      "tall-tree": { pid: "P007" },
+      "warm-breeze": { pid: "P008" },
+      "clear-path": { pid: "P009" },
+      "soft-cloud": { pid: "P010" },
+      "deep-ocean": { pid: "P011" },
+      "fresh-air": { pid: "P012" },
+      "open-field": { pid: "P013" },
+      "gentle-rain": { pid: "P014" },
+      "golden-hour": { pid: "P015" },
+      "rising-tide": { pid: "P016" },
+      "distant-hill": { pid: "P017" },
+      "summer-wind": { pid: "P018" },
+      "early-dawn": { pid: "P019" },
+      "cool-shade": { pid: "P020" },
+      "wide-river": { pid: "P021" },
+      "bright-star": { pid: "P022" },
+      "falling-leaf": { pid: "P023" },
+      "white-sand": { pid: "P024" },
+      "silver-moon": { pid: "P025" },
+      "calm-harbor": { pid: "P026" },
+      "quiet-forest": { pid: "P027" },
+      "warm-sunlight": { pid: "P028" },
+      "soft-snow": { pid: "P029" },
+      "open-horizon": { pid: "P030" }
+    };
+
+    // ----------------------------
+    // Prompt library (MCQ only)
+    // ----------------------------
     const PROMPTS = [
       {
         id: "mcq_generator",
         title: "MCQ Generator",
         description: "Generates scenario-based multiple-choice questions with plausible distractors.",
         template:
-`Create 5 {{QTYPE}} questions for {{COURSE}} focused on {{AREA}} at a {{DIFFICULTY}} difficulty level.
+`Create 5 scenario-based multiple-choice questions for {{COURSE}} focused on {{AREA}}.
 {{CONSTRAINTS_LINE}}
-Output as a table with columns: Question, Options, Correct Answer, Rationale.`
-      },
-      {
-        id: "sata_generator",
-        title: "SATA Generator",
-        description: "Creates select-all-that-apply questions with 5 options (2–4 correct).",
-        template:
-`Create 5 select-all-that-apply questions for {{COURSE}} focused on {{AREA}} at a {{DIFFICULTY}} difficulty level.
-Each question must have 5 options with 2–4 correct answers.
-{{CONSTRAINTS_LINE}}
-Output as a table with columns: Question, Options, Correct Answers, Rationale.`
+Output as a table with columns: Question, Options (A–D), Correct Answer, Rationale.`
       },
       {
         id: "revise_distractors",
         title: "Revise Distractors",
-        description: "Improves distractors to be more plausible without adding outside content.",
+        description: "Improves distractors to be more plausible and parallel, without adding outside content.",
         template:
 `Revise the distractors to be more plausible and parallel in structure without adding new content outside the provided material.
+{{CONSTRAINTS_LINE}}
+Return the revised items as a table.`
+      },
+      {
+        id: "tighten_stems",
+        title: "Tighten Question Stems",
+        description: "Edits stems for clarity and concision, keeping meaning the same.",
+        template:
+`Edit the question stems for clarity and concision while keeping the meaning the same.
+Do not add new content beyond what is provided.
 {{CONSTRAINTS_LINE}}
 Return the revised items as a table.`
       }
     ];
 
-    // ---------- Utilities ----------
+    // ----------------------------
+    // Utilities
+    // ----------------------------
     const $ = (id) => document.getElementById(id);
+
     const toast = (msg) => {
       const t = $("toast");
       t.textContent = msg;
@@ -316,42 +358,6 @@ Return the revised items as a table.`
       setTimeout(() => t.style.display = "none", 1400);
     };
 
-function setLockedState(isLocked, msg = "") {
-  $("appShell").style.display = isLocked ? "none" : "block";
-  $("accessGate").style.display = isLocked ? "block" : "none";
-  if ($("accessMsg")) $("accessMsg").textContent = msg;
-}
-
-function normalizeCode(s) {
-return (s || "").trim().toLowerCase();
-}
-
-function verifyAccessCode() {
-  const code = normalizeCode($("accessCodeInput").value);
-  const hit = ACCESS_CODES[code];
-
-  if (!hit) {
-    setLockedState(true, "Access code not recognized. Please contact the study team.");
-    logEvent("access_denied", { code_entered: code });
-    return false;
-  }
-
-  localStorage.setItem(KEYS.accessVerified, "true");
-  localStorage.setItem(KEYS.accessCode, code);
-
-  // Auto-fill Participant ID
-  localStorage.setItem(KEYS.participantId, hit.pid);
-  $("participantId").value = hit.pid;
-
-  setLockedState(false);
-  refreshHeaderPills();
-  enableFinalizeIfReady();
-  toast("Access verified ✅");
-  logEvent("access_verified", { accessCode: code, participantId: hit.pid });
-
-  return true;
-}
-    
     const nowIso = () => new Date().toISOString();
 
     function loadJSON(key, fallback) {
@@ -366,6 +372,10 @@ function verifyAccessCode() {
       saveJSON(KEYS.events, events);
     }
 
+    function normalizeCode(s) {
+      return (s || "").trim().toLowerCase();
+    }
+
     function makeSessionId(participantId) {
       const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
       const stamp = new Date().toISOString().replace(/[-:]/g,"").slice(0,13); // YYYYMMDDTHH
@@ -373,13 +383,7 @@ function verifyAccessCode() {
     }
 
     function getContext() {
-      return loadJSON(KEYS.context, {
-        course: "",
-        area: "",
-        qtype: "MCQ",
-        difficulty: "Medium",
-        constraints: ""
-      });
+      return loadJSON(KEYS.context, { course: "", area: "", constraints: "" });
     }
 
     function setContext(ctx) {
@@ -387,15 +391,110 @@ function verifyAccessCode() {
       logEvent("context_saved", { ctx });
     }
 
+    function refreshHeaderPills() {
+      const pid = localStorage.getItem(KEYS.participantId) || "—";
+      const sid = localStorage.getItem(KEYS.sessionId) || "—";
+      const model = localStorage.getItem(KEYS.modelUsed) || "—";
+      const startIso = localStorage.getItem(KEYS.sessionStartTime);
+
+      $("pillParticipant").textContent = `Participant: ${pid}`;
+      $("pillSession").textContent = `Session: ${sid}`;
+      $("pillModel").textContent = `Model: ${model}`;
+
+      $("pillStarted").textContent =
+        "Started: " + (startIso ? new Date(startIso).toLocaleTimeString() : "—");
+
+      const ctx = getContext();
+      $("pillCourse").textContent = `Course: ${ctx.course ? ctx.course : "—"}`;
+      $("pillArea").textContent = `Area: ${ctx.area ? ctx.area : "—"}`;
+
+      const notes = (ctx.constraints || "").trim();
+      $("pillConstraints").textContent = `Notes: ${notes ? notes : "—"}`;
+    }
+
+    function showStage(stage) {
+      // stage: "setup" | "prompts" | "final"
+      localStorage.setItem(KEYS.stage, stage);
+      $("setupBand").style.display = (stage === "setup") ? "block" : "none";
+      $("promptsBand").style.display = (stage === "prompts") ? "block" : "none";
+      $("finalBand").style.display = (stage === "final") ? "block" : "none";
+    }
+
+    function setLockedState(isLocked, msg = "") {
+      $("appShell").style.display = isLocked ? "none" : "block";
+      $("accessGate").style.display = isLocked ? "block" : "none";
+      if ($("accessMsg")) $("accessMsg").textContent = msg;
+    }
+
+    // ----------------------------
+    // Access + session start (timestamp happens on sign-in)
+    // ----------------------------
+    function ensureSessionStarted() {
+      const pid = localStorage.getItem(KEYS.participantId);
+      if (!pid) return;
+
+      // Create sessionStartTime if missing
+      if (!localStorage.getItem(KEYS.sessionStartTime)) {
+        localStorage.setItem(KEYS.sessionStartTime, nowIso());
+      }
+
+      // Create sessionId if missing
+      if (!localStorage.getItem(KEYS.sessionId)) {
+        localStorage.setItem(KEYS.sessionId, makeSessionId(pid));
+      }
+
+      // Ensure event list exists
+      if (!localStorage.getItem(KEYS.events)) {
+        saveJSON(KEYS.events, []);
+      }
+    }
+
+    function verifyAccessCode() {
+      const code = normalizeCode($("accessCodeInput").value);
+      const hit = ACCESS_CODES[code];
+
+      if (!hit) {
+        setLockedState(true, "Access code not recognized. Please contact the study team.");
+        // logEvent requires events list; safe to skip before access
+        return false;
+      }
+
+      // Store access
+      localStorage.setItem(KEYS.accessVerified, "true");
+      localStorage.setItem(KEYS.accessCode, code);
+      localStorage.setItem(KEYS.participantId, hit.pid);
+
+      // Start session timestamp + session id immediately upon sign-in (your requirement #5)
+      ensureSessionStarted();
+
+      // Log sign-in event (now safe)
+      logEvent("access_verified", { accessCode: code, participantId: hit.pid });
+
+      // Initialize UI
+      setLockedState(false);
+      $("participantIdDisplay").value = hit.pid;
+
+      // Stage default
+      if (!localStorage.getItem(KEYS.stage)) localStorage.setItem(KEYS.stage, "setup");
+      showStage(localStorage.getItem(KEYS.stage));
+
+      refreshHeaderPills();
+      toast("Access verified ✅");
+
+      return true;
+    }
+
+    // ----------------------------
+    // Prompt building
+    // ----------------------------
     function buildStarterPrompt() {
       const pid = localStorage.getItem(KEYS.participantId) || "—";
       const sid = localStorage.getItem(KEYS.sessionId) || "—";
       const model = localStorage.getItem(KEYS.modelUsed) || "—";
       const ctx = getContext();
 
-      const constraintsLine = ctx.constraints?.trim()
-        ? `Constraints/notes: ${ctx.constraints.trim()}`
-        : `Constraints/notes: (none)`;
+      const notes = (ctx.constraints || "").trim();
+      const notesLine = notes ? `Constraints/notes: ${notes}` : `Constraints/notes: (none)`;
 
       return (
 `You are assisting with question-writing for nursing education.
@@ -406,9 +505,7 @@ MODEL_USED: ${model}
 
 Course/context: ${ctx.course || "(not provided)"}
 Content area: ${ctx.area || "(not provided)"}
-Question type: ${ctx.qtype}
-Difficulty target: ${ctx.difficulty}
-${constraintsLine}
+${notesLine}
 
 Follow these rules:
 - Use only the content provided by the user in this chat.
@@ -422,16 +519,18 @@ Acknowledge these rules briefly, then proceed with the next instruction.`
 
     function fillTemplate(template) {
       const ctx = getContext();
-      const constraintsLine = ctx.constraints?.trim()
-        ? `Constraints: ${ctx.constraints.trim()}`
-        : ``;
+      const notes = (ctx.constraints || "").trim();
+      const constraintsLine = notes ? `Constraints: ${notes}` : `(No additional constraints.)`;
 
       return template
         .replaceAll("{{COURSE}}", ctx.course || "the course")
         .replaceAll("{{AREA}}", ctx.area || "the content area")
-        .replaceAll("{{QTYPE}}", ctx.qtype)
-        .replaceAll("{{DIFFICULTY}}", ctx.difficulty)
-        .replaceAll("{{CONSTRAINTS_LINE}}", constraintsLine ? constraintsLine : "(No additional constraints.)");
+        .replaceAll("{{CONSTRAINTS_LINE}}", constraintsLine);
+    }
+
+    async function copyPlainText(text) {
+      await navigator.clipboard.writeText(text);
+      toast("Copied ✅");
     }
 
     function setPreview(text) {
@@ -440,12 +539,9 @@ Acknowledge these rules briefly, then proceed with the next instruction.`
       $("btnCopyPreview").disabled = !text.trim();
     }
 
-    async function copyPlainText(text) {
-      await navigator.clipboard.writeText(text);
-      toast("Copied ✅");
-    }
-
-    // ---------- Render prompts ----------
+    // ----------------------------
+    // Render prompts
+    // ----------------------------
     function renderPromptList() {
       const list = $("promptList");
       list.innerHTML = "";
@@ -467,6 +563,7 @@ Acknowledge these rules briefly, then proceed with the next instruction.`
         list.appendChild(div);
       });
 
+      // Delegate once
       list.addEventListener("click", async (e) => {
         const btn = e.target.closest("button");
         if (!btn) return;
@@ -492,9 +589,10 @@ Acknowledge these rules briefly, then proceed with the next instruction.`
       }, { once: true });
     }
 
-    // ---------- Final prompt ----------
+    // ----------------------------
+    // Final prompt
+    // ----------------------------
     function buildFinalPrompt() {
-      const pid = localStorage.getItem(KEYS.participantId) || "—";
       const sid = localStorage.getItem(KEYS.sessionId) || "—";
       return (
 `You are at the final step.
@@ -507,184 +605,211 @@ Do not include extra commentary before or after the table unless the user explic
       );
     }
 
-    function refreshHeaderPills() {
-      $("pillParticipant").textContent = `Participant: ${localStorage.getItem(KEYS.participantId) || "—"}`;
-      $("pillSession").textContent = `Session: ${localStorage.getItem(KEYS.sessionId) || "—"}`;
-      const start = localStorage.getItem("sessionStartTime");
-$("pillStarted").textContent =
-  "Started: " + (start ? new Date(start).toLocaleTimeString() : "—");
+    // ----------------------------
+    // Submit to Google Form (prefilled)
+    // ----------------------------
+    function buildEventLogCSV() {
+      const events = loadJSON(KEYS.events, []);
+      const pid = localStorage.getItem(KEYS.participantId) || "";
+      const sid = localStorage.getItem(KEYS.sessionId) || "";
+      const model = localStorage.getItem(KEYS.modelUsed) || "";
+      const accessCode = localStorage.getItem(KEYS.accessCode) || "";
+
+      const header = ["t","type","promptId","participantId","sessionId","modelUsed","accessCode"].join(",");
+
+      const rows = events.map(e => {
+        const cols = [
+          e.t || "",
+          e.type || "",
+          e.promptId || "",
+          e.participantId || pid,
+          e.sessionId || sid,
+          e.modelUsed || model,
+          e.accessCode || accessCode
+        ];
+        return cols.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",");
+      });
+
+      return [header, ...rows].join("\n");
     }
 
-    function enableFinalizeIfReady() {
-      const hasSession = !!localStorage.getItem(KEYS.sessionId);
-      $("btnCopyStarter").disabled = !hasSession;
-      $("btnReadyFinal").disabled = !hasSession;
+    function openPrefilledForm(csv, llm) {
+      const url =
+        `${FORM_BASE}` +
+        `&entry.252595248=${encodeURIComponent(csv)}` +
+        `&entry.86462815=${encodeURIComponent(llm)}`;
+
+      logEvent("form_prefill_opened", { approx_csv_chars: csv.length, llm_chars: llm.length });
+
+      const w = window.open(url, "_blank", "noopener,noreferrer");
+      if (!w) window.location.href = url; // popup blocked fallback
     }
 
-    // ---------- Initialize ----------
+    // ----------------------------
+    // Backup download (.json)
+    // ----------------------------
+    function downloadBackupJSON() {
+      const record = {
+        participant_id: localStorage.getItem(KEYS.participantId),
+        session_id: localStorage.getItem(KEYS.sessionId),
+        session_started_at: localStorage.getItem(KEYS.sessionStartTime),
+        model_used: localStorage.getItem(KEYS.modelUsed),
+        access_code: localStorage.getItem(KEYS.accessCode),
+        context: getContext(),
+        events: loadJSON(KEYS.events, []),
+        last_preview: (localStorage.getItem(KEYS.preview) || ""),
+        final_prompt: (localStorage.getItem(KEYS.finalPrompt) || ""),
+        llm_response: ($("llmResponse").value || ""),
+        exported_at: nowIso()
+      };
+
+      const blob = new Blob([JSON.stringify(record, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      const fname = `${record.participant_id || "P"}-${record.session_id || "SESSION"}-backup.json`.replace(/[^\w.-]/g, "_");
+      a.href = URL.createObjectURL(blob);
+      a.download = fname;
+      a.click();
+      URL.revokeObjectURL(a.href);
+
+      logEvent("backup_downloaded", { filename: fname });
+      toast("Downloaded ✅");
+    }
+
+    // ----------------------------
+    // Init
+    // ----------------------------
     function init() {
       $("buildInfo").textContent = "Last updated: " + document.lastModified;
-      // Access gate initialization
-const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
-if (alreadyVerified) {
-  setLockedState(false);
-} else {
-  setLockedState(true);
-  $("btnVerifyAccess").addEventListener("click", () => verifyAccessCode());
-}
-      
-      // hydrate stored values
-      $("participantId").value = localStorage.getItem(KEYS.participantId) || "";
+
+      // If already verified, show app; else show gate
+      const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
+
+      if (!alreadyVerified) {
+        setLockedState(true);
+        $("btnVerifyAccess").addEventListener("click", () => verifyAccessCode());
+        return;
+      }
+
+      // Already verified path
+      setLockedState(false);
+
+      // Ensure baseline session started immediately (in case of refresh)
+      ensureSessionStarted();
+
+      // Hydrate participant display
+      $("participantIdDisplay").value = localStorage.getItem(KEYS.participantId) || "";
+
+      // Hydrate model
       $("modelUsed").value = localStorage.getItem(KEYS.modelUsed) || "ChatGPT";
 
+      // Hydrate context
       const ctx = getContext();
-      $("ctxCourse").value = ctx.course;
-      $("ctxArea").value = ctx.area;
-      $("ctxQType").value = ctx.qtype;
-      $("ctxDifficulty").value = ctx.difficulty;
-      $("ctxConstraints").value = ctx.constraints;
+      $("ctxCourse").value = ctx.course || "";
+      $("ctxArea").value = ctx.area || "";
+      $("ctxConstraints").value = ctx.constraints || "";
 
+      // Stage
+      const stage = localStorage.getItem(KEYS.stage) || "setup";
+      showStage(stage);
+
+      // Render prompts
+      renderPromptList();
+
+      // Restore preview if present
       const prev = localStorage.getItem(KEYS.preview) || "";
       if (prev) setPreview(prev);
 
+      // Refresh pills
       refreshHeaderPills();
-      renderPromptList();
-      enableFinalizeIfReady();
 
-      // Start session
-      $("btnStart").addEventListener("click", () => {
-        const pid = $("participantId").value.trim();
-        if (!pid) { alert("Please enter Participant ID (e.g., P012)."); return; }
-        localStorage.setItem(KEYS.participantId, pid);
+      // ----------------------------
+      // Event handlers
+      // ----------------------------
+
+      // Copy starter + begin (your “start”)
+      $("btnCopyStarterAndBegin").addEventListener("click", async () => {
+        // Require context before beginning (your requirement #3)
+        const course = $("ctxCourse").value.trim();
+        const area = $("ctxArea").value.trim();
+        const constraints = $("ctxConstraints").value.trim();
+
+        if (!course || !area) {
+          alert("Please fill in BOTH required fields: Course / class context and Content area.");
+          return;
+        }
+
+        // Save model + context
         localStorage.setItem(KEYS.modelUsed, $("modelUsed").value);
+        setContext({ course, area, constraints });
 
-        const sid = makeSessionId(pid);
-        localStorage.setItem(KEYS.sessionId, sid);
-        localStorage.setItem("sessionStartTime", new Date().toISOString());
+        // Log “begin” event tied to starter copy (your requirement #4)
+        logEvent("starter_copied", { modelUsed: localStorage.getItem(KEYS.modelUsed) });
 
-        // Reset events for this session
-        saveJSON(KEYS.events, []);
-        logEvent("session_started", { participantId: pid, sessionId: sid, modelUsed: $("modelUsed").value });
-
-        refreshHeaderPills();
-        enableFinalizeIfReady();
-        toast("Session started ✅");
-      });
-
-      // Save context
-      $("btnSaveContext").addEventListener("click", () => {
-        const newCtx = {
-          course: $("ctxCourse").value.trim(),
-          area: $("ctxArea").value.trim(),
-          qtype: $("ctxQType").value,
-          difficulty: $("ctxDifficulty").value,
-          constraints: $("ctxConstraints").value.trim()
-        };
-        setContext(newCtx);
-        toast("Context saved ✅");
-      });
-
-      // Copy starter prompt
-      $("btnCopyStarter").addEventListener("click", async () => {
+        // Copy starter prompt
         const starter = buildStarterPrompt();
         await copyPlainText(starter);
-        logEvent("starter_copied", {});
+
+        // Move into prompts stage; hide setup; show prompts (your flow)
+        refreshHeaderPills();
+        showStage("prompts");
+        toast("Starter copied — prompts unlocked ✅");
       });
 
-      // Copy preview
-      $("btnCopyPreview").addEventListener("click", async () => {
-        const text = $("preview").value;
-        if (!text.trim()) return;
-        await copyPlainText(text);
-        logEvent("preview_copied", {});
+      // Edit context (back to setup)
+      $("btnEditContext").addEventListener("click", () => {
+        // Re-hydrate setup fields from storage, in case they changed
+        $("modelUsed").value = localStorage.getItem(KEYS.modelUsed) || "ChatGPT";
+        const c = getContext();
+        $("ctxCourse").value = c.course || "";
+        $("ctxArea").value = c.area || "";
+        $("ctxConstraints").value = c.constraints || "";
+        showStage("setup");
+        logEvent("stage_changed", { to: "setup" });
       });
 
-      // Final prompt buttons
+      // Ready for final prompt (collapses prompts band, opens final band)
       $("btnReadyFinal").addEventListener("click", () => {
         const fp = buildFinalPrompt();
         localStorage.setItem(KEYS.finalPrompt, fp);
-        $("btnCopyFinal").disabled = false;
-        $("btnDownload").disabled = false;
-        $("btnSubmitForm").disabled = false;
-        toast("Final prompt ready ✅");
         logEvent("final_prompt_ready", {});
+        showStage("final");
+        toast("Final stage ready ✅");
       });
 
+      // Back to prompts
+      $("btnBackToPrompts").addEventListener("click", () => {
+        showStage("prompts");
+        logEvent("stage_changed", { to: "prompts" });
+      });
+
+      // Copy final prompt
       $("btnCopyFinal").addEventListener("click", async () => {
         const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
         await copyPlainText(fp);
         logEvent("final_prompt_copied", {});
       });
 
-   // Submit session (opens Google Form prefilled)
-$("btnSubmitForm").addEventListener("click", () => {
-  const events = loadJSON(KEYS.events, []);
-  const llm = ($("llmResponse").value || "").trim();
+      // Submit session (Google Form prefill)
+      $("btnSubmitForm").addEventListener("click", () => {
+        const llm = ($("llmResponse").value || "").trim();
+        if (!llm) {
+          alert("Please paste the LLM final response before submitting.");
+          return;
+        }
 
-  if (!events.length) { alert("No event log found. Did you start the session?"); return; }
-  if (!llm) { alert("Please paste the LLM Final Response before submitting."); return; }
+        const csv = buildEventLogCSV();
+        if (!csv.trim()) {
+          alert("No event log found. Please contact the study team.");
+          return;
+        }
 
-  // Build a simple CSV for the Event Log field
-  const header = ["t","type","promptId","participantId","sessionId","modelUsed","accessCode"].join(",");
-  const rows = events.map(e => {
-    const cols = [
-      e.t || "",
-      e.type || "",
-      e.promptId || "",
-      e.participantId || localStorage.getItem(KEYS.participantId) || "",
-      e.sessionId || localStorage.getItem(KEYS.sessionId) || "",
-      e.modelUsed || localStorage.getItem(KEYS.modelUsed) || "",
-      e.accessCode || localStorage.getItem(KEYS.accessCode) || ""
-    ];
-    // CSV-escape: wrap in quotes and double-up any quotes
-    return cols.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",");
-  });
+        openPrefilledForm(csv, llm);
+        toast("Opened Google Form (prefilled) ✅");
+      });
 
-  const csv = [header, ...rows].join("\n");
-
-  // Your form + entry IDs (from your prefill URL)
-  const FORM_BASE =
-    "https://docs.google.com/forms/d/e/1FAIpQLSeSkJtABOlLhpP2_lywUseUT017l9qmtuW8vUv7GQXODR89Sg/viewform?usp=pp_url";
-
-  const url =
-    `${FORM_BASE}` +
-    `&entry.252595248=${encodeURIComponent(csv)}` +      // Event Log
-    `&entry.86462815=${encodeURIComponent(llm)}`;        // LLM Final Response
-
-  logEvent("form_prefill_opened", { approx_csv_chars: csv.length, llm_chars: llm.length });
-  const w = window.open(url, "_blank", "noopener,noreferrer");
-if (!w) {
-  // Popup blocked → fall back to opening in the same tab
-  window.location.href = url;
-}
-  toast("Opened Google Form (prefilled) ✅");
-});
-
-      // Download session record
-      $("btnDownload").addEventListener("click", () => {
-        const record = {
-          participant_id: localStorage.getItem(KEYS.participantId),
-          session_id: localStorage.getItem(KEYS.sessionId),
-          model_used: localStorage.getItem(KEYS.modelUsed),
-          context: getContext(),
-          events: loadJSON(KEYS.events, []),
-          last_preview: $("preview").value || "",
-          final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
-          llm_response: $("llmResponse").value || "",
-          recording_link: $("recordingLink").value || "",
-          exported_at: nowIso()
-        };
-
-        const blob = new Blob([JSON.stringify(record, null, 2)], { type: "application/json" });
-        const a = document.createElement("a");
-        const fname = `${record.participant_id || "P"}-${record.session_id || "SESSION"}-record.json`.replace(/[^\w.-]/g, "_");
-        a.href = URL.createObjectURL(blob);
-        a.download = fname;
-        a.click();
-        URL.revokeObjectURL(a.href);
-
-        logEvent("session_exported", { filename: fname });
-        toast("Downloaded ✅");
+      // Backup download
+      $("btnDownloadBackup").addEventListener("click", () => {
+        downloadBackupJSON();
       });
 
       // Clear everything (this browser)
@@ -695,9 +820,16 @@ if (!w) {
         localStorage.removeItem(KEYS.events);
         location.reload();
       });
+
+      // Keep pills fresh when dropdown changes (nice-to-have)
+      $("modelUsed").addEventListener("change", () => {
+        localStorage.setItem(KEYS.modelUsed, $("modelUsed").value);
+        refreshHeaderPills();
+      });
     }
 
     init();
   </script>
 </body>
 </html>
+```
