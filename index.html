@@ -144,19 +144,42 @@
     .stickySidebar {
       display: flex;
       flex-direction: column;
+      max-height: calc(100vh - 32px);
+      overflow: hidden;
     }
     .copyMeta { margin:0 0 10px; color: var(--muted); font-size:12px; }
     .copiedText {
       width: 100%;
-      resize: none;
-      min-height: 180px;
-      max-height: calc(100vh - 220px);
+      height: 140px;
       overflow: auto;
       white-space: pre-wrap;
       word-break: break-word;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
     }
-    .promptGrid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .promptBar { display:grid; gap:10px; }
+    .promptGroup { border:1px solid var(--border); border-radius:10px; background:#f8fbff; padding:8px; }
+    .groupLabel {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .chipGrid { display:flex; flex-wrap:wrap; gap:6px; }
+    .promptChip {
+      height: 32px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background:#f1f7ff;
+      border:1px solid var(--border);
+      color:var(--text);
+      cursor:pointer;
+      font-size:12px;
+    }
+    .chipIcon { font-size: 12px; opacity: .8; }
 
     @media (max-width: 1100px) {
       .layoutGrid { grid-template-columns: 1fr; }
@@ -165,16 +188,9 @@
         top: 12px;
         z-index: 10;
       }
-      .promptGrid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
-      }
-      .promptCard { padding: 10px; }
-      .promptDesc { margin: 0 0 8px; font-size: 12px; }
-      .btn { padding: 8px 10px; }
-      .subBand { padding: 10px; margin-top: 8px; }
+      .promptChip { height: 30px; padding: 4px 8px; font-size:11px; }
       .promptArea {
-        max-height: calc(100vh - 320px);
+        max-height: calc(100vh - 300px);
         overflow: auto;
         padding-right: 4px;
       }
@@ -301,36 +317,27 @@
               <div class="hr"></div>
 
               <div class="promptArea">
-              <div class="subBand">
-                <div class="subBandTitle">Accept or replace</div>
-                <div class="twoCol">
-                  <div id="promptListAccept" class="promptGrid"></div>
-                  <div id="promptListAcceptSpacer" class="promptGrid"></div>
+                <div class="promptBar">
+                  <div class="promptGroup">
+                    <div class="groupLabel">BUILD</div>
+                    <div id="promptGroupBuild" class="chipGrid"></div>
+                  </div>
+                  <div class="promptGroup">
+                    <div class="groupLabel">EDIT</div>
+                    <div id="promptGroupEdit" class="chipGrid"></div>
+                  </div>
+                  <div class="promptGroup">
+                    <div class="groupLabel">AUDIT</div>
+                    <div id="promptGroupAudit" class="chipGrid"></div>
+                  </div>
                 </div>
-              </div>
 
-              <div class="subBand">
-                <div class="subBandTitle">Option refinement</div>
-                <div class="twoCol">
-                  <div id="promptListCorrect" class="promptGrid"></div>
-                  <div id="promptListDistractor" class="promptGrid"></div>
+                <div class="hr"></div>
+
+                <div class="row" style="justify-content: space-between; margin-top:10px;">
+                  <span class="muted small">When you’re done using prompts, move to the final prompt step.</span>
+                  <button class="btn primary" id="btnReadyFinal">I'm ready for the final prompt</button>
                 </div>
-              </div>
-
-              <div class="groupCard">
-                <div class="groupTitle">Pause and Audit</div>
-                <div class="groupSub">Quality checks, alignment checks, and safety/audit prompts.</div>
-                <div class="twoCol">
-                  <div id="promptListAuditLeft" class="promptGrid"></div>
-                  <div id="promptListAuditRight" class="promptGrid"></div>
-                </div>
-              </div>
-
-              <div class="hr"></div>
-
-              <div class="row" style="justify-content: space-between; margin-top:10px;">
-                <span class="muted small">When you’re done using prompts, move to the final prompt step.</span>
-                <button class="btn primary" id="btnReadyFinal">I'm ready for the final prompt</button>
               </div>
               </div>
             </div>
@@ -879,71 +886,57 @@ Do not include extra commentary before or after the table unless the user explic
 
     function renderPromptList() {
       const containers = {
-        accept: $("promptListAccept"),
-        replace_question: $("promptListAcceptSpacer"),
-        correct_answer_options: $("promptListCorrect"),
-        distractor_options: $("promptListDistractor"),
-        pause_review: $("promptListAuditLeft"),
-        rebalance_content: $("promptListAuditLeft"),
-        core_or_peripheral: $("promptListAuditLeft"),
-        rebalance_question_type: $("promptListAuditRight"),
-        difficulty_audit: $("promptListAuditRight"),
-        blooms_taxonomy_audit: $("promptListAuditRight")
+        starter_prompt: $("promptGroupBuild"),
+        final_prompt: $("promptGroupBuild"),
+        next_question: $("promptGroupEdit"),
+        replace_question: $("promptGroupEdit"),
+        correct_answer_options: $("promptGroupEdit"),
+        distractor_options: $("promptGroupEdit"),
+        pause_review: $("promptGroupAudit"),
+        rebalance_content: $("promptGroupAudit"),
+        core_or_peripheral: $("promptGroupAudit"),
+        rebalance_question_type: $("promptGroupAudit"),
+        difficulty_audit: $("promptGroupAudit"),
+        blooms_taxonomy_audit: $("promptGroupAudit")
       };
 
-      ["promptListAccept", "promptListAcceptSpacer", "promptListCorrect", "promptListDistractor", "promptListAuditLeft", "promptListAuditRight"]
+      ["promptGroupBuild", "promptGroupEdit", "promptGroupAudit"]
         .forEach((id) => { const el = $(id); if (el) el.innerHTML = ""; });
 
-      const makeCopyButton = (id, label = "Copy") => {
+      const makeChip = (id, label, indicatorLabel) => {
+        const wrap = document.createElement("div");
+        wrap.className = "row";
+
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "btn primary";
+        btn.className = "promptChip";
         btn.dataset.action = "copy";
         btn.dataset.id = id;
         btn.textContent = label;
-        return btn;
-      };
 
-      const makeCard = (prompt, options = {}) => {
-        const div = document.createElement("div");
-        div.className = "promptCard";
+        const icon = document.createElement("span");
+        icon.className = "chipIcon";
+        icon.textContent = "📋";
+        btn.appendChild(icon);
 
-        const title = document.createElement("div");
-        title.className = "promptTitle";
-        title.textContent = prompt.title;
-        div.appendChild(title);
+        wrap.appendChild(btn);
 
-        if (prompt.description) {
-          const desc = document.createElement("p");
-          desc.className = "promptDesc";
-          desc.textContent = prompt.description;
-          div.appendChild(desc);
-        }
-
-        const row = document.createElement("div");
-        row.className = "row";
-
-        row.appendChild(makeCopyButton(prompt.id, options.primaryLabel || "Copy"));
-
-        const indicatorLabel = options.indicatorLabel || prompt.title;
         if (indicatorLabel && indicatorLabel === lastCopiedLabel) {
           const indicator = document.createElement("span");
           indicator.className = "copy-indicator";
           indicator.textContent = "✓";
-          row.appendChild(indicator);
+          wrap.appendChild(indicator);
         }
 
-        div.appendChild(row);
-
-        return div;
+        return wrap;
       };
 
+      containers.starter_prompt?.appendChild(makeChip("starter_prompt", "Starter prompt", "Starter prompt"));
+      containers.final_prompt?.appendChild(makeChip("final_prompt", "Final prompt", "Final prompt"));
+
       PROMPTS.forEach((p) => {
-        if (p.id === "next_question") {
-          const acceptPrompt = { ...p, id: "next_question", title: "Accept" };
-          containers.accept?.appendChild(makeCard(acceptPrompt, { primaryLabel: "Accept", indicatorLabel: "Next Question" }));
-          return;
-        }
+        let chipLabel = p.title;
+        if (p.id === "next_question") chipLabel = "Accept";
 
         if (p.id === "replace_question") {
           containers.replace_question?.appendChild(makeCard(p, { primaryLabel: "Replace Question", indicatorLabel: "Replace Question" }));
@@ -964,7 +957,7 @@ Do not include extra commentary before or after the table unless the user explic
 
         const target = containers[p.id];
         if (!target) return;
-        target.appendChild(makeCard(p));
+        target.appendChild(makeChip(p.id, chipLabel, p.title));
       });
 
       const wrapper = $("promptsInner");
@@ -976,17 +969,29 @@ Do not include extra commentary before or after the table unless the user explic
         const id = btn.dataset.id;
         if (!action || !id) return;
 
+        if (action !== "copy") return;
+
+        if (id === "starter_prompt") {
+          const ok = await copyToClipboard(buildStarterPrompt(), "Starter prompt");
+          if (ok) renderPromptList();
+          return;
+        }
+
+        if (id === "final_prompt") {
+          const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+          const ok = await copyToClipboard(fp, "Final prompt");
+          if (ok) renderPromptList();
+          return;
+        }
+
         const prompt = PROMPTS.find(x => x.id === id);
         if (!prompt) return;
 
         const promptText = fillTemplate(prompt.template);
-
-        if (action === "copy") {
-          const ok = await copyToClipboard(promptText, prompt.title);
-          if (ok) {
-            logEvent("prompt_copied", { promptId: id });
-            renderPromptList();
-          }
+        const ok = await copyToClipboard(promptText, prompt.title);
+        if (ok) {
+          logEvent("prompt_copied", { promptId: id });
+          renderPromptList();
         }
       };
     }
