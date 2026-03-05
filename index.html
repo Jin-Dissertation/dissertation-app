@@ -96,10 +96,34 @@
     .logo-claude{ background:#d97706; }
     .logo-other{ background:#64748b; }
     .disabledBtn { opacity:.55; cursor:not-allowed; }
-    .accessPrompt { font-size: 18px; font-weight: 600; color: var(--text); margin:0 0 10px; }
-    .accessRow { display:flex; align-items:center; gap:10px; }
-    .accessInput { max-width: 220px; font-size: 24px; font-weight:700; letter-spacing:.3px; text-align:center; padding: 12px 10px; }
-    .accessBtn { margin-top:0 !important; }
+    .accessPrompt { font-size: 24px; font-weight: 700; color: var(--text); margin:0 0 14px; line-height:1.3; }
+    .accessRow { display:flex; align-items:stretch; gap:12px; flex-wrap:nowrap; }
+    .accessInput {
+      width: 180px;
+      font-size: 28px;
+      font-weight:700;
+      letter-spacing:.3px;
+      text-align:center;
+      padding: 12px 10px;
+      flex: 0 0 auto;
+    }
+    .accessBtn {
+      margin-top:0 !important;
+      font-size: 20px;
+      font-weight: 700;
+      padding: 12px 20px;
+      align-self: stretch;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+    #accessMsg { font-size: 16px; }
+
+    @media (max-width: 560px) {
+      .accessRow { flex-wrap: wrap; }
+      .accessInput, .accessBtn { width: 100%; }
+    }
     .subBand { border:1px solid var(--border); border-radius: 12px; background:#f8fbff; padding:12px; margin-top:10px; }
     .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:800; }
     .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
@@ -176,21 +200,20 @@
 
             <div class="row" style="margin-top:10px;">
               <div style="flex:1; min-width: 240px;">
-                <label>Any additional desired instructions or parameters (optional)</label>
-                <input id="ctxNotes" placeholder="Optional guidance (e.g., difficulty level, tone, formatting preferences)" />
-              </div>
-              <div style="flex:1; min-width: 240px;">
                 <label>Desired number of questions</label>
                 <input id="ctxQuestionCount" type="number" min="1" value="10" />
+              </div>
+              <div style="flex:1; min-width: 240px;">
+                <label>Any additional desired instructions or parameters (optional)</label>
+                <input id="ctxNotes" placeholder="Optional guidance (e.g., difficulty level, tone, formatting preferences)" />
               </div>
             </div>
 
             <div class="row" style="margin-top:12px;">
               <button class="btn primary" id="btnCopyStarter">Copy starter prompt</button>
-              <button class="btn" id="btnGoPrompts" disabled>Continue to 2) Prompts</button>
             </div>
 
-            <p class="muted small" id="setupMsg" style="margin:10px 0 0;"></p>
+            <p class="muted small" id="setupMsg" style="margin:10px 0 0; display:none;"></p>
             <div class="row" style="margin-top:8px;">
               <button class="btn" id="btnGoPrompts" disabled>Proceed to 2) Prompts</button>
             </div>
@@ -220,13 +243,11 @@
 
               <div class="hr"></div>
 
-              <div class="centerCard" id="promptListNext"></div>
-
               <div class="subBand">
                 <div class="subBandTitle">Accept or replace</div>
                 <div class="twoCol">
                   <div id="promptListAccept"></div>
-                  <div id="promptListReplace"></div>
+                  <div id="promptListAcceptSpacer"></div>
                 </div>
               </div>
 
@@ -401,14 +422,6 @@ const PROMPTS = [
     description: "Accepts the current question and proceeds to the next question",
     template:
 `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
-  },
-  {
-    id: "replace_question_variety",
-    group: "Question Refinement",
-    title: "Replace Question (Variety)",
-    description: "Offers a variety of replacement questions",
-    template:
-`Write five possible replacements for this question. Begin with three new questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
   },
   {
     id: "distractor_options",
@@ -774,78 +787,110 @@ After the table, provide a list of 5 subtopics within the content area that have
     }
 
     function renderPromptList() {
-  const containers = {
-    next_question: $("promptListNext"),
-    replace_question_variety: $("promptListReplace"),
-    correct_answer_options: $("promptListCorrect"),
-    distractor_options: $("promptListDistractor"),
-    pause_review: $("promptListAuditLeft"),
-    rebalance_content: $("promptListAuditLeft"),
-    core_or_peripheral: $("promptListAuditLeft"),
-    rebalance_question_type: $("promptListAuditRight"),
-    difficulty_audit: $("promptListAuditRight"),
-    blooms_taxonomy_audit: $("promptListAuditRight")
-  };
+      const containers = {
+        accept: $("promptListAccept"),
+        correct_answer_options: $("promptListCorrect"),
+        distractor_options: $("promptListDistractor"),
+        pause_review: $("promptListAuditLeft"),
+        rebalance_content: $("promptListAuditLeft"),
+        core_or_peripheral: $("promptListAuditLeft"),
+        rebalance_question_type: $("promptListAuditRight"),
+        difficulty_audit: $("promptListAuditRight"),
+        blooms_taxonomy_audit: $("promptListAuditRight")
+      };
 
-  ["promptListNext","promptListAccept","promptListReplace","promptListCorrect","promptListDistractor","promptListAuditLeft","promptListAuditRight"]
-    .forEach((id) => { const el=$(id); if (el) el.innerHTML=""; });
+      ["promptListAccept", "promptListAcceptSpacer", "promptListCorrect", "promptListDistractor", "promptListAuditLeft", "promptListAuditRight"]
+        .forEach((id) => { const el = $(id); if (el) el.innerHTML = ""; });
 
-  const makeCard = (prompt) => {
-    const div = document.createElement("div");
-    div.className = "promptCard";
-    div.style.marginBottom = "10px";
+      const makeCard = (prompt) => {
+        const div = document.createElement("div");
+        div.className = "promptCard";
+        div.style.marginBottom = "10px";
 
-    const title = document.createElement("div");
-    title.className = "promptTitle";
-    title.textContent = prompt.title;
+        const title = document.createElement("div");
+        title.className = "promptTitle";
+        title.textContent = prompt.title;
+        div.appendChild(title);
 
-    return div;
-  };
+        if (prompt.description) {
+          const desc = document.createElement("p");
+          desc.className = "promptDesc";
+          desc.textContent = prompt.description;
+          div.appendChild(desc);
+        }
 
-  PROMPTS.forEach((p) => {
-    const target = containers[p.id];
-    if (!target) return;
-    target.appendChild(makeCard(p));
+        const row = document.createElement("div");
+        row.className = "row";
 
-    if (p.id === "next_question") {
-      const acceptClone = { ...p, title: "Accept", description: "Accepts the current question." };
-      $("promptListAccept")?.appendChild(makeCard(acceptClone));
-    }
-  });
+        const previewBtn = document.createElement("button");
+        previewBtn.type = "button";
+        previewBtn.className = "btn";
+        previewBtn.dataset.action = "preview";
+        previewBtn.dataset.id = prompt.id;
+        previewBtn.textContent = "Preview";
 
-  const wrapper = $("promptsInner");
-  wrapper.addEventListener("click", async (e) => {
-    const btn = e.target.closest("button");
-    if (!btn) return;
+        const copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.className = "btn primary";
+        copyBtn.dataset.action = "copy";
+        copyBtn.dataset.id = prompt.id;
+        copyBtn.textContent = "Copy";
 
-    const action = btn.dataset.action;
-    const id = btn.dataset.id;
-    if (!action || !id) return;
-    const prompt = PROMPTS.find(x => x.id === id);
-    if (!prompt) return;
+        row.appendChild(previewBtn);
+        row.appendChild(copyBtn);
+        div.appendChild(row);
 
-    const starter = buildStarterPrompt();
-    const body = fillTemplate(prompt.template);
-    const full = `${starter}
+        return div;
+      };
+
+      PROMPTS.forEach((p) => {
+        if (p.id === "next_question") {
+          const acceptPrompt = { ...p, id: "next_question", title: "Accept" };
+          containers.accept?.appendChild(makeCard(acceptPrompt));
+          return;
+        }
+
+        const target = containers[p.id];
+        if (!target) return;
+        target.appendChild(makeCard(p));
+      });
+
+      const wrapper = $("promptsInner");
+      wrapper.addEventListener("click", async (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        if (!action || !id) return;
+
+        const prompt = PROMPTS.find(x => x.id === id);
+        if (!prompt) return;
+
+        const starter = buildStarterPrompt();
+        const body = fillTemplate(prompt.template);
+        const full = `${starter}
 
 ---
 
 ${body}`;
 
-    previewBtn.addEventListener("click", () => {
-      const full = buildPromptText();
-      setPreview(full);
-      logEvent("prompt_previewed", { promptId: prompt.id });
-    });
+        if (action === "preview") {
+          setPreview(full);
+          logEvent("prompt_previewed", { promptId: id });
+          return;
+        }
 
-    copyBtn.addEventListener("click", async () => {
-      const full = buildPromptText();
-      await copyPlainText(full);
-      setPreview(full);
-      logEvent("prompt_copied", { promptId: id });
+        if (action === "copy") {
+          const ok = await copyPlainText(full);
+          if (ok) {
+            setPreview(full);
+            logEvent("prompt_copied", { promptId: id });
+          }
+        }
+      });
     }
-  });
-}
+
 
     // -----------------------------
     // Access verification
@@ -959,7 +1004,7 @@ ${body}`;
         $("sumPrompts"),
         () => !isPromptsUnlocked(),
         "bandSetup",
-        "Prompts are locked until you copy the starter prompt and click Continue."
+        "Prompts are locked until you copy the starter prompt and click Proceed."
       );
       lockableSummary(
         $("sumFinalize"),
@@ -998,6 +1043,10 @@ ${body}`;
       // Render prompts
       renderPromptList();
 
+      if (!($("setupMsg").textContent || "").trim()) {
+        $("setupMsg").style.display = "none";
+      }
+
       ["ctxCourse", "ctxArea", "ctxNotes", "ctxQuestionCount"].forEach((id) => {
         $(id).addEventListener("input", () => {
           localStorage.setItem(KEYS.starterCopied, "false");
@@ -1015,9 +1064,11 @@ ${body}`;
         const questionCount = ($("ctxQuestionCount").value || "10").trim() || "10";
 
         $("setupMsg").textContent = "";
+        $("setupMsg").style.display = "none";
 
         if (!model || !course || !area) {
           $("setupMsg").textContent = "Please select a model and fill in course + content area before continuing.";
+          $("setupMsg").style.display = "block";
           toast("Complete required fields");
           return;
         }
@@ -1046,6 +1097,7 @@ ${body}`;
           logEvent("starter_copied", {});
           localStorage.setItem(KEYS.starterCopied, "true");
           $("setupMsg").textContent = "Starter prompt copied. Paste it into your selected LLM, then click Proceed to 2) Prompts.";
+          $("setupMsg").style.display = "block";
         }
 
         applyStageUI();
@@ -1056,6 +1108,7 @@ ${body}`;
           toast("Copy starter prompt first");
           return;
         }
+        $("bandSetup").open = false;
         setStage("prompts");
       });
 
@@ -1135,6 +1188,9 @@ ${body}`;
         Object.values(KEYS).forEach(k => localStorage.removeItem(k));
         location.reload();
       });
+
+      // Always show footer status immediately (even before access is verified)
+      refreshFooterInfo();
 
       // Finally apply stage UI if already verified
       if (alreadyVerified) {
