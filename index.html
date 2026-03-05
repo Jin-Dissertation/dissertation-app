@@ -836,10 +836,6 @@ Do not include extra commentary before or after the table unless the user explic
 
         row.appendChild(makeCopyButton(prompt.id, options.primaryLabel || "Copy"));
 
-        if (options.includeReplaceButton) {
-          row.appendChild(makeCopyButton("replace_question", "Replace Question"));
-        }
-
         div.appendChild(row);
 
         return div;
@@ -848,7 +844,12 @@ Do not include extra commentary before or after the table unless the user explic
       PROMPTS.forEach((p) => {
         if (p.id === "next_question") {
           const acceptPrompt = { ...p, id: "next_question", title: "Accept" };
-          containers.accept?.appendChild(makeCard(acceptPrompt, { primaryLabel: "Accept", includeReplaceButton: true }));
+          containers.accept?.appendChild(makeCard(acceptPrompt, { primaryLabel: "Accept" }));
+          return;
+        }
+
+        if (p.id === "replace_question") {
+          containers.replace_question?.appendChild(makeCard(p, { primaryLabel: "Replace Question" }));
           return;
         }
 
@@ -871,18 +872,12 @@ Do not include extra commentary before or after the table unless the user explic
         const prompt = PROMPTS.find(x => x.id === id);
         if (!prompt) return;
 
-        const starter = buildStarterPrompt();
-        const body = fillTemplate(prompt.template);
-        const full = `${starter}
-
----
-
-${body}`;
+        const promptText = fillTemplate(prompt.template);
 
         if (action === "copy") {
-          const ok = await copyPlainText(full);
+          const ok = await copyPlainText(promptText);
           if (ok) {
-            setPreview(full);
+            setPreview(promptText);
             logEvent("prompt_copied", { promptId: id });
           }
         }
