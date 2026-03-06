@@ -186,13 +186,13 @@
     .modalCard { width:min(460px, calc(100vw - 24px)); background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; }
     .layoutGrid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 280px;
+      grid-template-columns: minmax(0, 1fr) 248px;
       gap: 16px;
       align-items: start;
     }
     .main { min-width: 0; }
     .sidebar {
-      width: 280px;
+      width: 248px;
       position: sticky;
       top: 16px;
       height: calc((100vh - 32px) * 0.8);
@@ -214,7 +214,7 @@
       word-break: break-word;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
     }
-    .promptSections { display:grid; gap:8px; }
+    .promptSections { display:grid; gap:14px; }
     .promptSection {
       border:1px solid var(--border);
       border-radius:10px;
@@ -223,6 +223,13 @@
     }
     .promptSectionTitle { margin:0 0 6px; font-size:13px; font-weight:700; }
     .promptListCompact { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; }
+    .promptListSingle { display:block; }
+    .promptListSingle .promptCard { width: 100%; }
+    .separator {
+      height: 1px;
+      background: var(--border);
+      margin: 12px 0;
+    }
     .promptCard {
       border:1px solid var(--border);
       border-radius:8px;
@@ -546,12 +553,23 @@
                     <h4 class="promptSectionTitle">Accept or Replace Question</h4>
                     <div id="promptGroupAcceptReplace" class="promptListCompact"></div>
                   </div>
+
                   <div class="promptSection">
                     <h4 class="promptSectionTitle">Refine Options</h4>
                     <div id="promptGroupRefine" class="promptListCompact"></div>
                   </div>
+
+                  <div class="separator"></div>
+
+                  <div>
+                    <h4 class="promptSectionTitle">Review Questions</h4>
+                    <div id="promptGroupReview" class="promptListSingle"></div>
+                  </div>
+
+                  <div class="separator"></div>
+
                   <div class="promptSection">
-                    <h4 class="promptSectionTitle">Pause and Audit</h4>
+                    <h4 class="promptSectionTitle">Question Set Audits</h4>
                     <div id="promptGroupAudit" class="promptListCompact"></div>
                   </div>
                 </div>
@@ -798,32 +816,32 @@ const PROMPTS = [
   {
     id: "next_question",
     group: "Question Refinement",
-    title: "Add & Continue",
-    description: "Accept this question and generate the next",
+    title: "Next Question",
+    description: "Proceeds to creating the next question",
     prompt:
 `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
   },
   {
     id: "replace_question",
     group: "Question Refinement",
-    title: "Generate Alternatives",
-    description: "Generate alternative questions",
+    title: "Replace Question",
+    description: "Offers a variety of replacement questions",
     prompt:
 `Write five possible replacements for this question. Begin with three new questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
   },
   {
     id: "distractor_options",
     group: "Question Refinement",
-    title: "Improve Distractors",
-    description: "Generate additional plausible distractors",
+    title: "Distractor Options",
+    description: "Offers a list of distractor options",
     prompt:
 `I want to improve the distractors for this question. Please list the 3 you already provided, then add 10 more plausible distractors that fit the same parameters. Number them 1-13 so I can tell you which ones to keep.`
   },
   {
     id: "correct_answer_options",
     group: "Question Refinement",
-    title: "Refine Correct Answer",
-    description: "Generate alternate versions of the correct answer",
+    title: "Correct Answer Options",
+    description: "Offers a list of correct answer options",
     prompt:
 `Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors.`
   },
@@ -834,24 +852,24 @@ const PROMPTS = [
   {
     id: "pause_review",
     group: "Pause and Audit",
-    title: "Review Current Set",
-    description: "Display all questions generated so far",
+    title: "Pause & Review",
+    description: "Shows the questions so far",
     prompt:
 `Pause and show me all of the questions that have been generated so far in this session. Organize them in the same table format as before so I can review them before moving on.`
   },
   {
     id: "rebalance_content",
     group: "Pause and Audit",
-    title: "Audit Topic Coverage",
-    description: "Display topic distribution and identify gaps",
+    title: "Rebalance Content",
+    description: "Shows covered and underrepresented subtopics",
     prompt:
 `Pause and audit how the questions are balanced between potential subtopics. Please break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance.`
   },
   {
     id: "core_or_peripheral",
     group: "Pause and Audit",
-    title: "Breadth Audit",
-    description: "Evaluate whether the set covers both core and peripheral topics",
+    title: "Core or Peripheral",
+    description: "Shows whether question content is core or peripheral",
     prompt:
 `Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
 Core: The most common, obvious, first-line, or 'go-to' fact or intervention.
@@ -866,8 +884,8 @@ Provide the results in a table with the following columns:
   {
     id: "rebalance_question_type",
     group: "Pause and Audit",
-    title: "Audit Question Types",
-    description: "Analyze distribution across question types",
+    title: "Rebalance Question Type",
+    description: "Shows used and underrepresented question types",
     prompt:
 `I would like to pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I rebalance the types of questions.`
   },
@@ -875,7 +893,7 @@ Provide the results in a table with the following columns:
     id: "difficulty_audit",
     group: "Pause and Audit",
     title: "Difficulty Audit",
-    description: "Show balance of easy, moderate, and hard questions",
+    description: "Categorizes questions by difficulty level",
     prompt:
 `Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix.`
   },
@@ -1571,13 +1589,18 @@ Do not include extra commentary before or after the table unless the user explic
           items: ["correct_answer_options", "distractor_options"]
         },
         {
-          group: "Pause and Audit",
+          group: "Review Questions",
+          container: $("promptGroupReview"),
+          items: ["pause_review"]
+        },
+        {
+          group: "Question Set Audits",
           container: $("promptGroupAudit"),
-          items: ["pause_review", "rebalance_content", "core_or_peripheral", "rebalance_question_type", "difficulty_audit", "blooms_taxonomy_audit"]
+          items: ["rebalance_content", "core_or_peripheral", "rebalance_question_type", "difficulty_audit", "blooms_taxonomy_audit"]
         }
       ];
 
-      ["promptGroupAcceptReplace", "promptGroupRefine", "promptGroupAudit"]
+      ["promptGroupAcceptReplace", "promptGroupRefine", "promptGroupReview", "promptGroupAudit"]
         .forEach((id) => { const el = $(id); if (el) el.innerHTML = ""; });
 
       const makePromptCard = (prompt) => {
