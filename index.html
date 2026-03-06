@@ -53,7 +53,7 @@
 }
 .groupTitle { font-weight: 800; margin: 0 0 8px; }
 .groupSub { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
-    
+
     .toast {
       position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
       background: rgba(16,33,61,.95); border:1px solid #2f6edc; padding: 10px 12px;
@@ -129,10 +129,9 @@
     .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
     @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
     .centerCard { max-width:420px; margin: 0 auto; }
-    .appHeaderBar { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:6px 2px; }
+    .appHeaderBar { display:flex; justify-content:flex-start; align-items:center; margin-bottom:10px; padding:6px 2px; }
     .btn.ghost { background:#f1f7ff; border:1px solid var(--border); color:var(--text); padding:6px 10px; }
-    .userLabel { font-size:12px; color:var(--muted); }
-    .modalBackdrop { position:fixed; inset:0; background:rgba(16,33,61,.35); display:none; align-items:center; justify-content:center; z-index:10000; }
+        .modalBackdrop { position:fixed; inset:0; background:rgba(16,33,61,.35); display:none; align-items:center; justify-content:center; z-index:10000; }
     .modalCard { width:min(460px, calc(100vw - 24px)); background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; }
     .layoutGrid {
       display: grid;
@@ -182,7 +181,7 @@
     }
     .promptHeader { display:flex; justify-content:space-between; align-items:center; gap:8px; }
     .promptActions { display:flex; align-items:center; gap:6px; }
-    .promptCopyBtn {
+    .copyIconBtn {
       width: 30px;
       height: 30px;
       border: 1px solid var(--border);
@@ -195,12 +194,15 @@
       cursor: pointer;
       padding: 0;
       line-height: 1;
+      flex: 0 0 30px;
     }
-    .promptCopyBtn svg { width: 14px; height: 14px; }
-    .promptCopyBtn.isActive { background: var(--accent-soft); border-color: var(--accent); color: #1f4ca4; }
+    .copyIconBtn svg { width: 14px; height: 14px; }
+    .copyIconBtn.isActive { background: var(--accent-soft); border-color: var(--accent); color: #1f4ca4; }
     .starterCopyControl { display:flex; align-items:center; gap:8px; }
     .finalizeNotice { margin:10px 0 0; display:none; }
     .finalizeLockedContent { opacity:.6; pointer-events:none; user-select:none; }
+    .finalActionBtn { min-height: 36px; padding: 8px 12px; border-radius: 10px; font-size: 14px; font-weight: 600; }
+    .finalActionBtn.btn.warn { font-weight: 600; }
     .promptTitle { font-weight:700; font-size:12px; margin:0; line-height:1.25; }
     .promptDesc {
       margin:4px 0 0;
@@ -214,10 +216,7 @@
       .btn { padding: 6px 8px; }
       .promptArea { max-height: calc(100vh - 260px); overflow:auto; padding-right:4px; }
     }
-    @media (max-width: 900px) {
-      .promptListCompact { grid-template-columns: 1fr; }
-    }
-        #btnSubmitForm[disabled] { background:#d6e1f3; color:#678; border-color:#c8d8f0; cursor:not-allowed; }
+            #btnSubmitForm[disabled] { background:#d6e1f3; color:#678; border-color:#c8d8f0; cursor:not-allowed; }
 
   </style>
 </head>
@@ -243,7 +242,7 @@
     <div id="appShell" style="display:none;">
       <div class="appHeaderBar">
         <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
-        <span class="userLabel" id="topUser">User</span>
+
       </div>
       <div class="layoutGrid">
         <div class="main">
@@ -254,13 +253,13 @@
             <strong>1) Set up</strong>
             <span class="tag" id="tagSetup">In progress</span>
           </div>
-          <span class="muted small" id="sumSetupHint">Required: model + course + content area</span>
+
         </summary>
         <div class="bandBody">
           <div class="card">
             <div class="row">
               <div style="flex:1; min-width: 240px;">
-                <label>Model used *</label>
+                <label>Model used</label>
                 <input type="hidden" id="modelUsed" />
                 <div class="modelGrid" id="modelGrid">
                   <button class="modelOption" data-model="ChatGPT" type="button"><span class="logoDot logo-openai">GPT</span><span>ChatGPT</span></button>
@@ -274,11 +273,11 @@
 
             <div class="row" style="margin-top:10px;">
               <div style="flex:1; min-width: 240px;">
-                <label>Course / class context *</label>
+                <label>Course / class context</label>
                 <input id="ctxCourse" placeholder="e.g., Health Assessment (first semester)" />
               </div>
               <div style="flex:1; min-width: 240px;">
-                <label>Content area *</label>
+                <label>Content area</label>
                 <input id="ctxArea" placeholder="e.g., Respiratory assessment" />
               </div>
             </div>
@@ -295,19 +294,19 @@
             </div>
 
             <p class="muted small" style="margin:10px 0 0;">
-              Click <strong>Copy starter prompt</strong>, paste it into your selected LLM, then click the button below to continue.
+              Click the icon to copy the starter prompt, paste it into your selected LLM, then click the button below to continue.
             </p>
 
             <div class="row" style="margin-top:12px;">
               <div class="starterCopyControl">
                 <span class="small">Copy starter prompt</span>
-                <button class="promptCopyBtn" id="btnCopyStarter" aria-label="Copy starter prompt" title="Copy starter prompt" type="button"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="9" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect><rect x="5" y="3" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect></svg></button>
+                <button class="copyIconBtn" id="btnCopyStarter" aria-label="Copy starter prompt" title="Copy starter prompt" type="button"></button>
               </div>
             </div>
 
             <p class="muted small" id="setupMsg" style="margin:10px 0 0; display:none;"></p>
             <div class="row" style="margin-top:8px;">
-              <button class="btn" id="btnGoPrompts" disabled>Proceed to 2) Prompts</button>
+              <button class="btn" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
             </div>
           </div>
         </div>
@@ -316,10 +315,10 @@
       <details class="band" id="bandPrompts">
         <summary id="sumPrompts">
           <div class="summaryLeft">
-            <strong>2) Prompts</strong>
+            <strong>2) Making questions</strong>
             <span class="tag lock" id="tagPrompts">Locked</span>
           </div>
-          <span class="muted small" id="sumPromptsHint">Unlocked after setup + continue</span>
+
         </summary>
         <div class="bandBody">
           <div class="lockMsg" id="lockPrompts">
@@ -354,8 +353,8 @@
                 <div class="hr"></div>
 
                 <div class="row" style="justify-content: space-between; margin-top:10px;">
-                  <span class="muted small">When you’re done using prompts, move to the final prompt step.</span>
-                  <button class="btn primary" id="btnReadyFinal">I'm ready for the final prompt</button>
+                  <span class="muted small">When you’re either done creating questions (this workflow aims for a set number of questions) or you’d like to end with the questions you’ve created so far, click this button to continue.</span>
+                  <button class="btn primary" id="btnReadyFinal">I'm done making questions</button>
                 </div>
               </div>
             </div>
@@ -369,23 +368,23 @@
             <strong>3) Finalize & submit</strong>
             <span class="tag lock" id="tagFinalize">Locked</span>
           </div>
-          <span class="muted small" id="sumFinalizeHint">Unlocked after “I’m ready…”</span>
+
         </summary>
         <div class="bandBody">
           <div class="lockMsg" id="lockFinalize">
-            Complete <strong>2) Prompts</strong> and click <strong>I’m ready for the final prompt</strong> to unlock final submission.
+            Complete <strong>2) Making questions</strong> and click <strong>I'm done making questions</strong> to unlock final submission.
           </div>
 
           <div id="finalizeInner" style="display:none;">
             <div class="card">
               <div class="row" style="justify-content: space-between;">
-                <button class="btn primary" id="btnCopyFinal">Copy final prompt</button>
-                <button class="btn" id="btnBackToPrompts">Go back to prompts</button>
+                <div class="starterCopyControl"><span class="small">Copy final prompt</span><button class="copyIconBtn" id="btnCopyFinal" aria-label="Copy final prompt" title="Copy final prompt" type="button"></button></div>
+                <button class="btn" id="btnBackToPrompts">Go back to making questions</button>
               </div>
 
               <p class="muted small finalizeNotice" id="finalizeCopyNotice"></p>
 
-              <div id="finalizeLockedArea" class="finalizeLockedContent" style="margin-top:8px;">
+              <div id="finalizeLockedArea" class="finalizeLockedContent" style="margin-top:8px; display:none;">
                 <p class="muted small" style="margin:10px 0 0;">
                   After you use the final prompt in your model, paste the model’s final output below.
                 </p>
@@ -395,18 +394,13 @@
                   <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
                 </div>
 
-                <div style="margin-top:10px;">
-                  <label>Recording link (optional)</label>
-                  <input id="recordingLink" placeholder="Optional: paste a share link to your audio/video reflection" />
-                </div>
-
                 <p class="muted small" style="margin:10px 0 0;">This will open a Google Form where you will submit your session.</p>
                 <div class="row" style="margin-top:8px;">
-                  <button class="btn primary" id="btnSubmitForm">Submit session (Google Form)</button>
+                  <button class="btn primary finalActionBtn" id="btnSubmitForm">Submit session (Google Form)</button>
                 </div>
 
                 <details id="formFailedDetails" style="margin-top:12px; display:none;">
-                <summary class="btn warn" style="display:inline-block;">
+                <summary class="btn warn finalActionBtn" style="display:inline-block;">
                   Click here if the Google Form failed to be filled properly
                 </summary>
 
@@ -445,7 +439,7 @@
               <p class="muted small" id="finalizeMsg" style="margin:10px 0 0;"></p>
 
               <div class="row" id="endSessionRow" style="margin-top:10px; display:none;">
-                <button class="btn danger" id="btnEndSession" type="button">End session</button>
+                <button class="btn danger finalActionBtn" id="btnEndSession" type="button">End session</button>
               </div>
             </div>
           </div>
@@ -459,7 +453,7 @@
             <p class="copyMeta" id="recentCopiedMeta">Nothing copied yet. Click any Copy button to see it here.</p>
             <textarea id="recentCopiedText" class="copiedText recentTextarea" readonly placeholder="Nothing copied yet. Click any Copy button to see it here."></textarea>
             <div class="row" style="margin-top:10px;">
-              <button class="btn" id="btnCopyAgain" disabled><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" style="width:14px;height:14px;"><rect x="9" y="9" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect><rect x="5" y="3" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect></svg> Copy</button>
+              <div class="starterCopyControl"><span class="small">Copy</span><button class="copyIconBtn" id="btnCopyAgain" disabled type="button" aria-label="Copy" title="Copy"></button></div>
               <button class="btn" id="btnClearRecent" disabled>Clear</button>
             </div>
           </div>
@@ -743,7 +737,7 @@ Provide the results in a table with the following columns:
       row.dataset.readyToEnd = isSessionReadyToEnd() ? "true" : "false";
     }
 
-    
+
     function getFinalizeCopyInstructionLine(model) {
       const m = (model || "").trim();
       if (m === "ChatGPT") return "Then, copy the final response from ChatGPT (the icon should look like this: [[ICON_PLACEHOLDER_CHATGPT]]) and paste it into the field below.";
@@ -762,7 +756,6 @@ Provide the results in a table with the following columns:
       const endRow = $("endSessionRow");
       const submitBtn = $("btnSubmitForm");
       const llm = $("llmResponse");
-      const rec = $("recordingLink");
 
       if (notice) {
         if (copied) {
@@ -775,12 +768,15 @@ Provide the results in a table with the following columns:
         }
       }
 
-      if (lockedArea) lockedArea.classList.toggle("finalizeLockedContent", !copied);
+      if (lockedArea) {
+        lockedArea.style.display = copied ? "block" : "none";
+        lockedArea.classList.toggle("finalizeLockedContent", !copied);
+      }
       if (llm) llm.disabled = !copied;
-      if (rec) rec.disabled = !copied;
-      if (submitBtn) submitBtn.disabled = !copied;
-      if (formFailed) formFailed.style.display = submitted ? "block" : "none";
-      if (endRow) endRow.style.display = submitted ? "flex" : "none";
+      const hasResponse = !!((llm?.value || "").trim());
+      if (submitBtn) submitBtn.disabled = !copied || !hasResponse;
+      if (formFailed) formFailed.style.display = copied && submitted ? "block" : "none";
+      if (endRow) endRow.style.display = copied && submitted ? "flex" : "none";
     }
 
     function clearSessionData() {
@@ -864,6 +860,31 @@ Do not include extra commentary before or after the table unless the user explic
         .replaceAll("{{COURSE}}", ctx.course || "the course")
         .replaceAll("{{AREA}}", ctx.area || "the content area")
         .replaceAll("{{NOTES_LINE}}", notesLine);
+    }
+
+
+    function getClipboardSvg() {
+      return `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="9" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect><rect x="5" y="3" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect></svg>`;
+    }
+
+    function makeCopyIconButton({ id = "", label = "Copy prompt", title = "Copy prompt", className = "copyIconBtn" } = {}) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      if (id) btn.id = id;
+      btn.className = className;
+      btn.setAttribute("aria-label", label);
+      btn.setAttribute("title", title);
+      btn.innerHTML = getClipboardSvg();
+      return btn;
+    }
+
+    function hydrateCopyIconButton(btn, { label = "Copy prompt", title = "Copy prompt" } = {}) {
+      if (!btn) return;
+      btn.classList.add("copyIconBtn");
+      btn.setAttribute("aria-label", label);
+      btn.setAttribute("title", title);
+      btn.type = "button";
+      btn.innerHTML = getClipboardSvg();
     }
 
     // -----------------------------
@@ -1070,17 +1091,10 @@ Do not include extra commentary before or after the table unless the user explic
         const actions = document.createElement("div");
         actions.className = "promptActions";
 
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "promptCopyBtn";
+        const btn = makeCopyIconButton({ label: "Copy prompt", title: "Copy prompt" });
         btn.dataset.action = "copy";
         btn.dataset.id = prompt.id;
-        btn.setAttribute("aria-label", "Copy prompt");
-        btn.setAttribute("title", "Copy prompt");
-
-        const clipboardSvg = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="9" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect><rect x="5" y="3" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect></svg>`;
         if (activeCopyPromptId === prompt.id) btn.classList.add("isActive");
-        btn.innerHTML = clipboardSvg;
 
         actions.appendChild(btn);
 
@@ -1253,13 +1267,13 @@ Do not include extra commentary before or after the table unless the user explic
         $("sumPrompts"),
         () => !isPromptsUnlocked(),
         "bandSetup",
-        "Prompts are locked until you copy the starter prompt and click Proceed."
+        "Making questions is locked until you copy the starter prompt and click Proceed."
       );
       lockableSummary(
         $("sumFinalize"),
         () => !isFinalizeUnlocked(),
         "bandPrompts",
-        "Finalize is locked until you click “I’m ready for the final prompt.”"
+        "Finalize is locked until you click “I'm done making questions.”"
       );
 
       // Hydrate fields
@@ -1286,17 +1300,23 @@ Do not include extra commentary before or after the table unless the user explic
       });
       selectModel($("modelUsed").value || "");
 
+      // Hydrate reusable copy icon buttons
+      hydrateCopyIconButton($("btnCopyStarter"), { label: "Copy starter prompt", title: "Copy starter prompt" });
+      hydrateCopyIconButton($("btnCopyFinal"), { label: "Copy final prompt", title: "Copy final prompt" });
+      hydrateCopyIconButton($("btnCopyAgain"), { label: "Copy", title: "Copy" });
+
       // Render prompts
       renderPromptList();
 
       renderMostRecentCopied();
-      $("topUser").textContent = localStorage.getItem(KEYS.accessCode) || "User";
       if (!localStorage.getItem(KEYS.finalPromptCopied)) localStorage.setItem(KEYS.finalPromptCopied, "false");
       if (!localStorage.getItem(KEYS.submitClicked)) localStorage.setItem(KEYS.submitClicked, "false");
       updateFinalizeContentUI();
 
       $("btnCopyAgain").addEventListener("click", async () => {
         if (!lastCopiedText.trim()) return;
+        $("btnCopyAgain").classList.add("isActive");
+        setTimeout(() => $("btnCopyAgain")?.classList.remove("isActive"), 400);
         await copyToClipboard(lastCopiedText, lastCopiedLabel || "Most Recently Copied");
       });
 
@@ -1362,7 +1382,7 @@ Do not include extra commentary before or after the table unless the user explic
         if (ok) {
           logEvent("starter_copied", {});
           localStorage.setItem(KEYS.starterCopied, "true");
-          $("setupMsg").textContent = "Starter prompt copied. Paste it into your selected LLM, then click Proceed to 2) Prompts.";
+          $("setupMsg").textContent = "Starter prompt copied. Paste it into your selected LLM, then click Proceed to 2) Making questions.";
           $("setupMsg").style.display = "block";
         }
 
@@ -1399,16 +1419,24 @@ Do not include extra commentary before or after the table unless the user explic
 
       $("btnCopyFinal").addEventListener("click", async () => {
         const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
-        await copyToClipboard(fp, "Final prompt");
+        $("btnCopyFinal").classList.add("isActive");
+        setTimeout(() => $("btnCopyFinal")?.classList.remove("isActive"), 400);
+        const ok = await copyToClipboard(fp, "Final prompt");
+        if (!ok) return;
         localStorage.setItem(KEYS.finalPromptCopied, "true");
         logEvent("final_prompt_copied", {});
         updateFinalizeContentUI();
       });
 
       $("btnSubmitForm").addEventListener("click", () => {
+        if ($("btnSubmitForm").disabled) return;
         localStorage.setItem(KEYS.submitClicked, "true");
         updateFinalizeContentUI();
         openPrefilledGoogleForm();
+      });
+
+      $("llmResponse").addEventListener("input", () => {
+        updateFinalizeContentUI();
       });
 
       // Download backup json
@@ -1423,7 +1451,6 @@ Do not include extra commentary before or after the table unless the user explic
           last_copied_text: lastCopiedText || "",
           final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
           llm_response: $("llmResponse").value || "",
-          recording_link: $("recordingLink").value || "",
           exported_at: nowIso()
         };
 
