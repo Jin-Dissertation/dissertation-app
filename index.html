@@ -9,7 +9,7 @@
     :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; }
     body { margin:0; font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); letter-spacing: .01em; }
     .pageShell { max-width: 1200px; margin: 0 auto; padding: 24px; }
-    h1 { font-family: "Source Serif 4", "Georgia", serif; font-size: 24px; font-weight:700; margin: 0 0 10px; letter-spacing: .01em; }
+    h1 { font-family: inherit; font-size: 24px; font-weight:700; margin: 0 0 10px; letter-spacing: .01em; }
     .sub { color: var(--muted); margin: 0 0 18px; }
     .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
     @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
@@ -130,7 +130,7 @@
     @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
     .centerCard { max-width:420px; margin: 0 auto; }
     .appHeaderBar { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:6px 2px; }
-    .btn.ghost { background:transparent; border-color:transparent; color:var(--muted); padding:6px 8px; }
+    .btn.ghost { background:#f1f7ff; border:1px solid var(--border); color:var(--text); padding:6px 10px; }
     .userLabel { font-size:12px; color:var(--muted); }
     .modalBackdrop { position:fixed; inset:0; background:rgba(16,33,61,.35); display:none; align-items:center; justify-content:center; z-index:10000; }
     .modalCard { width:min(460px, calc(100vw - 24px)); background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; }
@@ -195,16 +195,13 @@
       line-height: 1;
     }
     .promptCopyBtn svg { width: 14px; height: 14px; }
+    .promptCopyBtn.isActive { background: var(--accent-soft); border-color: var(--accent); color: #1f4ca4; }
     .promptTitle { font-weight:700; font-size:12px; margin:0; line-height:1.25; }
     .promptDesc {
       margin:4px 0 0;
-      font-size:11px;
+      font-size:10.5px;
       color:var(--muted);
-      line-height:1.25;
-      display:-webkit-box;
-      -webkit-line-clamp:1;
-      -webkit-box-orient:vertical;
-      overflow:hidden;
+      line-height:1.2;
     }
     @media (max-width: 960px) {
       .promptCard { padding: 6px; }
@@ -215,8 +212,7 @@
     @media (max-width: 760px) {
       .promptListCompact { grid-template-columns: 1fr; }
     }
-    .copy-indicator { font-size: 0.8em; margin-left: 6px; color: var(--accent); display:inline-flex; align-items:center; }
-    #btnSubmitForm[disabled] { background:#d6e1f3; color:#678; border-color:#c8d8f0; cursor:not-allowed; }
+        #btnSubmitForm[disabled] { background:#d6e1f3; color:#678; border-color:#c8d8f0; cursor:not-allowed; }
 
   </style>
 </head>
@@ -449,7 +445,7 @@
             <p class="copyMeta" id="recentCopiedMeta">Nothing copied yet. Click any Copy button to see it here.</p>
             <textarea id="recentCopiedText" class="copiedText" readonly placeholder="Nothing copied yet. Click any Copy button to see it here."></textarea>
             <div class="row" style="margin-top:10px;">
-              <button class="btn" id="btnCopyAgain" disabled>Copy again</button>
+              <button class="btn" id="btnCopyAgain" disabled><span aria-hidden="true">📋</span> Copy</button>
               <button class="btn" id="btnClearRecent" disabled>Clear</button>
             </div>
           </div>
@@ -656,8 +652,8 @@ Provide the results in a table with the following columns:
     let lastCopiedText = "";
     let lastCopiedLabel = "";
     let lastCopiedAt = null;
-    let flashCopiedPromptId = "";
-    let flashCopiedTimer = null;
+    let activeCopyPromptId = "";
+    let activeCopyTimer = null;
 
     const toast = (msg) => {
       const t = $("toast");
@@ -1025,20 +1021,16 @@ Do not include extra commentary before or after the table unless the user explic
         btn.setAttribute("aria-label", "Copy prompt");
         btn.setAttribute("title", "Copy prompt");
 
-        if (flashCopiedPromptId === prompt.id) {
-          btn.textContent = "✓";
+        const clipboardSvg = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="9" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect><rect x="5" y="3" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect></svg>`;
+        const clipboardCheckSvg = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="9" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect><rect x="5" y="3" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect><path d="M11.5 15.5l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>`;
+        if (activeCopyPromptId === prompt.id) {
+          btn.classList.add("isActive");
+          btn.innerHTML = clipboardCheckSvg;
         } else {
-          btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="9" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect><rect x="5" y="3" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect></svg>`;
+          btn.innerHTML = clipboardSvg;
         }
 
         actions.appendChild(btn);
-
-        if (prompt.title === lastCopiedLabel) {
-          const indicator = document.createElement("span");
-          indicator.className = "copy-indicator";
-          indicator.textContent = "✓";
-          actions.appendChild(indicator);
-        }
 
         header.appendChild(actions);
         card.appendChild(header);
@@ -1078,12 +1070,12 @@ Do not include extra commentary before or after the table unless the user explic
         const ok = await copyToClipboard(promptText, prompt.title);
         if (ok) {
           logEvent("prompt_copied", { promptId: id });
-          flashCopiedPromptId = id;
-          if (flashCopiedTimer) clearTimeout(flashCopiedTimer);
-          flashCopiedTimer = setTimeout(() => {
-            flashCopiedPromptId = "";
+          activeCopyPromptId = id;
+          if (activeCopyTimer) clearTimeout(activeCopyTimer);
+          activeCopyTimer = setTimeout(() => {
+            activeCopyPromptId = "";
             renderPromptList();
-          }, 1200);
+          }, 400);
           renderPromptList();
         }
       };
