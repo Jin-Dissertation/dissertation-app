@@ -490,6 +490,15 @@
             <div id="contextSubband" class="subBand" style="display:none; margin-top:10px;">
               <h4 class="subBandTitle">1B) Question context</h4>
 
+            <div id="productVersionSummary" class="subBand productVersionSummary" style="display:none;" role="button" tabindex="0">
+              <div class="title">Product and version confirmed</div>
+              <div class="muted small" id="productVersionSummaryText"></div>
+            </div>
+            </div>
+
+            <div id="contextSubband" class="subBand" style="display:none; margin-top:10px;">
+              <h4 class="subBandTitle">1B) Question context</h4>
+
             <div class="row" style="margin-top:10px;">
               <div style="flex:1; min-width: 240px;">
                 <label>Course / class context</label>
@@ -1312,19 +1321,10 @@ Provide the results in a table with the following columns:
     // -----------------------------
     function refreshFooterInfo() {
       const code = localStorage.getItem(KEYS.accessCode) || "—";
-      const sid = localStorage.getItem(KEYS.sessionId) || "—";
       const startIso = localStorage.getItem(KEYS.sessionStartTime);
-      const model = localStorage.getItem(KEYS.modelUsed) || "—";
-      const stage = getStage();
-      const productKey = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-      const productInterface = formatLlmProductLabel(productKey);
-      const confirmedOption = formatLlmExpectedChoiceLabel(productKey, expectedChoice);
-
-      const ctx = getContext();
       const started = startIso ? new Date(startIso).toLocaleString() : "—";
       const last = document.lastModified || "—";
-      $("buildInfo").textContent = `Participant: ${code} • Session: ${sid} • Started: ${started} • Model: ${model} • Product interface: ${productInterface} • Confirmed visible option: ${confirmedOption} • Course: ${ctx.course || "—"} • Area: ${ctx.area || "—"} • Additional instructions: ${ctx.notes || "—"} • Stage: ${stage} • Last updated: ${last}`;
+      $("buildInfo").textContent = `Participant: ${code} • Started: ${started} • Last updated: ${last}`;
     }
 
     // -----------------------------
