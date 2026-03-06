@@ -798,32 +798,32 @@ const PROMPTS = [
   {
     id: "next_question",
     group: "Question Refinement",
-    title: "Next Question",
-    description: "Proceeds to creating the next question",
+    title: "Add & Continue",
+    description: "Accept this question and generate the next",
     prompt:
 `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
   },
   {
     id: "replace_question",
     group: "Question Refinement",
-    title: "Replace Question",
-    description: "Offers a variety of replacement questions",
+    title: "Generate Alternatives",
+    description: "Generate alternative questions",
     prompt:
 `Write five possible replacements for this question. Begin with three new questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
   },
   {
     id: "distractor_options",
     group: "Question Refinement",
-    title: "Distractor Options",
-    description: "Offers a list of distractor options",
+    title: "Improve Distractors",
+    description: "Generate additional plausible distractors",
     prompt:
 `I want to improve the distractors for this question. Please list the 3 you already provided, then add 10 more plausible distractors that fit the same parameters. Number them 1-13 so I can tell you which ones to keep.`
   },
   {
     id: "correct_answer_options",
     group: "Question Refinement",
-    title: "Correct Answer Options",
-    description: "Offers a list of correct answer options",
+    title: "Refine Correct Answer",
+    description: "Generate alternate versions of the correct answer",
     prompt:
 `Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors.`
   },
@@ -834,24 +834,24 @@ const PROMPTS = [
   {
     id: "pause_review",
     group: "Pause and Audit",
-    title: "Pause & Review",
-    description: "Shows the questions so far",
+    title: "Review Current Set",
+    description: "Display all questions generated so far",
     prompt:
 `Pause and show me all of the questions that have been generated so far in this session. Organize them in the same table format as before so I can review them before moving on.`
   },
   {
     id: "rebalance_content",
     group: "Pause and Audit",
-    title: "Rebalance Content",
-    description: "Shows covered and underrepresented subtopics",
+    title: "Audit Topic Coverage",
+    description: "Display topic distribution and identify gaps",
     prompt:
 `Pause and audit how the questions are balanced between potential subtopics. Please break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance.`
   },
   {
     id: "core_or_peripheral",
     group: "Pause and Audit",
-    title: "Core or Peripheral",
-    description: "Shows whether question content is core or peripheral",
+    title: "Breadth Audit",
+    description: "Evaluate whether the set covers both core and peripheral topics",
     prompt:
 `Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
 Core: The most common, obvious, first-line, or 'go-to' fact or intervention.
@@ -866,8 +866,8 @@ Provide the results in a table with the following columns:
   {
     id: "rebalance_question_type",
     group: "Pause and Audit",
-    title: "Rebalance Question Type",
-    description: "Shows used and underrepresented question types",
+    title: "Audit Question Types",
+    description: "Analyze distribution across question types",
     prompt:
 `I would like to pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I rebalance the types of questions.`
   },
@@ -875,7 +875,7 @@ Provide the results in a table with the following columns:
     id: "difficulty_audit",
     group: "Pause and Audit",
     title: "Difficulty Audit",
-    description: "Categorizes questions by difficulty level",
+    description: "Show balance of easy, moderate, and hard questions",
     prompt:
 `Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix.`
   },
