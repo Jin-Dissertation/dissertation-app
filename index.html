@@ -164,6 +164,16 @@
     }
     .llmCompactSelect { width: 100%; max-width: 100%; min-width: 0; }
     .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:600; }
+
+    .productVersionSummary {
+      cursor: pointer;
+      padding: 12px 14px;
+    }
+    .productVersionSummary .title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
     .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
     @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
     .centerCard { max-width:420px; margin: 0 auto; }
@@ -385,7 +395,7 @@
                 </div>
               </div>
 
-              <div class="subBand" style="margin-top:10px;">
+              <div id="productVersionEditor" class="subBand" style="margin-top:10px;">
               <h4 class="subBandTitle">Confirm product version</h4>
               <p class="muted small llmConfirmIntro">Please leave the product in its default mode for this activity, then confirm what you see in the menu.</p>
 
@@ -448,6 +458,15 @@
                 <label for="llmOtherDescription">Please describe the AI product you are using.</label>
                 <textarea id="llmOtherDescription" placeholder="Briefly describe the AI product you are using."></textarea>
               </div>
+
+              <div class="row" style="margin-top:10px;">
+                <button class="btn" id="btnConfirmProductVersion" type="button" disabled>Confirm product and version</button>
+              </div>
+            </div>
+
+            <div id="productVersionSummary" class="subBand productVersionSummary" style="display:none;" role="button" tabindex="0">
+              <div class="title">Product and version confirmed</div>
+              <div class="muted small" id="productVersionSummaryText"></div>
             </div>
             </div>
 
@@ -888,7 +907,8 @@ Provide the results in a table with the following columns:
       llmProduct: "dissertation.llmProduct",
       llmExpectedChoice: "dissertation.llmExpectedChoice",
       llmMismatchDescription: "dissertation.llmMismatchDescription",
-      llmOtherDescription: "dissertation.llmOtherDescription"
+      llmOtherDescription: "dissertation.llmOtherDescription",
+      productVersionConfirmed: "dissertation.productVersionConfirmed"
     };
 
     // -----------------------------
@@ -1050,12 +1070,42 @@ Provide the results in a table with the following columns:
       return !!expectedChoice;
     }
 
+    function getProductVersionSummaryText() {
+      const productKey = localStorage.getItem(KEYS.llmProduct) || "";
+      const expectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
+      const otherDescription = (localStorage.getItem(KEYS.llmOtherDescription) || "").trim();
+      const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
+      const productLabel = formatLlmProductLabel(productKey);
+
+      let versionLabel = formatLlmExpectedChoiceLabel(productKey, expectedChoice);
+      if (productKey === "other") {
+        versionLabel = otherDescription || "(described by participant)";
+      } else if (expectedChoice === "different") {
+        versionLabel = mismatchDescription || "I see something different";
+      }
+
+      return `Product: ${productLabel} · Version/menu: ${versionLabel || "—"}`;
+    }
+
+    function setProductVersionConfirmedState(isConfirmed) {
+      localStorage.setItem(KEYS.productVersionConfirmed, isConfirmed ? "true" : "false");
+    }
+
     function updateSetupSubbandVisibility() {
       const contextSubband = $("contextSubband");
-      if (!contextSubband) return;
-      const product = localStorage.getItem(KEYS.llmProduct) || "";
-      const show = !!product && isSetupVersionConfirmedForContext();
-      contextSubband.style.display = show ? "block" : "none";
+      const editor = $("productVersionEditor");
+      const summary = $("productVersionSummary");
+      const summaryText = $("productVersionSummaryText");
+      const confirmBtn = $("btnConfirmProductVersion");
+      const canConfirm = isSetupVersionConfirmedForContext();
+      const isConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
+      const showConfirmed = isConfirmed && canConfirm;
+
+      if (confirmBtn) confirmBtn.disabled = !canConfirm;
+      if (summaryText) summaryText.textContent = getProductVersionSummaryText();
+      if (editor) editor.style.display = showConfirmed ? "none" : "block";
+      if (summary) summary.style.display = showConfirmed ? "block" : "none";
+      if (contextSubband) contextSubband.style.display = showConfirmed ? "block" : "none";
     }
 
     function renderLlmConfirmPanel(productKey) {
@@ -1201,13 +1251,13 @@ Provide the results in a table with the following columns:
           const model = localStorage.getItem(KEYS.modelUsed) || "Other";
           notice.style.display = "block";
           notice.innerHTML = `
-            Paste the final prompt into your selected LLM.<br><br>
-            When the model generates its response, copy the full output using the copy icon.<br><br>
-            <details style="display:inline-block;">
+            1) Paste the final prompt into your selected LLM.<br><br>
+            2) Copy the model's full response.<br>
+            <details style="display:inline-block; margin-top:6px;">
               <summary class="whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
               <div style="margin-top:6px;">${getFinalizeCopyInstructionLine(model)}</div>
             </details><br><br>
-            Paste the copied response below.
+            3) Paste that response below.
           `;
         } else {
           notice.style.display = "none";
@@ -1747,7 +1797,10 @@ Do not include extra commentary before or after the table unless the user explic
 
         const llmProduct = normalizeLlmProduct(model);
         localStorage.setItem(KEYS.llmProduct, llmProduct);
-        if (logSelection) logEvent("llm_product_selected", { llmProduct });
+        if (logSelection) {
+          logEvent("llm_product_selected", { llmProduct });
+          setProductVersionConfirmedState(false);
+        }
         renderLlmConfirmPanel(llmProduct);
       };
 
@@ -1788,6 +1841,7 @@ Do not include extra commentary before or after the table unless the user explic
           }
 
           logEvent("llm_expected_choice_selected", { llmProduct, expectedChoice });
+          setProductVersionConfirmedState(false);
 
           if (expectedChoice === "different") {
             setLlmMismatchVisibility(true, true);
@@ -1806,6 +1860,8 @@ Do not include extra commentary before or after the table unless the user explic
         llmMismatchDescriptionEl.addEventListener("input", async () => {
           const mismatchDescription = llmMismatchDescriptionEl.value || "";
           localStorage.setItem(KEYS.llmMismatchDescription, mismatchDescription);
+          setProductVersionConfirmedState(false);
+          updateSetupSubbandVisibility();
 
           const trimmed = mismatchDescription.trim();
           const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
@@ -1846,7 +1902,39 @@ Do not include extra commentary before or after the table unless the user explic
         llmOtherDescriptionEl.value = localStorage.getItem(KEYS.llmOtherDescription) || "";
         llmOtherDescriptionEl.addEventListener("input", () => {
           localStorage.setItem(KEYS.llmOtherDescription, llmOtherDescriptionEl.value || "");
+          setProductVersionConfirmedState(false);
           updateSetupSubbandVisibility();
+        });
+      }
+
+      const confirmProductVersionBtn = $("btnConfirmProductVersion");
+      const productVersionSummary = $("productVersionSummary");
+      if (!localStorage.getItem(KEYS.productVersionConfirmed)) {
+        localStorage.setItem(KEYS.productVersionConfirmed, "false");
+      }
+
+      if (confirmProductVersionBtn) {
+        confirmProductVersionBtn.addEventListener("click", () => {
+          if (!isSetupVersionConfirmedForContext()) return;
+          setProductVersionConfirmedState(true);
+          logEvent("product_version_confirm_clicked");
+          updateSetupSubbandVisibility();
+        });
+      }
+
+      const reopenProductVersion = () => {
+        setProductVersionConfirmedState(false);
+        logEvent("product_version_reopened");
+        updateSetupSubbandVisibility();
+      };
+
+      if (productVersionSummary) {
+        productVersionSummary.addEventListener("click", reopenProductVersion);
+        productVersionSummary.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            reopenProductVersion();
+          }
         });
       }
 
