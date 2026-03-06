@@ -1185,6 +1185,7 @@ Do not include extra commentary before or after the table unless the user explic
       }
 
       setLockedState(false);
+      if ($("topUser")) $("topUser").textContent = code || "User";
       logEvent("access_verified", { accessCode: code });
       toast("Access verified ✅");
 
