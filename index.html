@@ -228,8 +228,9 @@
     }
     .promptSectionTitle { margin:0 0 4px; font-size:13px; font-weight:700; }
     .promptListCompact { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:8px; min-width: 0; }
-    .promptListSingle { display:block; min-width: 0; }
-    .promptListSingle .promptCard { width: 100%; }
+    .promptListSingle { display:block; min-width: 0; width: 100%; max-width: 100%; overflow-x: hidden; }
+    .promptListSingle .promptCard { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
+    .promptReviewBlock { min-width: 0; width: 100%; max-width: 100%; overflow-x: hidden; box-sizing: border-box; margin: 0; padding: 0; }
     .promptCard {
       border:1px solid var(--border);
       border-radius:8px;
@@ -237,9 +238,10 @@
       padding:6px;
       min-height: 40px;
       min-width: 0;
+      box-sizing: border-box;
     }
-    .promptHeader { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-    .promptActions { display:flex; align-items:center; gap:6px; }
+    .promptHeader { display:flex; justify-content:space-between; align-items:center; gap:8px; min-width: 0; box-sizing: border-box; }
+    .promptActions { display:flex; align-items:center; gap:6px; min-width: 0; }
     .copyIconBtn {
       width: 30px;
       height: 30px;
@@ -562,7 +564,7 @@
                     <div id="promptGroupRefine" class="promptListCompact"></div>
                   </div>
 
-                  <div>
+                  <div class="promptReviewBlock">
                     <h4 class="promptSectionTitle">Pause &amp; Review</h4>
                     <div id="promptGroupReview" class="promptListSingle"></div>
                   </div>
