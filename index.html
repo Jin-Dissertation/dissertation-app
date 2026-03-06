@@ -86,9 +86,12 @@
     .tag.lock { border-color: rgba(245,158,11,.5); color: #9a5800; background:#fff7e8; }
     .bandBody { padding: 16px 6px 6px; }
     .lockMsg { border:1px dashed var(--border); border-radius: 10px; padding:10px; color: var(--muted); background: #f7faff; }
-    .modelGrid { display:grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap:8px; }
-    .modelOption { border:1px solid var(--border); border-radius: 10px; padding:8px 6px; min-height:78px; background:#f8fbff; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
-    .modelOption.active { border:2px solid var(--accent); background: var(--accent-soft); }
+    .hidden { display:none !important; }
+    .modelGrid, .product-grid { display:grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap:14px; }
+    .modelOption, .product-card { border:1px solid var(--border); border-radius: 10px; padding:8px 6px; min-height:78px; background:#f8fbff; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; }
+    .modelOption:hover, .product-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.08); border-color: var(--accent); }
+    .modelOption:active, .product-card:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+    .modelOption.active, .modelOption.selected, .product-card.selected { border:2px solid var(--accent); background: var(--accent-soft); transform: translateY(-1px); }
     .logoDot { width:30px; height:30px; border-radius:999px; display:grid; place-items:center; font-size:10px; font-weight:700; color:#fff; }
     .productLogoImage {
       width: 32px;
@@ -349,8 +352,9 @@
               <div class="row">
                 <div style="flex:1; min-width: 240px;">
                   <label>Product used</label>
+                  <p class="muted small" style="margin:0 0 8px;">Select the AI product you are using.</p>
                   <input type="hidden" id="modelUsed" />
-                  <div class="modelGrid" id="modelGrid">
+                  <div class="modelGrid product-grid" id="modelGrid">
                   <!--
                   To replace this text circle with an image logo, replace the span/logo element with:
 
@@ -360,7 +364,7 @@
                     class="productLogoImage"
                   />
                   -->
-                  <button class="modelOption" data-model="ChatGPT" type="button"><span class="logoDot logo-openai">GPT</span><span>ChatGPT</span></button>
+                  <button class="modelOption product-card" data-model="ChatGPT" type="button"><span class="logoDot logo-openai">GPT</span><span>ChatGPT</span></button>
                   <!--
                   To replace this text circle with an image logo, replace the span/logo element with:
 
@@ -370,7 +374,7 @@
                     class="productLogoImage"
                   />
                   -->
-                  <button class="modelOption" data-model="Gemini" type="button"><span class="logoDot logo-gemini">G</span><span>Gemini</span></button>
+                  <button class="modelOption product-card" data-model="Gemini" type="button"><span class="logoDot logo-gemini">G</span><span>Gemini</span></button>
                   <!--
                   To replace this text circle with an image logo, replace the span/logo element with:
 
@@ -380,7 +384,7 @@
                     class="productLogoImage"
                   />
                   -->
-                  <button class="modelOption" data-model="Copilot" type="button"><span class="logoDot logo-copilot">Co</span><span>Copilot</span></button>
+                  <button class="modelOption product-card" data-model="Copilot" type="button"><span class="logoDot logo-copilot">Co</span><span>Copilot</span></button>
                   <!--
                   To replace this text circle with an image logo, replace the span/logo element with:
 
@@ -390,7 +394,7 @@
                     class="productLogoImage"
                   />
                   -->
-                  <button class="modelOption" data-model="Claude" type="button"><span class="logoDot logo-claude">Cl</span><span>Claude</span></button>
+                  <button class="modelOption product-card" data-model="Claude" type="button"><span class="logoDot logo-claude">Cl</span><span>Claude</span></button>
                   <!--
                   To replace this text circle with an image logo, replace the span/logo element with:
 
@@ -400,12 +404,12 @@
                     class="productLogoImage"
                   />
                   -->
-                  <button class="modelOption" data-model="Other" type="button"><span class="logoDot logo-other">AI</span><span>Other</span></button>
+                  <button class="modelOption product-card" data-model="Other" type="button"><span class="logoDot logo-other">AI</span><span>Other</span></button>
                   </div>
                 </div>
               </div>
 
-              <div id="productVersionEditor" class="subBand" style="margin-top:10px;">
+              <div id="productVersionEditor" class="subBand hidden" style="margin-top:10px;">
               <h4 class="subBandTitle">Confirm product version</h4>
               <p class="muted small llmConfirmIntro">Please leave the product in its default mode for this activity, then confirm what you see in the menu.</p>
 
@@ -473,6 +477,15 @@
                 <button class="btn" id="btnConfirmProductVersion" type="button" disabled>Confirm product and version</button>
               </div>
             </div>
+
+            <div id="productVersionSummary" class="subBand productVersionSummary" style="display:none;" role="button" tabindex="0">
+              <div class="title">Product and version confirmed</div>
+              <div class="muted small" id="productVersionSummaryText"></div>
+            </div>
+            </div>
+
+            <div id="contextSubband" class="subBand" style="display:none; margin-top:10px;">
+              <h4 class="subBandTitle">1B) Question context</h4>
 
             <div id="productVersionSummary" class="subBand productVersionSummary" style="display:none;" role="button" tabindex="0">
               <div class="title">Product and version confirmed</div>
@@ -562,14 +575,14 @@
                   <div class="separator"></div>
 
                   <div>
-                    <h4 class="promptSectionTitle">Review Questions</h4>
+                    <h4 class="promptSectionTitle">Pause &amp; Review</h4>
                     <div id="promptGroupReview" class="promptListSingle"></div>
                   </div>
 
                   <div class="separator"></div>
 
                   <div class="promptSection">
-                    <h4 class="promptSectionTitle">Question Set Audits</h4>
+                    <h4 class="promptSectionTitle">Audit Options</h4>
                     <div id="promptGroupAudit" class="promptListCompact"></div>
                   </div>
                 </div>
@@ -1122,9 +1135,12 @@ Provide the results in a table with the following columns:
       const isConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
       const showConfirmed = isConfirmed && canConfirm;
 
+      const productSelected = !!(localStorage.getItem(KEYS.llmProduct) || "");
       if (confirmBtn) confirmBtn.disabled = !canConfirm;
       if (summaryText) summaryText.textContent = getProductVersionSummaryText();
-      if (editor) editor.style.display = showConfirmed ? "none" : "block";
+      if (editor) {
+        editor.classList.toggle("hidden", !productSelected || showConfirmed);
+      }
       if (summary) summary.style.display = showConfirmed ? "block" : "none";
       if (contextSubband) contextSubband.style.display = showConfirmed ? "block" : "none";
     }
@@ -1649,6 +1665,7 @@ Do not include extra commentary before or after the table unless the user explic
       const wrapper = $("promptsInner");
       wrapper.onclick = async (e) => {
         const btn = e.target.closest("button");
+        if (btn) e.preventDefault();
         if (!btn) return;
 
         const action = btn.dataset.action;
@@ -1818,7 +1835,9 @@ Do not include extra commentary before or after the table unless the user explic
       const selectModel = (model, { logSelection = true } = {}) => {
         $("modelUsed").value = model;
         document.querySelectorAll(".modelOption").forEach((btn) => {
-          btn.classList.toggle("active", btn.dataset.model === model);
+          const isSelected = btn.dataset.model === model;
+          btn.classList.toggle("active", isSelected);
+          btn.classList.toggle("selected", isSelected);
         });
 
         const llmProduct = normalizeLlmProduct(model);
@@ -1831,7 +1850,8 @@ Do not include extra commentary before or after the table unless the user explic
       };
 
       document.querySelectorAll(".modelOption").forEach((btn) => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
           selectModel(btn.dataset.model || "", { logSelection: true });
           localStorage.setItem(KEYS.starterCopied, "false");
           applyStageUI();
@@ -1972,7 +1992,8 @@ Do not include extra commentary before or after the table unless the user explic
       if (!localStorage.getItem(KEYS.submitClicked)) localStorage.setItem(KEYS.submitClicked, "false");
       updateFinalizeContentUI();
 
-      $("btnCopyAgain").addEventListener("click", async () => {
+      $("btnCopyAgain").addEventListener("click", async (e) => {
+        e.preventDefault();
         if (!lastCopiedText.trim()) return;
         logEvent("copy_again_clicked");
         const btn = $("btnCopyAgain");
@@ -2003,7 +2024,8 @@ Do not include extra commentary before or after the table unless the user explic
       });
 
       // Setup: Copy starter prompt only
-      $("btnCopyStarter").addEventListener("click", async () => {
+      $("btnCopyStarter").addEventListener("click", async (e) => {
+        e.preventDefault();
         // Validate required items
         const model = ($("modelUsed").value || "").trim();
         const course = ($("ctxCourse").value || "").trim();
@@ -2096,7 +2118,8 @@ Do not include extra commentary before or after the table unless the user explic
         setStage("prompts");
       });
 
-      $("btnCopyFinal").addEventListener("click", async () => {
+      $("btnCopyFinal").addEventListener("click", async (e) => {
+        e.preventDefault();
         const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
         const finalBtn = $("btnCopyFinal");
         finalBtn.classList.add("isActive");
