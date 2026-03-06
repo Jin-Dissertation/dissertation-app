@@ -9,11 +9,11 @@
     :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; }
     body { margin:0; font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); letter-spacing: .01em; }
     .pageShell { max-width: 1200px; margin: 0 auto; padding: 24px; }
-    h1 { font-family: inherit; font-size: 30px; font-weight:700; margin: 0 0 8px; letter-spacing: .01em; }
+    h1 { font-family: inherit; font-size: 24px; font-weight:700; margin: 0 0 10px; letter-spacing: .01em; }
     .sub { color: var(--muted); margin: 0 0 18px; }
     .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
     @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
-    .card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(16,33,61,0.05); }
+    .card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 14px; }
     .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     label { font-size: 12px; color: var(--muted); display:block; margin-bottom:6px; }
     input, select, textarea {
@@ -62,7 +62,7 @@
     }
 
     /* Accordion */
-    details.band { margin-top: 18px; }
+    details.band { margin-top: 12px; }
     details.band > summary {
       list-style: none;
       cursor: pointer;
@@ -96,11 +96,11 @@
     .logo-claude{ background:#d97706; }
     .logo-other{ background:#64748b; }
     .disabledBtn { opacity:.55; cursor:not-allowed; }
-    .accessPrompt { font-size: 18px; font-weight: 700; color: var(--text); margin:0 0 14px; line-height:1.3; }
+    .accessPrompt { font-size: 24px; font-weight: 700; color: var(--text); margin:0 0 14px; line-height:1.3; }
     .accessRow { display:flex; align-items:stretch; gap:12px; flex-wrap:nowrap; }
     .accessInput {
       width: 180px;
-      font-size: 20px;
+      font-size: 28px;
       font-weight:700;
       letter-spacing:.3px;
       text-align:center;
@@ -109,7 +109,7 @@
     }
     .accessBtn {
       margin-top:0 !important;
-      font-size: 17px;
+      font-size: 20px;
       font-weight: 700;
       padding: 12px 20px;
       align-self: stretch;
@@ -144,7 +144,7 @@
       width: 280px;
       position: sticky;
       top: 16px;
-      height: calc((100vh - 32px) * 0.8);
+      height: calc(100vh - 32px);
       align-self: start;
     }
     .stickySidebar.recentCard {
@@ -223,7 +223,6 @@
 <body>
   <div class="pageShell">
     <h1>Dissertation Prompt App</h1>
-    <p class="sub">Enter your participant code to begin this session.</p>
 
     <!-- Access gate -->
     <div class="card" id="accessGate">
@@ -354,6 +353,7 @@
                 <div class="hr"></div>
 
                 <div class="row" style="justify-content: space-between; margin-top:10px;">
+                  <span class="muted small">When you’re either done creating questions (this workflow aims for a set number of questions) or you’d like to end with the questions you’ve created so far, click this button to continue.</span>
                   <button class="btn primary" id="btnReadyFinal">I'm done making questions</button>
                 </div>
               </div>
@@ -684,19 +684,7 @@ Provide the results in a table with the following columns:
 
     function logEvent(type, data = {}) {
       const events = loadJSON(KEYS.events, []);
-      const stage = getStage();
-      const accessCode = localStorage.getItem(KEYS.accessCode) || "";
-      const sessionId = localStorage.getItem(KEYS.sessionId) || "";
-      const modelUsed = localStorage.getItem(KEYS.modelUsed) || "";
-      events.push({
-        t: nowIso(),
-        type,
-        stage,
-        accessCode,
-        sessionId,
-        modelUsed,
-        ...data
-      });
+      events.push({ t: nowIso(), type, ...data });
       saveJSON(KEYS.events, events);
     }
 
@@ -726,16 +714,8 @@ Provide the results in a table with the following columns:
     }
 
     function setStage(stage) {
-      const previousStage = getStage();
-      if (previousStage !== stage) {
-        logEvent("stage_exited", { stage: previousStage });
-        localStorage.setItem(KEYS.stage, stage);
-        logEvent("stage_entered", { stage });
-        logEvent("stage_set", { stage });
-      } else {
-        localStorage.setItem(KEYS.stage, stage);
-        logEvent("stage_set", { stage });
-      }
+      localStorage.setItem(KEYS.stage, stage);
+      logEvent("stage_set", { stage });
       applyStageUI();
     }
 
@@ -1277,12 +1257,6 @@ Do not include extra commentary before or after the table unless the user explic
         setLockedState(true);
       }
 
-      requestAnimationFrame(() => {
-        if ($("accessGate")?.style.display !== "none") {
-          $("accessCodeInput")?.focus();
-        }
-      });
-
       $("accessForm").addEventListener("submit", (e) => {
         e.preventDefault();
         verifyAccessCode();
@@ -1341,14 +1315,12 @@ Do not include extra commentary before or after the table unless the user explic
 
       $("btnCopyAgain").addEventListener("click", async () => {
         if (!lastCopiedText.trim()) return;
-        logEvent("copy_again_clicked");
         $("btnCopyAgain").classList.add("isActive");
         setTimeout(() => $("btnCopyAgain")?.classList.remove("isActive"), 400);
         await copyToClipboard(lastCopiedText, lastCopiedLabel || "Most Recently Copied");
       });
 
       $("btnClearRecent").addEventListener("click", () => {
-        logEvent("clear_recent_clicked");
         lastCopiedText = "";
         lastCopiedLabel = "";
         lastCopiedAt = null;
@@ -1418,7 +1390,6 @@ Do not include extra commentary before or after the table unless the user explic
       });
 
       $("btnGoPrompts").addEventListener("click", () => {
-        logEvent("go_prompts_clicked");
         if (localStorage.getItem(KEYS.starterCopied) !== "true") {
           toast("Copy starter prompt first");
           return;
@@ -1429,12 +1400,10 @@ Do not include extra commentary before or after the table unless the user explic
 
       // Prompts controls
       $("btnEditContext").addEventListener("click", () => {
-        logEvent("edit_context_clicked");
         setStage("setup");
       });
 
       $("btnReadyFinal").addEventListener("click", () => {
-        logEvent("done_making_questions_clicked");
         const fp = buildFinalPrompt();
         localStorage.setItem(KEYS.finalPrompt, fp);
         localStorage.setItem(KEYS.finalPromptCopied, "false");
@@ -1445,8 +1414,6 @@ Do not include extra commentary before or after the table unless the user explic
 
       // Finalize controls
       $("btnBackToPrompts").addEventListener("click", () => {
-        logEvent("back_to_making_questions_clicked");
-        logEvent("returned_from_finalize_to_prompts");
         setStage("prompts");
       });
 
@@ -1463,7 +1430,6 @@ Do not include extra commentary before or after the table unless the user explic
 
       $("btnSubmitForm").addEventListener("click", () => {
         if ($("btnSubmitForm").disabled) return;
-        logEvent("submit_form_clicked");
         localStorage.setItem(KEYS.submitClicked, "true");
         updateFinalizeContentUI();
         openPrefilledGoogleForm();
@@ -1473,18 +1439,8 @@ Do not include extra commentary before or after the table unless the user explic
         updateFinalizeContentUI();
       });
 
-      const formFailedDetails = $("formFailedDetails");
-      if (formFailedDetails) {
-        formFailedDetails.addEventListener("toggle", () => {
-          if (formFailedDetails.open) {
-            logEvent("form_failed_details_opened");
-          }
-        });
-      }
-
       // Download backup json
       $("btnDownload").addEventListener("click", () => {
-        logEvent("backup_download_clicked");
         const record = {
           participant_code: localStorage.getItem(KEYS.accessCode),
           session_id: localStorage.getItem(KEYS.sessionId),
@@ -1514,31 +1470,17 @@ Do not include extra commentary before or after the table unless the user explic
       const openModal = (id) => { const m = $(id); if (m) m.style.display = "flex"; };
       const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
 
-      $("btnResetSession").addEventListener("click", () => {
-        logEvent("reset_opened");
-        openModal("modalReset");
-      });
-      $("btnResetCancel").addEventListener("click", () => {
-        logEvent("reset_cancelled");
-        closeModal("modalReset");
-      });
+      $("btnResetSession").addEventListener("click", () => openModal("modalReset"));
+      $("btnResetCancel").addEventListener("click", () => closeModal("modalReset"));
       $("btnResetConfirm").addEventListener("click", () => {
-        logEvent("reset_confirmed");
         clearSessionData();
         closeModal("modalReset");
         location.reload();
       });
 
-      $("btnEndSession").addEventListener("click", () => {
-        logEvent("end_session_opened");
-        openModal("modalEnd");
-      });
-      $("btnEndCancel").addEventListener("click", () => {
-        logEvent("end_session_cancelled");
-        closeModal("modalEnd");
-      });
+      $("btnEndSession").addEventListener("click", () => openModal("modalEnd"));
+      $("btnEndCancel").addEventListener("click", () => closeModal("modalEnd"));
       $("btnEndConfirm").addEventListener("click", () => {
-        logEvent("end_session_confirmed");
         clearSessionData();
         sessionStorage.setItem("dissertation.ended", "true");
         closeModal("modalEnd");
