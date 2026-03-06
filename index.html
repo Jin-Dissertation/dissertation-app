@@ -297,18 +297,18 @@
       transform: rotate(90deg);
     }
 
-    .promptTitle { font-weight:700; font-size:12px; margin:0; line-height:1.25; min-width: 0; overflow-wrap: anywhere; }
+    .promptTitle { font-weight:600; font-size:15px; margin:0; line-height:1.25; min-width: 0; overflow-wrap: anywhere; color: var(--text); }
     .promptDesc {
       margin:3px 0 0;
-      font-size:10.5px;
-      color:var(--muted);
-      line-height:1.2;
+      font-size:13px;
+      color:#6b7280;
+      line-height:1.35;
       min-width: 0;
       overflow-wrap: anywhere;
     }
     @media (max-width: 960px) {
       .promptCard { padding: 6px; }
-      .promptDesc { font-size: 10.5px; }
+      .promptDesc { font-size: 13px; }
       .btn { padding: 6px 8px; }
       .promptArea { max-height: calc(100vh - 260px); overflow:auto; padding-right:4px; min-width: 0; overflow-x: hidden; }
     }
@@ -486,6 +486,9 @@
               <div class="muted small" id="productVersionSummaryText"></div>
             </div>
             </div>
+
+            <div id="contextSubband" class="subBand" style="display:none; margin-top:10px;">
+              <h4 class="subBandTitle">1B) Question context</h4>
 
             <div id="contextSubband" class="subBand" style="display:none; margin-top:10px;">
               <h4 class="subBandTitle">1B) Question context</h4>
@@ -824,32 +827,32 @@ const PROMPTS = [
   {
     id: "next_question",
     group: "Question Refinement",
-    title: "Next Question",
-    description: "Proceeds to creating the next question",
+    title: "Accept & Continue",
+    description: "Accept this question and generate the next one.",
     prompt:
 `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
   },
   {
     id: "replace_question",
     group: "Question Refinement",
-    title: "Replace Question",
-    description: "Offers a variety of replacement questions",
+    title: "Generate Alternatives",
+    description: "Generate replacement versions of this question.",
     prompt:
 `Write five possible replacements for this question. Begin with three new questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
   },
   {
     id: "distractor_options",
     group: "Question Refinement",
-    title: "Distractor Options",
-    description: "Offers a list of distractor options",
+    title: "Refine Distractors",
+    description: "Generate additional plausible distractor options.",
     prompt:
 `I want to improve the distractors for this question. Please list the 3 you already provided, then add 10 more plausible distractors that fit the same parameters. Number them 1-13 so I can tell you which ones to keep.`
   },
   {
     id: "correct_answer_options",
     group: "Question Refinement",
-    title: "Correct Answer Options",
-    description: "Offers a list of correct answer options",
+    title: "Refine Correct Answer",
+    description: "Generate alternate versions of the correct answer.",
     prompt:
 `Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors.`
   },
@@ -860,24 +863,24 @@ const PROMPTS = [
   {
     id: "pause_review",
     group: "Pause and Audit",
-    title: "Pause & Review",
-    description: "Shows the questions so far",
+    title: "Review Questions",
+    description: "Show all questions generated so far.",
     prompt:
 `Pause and show me all of the questions that have been generated so far in this session. Organize them in the same table format as before so I can review them before moving on.`
   },
   {
     id: "rebalance_content",
     group: "Pause and Audit",
-    title: "Rebalance Content",
-    description: "Shows covered and underrepresented subtopics",
+    title: "Topic Coverage Audit",
+    description: "Identify overrepresented and underrepresented subtopics.",
     prompt:
 `Pause and audit how the questions are balanced between potential subtopics. Please break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance.`
   },
   {
     id: "core_or_peripheral",
     group: "Pause and Audit",
-    title: "Core or Peripheral",
-    description: "Shows whether question content is core or peripheral",
+    title: "Breadth Audit",
+    description: "Classify questions as core or peripheral in focus.",
     prompt:
 `Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
 Core: The most common, obvious, first-line, or 'go-to' fact or intervention.
@@ -892,8 +895,8 @@ Provide the results in a table with the following columns:
   {
     id: "rebalance_question_type",
     group: "Pause and Audit",
-    title: "Rebalance Question Type",
-    description: "Shows used and underrepresented question types",
+    title: "Question Type Audit",
+    description: "Analyze the distribution of question types.",
     prompt:
 `I would like to pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I rebalance the types of questions.`
   },
@@ -901,15 +904,15 @@ Provide the results in a table with the following columns:
     id: "difficulty_audit",
     group: "Pause and Audit",
     title: "Difficulty Audit",
-    description: "Categorizes questions by difficulty level",
+    description: "Analyze the distribution of difficulty levels.",
     prompt:
 `Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix.`
   },
   {
     id: "blooms_taxonomy_audit",
     group: "Pause and Audit",
-    title: "Bloom’s Taxonomy Audit",
-    description: "Categorizes questions by Bloom’s level",
+    title: "Bloom’s Level Audit",
+    description: "Analyze the distribution of Bloom’s taxonomy levels.",
     prompt:
 `Please pause and audit my current MCQ set for Bloom’s taxonomy alignment. For each question, assign the primary level (Remember, Understand, Apply, Analyze, Evaluate, or Create). Show me the counts and percentages in each category. Then, suggest underrepresented levels and give me ideas for how to add or revise questions to cover them.`
   }
