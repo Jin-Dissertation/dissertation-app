@@ -683,7 +683,19 @@ Provide the results in a table with the following columns:
 
     function logEvent(type, data = {}) {
       const events = loadJSON(KEYS.events, []);
-      events.push({ t: nowIso(), type, ...data });
+      const stage = getStage();
+      const accessCode = localStorage.getItem(KEYS.accessCode) || "";
+      const sessionId = localStorage.getItem(KEYS.sessionId) || "";
+      const modelUsed = localStorage.getItem(KEYS.modelUsed) || "";
+      events.push({
+        t: nowIso(),
+        type,
+        stage,
+        accessCode,
+        sessionId,
+        modelUsed,
+        ...data
+      });
       saveJSON(KEYS.events, events);
     }
 
@@ -713,8 +725,16 @@ Provide the results in a table with the following columns:
     }
 
     function setStage(stage) {
-      localStorage.setItem(KEYS.stage, stage);
-      logEvent("stage_set", { stage });
+      const previousStage = getStage();
+      if (previousStage !== stage) {
+        logEvent("stage_exited", { stage: previousStage });
+        localStorage.setItem(KEYS.stage, stage);
+        logEvent("stage_entered", { stage });
+        logEvent("stage_set", { stage });
+      } else {
+        localStorage.setItem(KEYS.stage, stage);
+        logEvent("stage_set", { stage });
+      }
       applyStageUI();
     }
 
@@ -1314,12 +1334,14 @@ Do not include extra commentary before or after the table unless the user explic
 
       $("btnCopyAgain").addEventListener("click", async () => {
         if (!lastCopiedText.trim()) return;
+        logEvent("copy_again_clicked");
         $("btnCopyAgain").classList.add("isActive");
         setTimeout(() => $("btnCopyAgain")?.classList.remove("isActive"), 400);
         await copyToClipboard(lastCopiedText, lastCopiedLabel || "Most Recently Copied");
       });
 
       $("btnClearRecent").addEventListener("click", () => {
+        logEvent("clear_recent_clicked");
         lastCopiedText = "";
         lastCopiedLabel = "";
         lastCopiedAt = null;
@@ -1389,6 +1411,7 @@ Do not include extra commentary before or after the table unless the user explic
       });
 
       $("btnGoPrompts").addEventListener("click", () => {
+        logEvent("go_prompts_clicked");
         if (localStorage.getItem(KEYS.starterCopied) !== "true") {
           toast("Copy starter prompt first");
           return;
@@ -1399,10 +1422,12 @@ Do not include extra commentary before or after the table unless the user explic
 
       // Prompts controls
       $("btnEditContext").addEventListener("click", () => {
+        logEvent("edit_context_clicked");
         setStage("setup");
       });
 
       $("btnReadyFinal").addEventListener("click", () => {
+        logEvent("done_making_questions_clicked");
         const fp = buildFinalPrompt();
         localStorage.setItem(KEYS.finalPrompt, fp);
         localStorage.setItem(KEYS.finalPromptCopied, "false");
@@ -1413,6 +1438,8 @@ Do not include extra commentary before or after the table unless the user explic
 
       // Finalize controls
       $("btnBackToPrompts").addEventListener("click", () => {
+        logEvent("back_to_making_questions_clicked");
+        logEvent("returned_from_finalize_to_prompts");
         setStage("prompts");
       });
 
@@ -1429,6 +1456,7 @@ Do not include extra commentary before or after the table unless the user explic
 
       $("btnSubmitForm").addEventListener("click", () => {
         if ($("btnSubmitForm").disabled) return;
+        logEvent("submit_form_clicked");
         localStorage.setItem(KEYS.submitClicked, "true");
         updateFinalizeContentUI();
         openPrefilledGoogleForm();
@@ -1438,8 +1466,18 @@ Do not include extra commentary before or after the table unless the user explic
         updateFinalizeContentUI();
       });
 
+      const formFailedDetails = $("formFailedDetails");
+      if (formFailedDetails) {
+        formFailedDetails.addEventListener("toggle", () => {
+          if (formFailedDetails.open) {
+            logEvent("form_failed_details_opened");
+          }
+        });
+      }
+
       // Download backup json
       $("btnDownload").addEventListener("click", () => {
+        logEvent("backup_download_clicked");
         const record = {
           participant_code: localStorage.getItem(KEYS.accessCode),
           session_id: localStorage.getItem(KEYS.sessionId),
@@ -1469,17 +1507,31 @@ Do not include extra commentary before or after the table unless the user explic
       const openModal = (id) => { const m = $(id); if (m) m.style.display = "flex"; };
       const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
 
-      $("btnResetSession").addEventListener("click", () => openModal("modalReset"));
-      $("btnResetCancel").addEventListener("click", () => closeModal("modalReset"));
+      $("btnResetSession").addEventListener("click", () => {
+        logEvent("reset_opened");
+        openModal("modalReset");
+      });
+      $("btnResetCancel").addEventListener("click", () => {
+        logEvent("reset_cancelled");
+        closeModal("modalReset");
+      });
       $("btnResetConfirm").addEventListener("click", () => {
+        logEvent("reset_confirmed");
         clearSessionData();
         closeModal("modalReset");
         location.reload();
       });
 
-      $("btnEndSession").addEventListener("click", () => openModal("modalEnd"));
-      $("btnEndCancel").addEventListener("click", () => closeModal("modalEnd"));
+      $("btnEndSession").addEventListener("click", () => {
+        logEvent("end_session_opened");
+        openModal("modalEnd");
+      });
+      $("btnEndCancel").addEventListener("click", () => {
+        logEvent("end_session_cancelled");
+        closeModal("modalEnd");
+      });
       $("btnEndConfirm").addEventListener("click", () => {
+        logEvent("end_session_confirmed");
         clearSessionData();
         sessionStorage.setItem("dissertation.ended", "true");
         closeModal("modalEnd");
