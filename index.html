@@ -901,8 +901,6 @@ Provide the results in a table with the following columns:
     let lastCopiedText = "";
     let lastCopiedLabel = "";
     let lastCopiedAt = null;
-    let activeCopyPromptId = "";
-    let activeCopyTimer = null;
     let llmMismatchReported = false;
     let llmMismatchAlertAttempted = false;
 
@@ -1547,7 +1545,6 @@ Do not include extra commentary before or after the table unless the user explic
         const btn = makeCopyIconButton({ label: "Copy prompt", title: "Copy prompt" });
         btn.dataset.action = "copy";
         btn.dataset.id = prompt.id;
-        if (activeCopyPromptId === prompt.id) btn.classList.add("isActive");
 
         actions.appendChild(btn);
 
@@ -1589,14 +1586,13 @@ Do not include extra commentary before or after the table unless the user explic
         const ok = await copyToClipboard(promptText, prompt.title);
         if (ok) {
           logEvent("prompt_copied", { promptId: id });
-          activeCopyPromptId = id;
-          if (activeCopyTimer) clearTimeout(activeCopyTimer);
-          activeCopyTimer = setTimeout(() => {
-            activeCopyPromptId = "";
-            renderPromptList();
+          btn.classList.add("isActive");
+          if (btn._activeTimer) clearTimeout(btn._activeTimer);
+          btn._activeTimer = setTimeout(() => {
+            btn.classList.remove("isActive");
           }, 400);
-          renderPromptList();
         }
+        btn.blur();
       };
     }
 
@@ -1865,9 +1861,12 @@ Do not include extra commentary before or after the table unless the user explic
       $("btnCopyAgain").addEventListener("click", async () => {
         if (!lastCopiedText.trim()) return;
         logEvent("copy_again_clicked");
-        $("btnCopyAgain").classList.add("isActive");
-        setTimeout(() => $("btnCopyAgain")?.classList.remove("isActive"), 400);
+        const btn = $("btnCopyAgain");
+        btn.classList.add("isActive");
+        if (btn._activeTimer) clearTimeout(btn._activeTimer);
+        btn._activeTimer = setTimeout(() => btn?.classList.remove("isActive"), 400);
         await copyToClipboard(lastCopiedText, lastCopiedLabel || "Most Recently Copied");
+        btn.blur();
       });
 
       $("btnClearRecent").addEventListener("click", () => {
@@ -1934,9 +1933,12 @@ Do not include extra commentary before or after the table unless the user explic
 
         // Log + copy only
         logEvent("starter_prepared", { accessCode: code, sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
-        $("btnCopyStarter").classList.add("isActive");
-        setTimeout(() => $("btnCopyStarter")?.classList.remove("isActive"), 400);
+        const starterBtn = $("btnCopyStarter");
+        starterBtn.classList.add("isActive");
+        if (starterBtn._activeTimer) clearTimeout(starterBtn._activeTimer);
+        starterBtn._activeTimer = setTimeout(() => starterBtn?.classList.remove("isActive"), 400);
         const ok = await copyToClipboard(buildStarterPrompt(), "Starter prompt");
+        starterBtn.blur();
         if (ok) {
           logEvent("starter_copied", {});
           localStorage.setItem(KEYS.starterCopied, "true");
@@ -1982,9 +1984,12 @@ Do not include extra commentary before or after the table unless the user explic
 
       $("btnCopyFinal").addEventListener("click", async () => {
         const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
-        $("btnCopyFinal").classList.add("isActive");
-        setTimeout(() => $("btnCopyFinal")?.classList.remove("isActive"), 400);
+        const finalBtn = $("btnCopyFinal");
+        finalBtn.classList.add("isActive");
+        if (finalBtn._activeTimer) clearTimeout(finalBtn._activeTimer);
+        finalBtn._activeTimer = setTimeout(() => finalBtn?.classList.remove("isActive"), 400);
         const ok = await copyToClipboard(fp, "Final prompt");
+        finalBtn.blur();
         if (!ok) return;
         localStorage.setItem(KEYS.finalPromptCopied, "true");
         logEvent("final_prompt_copied", {});
