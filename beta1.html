@@ -9,18 +9,18 @@
     :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; }
     body { margin:0; font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); letter-spacing: .01em; }
     .pageShell { max-width: 1200px; margin: 0 auto; padding: 24px; }
-    h1 { font-family: inherit; font-size: 30px; font-weight:700; margin: 0 0 18px; letter-spacing: .01em; }
+    h1 { font-family: inherit; font-size: 24px; font-weight:700; margin: 0 0 10px; letter-spacing: .01em; }
     .sub { color: var(--muted); margin: 0 0 18px; }
     .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
     @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
-    .card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(16,33,61,0.05); }
+    .card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 14px; }
     .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    label { font-size: 12px; color: var(--muted); display:block; margin-bottom:4px; }
+    label { font-size: 12px; color: var(--muted); display:block; margin-bottom:6px; }
     input, select, textarea {
       width:100%; background:#f8fbff; border:1px solid var(--border); color:var(--text);
       border-radius: 10px; padding: 10px; box-sizing:border-box;
     }
-    textarea { min-height: 140px; resize: vertical; line-height: 1.4; }
+    textarea { min-height: 140px; resize: vertical; }
         .btn {
       background: #f1f7ff; border:1px solid var(--border); color:var(--text);
       padding:10px 12px; border-radius: 10px; cursor:pointer;
@@ -62,7 +62,7 @@
     }
 
     /* Accordion */
-    details.band { margin-top: 18px; }
+    details.band { margin-top: 12px; }
     details.band > summary {
       list-style: none;
       cursor: pointer;
@@ -84,31 +84,23 @@
     }
     .tag.ok { border-color: rgba(47,110,220,.45); color: #1f4ca4; background: var(--accent-soft); }
     .tag.lock { border-color: rgba(245,158,11,.5); color: #9a5800; background:#fff7e8; }
-    .bandBody { padding: 16px 6px 6px; }
+    .bandBody { padding: 12px 2px 2px; }
     .lockMsg { border:1px dashed var(--border); border-radius: 10px; padding:10px; color: var(--muted); background: #f7faff; }
-    .modelGrid { display:grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap:8px; }
-    .modelOption { border:1px solid var(--border); border-radius: 10px; padding:8px 6px; min-height:78px; background:#f8fbff; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
+    .modelGrid { display:grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+    .modelOption { border:1px solid var(--border); border-radius: 10px; padding:10px; background:#f8fbff; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px; }
     .modelOption.active { border:2px solid var(--accent); background: var(--accent-soft); }
-    .logoDot { width:30px; height:30px; border-radius:999px; display:grid; place-items:center; font-size:10px; font-weight:700; color:#fff; }
-    .productLogoImage {
-      width: 32px;
-      height: 32px;
-      object-fit: contain;
-      display: block;
-    }
+    .logoDot { width:32px; height:32px; border-radius:999px; display:grid; place-items:center; font-size:11px; font-weight:700; color:#fff; }
     .logo-openai{ background:#111827; }
     .logo-gemini{ background:#6d5ef6; }
     .logo-copilot{ background:#0ea5e9; }
     .logo-claude{ background:#d97706; }
     .logo-other{ background:#64748b; }
     .disabledBtn { opacity:.55; cursor:not-allowed; }
-    .accessPrompt { font-size: 18px; font-weight: 700; color: var(--text); margin:0 0 10px; line-height:1.3; }
-    .accessCard { max-width: 520px; margin: 28px 0; padding: 16px 18px; }
-    .accessCard p { margin-bottom: 10px; }
-    .accessRow { display:flex; gap:10px; align-items:center; flex-wrap:nowrap; }
+    .accessPrompt { font-size: 24px; font-weight: 700; color: var(--text); margin:0 0 14px; line-height:1.3; }
+    .accessRow { display:flex; align-items:stretch; gap:12px; flex-wrap:nowrap; }
     .accessInput {
       width: 180px;
-      font-size: 20px;
+      font-size: 28px;
       font-weight:700;
       letter-spacing:.3px;
       text-align:center;
@@ -117,7 +109,7 @@
     }
     .accessBtn {
       margin-top:0 !important;
-      font-size: 17px;
+      font-size: 20px;
       font-weight: 700;
       padding: 12px 20px;
       align-self: stretch;
@@ -127,56 +119,13 @@
       white-space: nowrap;
     }
     #accessMsg { font-size: 16px; }
-    .accessError { color:#b91c1c; font-size:0.9rem; margin-top:8px; }
 
     @media (max-width: 560px) {
       .accessRow { flex-wrap: wrap; }
       .accessInput, .accessBtn { width: 100%; }
     }
-    @media (max-width: 680px) {
-      .modelGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    }
-    .subBand { border:1px solid var(--border); border-radius: 10px; background:rgba(16,33,61,0.02); padding:16px 18px; margin-top:14px; }
-    .llmConfirmIntro { margin:10px 0 8px; }
-    .llmImageRow {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 8px;
-    }
-    .llmImagePlaceholder {
-      width: 240px;
-      height: 140px;
-      border: 2px dashed var(--border);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--muted);
-      font-size: 12px;
-      background: #f8fbff;
-      text-align: center;
-      padding: 8px;
-      box-sizing: border-box;
-    }
-    .llmInstructionImage {
-      width: 240px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      display: block;
-    }
-    .llmCompactSelect { width: 100%; max-width: 100%; min-width: 0; }
-    .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:600; }
-
-    .productVersionSummary {
-      cursor: pointer;
-      padding: 12px 14px;
-    }
-    .productVersionSummary .title {
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
+    .subBand { border:1px solid var(--border); border-radius: 12px; background:#f8fbff; padding:12px; margin-top:10px; }
+    .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:800; }
     .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
     @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
     .centerCard { max-width:420px; margin: 0 auto; }
@@ -186,16 +135,16 @@
     .modalCard { width:min(460px, calc(100vw - 24px)); background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; }
     .layoutGrid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 248px;
+      grid-template-columns: minmax(0, 1fr) 280px;
       gap: 16px;
       align-items: start;
     }
     .main { min-width: 0; }
     .sidebar {
-      width: 248px;
+      width: 280px;
       position: sticky;
       top: 16px;
-      height: calc((100vh - 32px) * 0.8);
+      height: calc(100vh - 32px);
       align-self: start;
     }
     .stickySidebar.recentCard {
@@ -214,7 +163,7 @@
       word-break: break-word;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
     }
-    .promptSections { display:grid; gap:14px; }
+    .promptSections { display:grid; gap:8px; }
     .promptSection {
       border:1px solid var(--border);
       border-radius:10px;
@@ -223,13 +172,6 @@
     }
     .promptSectionTitle { margin:0 0 6px; font-size:13px; font-weight:700; }
     .promptListCompact { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; }
-    .promptListSingle { display:block; }
-    .promptListSingle .promptCard { width: 100%; }
-    .separator {
-      height: 1px;
-      background: var(--border);
-      margin: 12px 0;
-    }
     .promptCard {
       border:1px solid var(--border);
       border-radius:8px;
@@ -260,39 +202,7 @@
     .finalizeNotice { margin:10px 0 0; display:none; }
     .finalizeLockedContent { opacity:.6; pointer-events:none; user-select:none; }
     .finalActionBtn { min-height: 36px; padding: 8px 12px; border-radius: 10px; font-size: 14px; font-weight: 600; }
-      .finalActionBtn.btn.warn { font-weight: 600; }
-    #formFailedDetails > summary.finalActionBtn,
-    #btnEndSession.finalActionBtn {
-      opacity: 0.88;
-      font-weight: 550;
-    }
-    #formFailedDetails > summary.finalActionBtn:hover,
-    #btnEndSession.finalActionBtn:hover {
-      opacity: 1;
-    }
-
-
-    details summary {
-      list-style: none;
-    }
-    details summary::-webkit-details-marker {
-      display: none;
-    }
-    .whereToggleSummary {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-    }
-    .whereToggleIcon {
-      display: inline-block;
-      transition: transform 0.2s ease;
-      transform-origin: center;
-    }
-    details[open] .whereToggleIcon {
-      transform: rotate(90deg);
-    }
-
+    .finalActionBtn.btn.warn { font-weight: 600; }
     .promptTitle { font-weight:700; font-size:12px; margin:0; line-height:1.25; }
     .promptDesc {
       margin:4px 0 0;
@@ -313,16 +223,19 @@
 <body>
   <div class="pageShell">
     <h1>Dissertation Prompt App</h1>
+
     <!-- Access gate -->
-    <div class="card accessCard" id="accessGate">
-      <p class="muted small" style="margin:0 0 10px;">Enter your participant code to begin this session.</p>
+    <div class="card" id="accessGate">
+      <p class="accessPrompt" style="margin:0 0 10px;">
+        Please enter your code:
+      </p>
 
       <form class="accessRow" id="accessForm">
         <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" />
         <button class="btn primary accessBtn" id="btnVerifyAccess" type="submit">Continue</button>
       </form>
 
-      <p id="accessMsg" class="muted small accessError" style="margin:8px 0 0;"></p>
+      <p id="accessMsg" class="muted small" style="margin:10px 0 0;"></p>
     </div>
 
     <!-- Main app -->
@@ -344,144 +257,19 @@
         </summary>
         <div class="bandBody">
           <div class="card">
-            <div class="subBand" style="margin-top:0;">
-              <h4 class="subBandTitle">1A) Select product and confirm version</h4>
-              <div class="row">
-                <div style="flex:1; min-width: 240px;">
-                  <label>Product used</label>
-                  <input type="hidden" id="modelUsed" />
-                  <div class="modelGrid" id="modelGrid">
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/chatgpt-logo.png"
-                    alt="ChatGPT logo"
-                    class="productLogoImage"
-                  />
-                  -->
+            <div class="row">
+              <div style="flex:1; min-width: 240px;">
+                <label>Model used</label>
+                <input type="hidden" id="modelUsed" />
+                <div class="modelGrid" id="modelGrid">
                   <button class="modelOption" data-model="ChatGPT" type="button"><span class="logoDot logo-openai">GPT</span><span>ChatGPT</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/gemini-logo.png"
-                    alt="Gemini logo"
-                    class="productLogoImage"
-                  />
-                  -->
                   <button class="modelOption" data-model="Gemini" type="button"><span class="logoDot logo-gemini">G</span><span>Gemini</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/copilot-logo.png"
-                    alt="Copilot logo"
-                    class="productLogoImage"
-                  />
-                  -->
                   <button class="modelOption" data-model="Copilot" type="button"><span class="logoDot logo-copilot">Co</span><span>Copilot</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/claude-logo.png"
-                    alt="Claude logo"
-                    class="productLogoImage"
-                  />
-                  -->
                   <button class="modelOption" data-model="Claude" type="button"><span class="logoDot logo-claude">Cl</span><span>Claude</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/other-logo.png"
-                    alt="Other logo"
-                    class="productLogoImage"
-                  />
-                  -->
                   <button class="modelOption" data-model="Other" type="button"><span class="logoDot logo-other">AI</span><span>Other</span></button>
-                  </div>
                 </div>
               </div>
-
-              <div id="productVersionEditor" class="subBand" style="margin-top:10px;">
-              <h4 class="subBandTitle">Confirm product version</h4>
-              <p class="muted small llmConfirmIntro">Please leave the product in its default mode for this activity, then confirm what you see in the menu.</p>
-
-              <div id="llmConfirmPanel" class="subBand" style="display:none; margin-top:8px;">
-                <p id="llmInstructionText" class="muted small" style="margin:0 0 6px;"></p>
-                <p id="llmWhereText" class="muted small" style="margin:0;"></p>
-
-                <details style="margin-top:8px;">
-                  <summary class="muted small whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
-                  <div class="llmImageRow">
-                    <!--
-                    Replace this placeholder with a real screenshot by replacing the div with:
-
-                    <img
-                      src="images/chatgpt-selector-location.png"
-                      alt="ChatGPT model selector location"
-                      class="llmInstructionImage"
-                    />
-
-                    Recommended size:
-                    - width: 240px
-                    - height: auto
-
-                    For the second image, use the dropdown screenshot instead.
-                    -->
-                    <div class="llmImagePlaceholder" id="llmImage1">[IMAGE PLACEHOLDER]</div>
-                    <!--
-                    Replace this placeholder with a real screenshot by replacing the div with:
-
-                    <img
-                      src="images/chatgpt-dropdown-example.png"
-                      alt="ChatGPT dropdown example"
-                      class="llmInstructionImage"
-                    />
-
-                    Recommended size:
-                    - width: 240px
-                    - height: auto
-
-                    For product-specific images, swap file names and alt text accordingly.
-                    -->
-                    <div class="llmImagePlaceholder" id="llmImage2">[IMAGE PLACEHOLDER]</div>
-                  </div>
-                </details>
-
-                <div style="margin-top:10px;">
-                  <label id="llmConfirmLabel">Which of these best matches what you see in the menu?</label>
-                  <select id="llmExpectedChoice" class="llmCompactSelect"></select>
-                </div>
-
-                <p class="muted small" id="llmMismatchNote" style="display:none; margin:8px 0 0;">Please describe what you see. This helps us keep the instructions current.</p>
-
-                <div id="llmMismatchWrap" style="display:none; margin-top:10px;">
-                  <label for="llmMismatchDescription">Please briefly describe the options you see in the menu.</label>
-                  <textarea id="llmMismatchDescription" placeholder="Example: Auto, Instant 5.5, Thinking 5.6"></textarea>
-                </div>
-              </div>
-
-              <div id="llmOtherWrap" style="display:none; margin-top:8px;">
-                <label for="llmOtherDescription">Please describe the AI product you are using.</label>
-                <textarea id="llmOtherDescription" placeholder="Briefly describe the AI product you are using."></textarea>
-              </div>
-
-              <div class="row" style="margin-top:10px;">
-                <button class="btn" id="btnConfirmProductVersion" type="button" disabled>Confirm product and version</button>
-              </div>
             </div>
-
-            <div id="productVersionSummary" class="subBand productVersionSummary" style="display:none;" role="button" tabindex="0">
-              <div class="title">Product and version confirmed</div>
-              <div class="muted small" id="productVersionSummaryText"></div>
-            </div>
-            </div>
-
-            <div id="contextSubband" class="subBand" style="display:none; margin-top:10px;">
-              <h4 class="subBandTitle">1B) Question context</h4>
 
             <div class="row" style="margin-top:10px;">
               <div style="flex:1; min-width: 240px;">
@@ -520,7 +308,6 @@
             <div class="row" style="margin-top:8px;">
               <button class="btn" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
             </div>
-            </div>
           </div>
         </div>
       </details>
@@ -553,23 +340,12 @@
                     <h4 class="promptSectionTitle">Accept or Replace Question</h4>
                     <div id="promptGroupAcceptReplace" class="promptListCompact"></div>
                   </div>
-
                   <div class="promptSection">
                     <h4 class="promptSectionTitle">Refine Options</h4>
                     <div id="promptGroupRefine" class="promptListCompact"></div>
                   </div>
-
-                  <div class="separator"></div>
-
-                  <div>
-                    <h4 class="promptSectionTitle">Review Questions</h4>
-                    <div id="promptGroupReview" class="promptListSingle"></div>
-                  </div>
-
-                  <div class="separator"></div>
-
                   <div class="promptSection">
-                    <h4 class="promptSectionTitle">Question Set Audits</h4>
+                    <h4 class="promptSectionTitle">Pause and Audit</h4>
                     <div id="promptGroupAudit" class="promptListCompact"></div>
                   </div>
                 </div>
@@ -577,6 +353,7 @@
                 <div class="hr"></div>
 
                 <div class="row" style="justify-content: space-between; margin-top:10px;">
+                  <span class="muted small">When you’re either done creating questions (this workflow aims for a set number of questions) or you’d like to end with the questions you’ve created so far, click this button to continue.</span>
                   <button class="btn primary" id="btnReadyFinal">I'm done making questions</button>
                 </div>
               </div>
@@ -608,9 +385,12 @@
               <p class="muted small finalizeNotice" id="finalizeCopyNotice"></p>
 
               <div id="finalizeLockedArea" class="finalizeLockedContent" style="margin-top:8px; display:none;">
+                <p class="muted small" style="margin:10px 0 0;">
+                  After you use the final prompt in your model, paste the model’s final output below.
+                </p>
 
                 <div style="margin-top:12px;">
-                  <label>Paste the LLM Final Response</label>
+                  <label>Paste the LLM Final Response *</label>
                   <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
                 </div>
 
@@ -705,7 +485,7 @@
     </div>
   </div>
 
-  <footer class="small muted" style="padding: 8px 24px 20px;" id="buildInfo"></footer>
+  <footer class="small muted" style="text-align:center; padding: 8px 24px 20px;" id="buildInfo"></footer>
 
   <div class="toast" id="toast"></div>
 
@@ -753,61 +533,6 @@
       "https://docs.google.com/forms/d/e/1FAIpQLSeSkJtABOlLhpP2_lywUseUT017l9qmtuW8vUv7GQXODR89Sg/viewform?usp=pp_url";
     const ENTRY_EVENT_LOG = "252595248"; // Event Log
     const ENTRY_LLM_FINAL = "86462815";  // LLM Final Response
-
-    // Paste your webhook URL into LLM_MISMATCH_ALERT_WEBHOOK to receive immediate mismatch alerts.
-    const LLM_MISMATCH_ALERT_WEBHOOK = "";
-
-    const LLM_UI_CONFIG = {
-      chatgpt: {
-        label: "ChatGPT",
-        instruction: "Use ChatGPT in its default mode for this activity. Do not manually switch to Instant or Thinking.",
-        whereText: "Click the model selector at the top of the chat.",
-        expectedOptions: [
-          { value: "auto_menu", label: "Auto selected; menu shows Instant 5.3 and Thinking 5.4" },
-          { value: "different", label: "I see something different" }
-        ],
-        defaultExpected: "auto_menu",
-        image1Alt: "ChatGPT model selector location",
-        image2Alt: "ChatGPT dropdown example"
-      },
-      claude: {
-        label: "Claude",
-        instruction: "Use Claude in its default mode for this activity. Do not manually change the model or enable extended thinking unless it is already selected.",
-        whereText: "Click the model selector near the chat input box.",
-        expectedOptions: [
-          { value: "sonnet46_menu", label: "Sonnet 4.6 selected; menu also shows Opus 4.6 and Haiku 4.5" },
-          { value: "different", label: "I see something different" }
-        ],
-        defaultExpected: "sonnet46_menu",
-        image1Alt: "Claude model selector location",
-        image2Alt: "Claude dropdown example"
-      },
-      gemini: {
-        label: "Gemini",
-        instruction: "Use Gemini in its default mode for this activity. Do not manually switch modes.",
-        whereText: "Click the mode dropdown next to the prompt box.",
-        expectedOptions: [
-          { value: "fast_menu", label: "Fast selected; menu also shows Thinking and Pro" },
-          { value: "different", label: "I see something different" }
-        ],
-        defaultExpected: "fast_menu",
-        image1Alt: "Gemini mode selector location",
-        image2Alt: "Gemini dropdown example"
-      },
-      copilot: {
-        label: "Microsoft Copilot",
-        instruction: "Use Microsoft Copilot in its default mode for this activity. Do not manually change the conversation mode.",
-        whereText: "Click the dropdown next to the prompt box that shows the current mode.",
-        expectedOptions: [
-          { value: "smart_menu", label: "Smart selected; menu also shows Think deeper, Study and learn, and Search" },
-          { value: "different", label: "I see something different" }
-        ],
-        defaultExpected: "smart_menu",
-        image1Alt: "Copilot mode selector location",
-        image2Alt: "Copilot dropdown example"
-      }
-    };
-
 // Prompt library (grouped for UI)
 const PROMPTS = [
   // -----------------------------
@@ -924,12 +649,7 @@ Provide the results in a table with the following columns:
       anyCopy: "dissertation.anyCopy",
       finalizeVisited: "dissertation.finalizeVisited",
       finalPromptCopied: "dissertation.finalPromptCopied",
-      submitClicked: "dissertation.submitClicked",
-      llmProduct: "dissertation.llmProduct",
-      llmExpectedChoice: "dissertation.llmExpectedChoice",
-      llmMismatchDescription: "dissertation.llmMismatchDescription",
-      llmOtherDescription: "dissertation.llmOtherDescription",
-      productVersionConfirmed: "dissertation.productVersionConfirmed"
+      submitClicked: "dissertation.submitClicked"
     };
 
     // -----------------------------
@@ -942,8 +662,8 @@ Provide the results in a table with the following columns:
     let lastCopiedText = "";
     let lastCopiedLabel = "";
     let lastCopiedAt = null;
-    let llmMismatchReported = false;
-    let llmMismatchAlertAttempted = false;
+    let activeCopyPromptId = "";
+    let activeCopyTimer = null;
 
     const toast = (msg) => {
       const t = $("toast");
@@ -964,23 +684,7 @@ Provide the results in a table with the following columns:
 
     function logEvent(type, data = {}) {
       const events = loadJSON(KEYS.events, []);
-      const stage = getStage();
-      const accessCode = localStorage.getItem(KEYS.accessCode) || "";
-      const sessionId = localStorage.getItem(KEYS.sessionId) || "";
-      const modelUsed = localStorage.getItem(KEYS.modelUsed) || "";
-      const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-      const llmExpectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-      events.push({
-        t: nowIso(),
-        type,
-        stage,
-        accessCode,
-        sessionId,
-        modelUsed,
-        llmProduct,
-        llmExpectedChoice,
-        ...data
-      });
+      events.push({ t: nowIso(), type, ...data });
       saveJSON(KEYS.events, events);
     }
 
@@ -1009,223 +713,9 @@ Provide the results in a table with the following columns:
       return localStorage.getItem(KEYS.stage) || "setup";
     }
 
-
-    function normalizeLlmProduct(model) {
-      const m = (model || "").trim().toLowerCase();
-      if (["chatgpt", "claude", "gemini", "copilot"].includes(m)) return m;
-      return "other";
-    }
-
-    function formatLlmProductLabel(productKey) {
-      if (LLM_UI_CONFIG[productKey]?.label) return LLM_UI_CONFIG[productKey].label;
-      if (productKey === "other") return "Other";
-      return "—";
-    }
-
-    function formatLlmExpectedChoiceLabel(productKey, expectedChoice) {
-      if (!expectedChoice) return "—";
-      const options = LLM_UI_CONFIG[productKey]?.expectedOptions || [];
-      const match = options.find((o) => o.value === expectedChoice);
-      return match?.label || expectedChoice;
-    }
-
-    function getLlmPlaceholderText(productKey) {
-      const map = {
-        chatgpt: ["ChatGPT: where to click", "ChatGPT: dropdown example"],
-        claude: ["Claude: where to click", "Claude: dropdown example"],
-        gemini: ["Gemini: where to click", "Gemini: dropdown example"],
-        copilot: ["Copilot: where to click", "Copilot: dropdown example"]
-      };
-      return map[productKey] || ["[IMAGE PLACEHOLDER]", "[IMAGE PLACEHOLDER]"];
-    }
-
-    function setLlmMismatchVisibility(show, shouldFocus = false) {
-      const wrap = $("llmMismatchWrap");
-      const note = $("llmMismatchNote");
-      if (wrap) wrap.style.display = show ? "block" : "none";
-      if (note) note.style.display = show ? "block" : "none";
-      if (show && shouldFocus) {
-        requestAnimationFrame(() => $("llmMismatchDescription")?.focus());
-      }
-    }
-
-    async function sendLlmMismatchAlert(payload) {
-      if (!LLM_MISMATCH_ALERT_WEBHOOK.trim()) return;
-      try {
-        const res = await fetch(LLM_MISMATCH_ALERT_WEBHOOK, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        logEvent("llm_mismatch_alert_sent", { llmProduct: payload.llmProduct });
-      } catch (err) {
-        logEvent("llm_mismatch_alert_failed", {
-          llmProduct: payload.llmProduct,
-          error: String(err?.message || err || "unknown_error")
-        });
-      }
-    }
-
-    function isLlmConfirmationComplete() {
-      const product = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
-      const otherDescription = ($("llmOtherDescription")?.value || localStorage.getItem(KEYS.llmOtherDescription) || "").trim();
-
-      if (!product) return false;
-      if (product === "other") return !!otherDescription;
-      if (!["chatgpt", "claude", "gemini", "copilot"].includes(product)) return false;
-      if (!expectedChoice) return false;
-      if (expectedChoice === "different" && !mismatchDescription) return false;
-      return true;
-    }
-
-
-    function isSetupVersionConfirmedForContext() {
-      const product = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      const otherDescription = ($("llmOtherDescription")?.value || localStorage.getItem(KEYS.llmOtherDescription) || "").trim();
-      if (!product) return false;
-      if (product === "other") return !!otherDescription;
-      return !!expectedChoice;
-    }
-
-    function getProductVersionSummaryText() {
-      const productKey = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-      const otherDescription = (localStorage.getItem(KEYS.llmOtherDescription) || "").trim();
-      const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
-      const productLabel = formatLlmProductLabel(productKey);
-
-      let versionLabel = formatLlmExpectedChoiceLabel(productKey, expectedChoice);
-      if (productKey === "other") {
-        versionLabel = otherDescription || "(described by participant)";
-      } else if (expectedChoice === "different") {
-        versionLabel = mismatchDescription || "I see something different";
-      }
-
-      return `Product: ${productLabel} · Version/menu: ${versionLabel || "—"}`;
-    }
-
-    function setProductVersionConfirmedState(isConfirmed) {
-      localStorage.setItem(KEYS.productVersionConfirmed, isConfirmed ? "true" : "false");
-    }
-
-    function updateSetupSubbandVisibility() {
-      const contextSubband = $("contextSubband");
-      const editor = $("productVersionEditor");
-      const summary = $("productVersionSummary");
-      const summaryText = $("productVersionSummaryText");
-      const confirmBtn = $("btnConfirmProductVersion");
-      const canConfirm = isSetupVersionConfirmedForContext();
-      const isConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
-      const showConfirmed = isConfirmed && canConfirm;
-
-      if (confirmBtn) confirmBtn.disabled = !canConfirm;
-      if (summaryText) summaryText.textContent = getProductVersionSummaryText();
-      if (editor) editor.style.display = showConfirmed ? "none" : "block";
-      if (summary) summary.style.display = showConfirmed ? "block" : "none";
-      if (contextSubband) contextSubband.style.display = showConfirmed ? "block" : "none";
-    }
-
-    function renderLlmConfirmPanel(productKey) {
-      const panel = $("llmConfirmPanel");
-      const otherWrap = $("llmOtherWrap");
-      const expectedSelect = $("llmExpectedChoice");
-      const mismatchInput = $("llmMismatchDescription");
-      const config = LLM_UI_CONFIG[productKey];
-
-      if (!panel || !otherWrap || !expectedSelect || !mismatchInput) return;
-
-      if (!config) {
-        panel.style.display = "none";
-        expectedSelect.innerHTML = "";
-        setLlmMismatchVisibility(false);
-        localStorage.removeItem(KEYS.llmExpectedChoice);
-        localStorage.removeItem(KEYS.llmMismatchDescription);
-        llmMismatchReported = false;
-        llmMismatchAlertAttempted = false;
-
-        if (productKey === "other") {
-          otherWrap.style.display = "block";
-        } else {
-          otherWrap.style.display = "none";
-          localStorage.removeItem(KEYS.llmOtherDescription);
-          if ($("llmOtherDescription")) $("llmOtherDescription").value = "";
-        }
-        updateSetupSubbandVisibility();
-        return;
-      }
-
-      panel.style.display = "block";
-      otherWrap.style.display = "none";
-      if ($("llmOtherDescription")) $("llmOtherDescription").value = "";
-      localStorage.removeItem(KEYS.llmOtherDescription);
-
-      $("llmInstructionText").textContent = config.instruction;
-      $("llmWhereText").textContent = config.whereText;
-      $("llmConfirmLabel").textContent = "Which of these best matches what you see in the menu?";
-
-      const [p1, p2] = getLlmPlaceholderText(productKey);
-      const img1 = $("llmImage1");
-      const img2 = $("llmImage2");
-      if (img1) {
-        img1.textContent = p1;
-        img1.setAttribute("aria-label", config.image1Alt);
-      }
-      if (img2) {
-        img2.textContent = p2;
-        img2.setAttribute("aria-label", config.image2Alt);
-      }
-
-      const existingValue = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-      expectedSelect.innerHTML = "";
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = "Select one";
-      expectedSelect.appendChild(placeholder);
-      config.expectedOptions.forEach((opt) => {
-        const el = document.createElement("option");
-        el.value = opt.value;
-        el.textContent = opt.label;
-        expectedSelect.appendChild(el);
-      });
-
-      const validValues = new Set(config.expectedOptions.map((o) => o.value));
-      const selectedValue = validValues.has(existingValue) ? existingValue : "";
-      expectedSelect.value = selectedValue;
-      if (!selectedValue) localStorage.removeItem(KEYS.llmExpectedChoice);
-
-      if (selectedValue === "different") {
-        const mismatch = localStorage.getItem(KEYS.llmMismatchDescription) || "";
-        mismatchInput.value = mismatch;
-        setLlmMismatchVisibility(true);
-        if (mismatch.trim()) {
-          llmMismatchReported = true;
-          llmMismatchAlertAttempted = true;
-        }
-      } else {
-        mismatchInput.value = "";
-        setLlmMismatchVisibility(false);
-        localStorage.removeItem(KEYS.llmMismatchDescription);
-        llmMismatchReported = false;
-        llmMismatchAlertAttempted = false;
-      }
-      updateSetupSubbandVisibility();
-    }
-
     function setStage(stage) {
-      const previousStage = getStage();
-      if (previousStage !== stage) {
-        logEvent("stage_exited", { stage: previousStage });
-        localStorage.setItem(KEYS.stage, stage);
-        logEvent("stage_entered", { stage });
-        logEvent("stage_set", { stage });
-      } else {
-        localStorage.setItem(KEYS.stage, stage);
-        logEvent("stage_set", { stage });
-      }
+      localStorage.setItem(KEYS.stage, stage);
+      logEvent("stage_set", { stage });
       applyStageUI();
     }
 
@@ -1250,11 +740,11 @@ Provide the results in a table with the following columns:
 
     function getFinalizeCopyInstructionLine(model) {
       const m = (model || "").trim();
-      if (m === "ChatGPT") return "[[ICON_PLACEHOLDER_CHATGPT]]";
-      if (m === "Gemini") return "[[ICON_PLACEHOLDER_GEMINI]]";
-      if (m === "Copilot") return "[[ICON_PLACEHOLDER_COPILOT]]";
-      if (m === "Claude") return "[[ICON_PLACEHOLDER_CLAUDE]]";
-      return "[[ICON_PLACEHOLDER_OTHER]]";
+      if (m === "ChatGPT") return "Then, copy the final response from ChatGPT (the icon should look like this: [[ICON_PLACEHOLDER_CHATGPT]]) and paste it into the field below.";
+      if (m === "Gemini") return "Then, copy the final response from Gemini (the icon should look like this: [[ICON_PLACEHOLDER_GEMINI]]) and paste it into the field below.";
+      if (m === "Copilot") return "Then, copy the final response from Copilot (the icon should look like this: [[ICON_PLACEHOLDER_COPILOT]]) and paste it into the field below.";
+      if (m === "Claude") return "Then, copy the final response from Claude (the icon should look like this: [[ICON_PLACEHOLDER_CLAUDE]]) and paste it into the field below.";
+      return "Then, copy the final response from your model (the icon should look like this: [[ICON_PLACEHOLDER_OTHER]]) and paste it into the field below.";
     }
 
     function updateFinalizeContentUI() {
@@ -1271,15 +761,7 @@ Provide the results in a table with the following columns:
         if (copied) {
           const model = localStorage.getItem(KEYS.modelUsed) || "Other";
           notice.style.display = "block";
-          notice.innerHTML = `
-            1) Paste the final prompt into your selected LLM.<br><br>
-            2) Copy the model's full response.<br>
-            <details style="display:inline-block; margin-top:6px;">
-              <summary class="whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
-              <div style="margin-top:6px;">${getFinalizeCopyInstructionLine(model)}</div>
-            </details><br><br>
-            3) Paste that response below.
-          `;
+          notice.innerHTML = `Paste the final prompt into the LLM.<br>${getFinalizeCopyInstructionLine(model)}`;
         } else {
           notice.style.display = "none";
           notice.textContent = "";
@@ -1313,15 +795,11 @@ Provide the results in a table with the following columns:
       const startIso = localStorage.getItem(KEYS.sessionStartTime);
       const model = localStorage.getItem(KEYS.modelUsed) || "—";
       const stage = getStage();
-      const productKey = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-      const productInterface = formatLlmProductLabel(productKey);
-      const confirmedOption = formatLlmExpectedChoiceLabel(productKey, expectedChoice);
 
       const ctx = getContext();
       const started = startIso ? new Date(startIso).toLocaleString() : "—";
       const last = document.lastModified || "—";
-      $("buildInfo").textContent = `Participant: ${code} • Session: ${sid} • Started: ${started} • Model: ${model} • Product interface: ${productInterface} • Confirmed visible option: ${confirmedOption} • Course: ${ctx.course || "—"} • Area: ${ctx.area || "—"} • Additional instructions: ${ctx.notes || "—"} • Stage: ${stage} • Last updated: ${last}`;
+      $("buildInfo").textContent = `Participant: ${code} • Session: ${sid} • Started: ${started} • Model: ${model} • Course: ${ctx.course || "—"} • Area: ${ctx.area || "—"} • Additional instructions: ${ctx.notes || "—"} • Stage: ${stage} • Last updated: ${last}`;
     }
 
     // -----------------------------
@@ -1589,18 +1067,13 @@ Do not include extra commentary before or after the table unless the user explic
           items: ["correct_answer_options", "distractor_options"]
         },
         {
-          group: "Review Questions",
-          container: $("promptGroupReview"),
-          items: ["pause_review"]
-        },
-        {
-          group: "Question Set Audits",
+          group: "Pause and Audit",
           container: $("promptGroupAudit"),
-          items: ["rebalance_content", "core_or_peripheral", "rebalance_question_type", "difficulty_audit", "blooms_taxonomy_audit"]
+          items: ["pause_review", "rebalance_content", "core_or_peripheral", "rebalance_question_type", "difficulty_audit", "blooms_taxonomy_audit"]
         }
       ];
 
-      ["promptGroupAcceptReplace", "promptGroupRefine", "promptGroupReview", "promptGroupAudit"]
+      ["promptGroupAcceptReplace", "promptGroupRefine", "promptGroupAudit"]
         .forEach((id) => { const el = $(id); if (el) el.innerHTML = ""; });
 
       const makePromptCard = (prompt) => {
@@ -1621,6 +1094,7 @@ Do not include extra commentary before or after the table unless the user explic
         const btn = makeCopyIconButton({ label: "Copy prompt", title: "Copy prompt" });
         btn.dataset.action = "copy";
         btn.dataset.id = prompt.id;
+        if (activeCopyPromptId === prompt.id) btn.classList.add("isActive");
 
         actions.appendChild(btn);
 
@@ -1662,13 +1136,14 @@ Do not include extra commentary before or after the table unless the user explic
         const ok = await copyToClipboard(promptText, prompt.title);
         if (ok) {
           logEvent("prompt_copied", { promptId: id });
-          btn.classList.add("isActive");
-          if (btn._activeTimer) clearTimeout(btn._activeTimer);
-          btn._activeTimer = setTimeout(() => {
-            btn.classList.remove("isActive");
+          activeCopyPromptId = id;
+          if (activeCopyTimer) clearTimeout(activeCopyTimer);
+          activeCopyTimer = setTimeout(() => {
+            activeCopyPromptId = "";
+            renderPromptList();
           }, 400);
+          renderPromptList();
         }
-        btn.blur();
       };
     }
 
@@ -1782,12 +1257,6 @@ Do not include extra commentary before or after the table unless the user explic
         setLockedState(true);
       }
 
-      requestAnimationFrame(() => {
-        if ($("accessGate")?.style.display !== "none") {
-          $("accessCodeInput")?.focus();
-        }
-      });
-
       $("accessForm").addEventListener("submit", (e) => {
         e.preventDefault();
         verifyAccessCode();
@@ -1815,154 +1284,26 @@ Do not include extra commentary before or after the table unless the user explic
       $("ctxNotes").value = ctx.notes || "";
       $("ctxQuestionCount").value = ctx.questionCount || "10";
 
-      const selectModel = (model, { logSelection = true } = {}) => {
+      const selectModel = (model) => {
         $("modelUsed").value = model;
         document.querySelectorAll(".modelOption").forEach((btn) => {
           btn.classList.toggle("active", btn.dataset.model === model);
         });
-
-        const llmProduct = normalizeLlmProduct(model);
-        localStorage.setItem(KEYS.llmProduct, llmProduct);
-        if (logSelection) {
-          logEvent("llm_product_selected", { llmProduct });
-          setProductVersionConfirmedState(false);
-        }
-        renderLlmConfirmPanel(llmProduct);
       };
 
       document.querySelectorAll(".modelOption").forEach((btn) => {
         btn.addEventListener("click", () => {
-          selectModel(btn.dataset.model || "", { logSelection: true });
+          selectModel(btn.dataset.model || "");
           localStorage.setItem(KEYS.starterCopied, "false");
           applyStageUI();
         });
       });
-      selectModel($("modelUsed").value || "", { logSelection: false });
-
-      const storedLlmProduct = localStorage.getItem(KEYS.llmProduct);
-      if (storedLlmProduct && storedLlmProduct !== normalizeLlmProduct($("modelUsed").value || "")) {
-        localStorage.setItem(KEYS.llmProduct, normalizeLlmProduct($("modelUsed").value || ""));
-      }
-      renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || normalizeLlmProduct($("modelUsed").value || ""));
-      updateSetupSubbandVisibility();
+      selectModel($("modelUsed").value || "");
 
       // Hydrate reusable copy icon buttons
       hydrateCopyIconButton($("btnCopyStarter"), { label: "Copy starter prompt", title: "Copy starter prompt" });
       hydrateCopyIconButton($("btnCopyFinal"), { label: "Copy final prompt", title: "Copy final prompt" });
       hydrateCopyIconButton($("btnCopyAgain"), { label: "Copy", title: "Copy" });
-
-
-      const llmExpectedChoiceEl = $("llmExpectedChoice");
-      const llmMismatchDescriptionEl = $("llmMismatchDescription");
-      const llmOtherDescriptionEl = $("llmOtherDescription");
-
-      if (llmExpectedChoiceEl) {
-        llmExpectedChoiceEl.addEventListener("change", () => {
-          const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-          const expectedChoice = llmExpectedChoiceEl.value || "";
-          if (expectedChoice) {
-            localStorage.setItem(KEYS.llmExpectedChoice, expectedChoice);
-          } else {
-            localStorage.removeItem(KEYS.llmExpectedChoice);
-          }
-
-          logEvent("llm_expected_choice_selected", { llmProduct, expectedChoice });
-          setProductVersionConfirmedState(false);
-
-          if (expectedChoice === "different") {
-            setLlmMismatchVisibility(true, true);
-          } else {
-            setLlmMismatchVisibility(false);
-            if (llmMismatchDescriptionEl) llmMismatchDescriptionEl.value = "";
-            localStorage.removeItem(KEYS.llmMismatchDescription);
-            llmMismatchReported = false;
-            llmMismatchAlertAttempted = false;
-          }
-          updateSetupSubbandVisibility();
-        });
-      }
-
-      if (llmMismatchDescriptionEl) {
-        llmMismatchDescriptionEl.addEventListener("input", async () => {
-          const mismatchDescription = llmMismatchDescriptionEl.value || "";
-          localStorage.setItem(KEYS.llmMismatchDescription, mismatchDescription);
-          setProductVersionConfirmedState(false);
-          updateSetupSubbandVisibility();
-
-          const trimmed = mismatchDescription.trim();
-          const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-          const expectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-
-          if (!trimmed) {
-            llmMismatchReported = false;
-            llmMismatchAlertAttempted = false;
-            return;
-          }
-
-          if (!llmMismatchReported && trimmed) {
-            llmMismatchReported = true;
-            logEvent("llm_mismatch_reported", {
-              llmProduct,
-              expectedChoice: "different",
-              mismatchDescription: trimmed
-            });
-          }
-
-          if (!llmMismatchAlertAttempted && trimmed && expectedChoice === "different") {
-            llmMismatchAlertAttempted = true;
-            await sendLlmMismatchAlert({
-              accessCode: localStorage.getItem(KEYS.accessCode) || "",
-              sessionId: localStorage.getItem(KEYS.sessionId) || "",
-              stage: getStage(),
-              modelUsed: localStorage.getItem(KEYS.modelUsed) || "",
-              llmProduct,
-              llmExpectedChoice: expectedChoice,
-              llmMismatchDescription: trimmed,
-              timestamp: nowIso()
-            });
-          }
-        });
-      }
-
-      if (llmOtherDescriptionEl) {
-        llmOtherDescriptionEl.value = localStorage.getItem(KEYS.llmOtherDescription) || "";
-        llmOtherDescriptionEl.addEventListener("input", () => {
-          localStorage.setItem(KEYS.llmOtherDescription, llmOtherDescriptionEl.value || "");
-          setProductVersionConfirmedState(false);
-          updateSetupSubbandVisibility();
-        });
-      }
-
-      const confirmProductVersionBtn = $("btnConfirmProductVersion");
-      const productVersionSummary = $("productVersionSummary");
-      if (!localStorage.getItem(KEYS.productVersionConfirmed)) {
-        localStorage.setItem(KEYS.productVersionConfirmed, "false");
-      }
-
-      if (confirmProductVersionBtn) {
-        confirmProductVersionBtn.addEventListener("click", () => {
-          if (!isSetupVersionConfirmedForContext()) return;
-          setProductVersionConfirmedState(true);
-          logEvent("product_version_confirm_clicked");
-          updateSetupSubbandVisibility();
-        });
-      }
-
-      const reopenProductVersion = () => {
-        setProductVersionConfirmedState(false);
-        logEvent("product_version_reopened");
-        updateSetupSubbandVisibility();
-      };
-
-      if (productVersionSummary) {
-        productVersionSummary.addEventListener("click", reopenProductVersion);
-        productVersionSummary.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            reopenProductVersion();
-          }
-        });
-      }
 
       // Render prompts
       renderPromptList();
@@ -1974,17 +1315,12 @@ Do not include extra commentary before or after the table unless the user explic
 
       $("btnCopyAgain").addEventListener("click", async () => {
         if (!lastCopiedText.trim()) return;
-        logEvent("copy_again_clicked");
-        const btn = $("btnCopyAgain");
-        btn.classList.add("isActive");
-        if (btn._activeTimer) clearTimeout(btn._activeTimer);
-        btn._activeTimer = setTimeout(() => btn?.classList.remove("isActive"), 400);
+        $("btnCopyAgain").classList.add("isActive");
+        setTimeout(() => $("btnCopyAgain")?.classList.remove("isActive"), 400);
         await copyToClipboard(lastCopiedText, lastCopiedLabel || "Most Recently Copied");
-        btn.blur();
       });
 
       $("btnClearRecent").addEventListener("click", () => {
-        logEvent("clear_recent_clicked");
         lastCopiedText = "";
         lastCopiedLabel = "";
         lastCopiedAt = null;
@@ -2021,13 +1357,6 @@ Do not include extra commentary before or after the table unless the user explic
           return;
         }
 
-        if (!isLlmConfirmationComplete()) {
-          $("setupMsg").textContent = "Please confirm product version before continuing.";
-          $("setupMsg").style.display = "block";
-          toast("Complete required fields");
-          return;
-        }
-
         // Save model + context
         localStorage.setItem(KEYS.modelUsed, model);
         setContext({ course, area, notes, questionCount });
@@ -2047,12 +1376,9 @@ Do not include extra commentary before or after the table unless the user explic
 
         // Log + copy only
         logEvent("starter_prepared", { accessCode: code, sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
-        const starterBtn = $("btnCopyStarter");
-        starterBtn.classList.add("isActive");
-        if (starterBtn._activeTimer) clearTimeout(starterBtn._activeTimer);
-        starterBtn._activeTimer = setTimeout(() => starterBtn?.classList.remove("isActive"), 400);
+        $("btnCopyStarter").classList.add("isActive");
+        setTimeout(() => $("btnCopyStarter")?.classList.remove("isActive"), 400);
         const ok = await copyToClipboard(buildStarterPrompt(), "Starter prompt");
-        starterBtn.blur();
         if (ok) {
           logEvent("starter_copied", {});
           localStorage.setItem(KEYS.starterCopied, "true");
@@ -2064,7 +1390,6 @@ Do not include extra commentary before or after the table unless the user explic
       });
 
       $("btnGoPrompts").addEventListener("click", () => {
-        logEvent("go_prompts_clicked");
         if (localStorage.getItem(KEYS.starterCopied) !== "true") {
           toast("Copy starter prompt first");
           return;
@@ -2075,12 +1400,10 @@ Do not include extra commentary before or after the table unless the user explic
 
       // Prompts controls
       $("btnEditContext").addEventListener("click", () => {
-        logEvent("edit_context_clicked");
         setStage("setup");
       });
 
       $("btnReadyFinal").addEventListener("click", () => {
-        logEvent("done_making_questions_clicked");
         const fp = buildFinalPrompt();
         localStorage.setItem(KEYS.finalPrompt, fp);
         localStorage.setItem(KEYS.finalPromptCopied, "false");
@@ -2091,19 +1414,14 @@ Do not include extra commentary before or after the table unless the user explic
 
       // Finalize controls
       $("btnBackToPrompts").addEventListener("click", () => {
-        logEvent("back_to_making_questions_clicked");
-        logEvent("returned_from_finalize_to_prompts");
         setStage("prompts");
       });
 
       $("btnCopyFinal").addEventListener("click", async () => {
         const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
-        const finalBtn = $("btnCopyFinal");
-        finalBtn.classList.add("isActive");
-        if (finalBtn._activeTimer) clearTimeout(finalBtn._activeTimer);
-        finalBtn._activeTimer = setTimeout(() => finalBtn?.classList.remove("isActive"), 400);
+        $("btnCopyFinal").classList.add("isActive");
+        setTimeout(() => $("btnCopyFinal")?.classList.remove("isActive"), 400);
         const ok = await copyToClipboard(fp, "Final prompt");
-        finalBtn.blur();
         if (!ok) return;
         localStorage.setItem(KEYS.finalPromptCopied, "true");
         logEvent("final_prompt_copied", {});
@@ -2112,7 +1430,6 @@ Do not include extra commentary before or after the table unless the user explic
 
       $("btnSubmitForm").addEventListener("click", () => {
         if ($("btnSubmitForm").disabled) return;
-        logEvent("submit_form_clicked");
         localStorage.setItem(KEYS.submitClicked, "true");
         updateFinalizeContentUI();
         openPrefilledGoogleForm();
@@ -2122,18 +1439,8 @@ Do not include extra commentary before or after the table unless the user explic
         updateFinalizeContentUI();
       });
 
-      const formFailedDetails = $("formFailedDetails");
-      if (formFailedDetails) {
-        formFailedDetails.addEventListener("toggle", () => {
-          if (formFailedDetails.open) {
-            logEvent("form_failed_details_opened");
-          }
-        });
-      }
-
       // Download backup json
       $("btnDownload").addEventListener("click", () => {
-        logEvent("backup_download_clicked");
         const record = {
           participant_code: localStorage.getItem(KEYS.accessCode),
           session_id: localStorage.getItem(KEYS.sessionId),
@@ -2144,9 +1451,6 @@ Do not include extra commentary before or after the table unless the user explic
           last_copied_text: lastCopiedText || "",
           final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
           llm_response: $("llmResponse").value || "",
-          llm_product: localStorage.getItem(KEYS.llmProduct) || "",
-          llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
-          llm_mismatch_description: localStorage.getItem(KEYS.llmMismatchDescription) || "",
           exported_at: nowIso()
         };
 
@@ -2166,31 +1470,17 @@ Do not include extra commentary before or after the table unless the user explic
       const openModal = (id) => { const m = $(id); if (m) m.style.display = "flex"; };
       const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
 
-      $("btnResetSession").addEventListener("click", () => {
-        logEvent("reset_opened");
-        openModal("modalReset");
-      });
-      $("btnResetCancel").addEventListener("click", () => {
-        logEvent("reset_cancelled");
-        closeModal("modalReset");
-      });
+      $("btnResetSession").addEventListener("click", () => openModal("modalReset"));
+      $("btnResetCancel").addEventListener("click", () => closeModal("modalReset"));
       $("btnResetConfirm").addEventListener("click", () => {
-        logEvent("reset_confirmed");
         clearSessionData();
         closeModal("modalReset");
         location.reload();
       });
 
-      $("btnEndSession").addEventListener("click", () => {
-        logEvent("end_session_opened");
-        openModal("modalEnd");
-      });
-      $("btnEndCancel").addEventListener("click", () => {
-        logEvent("end_session_cancelled");
-        closeModal("modalEnd");
-      });
+      $("btnEndSession").addEventListener("click", () => openModal("modalEnd"));
+      $("btnEndCancel").addEventListener("click", () => closeModal("modalEnd"));
       $("btnEndConfirm").addEventListener("click", () => {
-        logEvent("end_session_confirmed");
         clearSessionData();
         sessionStorage.setItem("dissertation.ended", "true");
         closeModal("modalEnd");
