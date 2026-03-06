@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Dissertation Prompt App</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap");
+    :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; }
+    body { margin:0; font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); letter-spacing: .01em; }
+    .pageShell { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    h1 { font-family: inherit; font-size: 24px; font-weight:700; margin: 0 0 10px; letter-spacing: .01em; }
+    .sub { color: var(--muted); margin: 0 0 18px; }
+    .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
+    .card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 14px; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    label { font-size: 12px; color: var(--muted); display:block; margin-bottom:6px; }
+    input, select, textarea {
+      width:100%; background:#f8fbff; border:1px solid var(--border); color:var(--text);
+      border-radius: 10px; padding: 10px; box-sizing:border-box;
+    }
+    textarea { min-height: 140px; resize: vertical; }
+        .btn {
+      background: #f1f7ff; border:1px solid var(--border); color:var(--text);
+      padding:10px 12px; border-radius: 10px; cursor:pointer;
+    }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color:#fff; font-weight: 650; }
+    .btn.warn { border-color: var(--warn); color: #9a5800; background: #fff7e8; }
+    .btn.danger { border-color:#dc2626; color:#991b1b; background:#fef2f2; }
+    .pill { font-size: 12px; padding: 6px 10px; border:1px solid var(--border); border-radius: 999px; color: var(--muted); }
+    .muted { color: var(--muted); }
+    .small { font-size: 12px; }
+    .hr { height:1px; background: var(--border); margin: 10px 0; }
+    .promptCard { border:1px solid var(--border); border-radius: 12px; padding: 12px; background:#f8fbff; }
+    .promptTitle { font-weight: 700; margin:0 0 6px; }
+    .promptDesc { margin:0 0 10px; color: var(--muted); font-size: 13px; }
+
+    .promptGroups{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap:14px;
+}
+@media (min-width: 900px){
+  .promptGroups{ grid-template-columns: 1fr 1fr; }
+}
+
+    .groupCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+.groupTitle { font-weight: 800; margin: 0 0 8px; }
+.groupSub { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+
+    .toast {
+      position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+      background: rgba(16,33,61,.95); border:1px solid #2f6edc; padding: 10px 12px;
+      border-radius: 10px; color: #fff; display:none;
+      z-index: 9999;
+    }
+
+    /* Accordion */
+    details.band { margin-top: 12px; }
+    details.band > summary {
+      list-style: none;
+      cursor: pointer;
+      user-select: none;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #f3f8ff;
+    }
+    details.band > summary::-webkit-details-marker { display:none; }
+    .summaryLeft { display:flex; align-items:center; gap:10px; }
+    .tag {
+      font-size: 12px;
+      padding: 3px 8px;
+      border:1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+    }
+    .tag.ok { border-color: rgba(47,110,220,.45); color: #1f4ca4; background: var(--accent-soft); }
+    .tag.lock { border-color: rgba(245,158,11,.5); color: #9a5800; background:#fff7e8; }
+    .bandBody { padding: 12px 2px 2px; }
+    .lockMsg { border:1px dashed var(--border); border-radius: 10px; padding:10px; color: var(--muted); background: #f7faff; }
+    .modelGrid { display:grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+    .modelOption { border:1px solid var(--border); border-radius: 10px; padding:10px; background:#f8fbff; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .modelOption.active { border:2px solid var(--accent); background: var(--accent-soft); }
+    .logoDot { width:32px; height:32px; border-radius:999px; display:grid; place-items:center; font-size:11px; font-weight:700; color:#fff; }
+    .logo-openai{ background:#111827; }
+    .logo-gemini{ background:#6d5ef6; }
+    .logo-copilot{ background:#0ea5e9; }
+    .logo-claude{ background:#d97706; }
+    .logo-other{ background:#64748b; }
+    .disabledBtn { opacity:.55; cursor:not-allowed; }
+    .accessPrompt { font-size: 24px; font-weight: 700; color: var(--text); margin:0 0 14px; line-height:1.3; }
+    .accessRow { display:flex; align-items:stretch; gap:12px; flex-wrap:nowrap; }
+    .accessInput {
+      width: 180px;
+      font-size: 28px;
+      font-weight:700;
+      letter-spacing:.3px;
+      text-align:center;
+      padding: 12px 10px;
+      flex: 0 0 auto;
+    }
+    .accessBtn {
+      margin-top:0 !important;
+      font-size: 20px;
+      font-weight: 700;
+      padding: 12px 20px;
+      align-self: stretch;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+    #accessMsg { font-size: 16px; }
+
+    @media (max-width: 560px) {
+      .accessRow { flex-wrap: wrap; }
+      .accessInput, .accessBtn { width: 100%; }
+    }
+    .subBand { border:1px solid var(--border); border-radius: 12px; background:#f8fbff; padding:12px; margin-top:10px; }
+    .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:800; }
+    .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
+    @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
+    .centerCard { max-width:420px; margin: 0 auto; }
+    .appHeaderBar { display:flex; justify-content:flex-start; align-items:center; margin-bottom:10px; padding:6px 2px; }
+    .btn.ghost { background:#f1f7ff; border:1px solid var(--border); color:var(--text); padding:6px 10px; }
+        .modalBackdrop { position:fixed; inset:0; background:rgba(16,33,61,.35); display:none; align-items:center; justify-content:center; z-index:10000; }
+    .modalCard { width:min(460px, calc(100vw - 24px)); background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; }
+    .layoutGrid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 280px;
+      gap: 16px;
+      align-items: start;
+    }
+    .main { min-width: 0; }
+    .sidebar {
+      width: 280px;
+      position: sticky;
+      top: 16px;
+      height: calc(100vh - 32px);
+      align-self: start;
+    }
+    .stickySidebar.recentCard {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .copyMeta { margin:0 0 8px; color: var(--muted); font-size:12px; }
+    .copiedText.recentTextarea {
+      width: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+    .promptSections { display:grid; gap:8px; }
+    .promptSection {
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:#f8fbff;
+      padding:7px;
+    }
+    .promptSectionTitle { margin:0 0 6px; font-size:13px; font-weight:700; }
+    .promptListCompact { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; }
+    .promptCard {
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:#fff;
+      padding:7px;
+      min-height: 44px;
+    }
+    .promptHeader { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .promptActions { display:flex; align-items:center; gap:6px; }
+    .copyIconBtn {
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      flex: 0 0 30px;
+    }
+    .copyIconBtn svg { width: 14px; height: 14px; }
+    .copyIconBtn.isActive { background: var(--accent-soft); border-color: var(--accent); color: #1f4ca4; }
+    .starterCopyControl { display:flex; align-items:center; gap:8px; }
+    .finalizeNotice { margin:10px 0 0; display:none; }
+    .finalizeLockedContent { opacity:.6; pointer-events:none; user-select:none; }
+    .finalActionBtn { min-height: 36px; padding: 8px 12px; border-radius: 10px; font-size: 14px; font-weight: 600; }
+    .finalActionBtn.btn.warn { font-weight: 600; }
+    .promptTitle { font-weight:700; font-size:12px; margin:0; line-height:1.25; }
+    .promptDesc {
+      margin:4px 0 0;
+      font-size:10.5px;
+      color:var(--muted);
+      line-height:1.2;
+    }
+    @media (max-width: 960px) {
+      .promptCard { padding: 6px; }
+      .promptDesc { font-size: 10.5px; }
+      .btn { padding: 6px 8px; }
+      .promptArea { max-height: calc(100vh - 260px); overflow:auto; padding-right:4px; }
+    }
+            #btnSubmitForm[disabled] { background:#d6e1f3; color:#678; border-color:#c8d8f0; cursor:not-allowed; }
+
+  </style>
+</head>
+<body>
+  <div class="pageShell">
+    <h1>Dissertation Prompt App</h1>
+
+    <!-- Access gate -->
+    <div class="card" id="accessGate">
+      <p class="accessPrompt" style="margin:0 0 10px;">
+        Please enter your code:
+      </p>
+
+      <form class="accessRow" id="accessForm">
+        <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" />
+        <button class="btn primary accessBtn" id="btnVerifyAccess" type="submit">Continue</button>
+      </form>
+
+      <p id="accessMsg" class="muted small" style="margin:10px 0 0;"></p>
+    </div>
+
+    <!-- Main app -->
+    <div id="appShell" style="display:none;">
+      <div class="appHeaderBar">
+        <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
+
+      </div>
+      <div class="layoutGrid">
+        <div class="main">
+          <!-- Accordion bands -->
+      <details class="band" id="bandSetup">
+        <summary id="sumSetup">
+          <div class="summaryLeft">
+            <strong>1) Set up</strong>
+            <span class="tag" id="tagSetup">In progress</span>
+          </div>
+
+        </summary>
+        <div class="bandBody">
+          <div class="card">
+            <div class="row">
+              <div style="flex:1; min-width: 240px;">
+                <label>Model used</label>
+                <input type="hidden" id="modelUsed" />
+                <div class="modelGrid" id="modelGrid">
+                  <button class="modelOption" data-model="ChatGPT" type="button"><span class="logoDot logo-openai">GPT</span><span>ChatGPT</span></button>
+                  <button class="modelOption" data-model="Gemini" type="button"><span class="logoDot logo-gemini">G</span><span>Gemini</span></button>
+                  <button class="modelOption" data-model="Copilot" type="button"><span class="logoDot logo-copilot">Co</span><span>Copilot</span></button>
+                  <button class="modelOption" data-model="Claude" type="button"><span class="logoDot logo-claude">Cl</span><span>Claude</span></button>
+                  <button class="modelOption" data-model="Other" type="button"><span class="logoDot logo-other">AI</span><span>Other</span></button>
+                </div>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:10px;">
+              <div style="flex:1; min-width: 240px;">
+                <label>Course / class context</label>
+                <input id="ctxCourse" placeholder="e.g., Health Assessment (first semester)" />
+              </div>
+              <div style="flex:1; min-width: 240px;">
+                <label>Content area</label>
+                <input id="ctxArea" placeholder="e.g., Respiratory assessment" />
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:10px;">
+              <div style="flex:1; min-width: 240px;">
+                <label>Desired number of questions</label>
+                <input id="ctxQuestionCount" type="number" min="1" value="10" />
+              </div>
+              <div style="flex:1; min-width: 240px;">
+                <label>Any additional desired instructions or parameters (optional)</label>
+                <input id="ctxNotes" placeholder="Optional guidance (e.g., difficulty level, tone, formatting preferences)" />
+              </div>
+            </div>
+
+            <p class="muted small" style="margin:10px 0 0;">
+              Click the icon to copy the starter prompt, paste it into your selected LLM, then click the button below to continue.
+            </p>
+
+            <div class="row" style="margin-top:12px;">
+              <div class="starterCopyControl">
+                <span class="small">Copy starter prompt</span>
+                <button class="copyIconBtn" id="btnCopyStarter" aria-label="Copy starter prompt" title="Copy starter prompt" type="button"></button>
+              </div>
+            </div>
+
+            <p class="muted small" id="setupMsg" style="margin:10px 0 0; display:none;"></p>
+            <div class="row" style="margin-top:8px;">
+              <button class="btn" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="band" id="bandPrompts">
+        <summary id="sumPrompts">
+          <div class="summaryLeft">
+            <strong>2) Making questions</strong>
+            <span class="tag lock" id="tagPrompts">Locked</span>
+          </div>
+
+        </summary>
+        <div class="bandBody">
+          <div class="lockMsg" id="lockPrompts">
+            Complete <strong>1) Set up</strong>, copy the starter prompt, and click Continue to unlock prompts.
+          </div>
+
+          <div id="promptsInner" style="display:none;">
+            <div class="card">
+              <div class="row" style="justify-content: space-between;">
+                <div class="muted small">Click “Copy” to copy the selected prompt.</div>
+                <button class="btn" id="btnEditContext">Go back and edit context</button>
+              </div>
+
+              <div class="hr"></div>
+
+              <div class="promptArea">
+                <div class="promptSections">
+                  <div class="promptSection">
+                    <h4 class="promptSectionTitle">Accept or Replace Question</h4>
+                    <div id="promptGroupAcceptReplace" class="promptListCompact"></div>
+                  </div>
+                  <div class="promptSection">
+                    <h4 class="promptSectionTitle">Refine Options</h4>
+                    <div id="promptGroupRefine" class="promptListCompact"></div>
+                  </div>
+                  <div class="promptSection">
+                    <h4 class="promptSectionTitle">Pause and Audit</h4>
+                    <div id="promptGroupAudit" class="promptListCompact"></div>
+                  </div>
+                </div>
+
+                <div class="hr"></div>
+
+                <div class="row" style="justify-content: space-between; margin-top:10px;">
+                  <span class="muted small">When you’re either done creating questions (this workflow aims for a set number of questions) or you’d like to end with the questions you’ve created so far, click this button to continue.</span>
+                  <button class="btn primary" id="btnReadyFinal">I'm done making questions</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="band" id="bandFinalize">
+        <summary id="sumFinalize">
+          <div class="summaryLeft">
+            <strong>3) Finalize & submit</strong>
+            <span class="tag lock" id="tagFinalize">Locked</span>
+          </div>
+
+        </summary>
+        <div class="bandBody">
+          <div class="lockMsg" id="lockFinalize">
+            Complete <strong>2) Making questions</strong> and click <strong>I'm done making questions</strong> to unlock final submission.
+          </div>
+
+          <div id="finalizeInner" style="display:none;">
+            <div class="card">
+              <div class="row" style="justify-content: space-between;">
+                <div class="starterCopyControl"><span class="small">Copy final prompt</span><button class="copyIconBtn" id="btnCopyFinal" aria-label="Copy final prompt" title="Copy final prompt" type="button"></button></div>
+                <button class="btn" id="btnBackToPrompts">Go back to making questions</button>
+              </div>
+
+              <p class="muted small finalizeNotice" id="finalizeCopyNotice"></p>
+
+              <div id="finalizeLockedArea" class="finalizeLockedContent" style="margin-top:8px; display:none;">
+                <p class="muted small" style="margin:10px 0 0;">
+                  After you use the final prompt in your model, paste the model’s final output below.
+                </p>
+
+                <div style="margin-top:12px;">
+                  <label>Paste the LLM Final Response *</label>
+                  <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
+                </div>
+
+                <p class="muted small" style="margin:10px 0 0;">This will open a Google Form where you will submit your session.</p>
+                <div class="row" style="margin-top:8px;">
+                  <button class="btn primary finalActionBtn" id="btnSubmitForm">Submit session (Google Form)</button>
+                </div>
+
+                <details id="formFailedDetails" style="margin-top:12px; display:none;">
+                <summary class="btn warn finalActionBtn" style="display:inline-block;">
+                  Click here if the Google Form failed to be filled properly
+                </summary>
+
+                <div style="margin-top:12px;">
+                  <p class="muted small" style="margin:0 0 10px;">
+                    Backup method (only if needed):
+                  </p>
+
+                  <ol class="muted small" style="margin:0 0 10px; padding-left:18px;">
+                    <li>Click <strong>Download backup file (.json)</strong> below.</li>
+                    <li>Email the downloaded file to <strong>tjin@crimson.ua.edu</strong>.</li>
+                    <li>Complete your recorded reflection using your usual submission method.</li>
+                  </ol>
+
+                  <div class="row" style="margin-top:10px;">
+                    <button class="btn" id="btnDownload">Download backup file (.json)</button>
+                  </div>
+
+                  <div class="hr"></div>
+
+                  <div class="muted small">
+                    <p style="margin:0 0 8px;"><strong>Recorded reflection prompts:</strong></p>
+                    <ol style="margin:0 0 8px; padding-left:18px;">
+                      <li>In your own words, how do you understand the purpose of this activity and what it is intended to help educators accomplish?</li>
+                      <li>To what extent do you see yourself or other educators being willing to use an approach like this when creating exam questions?</li>
+                      <li>Thinking about your own teaching context, how practical would it be to incorporate a process like this into your workflow?</li>
+                      <li>After completing today's session, how do you evaluate the usefulness of this approach for generating multiple-choice questions?</li>
+                    </ol>
+                    <p style="margin:0;">A single, unscripted take is preferred. Please do not feel the need to prepare, re-record, or edit your response.</p>
+                  </div>
+                </div>
+              </details>
+
+              </div>
+
+              <p class="muted small" id="finalizeMsg" style="margin:10px 0 0;"></p>
+
+              <div class="row" id="endSessionRow" style="margin-top:10px; display:none;">
+                <button class="btn danger finalActionBtn" id="btnEndSession" type="button">End session</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+        </div>
+
+        <aside class="sidebar">
+          <div class="card stickySidebar recentCard">
+            <h3 style="margin:0 0 6px; font-size:16px;">Most Recently Copied</h3>
+            <p class="copyMeta" id="recentCopiedMeta">Nothing copied yet. Click any Copy button to see it here.</p>
+            <textarea id="recentCopiedText" class="copiedText recentTextarea" readonly placeholder="Nothing copied yet. Click any Copy button to see it here."></textarea>
+            <div class="row" style="margin-top:10px;">
+              <div class="starterCopyControl"><span class="small">Copy</span><button class="copyIconBtn" id="btnCopyAgain" disabled type="button" aria-label="Copy" title="Copy"></button></div>
+              <button class="btn" id="btnClearRecent" disabled>Clear</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modalBackdrop" id="modalReset">
+    <div class="modalCard">
+      <h3 style="margin:0 0 8px;">Reset this device?</h3>
+      <p class="muted" style="margin:0 0 12px;">This clears saved settings and history in this browser only.</p>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn" id="btnResetCancel" type="button">Cancel</button>
+        <button class="btn danger" id="btnResetConfirm" type="button">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBackdrop" id="modalEnd">
+    <div class="modalCard">
+      <h3 style="margin:0 0 8px;">End session?</h3>
+      <p class="muted" style="margin:0 0 12px;">Before ending, make sure you have submitted your info in the Google Form or downloaded/saved your work. Ending the session will clear this browser’s stored data.</p>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn" id="btnEndCancel" type="button">Cancel</button>
+        <button class="btn danger" id="btnEndConfirm" type="button">I saved it — end session</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="small muted" style="text-align:center; padding: 8px 24px 20px;" id="buildInfo"></footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // -----------------------------
+    // Config
+    // -----------------------------
+
+    // Access code allowlist (your current codes; access code = participant identifier)
+    const ACCESS_CODES = {
+      "blue-sky": {},
+      "green-grass": {},
+      "bright-light": {},
+      "calm-water": {},
+      "morning-sun": {},
+      "quiet-night": {},
+      "tall-tree": {},
+      "warm-breeze": {},
+      "clear-path": {},
+      "soft-cloud": {},
+      "deep-ocean": {},
+      "fresh-air": {},
+      "open-field": {},
+      "gentle-rain": {},
+      "golden-hour": {},
+      "rising-tide": {},
+      "distant-hill": {},
+      "summer-wind": {},
+      "early-dawn": {},
+      "cool-shade": {},
+      "wide-river": {},
+      "bright-star": {},
+      "falling-leaf": {},
+      "white-sand": {},
+      "silver-moon": {},
+      "calm-harbor": {},
+      "quiet-forest": {},
+      "warm-sunlight": {},
+      "soft-snow": {},
+      "open-horizon": {}
+    };
+
+    // Google Form settings (your entry IDs)
+    const FORM_BASE =
+      "https://docs.google.com/forms/d/e/1FAIpQLSeSkJtABOlLhpP2_lywUseUT017l9qmtuW8vUv7GQXODR89Sg/viewform?usp=pp_url";
+    const ENTRY_EVENT_LOG = "252595248"; // Event Log
+    const ENTRY_LLM_FINAL = "86462815";  // LLM Final Response
+// Prompt library (grouped for UI)
+const PROMPTS = [
+  // -----------------------------
+  // Question Refinement
+  // -----------------------------
+  {
+    id: "next_question",
+    group: "Question Refinement",
+    title: "Next Question",
+    description: "Proceeds to creating the next question",
+    prompt:
+`This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
+  },
+  {
+    id: "replace_question",
+    group: "Question Refinement",
+    title: "Replace Question",
+    description: "Offers a variety of replacement questions",
+    prompt:
+`Write five possible replacements for this question. Begin with three new questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
+  },
+  {
+    id: "distractor_options",
+    group: "Question Refinement",
+    title: "Distractor Options",
+    description: "Offers a list of distractor options",
+    prompt:
+`I want to improve the distractors for this question. Please list the 3 you already provided, then add 10 more plausible distractors that fit the same parameters. Number them 1-13 so I can tell you which ones to keep.`
+  },
+  {
+    id: "correct_answer_options",
+    group: "Question Refinement",
+    title: "Correct Answer Options",
+    description: "Offers a list of correct answer options",
+    prompt:
+`Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors.`
+  },
+
+  // -----------------------------
+  // Pause and Audit
+  // -----------------------------
+  {
+    id: "pause_review",
+    group: "Pause and Audit",
+    title: "Pause & Review",
+    description: "Shows the questions so far",
+    prompt:
+`Pause and show me all of the questions that have been generated so far in this session. Organize them in the same table format as before so I can review them before moving on.`
+  },
+  {
+    id: "rebalance_content",
+    group: "Pause and Audit",
+    title: "Rebalance Content",
+    description: "Shows covered and underrepresented subtopics",
+    prompt:
+`Pause and audit how the questions are balanced between potential subtopics. Please break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance.`
+  },
+  {
+    id: "core_or_peripheral",
+    group: "Pause and Audit",
+    title: "Core or Peripheral",
+    description: "Shows whether question content is core or peripheral",
+    prompt:
+`Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
+Core: The most common, obvious, first-line, or 'go-to' fact or intervention.
+Peripheral: A less obvious but still clinically important area.
+
+Provide the results in a table with the following columns:
+1. Question Number
+2. Focus: Core or Peripheral
+3. Topic Covered: 2–4 words only
+4. Suggestion: If the question is core, suggest one peripheral angle within the same content area that has not yet been tested.`
+  },
+  {
+    id: "rebalance_question_type",
+    group: "Pause and Audit",
+    title: "Rebalance Question Type",
+    description: "Shows used and underrepresented question types",
+    prompt:
+`I would like to pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I rebalance the types of questions.`
+  },
+  {
+    id: "difficulty_audit",
+    group: "Pause and Audit",
+    title: "Difficulty Audit",
+    description: "Categorizes questions by difficulty level",
+    prompt:
+`Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix.`
+  },
+  {
+    id: "blooms_taxonomy_audit",
+    group: "Pause and Audit",
+    title: "Bloom’s Taxonomy Audit",
+    description: "Categorizes questions by Bloom’s level",
+    prompt:
+`Please pause and audit my current MCQ set for Bloom’s taxonomy alignment. For each question, assign the primary level (Remember, Understand, Apply, Analyze, Evaluate, or Create). Show me the counts and percentages in each category. Then, suggest underrepresented levels and give me ideas for how to add or revise questions to cover them.`
+  }
+];
+
+    // -----------------------------
+    // Storage keys
+    // -----------------------------
+    const KEYS = {
+      accessVerified: "dissertation.accessVerified",
+      accessCode: "dissertation.accessCode",
+      sessionId: "dissertation.sessionId",
+      sessionStartTime: "dissertation.sessionStartTime",
+      modelUsed: "dissertation.modelUsed",
+      context: "dissertation.context",
+      starterCopied: "dissertation.starterCopied",
+      stage: "dissertation.stage", // "setup" | "prompts" | "finalize"
+      events: "dissertation.events",
+      finalPrompt: "dissertation.finalPrompt",
+      anyCopy: "dissertation.anyCopy",
+      finalizeVisited: "dissertation.finalizeVisited",
+      finalPromptCopied: "dissertation.finalPromptCopied",
+      submitClicked: "dissertation.submitClicked"
+    };
+
+    // -----------------------------
+    // Utilities
+    // -----------------------------
+    const $ = (id) => document.getElementById(id);
+    const nowIso = () => new Date().toISOString();
+
+    // Most recently copied state (desktop sidebar)
+    let lastCopiedText = "";
+    let lastCopiedLabel = "";
+    let lastCopiedAt = null;
+    let activeCopyPromptId = "";
+    let activeCopyTimer = null;
+
+    const toast = (msg) => {
+      const t = $("toast");
+      t.textContent = msg;
+      t.style.display = "block";
+      setTimeout(() => t.style.display = "none", 1400);
+    };
+
+    function normalizeCode(s) {
+      return (s || "").trim().toLowerCase();
+    }
+
+    function loadJSON(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+      catch { return fallback; }
+    }
+    function saveJSON(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+    function logEvent(type, data = {}) {
+      const events = loadJSON(KEYS.events, []);
+      events.push({ t: nowIso(), type, ...data });
+      saveJSON(KEYS.events, events);
+    }
+
+    function makeSessionId(participantCode) {
+      const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+      const stamp = new Date().toISOString().replace(/[-:]/g,"").slice(0,13); // YYYYMMDDTHH
+      return `${participantCode}-${stamp}-${rand}`;
+    }
+
+    function setLockedState(isLocked, msg = "") {
+      $("appShell").style.display = isLocked ? "none" : "block";
+      $("accessGate").style.display = isLocked ? "block" : "none";
+      if ($("accessMsg")) $("accessMsg").textContent = msg;
+    }
+
+    function getContext() {
+      return loadJSON(KEYS.context, { course: "", area: "", notes: "", questionCount: "10" });
+    }
+
+    function setContext(ctx) {
+      saveJSON(KEYS.context, ctx);
+      logEvent("context_saved", { ctx });
+    }
+
+    function getStage() {
+      return localStorage.getItem(KEYS.stage) || "setup";
+    }
+
+    function setStage(stage) {
+      localStorage.setItem(KEYS.stage, stage);
+      logEvent("stage_set", { stage });
+      applyStageUI();
+    }
+
+    function markAnyCopy() {
+      localStorage.setItem(KEYS.anyCopy, "true");
+    }
+
+    function markFinalizeVisited() {
+      localStorage.setItem(KEYS.finalizeVisited, "true");
+    }
+
+    function isSessionReadyToEnd() {
+      return localStorage.getItem(KEYS.anyCopy) === "true" && localStorage.getItem(KEYS.finalizeVisited) === "true";
+    }
+
+    function updateEndSessionVisibility() {
+      const row = $("endSessionRow");
+      if (!row) return;
+      row.dataset.readyToEnd = isSessionReadyToEnd() ? "true" : "false";
+    }
+
+
+    function getFinalizeCopyInstructionLine(model) {
+      const m = (model || "").trim();
+      if (m === "ChatGPT") return "Then, copy the final response from ChatGPT (the icon should look like this: [[ICON_PLACEHOLDER_CHATGPT]]) and paste it into the field below.";
+      if (m === "Gemini") return "Then, copy the final response from Gemini (the icon should look like this: [[ICON_PLACEHOLDER_GEMINI]]) and paste it into the field below.";
+      if (m === "Copilot") return "Then, copy the final response from Copilot (the icon should look like this: [[ICON_PLACEHOLDER_COPILOT]]) and paste it into the field below.";
+      if (m === "Claude") return "Then, copy the final response from Claude (the icon should look like this: [[ICON_PLACEHOLDER_CLAUDE]]) and paste it into the field below.";
+      return "Then, copy the final response from your model (the icon should look like this: [[ICON_PLACEHOLDER_OTHER]]) and paste it into the field below.";
+    }
+
+    function updateFinalizeContentUI() {
+      const copied = localStorage.getItem(KEYS.finalPromptCopied) === "true";
+      const submitted = localStorage.getItem(KEYS.submitClicked) === "true";
+      const notice = $("finalizeCopyNotice");
+      const lockedArea = $("finalizeLockedArea");
+      const formFailed = $("formFailedDetails");
+      const endRow = $("endSessionRow");
+      const submitBtn = $("btnSubmitForm");
+      const llm = $("llmResponse");
+
+      if (notice) {
+        if (copied) {
+          const model = localStorage.getItem(KEYS.modelUsed) || "Other";
+          notice.style.display = "block";
+          notice.innerHTML = `Paste the final prompt into the LLM.<br>${getFinalizeCopyInstructionLine(model)}`;
+        } else {
+          notice.style.display = "none";
+          notice.textContent = "";
+        }
+      }
+
+      if (lockedArea) {
+        lockedArea.style.display = copied ? "block" : "none";
+        lockedArea.classList.toggle("finalizeLockedContent", !copied);
+      }
+      if (llm) llm.disabled = !copied;
+      const hasResponse = !!((llm?.value || "").trim());
+      if (submitBtn) submitBtn.disabled = !copied || !hasResponse;
+      if (formFailed) formFailed.style.display = copied && submitted ? "block" : "none";
+      if (endRow) endRow.style.display = copied && submitted ? "flex" : "none";
+    }
+
+    function clearSessionData() {
+      Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+      lastCopiedText = "";
+      lastCopiedLabel = "";
+      lastCopiedAt = null;
+    }
+
+    // -----------------------------
+    // Footer status
+    // -----------------------------
+    function refreshFooterInfo() {
+      const code = localStorage.getItem(KEYS.accessCode) || "—";
+      const sid = localStorage.getItem(KEYS.sessionId) || "—";
+      const startIso = localStorage.getItem(KEYS.sessionStartTime);
+      const model = localStorage.getItem(KEYS.modelUsed) || "—";
+      const stage = getStage();
+
+      const ctx = getContext();
+      const started = startIso ? new Date(startIso).toLocaleString() : "—";
+      const last = document.lastModified || "—";
+      $("buildInfo").textContent = `Participant: ${code} • Session: ${sid} • Started: ${started} • Model: ${model} • Course: ${ctx.course || "—"} • Area: ${ctx.area || "—"} • Additional instructions: ${ctx.notes || "—"} • Stage: ${stage} • Last updated: ${last}`;
+    }
+
+    // -----------------------------
+    // Build starter/final prompts
+    // -----------------------------
+    function buildStarterPrompt() {
+      const code = localStorage.getItem(KEYS.accessCode) || "—";
+      const sid = localStorage.getItem(KEYS.sessionId) || "—";
+      const model = localStorage.getItem(KEYS.modelUsed) || "—";
+      const ctx = getContext();
+
+      const notesLine = (ctx.notes || "").trim()
+        ? `Additional instructions/parameters: ${ctx.notes.trim()}`
+        : `Additional instructions/parameters: (none)`;
+
+      return (
+`I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
+
+SESSION_ID: ${sid}
+PARTICIPANT_CODE: ${code}
+MODEL_USED: ${model}
+
+Course/context: ${ctx.course || "(not provided)"}
+Content area: ${ctx.area || "(not provided)"}
+Desired number of questions: ${ctx.questionCount || "10"}
+${notesLine}
+
+Follow these rules:
+- Use only the content provided by the user in this chat.
+- Do not add outside facts or new content.
+- If something is missing, ask a single clarifying question.
+- Output must be easy to copy and paste.
+
+Acknowledge these rules briefly, then proceed with the next instruction.`
+      );
+    }
+
+    function buildFinalPrompt() {
+      const sid = localStorage.getItem(KEYS.sessionId) || "—";
+      return (
+`You are at the final step.
+
+Include this line exactly at the very top of your response:
+SESSION_ID: ${sid}
+
+Now produce the final table output for this session. Keep the table clean and copy/paste friendly.
+Do not include extra commentary before or after the table unless the user explicitly requests it.`
+      );
+    }
+
+    function fillTemplate(template) {
+      const ctx = getContext();
+      const notesLine = (ctx.notes || "").trim()
+        ? `Additional instructions: ${ctx.notes.trim()}`
+        : `(No additional instructions.)`;
+
+      return template
+        .replaceAll("{{COURSE}}", ctx.course || "the course")
+        .replaceAll("{{AREA}}", ctx.area || "the content area")
+        .replaceAll("{{NOTES_LINE}}", notesLine);
+    }
+
+
+    function getClipboardSvg() {
+      return `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="9" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect><rect x="5" y="3" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect></svg>`;
+    }
+
+    function makeCopyIconButton({ id = "", label = "Copy prompt", title = "Copy prompt", className = "copyIconBtn" } = {}) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      if (id) btn.id = id;
+      btn.className = className;
+      btn.setAttribute("aria-label", label);
+      btn.setAttribute("title", title);
+      btn.innerHTML = getClipboardSvg();
+      return btn;
+    }
+
+    function hydrateCopyIconButton(btn, { label = "Copy prompt", title = "Copy prompt" } = {}) {
+      if (!btn) return;
+      btn.classList.add("copyIconBtn");
+      btn.setAttribute("aria-label", label);
+      btn.setAttribute("title", title);
+      btn.type = "button";
+      btn.innerHTML = getClipboardSvg();
+    }
+
+    // -----------------------------
+    // Copy helper
+    // -----------------------------
+    async function copyToClipboard(text, label) {
+      let copied = false;
+
+      try {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } catch (e) {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.setAttribute("readonly", "");
+          ta.style.position = "fixed";
+          ta.style.top = "-1000px";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          copied = document.execCommand("copy");
+          document.body.removeChild(ta);
+        } catch (_) {
+          copied = false;
+        }
+      }
+
+      markAnyCopy();
+      lastCopiedText = text;
+      lastCopiedLabel = label;
+      lastCopiedAt = new Date();
+      renderMostRecentCopied();
+
+      if (copied) {
+        toast("Copied ✅");
+      } else {
+        toast("Clipboard blocked — text saved in panel");
+      }
+
+      return true;
+    }
+
+    // -----------------------------
+    // Accordion gating
+    // -----------------------------
+    function isSetupComplete() {
+      const model = (localStorage.getItem(KEYS.modelUsed) || "").trim();
+      const ctx = getContext();
+      return !!model && !!ctx.course.trim() && !!ctx.area.trim();
+    }
+
+    function isPromptsUnlocked() {
+      return getStage() === "prompts" || getStage() === "finalize";
+    }
+
+    function isFinalizeUnlocked() {
+      return getStage() === "finalize";
+    }
+
+    function lockableSummary(summaryEl, isLockedFn, openBandId, lockMsg) {
+      summaryEl.addEventListener("click", (e) => {
+        if (isLockedFn()) {
+          e.preventDefault();
+          toast(lockMsg);
+          // keep focus/scroll on the band that needs work
+          const target = $(openBandId);
+          if (target) {
+            target.open = true;
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
+      });
+    }
+
+    function applyStageUI() {
+      const stage = getStage();
+
+      // Setup tag
+      if (isSetupComplete()) {
+        $("tagSetup").textContent = "Complete";
+        $("tagSetup").className = "tag ok";
+      } else {
+        $("tagSetup").textContent = "In progress";
+        $("tagSetup").className = "tag";
+      }
+
+      // Prompts lock/unlock
+      if (isPromptsUnlocked()) {
+        $("tagPrompts").textContent = "Open";
+        $("tagPrompts").className = "tag ok";
+        $("lockPrompts").style.display = "none";
+        $("promptsInner").style.display = "block";
+      } else {
+        $("tagPrompts").textContent = "Locked";
+        $("tagPrompts").className = "tag lock";
+        $("lockPrompts").style.display = "block";
+        $("promptsInner").style.display = "none";
+      }
+
+      // Finalize lock/unlock
+      if (isFinalizeUnlocked()) {
+        $("tagFinalize").textContent = "Open";
+        $("tagFinalize").className = "tag ok";
+        $("lockFinalize").style.display = "none";
+        $("finalizeInner").style.display = "block";
+      } else {
+        $("tagFinalize").textContent = "Locked";
+        $("tagFinalize").className = "tag lock";
+        $("lockFinalize").style.display = "block";
+        $("finalizeInner").style.display = "none";
+      }
+
+      // Which band should be open?
+      if (stage === "setup") {
+        $("bandSetup").open = true;
+        $("bandPrompts").open = false;
+        $("bandFinalize").open = false;
+      } else if (stage === "prompts") {
+        $("bandSetup").open = false;
+        $("bandPrompts").open = true;
+        $("bandFinalize").open = false;
+      } else if (stage === "finalize") {
+        $("bandSetup").open = false;
+        $("bandPrompts").open = false;
+        $("bandFinalize").open = true;
+        markFinalizeVisited();
+      }
+
+      updateEndSessionVisibility();
+      updateFinalizeContentUI();
+      refreshFooterInfo();
+      const copied = localStorage.getItem(KEYS.starterCopied) === "true";
+      $("btnGoPrompts").disabled = !copied;
+      $("btnGoPrompts").classList.toggle("disabledBtn", !copied);
+    }
+
+    // -----------------------------
+    // Prompt rendering
+    // -----------------------------
+    function formatCopiedTime(dt) {
+      if (!dt) return "—";
+      return dt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+    }
+
+    function renderMostRecentCopied() {
+      const has = !!lastCopiedText.trim();
+      const meta = $("recentCopiedMeta");
+      const text = $("recentCopiedText");
+      const copyAgain = $("btnCopyAgain");
+      const clear = $("btnClearRecent");
+
+      if (!meta || !text || !copyAgain || !clear) return;
+
+      if (!has) {
+        meta.textContent = "Nothing copied yet. Click any Copy button to see it here.";
+        text.value = "";
+        copyAgain.disabled = true;
+        clear.disabled = true;
+        return;
+      }
+
+      meta.textContent = `Source: ${lastCopiedLabel || "Unknown"} · Copied: ${formatCopiedTime(lastCopiedAt)}`;
+      text.value = lastCopiedText;
+      copyAgain.disabled = false;
+      clear.disabled = false;
+    }
+
+    function renderPromptList() {
+      const groupedPrompts = [
+        {
+          group: "Accept or Replace Question",
+          container: $("promptGroupAcceptReplace"),
+          items: ["next_question", "replace_question"]
+        },
+        {
+          group: "Refine Options",
+          container: $("promptGroupRefine"),
+          items: ["correct_answer_options", "distractor_options"]
+        },
+        {
+          group: "Pause and Audit",
+          container: $("promptGroupAudit"),
+          items: ["pause_review", "rebalance_content", "core_or_peripheral", "rebalance_question_type", "difficulty_audit", "blooms_taxonomy_audit"]
+        }
+      ];
+
+      ["promptGroupAcceptReplace", "promptGroupRefine", "promptGroupAudit"]
+        .forEach((id) => { const el = $(id); if (el) el.innerHTML = ""; });
+
+      const makePromptCard = (prompt) => {
+        const card = document.createElement("div");
+        card.className = "promptCard";
+
+        const header = document.createElement("div");
+        header.className = "promptHeader";
+
+        const title = document.createElement("div");
+        title.className = "promptTitle";
+        title.textContent = prompt.title;
+        header.appendChild(title);
+
+        const actions = document.createElement("div");
+        actions.className = "promptActions";
+
+        const btn = makeCopyIconButton({ label: "Copy prompt", title: "Copy prompt" });
+        btn.dataset.action = "copy";
+        btn.dataset.id = prompt.id;
+        if (activeCopyPromptId === prompt.id) btn.classList.add("isActive");
+
+        actions.appendChild(btn);
+
+        header.appendChild(actions);
+        card.appendChild(header);
+
+        if (prompt.description) {
+          const desc = document.createElement("p");
+          desc.className = "promptDesc";
+          desc.textContent = prompt.description;
+          card.appendChild(desc);
+        }
+
+        return card;
+      };
+
+      groupedPrompts.forEach((group) => {
+        if (!group.container) return;
+        group.items.forEach((id) => {
+          const prompt = PROMPTS.find((p) => p.id === id);
+          if (!prompt) return;
+          group.container.appendChild(makePromptCard(prompt));
+        });
+      });
+
+      const wrapper = $("promptsInner");
+      wrapper.onclick = async (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        if (action !== "copy" || !id) return;
+
+        const prompt = PROMPTS.find((x) => x.id === id);
+        if (!prompt) return;
+
+        const promptText = fillTemplate(prompt.prompt);
+        const ok = await copyToClipboard(promptText, prompt.title);
+        if (ok) {
+          logEvent("prompt_copied", { promptId: id });
+          activeCopyPromptId = id;
+          if (activeCopyTimer) clearTimeout(activeCopyTimer);
+          activeCopyTimer = setTimeout(() => {
+            activeCopyPromptId = "";
+            renderPromptList();
+          }, 400);
+          renderPromptList();
+        }
+      };
+    }
+
+
+    // -----------------------------
+    // Access verification
+    // -----------------------------
+    function verifyAccessCode() {
+      const code = normalizeCode($("accessCodeInput").value);
+      const isValidCode = Object.hasOwn(ACCESS_CODES, code);
+
+      if (!isValidCode) {
+        setLockedState(true, "Access code not recognized. Please contact the study team.");
+        logEvent("access_denied", { code_entered: code });
+        return false;
+      }
+
+      localStorage.setItem(KEYS.accessVerified, "true");
+      localStorage.setItem(KEYS.accessCode, code);
+
+      // Start timestamp is the first step at sign-in (your request)
+      if (!localStorage.getItem(KEYS.sessionStartTime)) {
+        localStorage.setItem(KEYS.sessionStartTime, nowIso());
+      }
+
+      // Create a session id at sign-in (so it exists for starter prompt + logs)
+      if (!localStorage.getItem(KEYS.sessionId)) {
+        localStorage.setItem(KEYS.sessionId, makeSessionId(code));
+      }
+
+      // Initialize stage
+      if (!localStorage.getItem(KEYS.stage)) {
+        localStorage.setItem(KEYS.stage, "setup");
+      }
+
+      // Initialize events container if missing
+      if (!localStorage.getItem(KEYS.events)) {
+        saveJSON(KEYS.events, []);
+      }
+
+      setLockedState(false);
+      if ($("topUser")) $("topUser").textContent = code || "User";
+      logEvent("access_verified", { accessCode: code });
+      toast("Access verified ✅");
+
+      applyStageUI();
+      return true;
+    }
+
+    // -----------------------------
+    // Submit / CSV
+    // -----------------------------
+    function buildEventLogCSV() {
+      const events = loadJSON(KEYS.events, []);
+      const code = localStorage.getItem(KEYS.accessCode) || "";
+      const sid = localStorage.getItem(KEYS.sessionId) || "";
+      const model = localStorage.getItem(KEYS.modelUsed) || "";
+
+      const header = ["t","type","promptId","stage","accessCode","sessionId","modelUsed"].join(",");
+      const rows = events.map(e => {
+        const cols = [
+          e.t || "",
+          e.type || "",
+          e.promptId || "",
+          e.stage || "",
+          e.accessCode || code,
+          e.sessionId || sid,
+          e.modelUsed || model
+        ];
+        return cols.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",");
+      });
+
+      return [header, ...rows].join("\n");
+    }
+
+    function openPrefilledGoogleForm() {
+      const csv = buildEventLogCSV();
+      const llm = ($("llmResponse").value || "").trim();
+
+      if (!llm) {
+        $("finalizeMsg").textContent = "Please paste the LLM Final Response before submitting.";
+        toast("Paste LLM response first");
+        return;
+      }
+
+      const url =
+        `${FORM_BASE}` +
+        `&entry.${ENTRY_EVENT_LOG}=${encodeURIComponent(csv)}` +
+        `&entry.${ENTRY_LLM_FINAL}=${encodeURIComponent(llm)}`;
+
+      logEvent("form_prefill_opened", { approx_csv_chars: csv.length, llm_chars: llm.length });
+      window.open(url, "_blank", "noopener,noreferrer");
+      toast("Opened Google Form (prefilled) ✅");
+    }
+
+    // -----------------------------
+    // Init
+    // -----------------------------
+    function init() {
+      // Gate
+      const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
+
+      const endedFlag = sessionStorage.getItem("dissertation.ended");
+      if (endedFlag === "true") {
+        sessionStorage.removeItem("dissertation.ended");
+        toast("Session ended. Data cleared on this device.");
+      }
+      if (alreadyVerified) {
+        setLockedState(false);
+      } else {
+        setLockedState(true);
+      }
+
+      $("accessForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        verifyAccessCode();
+      });
+
+      // Lockable summaries (Option C behavior)
+      lockableSummary(
+        $("sumPrompts"),
+        () => !isPromptsUnlocked(),
+        "bandSetup",
+        "Making questions is locked until you copy the starter prompt and click Proceed."
+      );
+      lockableSummary(
+        $("sumFinalize"),
+        () => !isFinalizeUnlocked(),
+        "bandPrompts",
+        "Finalize is locked until you click “I'm done making questions.”"
+      );
+
+      // Hydrate fields
+      $("modelUsed").value = localStorage.getItem(KEYS.modelUsed) || "";
+      const ctx = getContext();
+      $("ctxCourse").value = ctx.course || "";
+      $("ctxArea").value = ctx.area || "";
+      $("ctxNotes").value = ctx.notes || "";
+      $("ctxQuestionCount").value = ctx.questionCount || "10";
+
+      const selectModel = (model) => {
+        $("modelUsed").value = model;
+        document.querySelectorAll(".modelOption").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.model === model);
+        });
+      };
+
+      document.querySelectorAll(".modelOption").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          selectModel(btn.dataset.model || "");
+          localStorage.setItem(KEYS.starterCopied, "false");
+          applyStageUI();
+        });
+      });
+      selectModel($("modelUsed").value || "");
+
+      // Hydrate reusable copy icon buttons
+      hydrateCopyIconButton($("btnCopyStarter"), { label: "Copy starter prompt", title: "Copy starter prompt" });
+      hydrateCopyIconButton($("btnCopyFinal"), { label: "Copy final prompt", title: "Copy final prompt" });
+      hydrateCopyIconButton($("btnCopyAgain"), { label: "Copy", title: "Copy" });
+
+      // Render prompts
+      renderPromptList();
+
+      renderMostRecentCopied();
+      if (!localStorage.getItem(KEYS.finalPromptCopied)) localStorage.setItem(KEYS.finalPromptCopied, "false");
+      if (!localStorage.getItem(KEYS.submitClicked)) localStorage.setItem(KEYS.submitClicked, "false");
+      updateFinalizeContentUI();
+
+      $("btnCopyAgain").addEventListener("click", async () => {
+        if (!lastCopiedText.trim()) return;
+        $("btnCopyAgain").classList.add("isActive");
+        setTimeout(() => $("btnCopyAgain")?.classList.remove("isActive"), 400);
+        await copyToClipboard(lastCopiedText, lastCopiedLabel || "Most Recently Copied");
+      });
+
+      $("btnClearRecent").addEventListener("click", () => {
+        lastCopiedText = "";
+        lastCopiedLabel = "";
+        lastCopiedAt = null;
+        renderMostRecentCopied();
+      });
+
+      if (!($("setupMsg").textContent || "").trim()) {
+        $("setupMsg").style.display = "none";
+      }
+
+      ["ctxCourse", "ctxArea", "ctxNotes", "ctxQuestionCount"].forEach((id) => {
+        $(id).addEventListener("input", () => {
+          localStorage.setItem(KEYS.starterCopied, "false");
+          applyStageUI();
+        });
+      });
+
+      // Setup: Copy starter prompt only
+      $("btnCopyStarter").addEventListener("click", async () => {
+        // Validate required items
+        const model = ($("modelUsed").value || "").trim();
+        const course = ($("ctxCourse").value || "").trim();
+        const area = ($("ctxArea").value || "").trim();
+        const notes = ($("ctxNotes").value || "").trim();
+        const questionCount = ($("ctxQuestionCount").value || "10").trim() || "10";
+
+        $("setupMsg").textContent = "";
+        $("setupMsg").style.display = "none";
+
+        if (!model || !course || !area) {
+          $("setupMsg").textContent = "Please select a model and fill in course + content area before continuing.";
+          $("setupMsg").style.display = "block";
+          toast("Complete required fields");
+          return;
+        }
+
+        // Save model + context
+        localStorage.setItem(KEYS.modelUsed, model);
+        setContext({ course, area, notes, questionCount });
+
+        // Ensure access/session exist (in case someone bypassed sign-in state)
+        const code = localStorage.getItem(KEYS.accessCode);
+        if (!code) {
+          alert("No access code found. Please refresh and sign in again.");
+          return;
+        }
+        if (!localStorage.getItem(KEYS.sessionStartTime)) {
+          localStorage.setItem(KEYS.sessionStartTime, nowIso());
+        }
+        if (!localStorage.getItem(KEYS.sessionId)) {
+          localStorage.setItem(KEYS.sessionId, makeSessionId(code));
+        }
+
+        // Log + copy only
+        logEvent("starter_prepared", { accessCode: code, sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
+        $("btnCopyStarter").classList.add("isActive");
+        setTimeout(() => $("btnCopyStarter")?.classList.remove("isActive"), 400);
+        const ok = await copyToClipboard(buildStarterPrompt(), "Starter prompt");
+        if (ok) {
+          logEvent("starter_copied", {});
+          localStorage.setItem(KEYS.starterCopied, "true");
+          $("setupMsg").textContent = "Starter prompt copied. Paste it into your selected LLM, then click Proceed to 2) Making questions.";
+          $("setupMsg").style.display = "block";
+        }
+
+        applyStageUI();
+      });
+
+      $("btnGoPrompts").addEventListener("click", () => {
+        if (localStorage.getItem(KEYS.starterCopied) !== "true") {
+          toast("Copy starter prompt first");
+          return;
+        }
+        $("bandSetup").open = false;
+        setStage("prompts");
+      });
+
+      // Prompts controls
+      $("btnEditContext").addEventListener("click", () => {
+        setStage("setup");
+      });
+
+      $("btnReadyFinal").addEventListener("click", () => {
+        const fp = buildFinalPrompt();
+        localStorage.setItem(KEYS.finalPrompt, fp);
+        localStorage.setItem(KEYS.finalPromptCopied, "false");
+        localStorage.setItem(KEYS.submitClicked, "false");
+        logEvent("final_prompt_ready", {});
+        setStage("finalize");
+      });
+
+      // Finalize controls
+      $("btnBackToPrompts").addEventListener("click", () => {
+        setStage("prompts");
+      });
+
+      $("btnCopyFinal").addEventListener("click", async () => {
+        const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+        $("btnCopyFinal").classList.add("isActive");
+        setTimeout(() => $("btnCopyFinal")?.classList.remove("isActive"), 400);
+        const ok = await copyToClipboard(fp, "Final prompt");
+        if (!ok) return;
+        localStorage.setItem(KEYS.finalPromptCopied, "true");
+        logEvent("final_prompt_copied", {});
+        updateFinalizeContentUI();
+      });
+
+      $("btnSubmitForm").addEventListener("click", () => {
+        if ($("btnSubmitForm").disabled) return;
+        localStorage.setItem(KEYS.submitClicked, "true");
+        updateFinalizeContentUI();
+        openPrefilledGoogleForm();
+      });
+
+      $("llmResponse").addEventListener("input", () => {
+        updateFinalizeContentUI();
+      });
+
+      // Download backup json
+      $("btnDownload").addEventListener("click", () => {
+        const record = {
+          participant_code: localStorage.getItem(KEYS.accessCode),
+          session_id: localStorage.getItem(KEYS.sessionId),
+          session_started_at: localStorage.getItem(KEYS.sessionStartTime),
+          model_used: localStorage.getItem(KEYS.modelUsed),
+          context: getContext(),
+          events: loadJSON(KEYS.events, []),
+          last_copied_text: lastCopiedText || "",
+          final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
+          llm_response: $("llmResponse").value || "",
+          exported_at: nowIso()
+        };
+
+        const blob = new Blob([JSON.stringify(record, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        const fname = `${record.participant_code || "participant"}-${record.session_id || "session"}-backup.json`.replace(/[^\w.-]/g, "_");
+        a.href = URL.createObjectURL(blob);
+        a.download = fname;
+        a.click();
+        URL.revokeObjectURL(a.href);
+
+        logEvent("backup_exported", { filename: fname });
+        toast("Downloaded ✅");
+      });
+
+      // Reset session (header)
+      const openModal = (id) => { const m = $(id); if (m) m.style.display = "flex"; };
+      const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
+
+      $("btnResetSession").addEventListener("click", () => openModal("modalReset"));
+      $("btnResetCancel").addEventListener("click", () => closeModal("modalReset"));
+      $("btnResetConfirm").addEventListener("click", () => {
+        clearSessionData();
+        closeModal("modalReset");
+        location.reload();
+      });
+
+      $("btnEndSession").addEventListener("click", () => openModal("modalEnd"));
+      $("btnEndCancel").addEventListener("click", () => closeModal("modalEnd"));
+      $("btnEndConfirm").addEventListener("click", () => {
+        clearSessionData();
+        sessionStorage.setItem("dissertation.ended", "true");
+        closeModal("modalEnd");
+        location.reload();
+      });
+
+      // Always show footer status immediately (even before access is verified)
+      refreshFooterInfo();
+
+      // Finally apply stage UI if already verified
+      if (alreadyVerified) {
+        // Ensure stage exists
+        if (!localStorage.getItem(KEYS.stage)) localStorage.setItem(KEYS.stage, "setup");
+        applyStageUI();
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
