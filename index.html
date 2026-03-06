@@ -217,28 +217,23 @@
       word-break: break-word;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
     }
-    .promptSections { display:grid; gap:14px; }
+    .promptSections { display:grid; gap:10px; }
     .promptSection {
       border:1px solid var(--border);
       border-radius:10px;
       background:#f8fbff;
-      padding:7px;
+      padding:6px;
     }
-    .promptSectionTitle { margin:0 0 6px; font-size:13px; font-weight:700; }
-    .promptListCompact { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; }
+    .promptSectionTitle { margin:0 0 4px; font-size:13px; font-weight:700; }
+    .promptListCompact { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:8px; }
     .promptListSingle { display:block; }
     .promptListSingle .promptCard { width: 100%; }
-    .separator {
-      height: 1px;
-      background: var(--border);
-      margin: 12px 0;
-    }
     .promptCard {
       border:1px solid var(--border);
       border-radius:8px;
       background:#fff;
-      padding:7px;
-      min-height: 44px;
+      padding:6px;
+      min-height: 40px;
     }
     .promptHeader { display:flex; justify-content:space-between; align-items:center; gap:8px; }
     .promptActions { display:flex; align-items:center; gap:6px; }
@@ -298,7 +293,7 @@
 
     .promptTitle { font-weight:700; font-size:12px; margin:0; line-height:1.25; }
     .promptDesc {
-      margin:4px 0 0;
+      margin:3px 0 0;
       font-size:10.5px;
       color:var(--muted);
       line-height:1.2;
@@ -549,9 +544,7 @@
                 <button class="btn" id="btnEditContext">Go back and edit context</button>
               </div>
 
-              <div class="hr"></div>
-
-              <div class="promptArea">
+              <div class="promptArea" style="margin-top:8px;">
                 <div class="promptSections">
                   <div class="promptSection">
                     <h4 class="promptSectionTitle">Accept or Replace Question</h4>
@@ -563,14 +556,10 @@
                     <div id="promptGroupRefine" class="promptListCompact"></div>
                   </div>
 
-                  <div class="separator"></div>
-
                   <div>
                     <h4 class="promptSectionTitle">Pause &amp; Review</h4>
                     <div id="promptGroupReview" class="promptListSingle"></div>
                   </div>
-
-                  <div class="separator"></div>
 
                   <div class="promptSection">
                     <h4 class="promptSectionTitle">Audit Options</h4>
@@ -578,9 +567,7 @@
                   </div>
                 </div>
 
-                <div class="hr"></div>
-
-                <div class="row" style="justify-content: space-between; margin-top:10px;">
+                <div class="row" style="justify-content: space-between; margin-top:8px;">
                   <button class="btn primary" id="btnReadyFinal">I'm done making questions</button>
                 </div>
               </div>
