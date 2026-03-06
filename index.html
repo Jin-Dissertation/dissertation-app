@@ -86,7 +86,7 @@
     .tag.lock { border-color: rgba(245,158,11,.5); color: #9a5800; background:#fff7e8; }
     .bandBody { padding: 16px 6px 6px; }
     .lockMsg { border:1px dashed var(--border); border-radius: 10px; padding:10px; color: var(--muted); background: #f7faff; }
-    .hidden { display:none !important; }
+    .hidden { display:none; }
     .modelGrid, .product-grid { display:grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap:14px; }
     .modelOption, .product-card { border:1px solid var(--border); border-radius: 10px; padding:8px 6px; min-height:78px; background:#f8fbff; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; }
     .modelOption:hover, .product-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.08); border-color: var(--accent); }
@@ -477,15 +477,6 @@
                 <button class="btn" id="btnConfirmProductVersion" type="button" disabled>Confirm product and version</button>
               </div>
             </div>
-
-            <div id="productVersionSummary" class="subBand productVersionSummary" style="display:none;" role="button" tabindex="0">
-              <div class="title">Product and version confirmed</div>
-              <div class="muted small" id="productVersionSummaryText"></div>
-            </div>
-            </div>
-
-            <div id="contextSubband" class="subBand" style="display:none; margin-top:10px;">
-              <h4 class="subBandTitle">1B) Question context</h4>
 
             <div id="productVersionSummary" class="subBand productVersionSummary" style="display:none;" role="button" tabindex="0">
               <div class="title">Product and version confirmed</div>
@@ -1025,7 +1016,8 @@ Provide the results in a table with the following columns:
 
     function normalizeLlmProduct(model) {
       const m = (model || "").trim().toLowerCase();
-      if (["chatgpt", "claude", "gemini", "copilot"].includes(m)) return m;
+      if (!m) return "";
+      if (["chatgpt", "claude", "gemini", "copilot", "other"].includes(m)) return m;
       return "other";
     }
 
@@ -1470,10 +1462,15 @@ Do not include extra commentary before or after the table unless the user explic
     // -----------------------------
     // Accordion gating
     // -----------------------------
-    function isSetupComplete() {
+    function hasRequiredContextFields() {
       const model = (localStorage.getItem(KEYS.modelUsed) || "").trim();
       const ctx = getContext();
       return !!model && !!ctx.course.trim() && !!ctx.area.trim();
+    }
+
+    function isSetupComplete() {
+      const isConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
+      return isConfirmed && hasRequiredContextFields();
     }
 
     function isPromptsUnlocked() {
@@ -1557,8 +1554,9 @@ Do not include extra commentary before or after the table unless the user explic
       updateFinalizeContentUI();
       refreshFooterInfo();
       const copied = localStorage.getItem(KEYS.starterCopied) === "true";
-      $("btnGoPrompts").disabled = !copied;
-      $("btnGoPrompts").classList.toggle("disabledBtn", !copied);
+      const canProceedToPrompts = copied && isSetupComplete();
+      $("btnGoPrompts").disabled = !canProceedToPrompts;
+      $("btnGoPrompts").classList.toggle("disabledBtn", !canProceedToPrompts);
     }
 
     // -----------------------------
@@ -2043,7 +2041,7 @@ Do not include extra commentary before or after the table unless the user explic
           return;
         }
 
-        if (!isLlmConfirmationComplete()) {
+        if (!isLlmConfirmationComplete() || localStorage.getItem(KEYS.productVersionConfirmed) !== "true") {
           $("setupMsg").textContent = "Please confirm product version before continuing.";
           $("setupMsg").style.display = "block";
           toast("Complete required fields");
@@ -2089,6 +2087,10 @@ Do not include extra commentary before or after the table unless the user explic
         logEvent("go_prompts_clicked");
         if (localStorage.getItem(KEYS.starterCopied) !== "true") {
           toast("Copy starter prompt first");
+          return;
+        }
+        if (!isSetupComplete()) {
+          toast("Complete required fields");
           return;
         }
         $("bandSetup").open = false;
