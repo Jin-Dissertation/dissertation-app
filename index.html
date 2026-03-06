@@ -15,12 +15,12 @@
     @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
     .card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(16,33,61,0.05); }
     .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    label { font-size: 12px; color: var(--muted); display:block; margin-bottom:6px; }
+    label { font-size: 12px; color: var(--muted); display:block; margin-bottom:4px; }
     input, select, textarea {
       width:100%; background:#f8fbff; border:1px solid var(--border); color:var(--text);
       border-radius: 10px; padding: 10px; box-sizing:border-box;
     }
-    textarea { min-height: 140px; resize: vertical; }
+    textarea { min-height: 140px; resize: vertical; line-height: 1.4; }
         .btn {
       background: #f1f7ff; border:1px solid var(--border); color:var(--text);
       padding:10px 12px; border-radius: 10px; cursor:pointer;
@@ -84,7 +84,7 @@
     }
     .tag.ok { border-color: rgba(47,110,220,.45); color: #1f4ca4; background: var(--accent-soft); }
     .tag.lock { border-color: rgba(245,158,11,.5); color: #9a5800; background:#fff7e8; }
-    .bandBody { padding: 12px 2px 2px; }
+    .bandBody { padding: 16px 6px 6px; }
     .lockMsg { border:1px dashed var(--border); border-radius: 10px; padding:10px; color: var(--muted); background: #f7faff; }
     .modelGrid { display:grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap:8px; }
     .modelOption { border:1px solid var(--border); border-radius: 10px; padding:8px 6px; min-height:78px; background:#f8fbff; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
@@ -133,7 +133,7 @@
     @media (max-width: 680px) {
       .modelGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
-    .subBand { border:1px solid var(--border); border-radius: 12px; background:#f8fbff; padding:12px; margin-top:10px; }
+    .subBand { border:1px solid var(--border); border-radius: 10px; background:rgba(16,33,61,0.02); padding:16px 18px; margin-top:14px; }
     .llmConfirmIntro { margin:10px 0 8px; }
     .llmImageRow {
       display: flex;
@@ -163,7 +163,7 @@
       display: block;
     }
     .llmCompactSelect { width: 100%; max-width: 100%; min-width: 0; }
-    .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:800; }
+    .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:600; }
     .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
     @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
     .centerCard { max-width:420px; margin: 0 auto; }
@@ -240,7 +240,39 @@
     .finalizeNotice { margin:10px 0 0; display:none; }
     .finalizeLockedContent { opacity:.6; pointer-events:none; user-select:none; }
     .finalActionBtn { min-height: 36px; padding: 8px 12px; border-radius: 10px; font-size: 14px; font-weight: 600; }
-    .finalActionBtn.btn.warn { font-weight: 600; }
+      .finalActionBtn.btn.warn { font-weight: 600; }
+    #formFailedDetails > summary.finalActionBtn,
+    #btnEndSession.finalActionBtn {
+      opacity: 0.88;
+      font-weight: 550;
+    }
+    #formFailedDetails > summary.finalActionBtn:hover,
+    #btnEndSession.finalActionBtn:hover {
+      opacity: 1;
+    }
+
+
+    details summary {
+      list-style: none;
+    }
+    details summary::-webkit-details-marker {
+      display: none;
+    }
+    .whereToggleSummary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .whereToggleIcon {
+      display: inline-block;
+      transition: transform 0.2s ease;
+      transform-origin: center;
+    }
+    details[open] .whereToggleIcon {
+      transform: rotate(90deg);
+    }
+
     .promptTitle { font-weight:700; font-size:12px; margin:0; line-height:1.25; }
     .promptDesc {
       margin:4px 0 0;
@@ -362,7 +394,7 @@
                 <p id="llmWhereText" class="muted small" style="margin:0;"></p>
 
                 <details style="margin-top:8px;">
-                  <summary class="muted small" style="cursor:pointer;">Where do I find this?</summary>
+                  <summary class="muted small whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
                   <div class="llmImageRow">
                     <!--
                     Replace this placeholder with a real screenshot by replacing the div with:
@@ -419,7 +451,7 @@
             </div>
             </div>
 
-              <div id="contextSubband" class="subBand" style="display:none; margin-top:10px;">
+            <div id="contextSubband" class="subBand" style="display:none; margin-top:10px;">
               <h4 class="subBandTitle">1B) Question context</h4>
 
             <div class="row" style="margin-top:10px;">
@@ -1174,7 +1206,7 @@ Provide the results in a table with the following columns:
             Paste the final prompt into your selected LLM.<br><br>
             When the model generates its response, copy the full output using the copy icon.<br><br>
             <details style="display:inline-block;">
-              <summary style="cursor:pointer;">▶ Where do I find this?</summary>
+              <summary class="whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
               <div style="margin-top:6px;">${getFinalizeCopyInstructionLine(model)}</div>
             </details><br><br>
             Paste the copied response below.
