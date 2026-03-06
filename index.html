@@ -487,21 +487,10 @@
             </div>
             </div>
 
-            <div id="contextSubband" class="subBand" style="display:none; margin-top:10px;">
+            <div id="contextSubband" class="subBand hidden" style="margin-top:10px;">
               <h4 class="subBandTitle">1B) Question context</h4>
 
-            <div id="contextSubband" class="subBand" style="display:none; margin-top:10px;">
-              <h4 class="subBandTitle">1B) Question context</h4>
-
-            <div id="productVersionSummary" class="subBand productVersionSummary" style="display:none;" role="button" tabindex="0">
-              <div class="title">Product and version confirmed</div>
-              <div class="muted small" id="productVersionSummaryText"></div>
-            </div>
-            </div>
-
-            <div id="contextSubband" class="subBand" style="display:none; margin-top:10px;">
-              <h4 class="subBandTitle">1B) Question context</h4>
-
+              <div id="contextFields">
             <div class="row" style="margin-top:10px;">
               <div style="flex:1; min-width: 240px;">
                 <label>Course / class context</label>
@@ -539,6 +528,7 @@
             <div class="row" style="margin-top:8px;">
               <button class="btn" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
             </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1126,6 +1116,7 @@ Provide the results in a table with the following columns:
 
     function updateSetupSubbandVisibility() {
       const contextSubband = $("contextSubband");
+      const contextFields = $("contextFields");
       const editor = $("productVersionEditor");
       const summary = $("productVersionSummary");
       const summaryText = $("productVersionSummaryText");
@@ -1141,7 +1132,8 @@ Provide the results in a table with the following columns:
         editor.classList.toggle("hidden", !productSelected || showConfirmed);
       }
       if (summary) summary.style.display = showConfirmed ? "block" : "none";
-      if (contextSubband) contextSubband.style.display = showConfirmed ? "block" : "none";
+      if (contextSubband) contextSubband.classList.toggle("hidden", !showConfirmed);
+      if (contextFields) contextFields.classList.toggle("hidden", !showConfirmed);
     }
 
     function renderLlmConfirmPanel(productKey) {
