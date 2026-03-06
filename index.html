@@ -86,10 +86,16 @@
     .tag.lock { border-color: rgba(245,158,11,.5); color: #9a5800; background:#fff7e8; }
     .bandBody { padding: 12px 2px 2px; }
     .lockMsg { border:1px dashed var(--border); border-radius: 10px; padding:10px; color: var(--muted); background: #f7faff; }
-    .modelGrid { display:grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
-    .modelOption { border:1px solid var(--border); border-radius: 10px; padding:10px; background:#f8fbff; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .modelGrid { display:grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap:8px; }
+    .modelOption { border:1px solid var(--border); border-radius: 10px; padding:8px 6px; min-height:78px; background:#f8fbff; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
     .modelOption.active { border:2px solid var(--accent); background: var(--accent-soft); }
-    .logoDot { width:32px; height:32px; border-radius:999px; display:grid; place-items:center; font-size:11px; font-weight:700; color:#fff; }
+    .logoDot { width:30px; height:30px; border-radius:999px; display:grid; place-items:center; font-size:10px; font-weight:700; color:#fff; }
+    .productLogoImage {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      display: block;
+    }
     .logo-openai{ background:#111827; }
     .logo-gemini{ background:#6d5ef6; }
     .logo-copilot{ background:#0ea5e9; }
@@ -124,6 +130,9 @@
       .accessRow { flex-wrap: wrap; }
       .accessInput, .accessBtn { width: 100%; }
     }
+    @media (max-width: 680px) {
+      .modelGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
     .subBand { border:1px solid var(--border); border-radius: 12px; background:#f8fbff; padding:12px; margin-top:10px; }
     .llmConfirmIntro { margin:10px 0 8px; }
     .llmImageRow {
@@ -153,7 +162,7 @@
       border-radius: 10px;
       display: block;
     }
-    .llmCompactSelect { width: 100%; max-width: 100%; }
+    .llmCompactSelect { width: 100%; max-width: 100%; min-width: 0; }
     .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:800; }
     .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
     @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
@@ -283,24 +292,70 @@
         </summary>
         <div class="bandBody">
           <div class="card">
-            <div class="row">
-              <div style="flex:1; min-width: 240px;">
-                <label>Model used</label>
-                <input type="hidden" id="modelUsed" />
-                <div class="modelGrid" id="modelGrid">
+            <div class="subBand" style="margin-top:0;">
+              <h4 class="subBandTitle">1A) Select product and confirm version</h4>
+              <div class="row">
+                <div style="flex:1; min-width: 240px;">
+                  <label>Product used</label>
+                  <input type="hidden" id="modelUsed" />
+                  <div class="modelGrid" id="modelGrid">
+                  <!--
+                  To replace this text circle with an image logo, replace the span/logo element with:
+
+                  <img
+                    src="images/chatgpt-logo.png"
+                    alt="ChatGPT logo"
+                    class="productLogoImage"
+                  />
+                  -->
                   <button class="modelOption" data-model="ChatGPT" type="button"><span class="logoDot logo-openai">GPT</span><span>ChatGPT</span></button>
+                  <!--
+                  To replace this text circle with an image logo, replace the span/logo element with:
+
+                  <img
+                    src="images/gemini-logo.png"
+                    alt="Gemini logo"
+                    class="productLogoImage"
+                  />
+                  -->
                   <button class="modelOption" data-model="Gemini" type="button"><span class="logoDot logo-gemini">G</span><span>Gemini</span></button>
+                  <!--
+                  To replace this text circle with an image logo, replace the span/logo element with:
+
+                  <img
+                    src="images/copilot-logo.png"
+                    alt="Copilot logo"
+                    class="productLogoImage"
+                  />
+                  -->
                   <button class="modelOption" data-model="Copilot" type="button"><span class="logoDot logo-copilot">Co</span><span>Copilot</span></button>
+                  <!--
+                  To replace this text circle with an image logo, replace the span/logo element with:
+
+                  <img
+                    src="images/claude-logo.png"
+                    alt="Claude logo"
+                    class="productLogoImage"
+                  />
+                  -->
                   <button class="modelOption" data-model="Claude" type="button"><span class="logoDot logo-claude">Cl</span><span>Claude</span></button>
+                  <!--
+                  To replace this text circle with an image logo, replace the span/logo element with:
+
+                  <img
+                    src="images/other-logo.png"
+                    alt="Other logo"
+                    class="productLogoImage"
+                  />
+                  -->
                   <button class="modelOption" data-model="Other" type="button"><span class="logoDot logo-other">AI</span><span>Other</span></button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-
-            <div class="subBand" style="margin-top:10px;">
-              <h4 class="subBandTitle">Confirm the AI product interface</h4>
-              <p class="muted small llmConfirmIntro">Please leave the product in its default mode for this activity, then confirm what you see.</p>
+              <div class="subBand" style="margin-top:10px;">
+              <h4 class="subBandTitle">Confirm product version</h4>
+              <p class="muted small llmConfirmIntro">Please leave the product in its default mode for this activity, then confirm what you see in the menu.</p>
 
               <div id="llmConfirmPanel" class="subBand" style="display:none; margin-top:8px;">
                 <p id="llmInstructionText" class="muted small" style="margin:0 0 6px;"></p>
@@ -362,6 +417,10 @@
                 <textarea id="llmOtherDescription" placeholder="Briefly describe the AI product you are using."></textarea>
               </div>
             </div>
+            </div>
+
+              <div id="contextSubband" class="subBand" style="display:none; margin-top:10px;">
+              <h4 class="subBandTitle">1B) Question context</h4>
 
             <div class="row" style="margin-top:10px;">
               <div style="flex:1; min-width: 240px;">
@@ -399,6 +458,7 @@
             <p class="muted small" id="setupMsg" style="margin:10px 0 0; display:none;"></p>
             <div class="row" style="margin-top:8px;">
               <button class="btn" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
+            </div>
             </div>
           </div>
         </div>
@@ -476,12 +536,9 @@
               <p class="muted small finalizeNotice" id="finalizeCopyNotice"></p>
 
               <div id="finalizeLockedArea" class="finalizeLockedContent" style="margin-top:8px; display:none;">
-                <p class="muted small" style="margin:10px 0 0;">
-                  After you use the final prompt in your model, paste the model’s final output below.
-                </p>
 
                 <div style="margin-top:12px;">
-                  <label>Paste the LLM Final Response *</label>
+                  <label>Paste the LLM Final Response</label>
                   <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
                 </div>
 
@@ -953,6 +1010,24 @@ Provide the results in a table with the following columns:
       return true;
     }
 
+
+    function isSetupVersionConfirmedForContext() {
+      const product = localStorage.getItem(KEYS.llmProduct) || "";
+      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
+      const otherDescription = ($("llmOtherDescription")?.value || localStorage.getItem(KEYS.llmOtherDescription) || "").trim();
+      if (!product) return false;
+      if (product === "other") return !!otherDescription;
+      return !!expectedChoice;
+    }
+
+    function updateSetupSubbandVisibility() {
+      const contextSubband = $("contextSubband");
+      if (!contextSubband) return;
+      const product = localStorage.getItem(KEYS.llmProduct) || "";
+      const show = !!product && isSetupVersionConfirmedForContext();
+      contextSubband.style.display = show ? "block" : "none";
+    }
+
     function renderLlmConfirmPanel(productKey) {
       const panel = $("llmConfirmPanel");
       const otherWrap = $("llmOtherWrap");
@@ -978,6 +1053,7 @@ Provide the results in a table with the following columns:
           localStorage.removeItem(KEYS.llmOtherDescription);
           if ($("llmOtherDescription")) $("llmOtherDescription").value = "";
         }
+        updateSetupSubbandVisibility();
         return;
       }
 
@@ -1035,6 +1111,7 @@ Provide the results in a table with the following columns:
         llmMismatchReported = false;
         llmMismatchAlertAttempted = false;
       }
+      updateSetupSubbandVisibility();
     }
 
     function setStage(stage) {
@@ -1072,11 +1149,11 @@ Provide the results in a table with the following columns:
 
     function getFinalizeCopyInstructionLine(model) {
       const m = (model || "").trim();
-      if (m === "ChatGPT") return "Then, copy the final response from ChatGPT (the icon should look like this: [[ICON_PLACEHOLDER_CHATGPT]]) and paste it into the field below.";
-      if (m === "Gemini") return "Then, copy the final response from Gemini (the icon should look like this: [[ICON_PLACEHOLDER_GEMINI]]) and paste it into the field below.";
-      if (m === "Copilot") return "Then, copy the final response from Copilot (the icon should look like this: [[ICON_PLACEHOLDER_COPILOT]]) and paste it into the field below.";
-      if (m === "Claude") return "Then, copy the final response from Claude (the icon should look like this: [[ICON_PLACEHOLDER_CLAUDE]]) and paste it into the field below.";
-      return "Then, copy the final response from your model (the icon should look like this: [[ICON_PLACEHOLDER_OTHER]]) and paste it into the field below.";
+      if (m === "ChatGPT") return "[[ICON_PLACEHOLDER_CHATGPT]]";
+      if (m === "Gemini") return "[[ICON_PLACEHOLDER_GEMINI]]";
+      if (m === "Copilot") return "[[ICON_PLACEHOLDER_COPILOT]]";
+      if (m === "Claude") return "[[ICON_PLACEHOLDER_CLAUDE]]";
+      return "[[ICON_PLACEHOLDER_OTHER]]";
     }
 
     function updateFinalizeContentUI() {
@@ -1093,7 +1170,15 @@ Provide the results in a table with the following columns:
         if (copied) {
           const model = localStorage.getItem(KEYS.modelUsed) || "Other";
           notice.style.display = "block";
-          notice.innerHTML = `Paste the final prompt into the LLM.<br>${getFinalizeCopyInstructionLine(model)}`;
+          notice.innerHTML = `
+            Paste the final prompt into your selected LLM.<br><br>
+            When the model generates its response, copy the full output using the copy icon.<br><br>
+            <details style="display:inline-block;">
+              <summary style="cursor:pointer;">▶ Where do I find this?</summary>
+              <div style="margin-top:6px;">${getFinalizeCopyInstructionLine(model)}</div>
+            </details><br><br>
+            Paste the copied response below.
+          `;
         } else {
           notice.style.display = "none";
           notice.textContent = "";
@@ -1652,6 +1737,7 @@ Do not include extra commentary before or after the table unless the user explic
         localStorage.setItem(KEYS.llmProduct, normalizeLlmProduct($("modelUsed").value || ""));
       }
       renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || normalizeLlmProduct($("modelUsed").value || ""));
+      updateSetupSubbandVisibility();
 
       // Hydrate reusable copy icon buttons
       hydrateCopyIconButton($("btnCopyStarter"), { label: "Copy starter prompt", title: "Copy starter prompt" });
@@ -1684,6 +1770,7 @@ Do not include extra commentary before or after the table unless the user explic
             llmMismatchReported = false;
             llmMismatchAlertAttempted = false;
           }
+          updateSetupSubbandVisibility();
         });
       }
 
@@ -1731,6 +1818,7 @@ Do not include extra commentary before or after the table unless the user explic
         llmOtherDescriptionEl.value = localStorage.getItem(KEYS.llmOtherDescription) || "";
         llmOtherDescriptionEl.addEventListener("input", () => {
           localStorage.setItem(KEYS.llmOtherDescription, llmOtherDescriptionEl.value || "");
+          updateSetupSubbandVisibility();
         });
       }
 
@@ -1789,7 +1877,7 @@ Do not include extra commentary before or after the table unless the user explic
         }
 
         if (!isLlmConfirmationComplete()) {
-          $("setupMsg").textContent = "Please confirm what you see in the AI product interface before continuing.";
+          $("setupMsg").textContent = "Please confirm product version before continuing.";
           $("setupMsg").style.display = "block";
           toast("Complete required fields");
           return;
