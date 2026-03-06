@@ -8,7 +8,7 @@
     @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap");
     :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; }
     body { margin:0; font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); letter-spacing: .01em; }
-    .pageShell { max-width: 1240px; margin: 0 auto; padding: 24px; overflow-x: hidden; }
+    .pageShell { max-width: 1240px; margin: 0 auto; padding: 24px; }
     h1 { font-family: inherit; font-size: 30px; font-weight:700; margin: 0 0 18px; letter-spacing: .01em; }
     .sub { color: var(--muted); margin: 0 0 18px; }
     .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
@@ -199,13 +199,13 @@
       width: 248px;
       position: sticky;
       top: 16px;
-      height: calc((100vh - 32px) * 0.8);
       align-self: start;
+      max-height: calc(100vh - 32px);
     }
     .stickySidebar.recentCard {
-      height: 100%;
       display: flex;
       flex-direction: column;
+      max-height: calc(100vh - 32px);
       overflow: hidden;
     }
     .copyMeta { margin:0 0 8px; color: var(--muted); font-size:12px; }
@@ -218,12 +218,12 @@
       word-break: break-word;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
     }
-    .promptSections { display:grid; gap:10px; min-width: 0; }
+    .promptSections { display:grid; gap:6px; min-width: 0; }
     .promptSection {
       border:1px solid var(--border);
       border-radius:10px;
       background:#f8fbff;
-      padding:6px;
+      padding:5px;
       min-width: 0;
     }
     .promptSectionTitle { margin:0 0 4px; font-size:13px; font-weight:700; }
@@ -297,18 +297,18 @@
       transform: rotate(90deg);
     }
 
-    .promptTitle { font-weight:600; font-size:15px; margin:0; line-height:1.25; min-width: 0; overflow-wrap: anywhere; color: var(--text); }
+    .promptTitle { font-weight:600; font-size:14px; margin:0 0 4px; line-height:1.2; min-width: 0; overflow-wrap: anywhere; color: var(--text); }
     .promptDesc {
-      margin:3px 0 0;
-      font-size:13px;
+      margin:2px 0 0;
+      font-size:12px;
       color:#6b7280;
-      line-height:1.35;
+      line-height:1.25;
       min-width: 0;
       overflow-wrap: anywhere;
     }
     @media (max-width: 960px) {
       .promptCard { padding: 6px; }
-      .promptDesc { font-size: 13px; }
+      .promptDesc { font-size: 12px; }
       .btn { padding: 6px 8px; }
       .promptArea { max-height: calc(100vh - 260px); overflow:auto; padding-right:4px; min-width: 0; overflow-x: hidden; }
     }
@@ -567,7 +567,6 @@
                   </div>
 
                   <div class="promptReviewBlock">
-                    <h4 class="promptSectionTitle">Pause &amp; Review</h4>
                     <div id="promptGroupReview" class="promptListSingle"></div>
                   </div>
 
