@@ -102,8 +102,10 @@
     .logo-claude{ background:#d97706; }
     .logo-other{ background:#64748b; }
     .disabledBtn { opacity:.55; cursor:not-allowed; }
-    .accessPrompt { font-size: 18px; font-weight: 700; color: var(--text); margin:0 0 14px; line-height:1.3; }
-    .accessRow { display:flex; align-items:stretch; gap:12px; flex-wrap:nowrap; }
+    .accessPrompt { font-size: 18px; font-weight: 700; color: var(--text); margin:0 0 10px; line-height:1.3; }
+    .accessCard { max-width: 520px; margin: 18px auto; padding: 16px 18px; }
+    .accessCard p { margin-bottom: 10px; }
+    .accessRow { display:flex; gap:10px; align-items:center; flex-wrap:nowrap; }
     .accessInput {
       width: 180px;
       font-size: 20px;
@@ -125,6 +127,7 @@
       white-space: nowrap;
     }
     #accessMsg { font-size: 16px; }
+    .accessError { color:#b91c1c; font-size:0.9rem; margin-top:8px; }
 
     @media (max-width: 560px) {
       .accessRow { flex-wrap: wrap; }
@@ -304,7 +307,7 @@
   <div class="pageShell">
     <h1>Dissertation Prompt App</h1>
     <!-- Access gate -->
-    <div class="card" id="accessGate">
+    <div class="card accessCard" id="accessGate">
       <p class="muted small" style="margin:0 0 10px;">Enter your participant code to begin this session.</p>
 
       <form class="accessRow" id="accessForm">
@@ -312,7 +315,7 @@
         <button class="btn primary accessBtn" id="btnVerifyAccess" type="submit">Continue</button>
       </form>
 
-      <p id="accessMsg" class="muted small" style="margin:10px 0 0;"></p>
+      <p id="accessMsg" class="muted small accessError" style="margin:8px 0 0;"></p>
     </div>
 
     <!-- Main app -->
