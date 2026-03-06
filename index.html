@@ -175,11 +175,26 @@
       border:1px solid var(--border);
       border-radius:8px;
       background:#fff;
-      padding:8px;
-      min-height: 48px;
+      padding:7px;
+      min-height: 44px;
     }
     .promptHeader { display:flex; justify-content:space-between; align-items:center; gap:8px; }
     .promptActions { display:flex; align-items:center; gap:6px; }
+    .promptCopyBtn {
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+    .promptCopyBtn svg { width: 14px; height: 14px; }
     .promptTitle { font-weight:700; font-size:12px; margin:0; line-height:1.25; }
     .promptDesc {
       margin:4px 0 0;
@@ -641,6 +656,8 @@ Provide the results in a table with the following columns:
     let lastCopiedText = "";
     let lastCopiedLabel = "";
     let lastCopiedAt = null;
+    let flashCopiedPromptId = "";
+    let flashCopiedTimer = null;
 
     const toast = (msg) => {
       const t = $("toast");
@@ -1002,10 +1019,18 @@ Do not include extra commentary before or after the table unless the user explic
 
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "btn primary";
+        btn.className = "promptCopyBtn";
         btn.dataset.action = "copy";
         btn.dataset.id = prompt.id;
-        btn.textContent = "Copy";
+        btn.setAttribute("aria-label", "Copy prompt");
+        btn.setAttribute("title", "Copy prompt");
+
+        if (flashCopiedPromptId === prompt.id) {
+          btn.textContent = "✓";
+        } else {
+          btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="9" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect><rect x="5" y="3" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect></svg>`;
+        }
+
         actions.appendChild(btn);
 
         if (prompt.title === lastCopiedLabel) {
@@ -1053,6 +1078,12 @@ Do not include extra commentary before or after the table unless the user explic
         const ok = await copyToClipboard(promptText, prompt.title);
         if (ok) {
           logEvent("prompt_copied", { promptId: id });
+          flashCopiedPromptId = id;
+          if (flashCopiedTimer) clearTimeout(flashCopiedTimer);
+          flashCopiedTimer = setTimeout(() => {
+            flashCopiedPromptId = "";
+            renderPromptList();
+          }, 1200);
           renderPromptList();
         }
       };
