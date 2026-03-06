@@ -84,7 +84,8 @@
     }
     .tag.ok { border-color: rgba(47,110,220,.45); color: #1f4ca4; background: var(--accent-soft); }
     .tag.lock { border-color: rgba(245,158,11,.5); color: #9a5800; background:#fff7e8; }
-    .bandBody { padding: 16px 6px 6px; }
+    .bandBody { padding: 16px 6px 6px; min-width: 0; }
+    #promptsInner { min-width: 0; overflow-x: hidden; }
     .lockMsg { border:1px dashed var(--border); border-radius: 10px; padding:10px; color: var(--muted); background: #f7faff; }
     .hidden { display:none; }
     .modelGrid, .product-grid { display:grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap:14px; }
@@ -217,16 +218,17 @@
       word-break: break-word;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
     }
-    .promptSections { display:grid; gap:10px; }
+    .promptSections { display:grid; gap:10px; min-width: 0; }
     .promptSection {
       border:1px solid var(--border);
       border-radius:10px;
       background:#f8fbff;
       padding:6px;
+      min-width: 0;
     }
     .promptSectionTitle { margin:0 0 4px; font-size:13px; font-weight:700; }
-    .promptListCompact { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:8px; }
-    .promptListSingle { display:block; }
+    .promptListCompact { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:8px; min-width: 0; }
+    .promptListSingle { display:block; min-width: 0; }
     .promptListSingle .promptCard { width: 100%; }
     .promptCard {
       border:1px solid var(--border);
@@ -234,6 +236,7 @@
       background:#fff;
       padding:6px;
       min-height: 40px;
+      min-width: 0;
     }
     .promptHeader { display:flex; justify-content:space-between; align-items:center; gap:8px; }
     .promptActions { display:flex; align-items:center; gap:6px; }
@@ -255,6 +258,7 @@
     .copyIconBtn svg { width: 14px; height: 14px; }
     .copyIconBtn.isActive { background: var(--accent-soft); border-color: var(--accent); color: #1f4ca4; }
     .starterCopyControl { display:flex; align-items:center; gap:8px; }
+    .promptArea { min-width: 0; overflow-x: hidden; }
     .finalizeNotice { margin:10px 0 0; display:none; }
     .finalizeLockedContent { opacity:.6; pointer-events:none; user-select:none; }
     .finalActionBtn { min-height: 36px; padding: 8px 12px; border-radius: 10px; font-size: 14px; font-weight: 600; }
@@ -291,18 +295,20 @@
       transform: rotate(90deg);
     }
 
-    .promptTitle { font-weight:700; font-size:12px; margin:0; line-height:1.25; }
+    .promptTitle { font-weight:700; font-size:12px; margin:0; line-height:1.25; min-width: 0; overflow-wrap: anywhere; }
     .promptDesc {
       margin:3px 0 0;
       font-size:10.5px;
       color:var(--muted);
       line-height:1.2;
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
     @media (max-width: 960px) {
       .promptCard { padding: 6px; }
       .promptDesc { font-size: 10.5px; }
       .btn { padding: 6px 8px; }
-      .promptArea { max-height: calc(100vh - 260px); overflow:auto; padding-right:4px; }
+      .promptArea { max-height: calc(100vh - 260px); overflow:auto; padding-right:4px; min-width: 0; overflow-x: hidden; }
     }
             #btnSubmitForm[disabled] { background:#d6e1f3; color:#678; border-color:#c8d8f0; cursor:not-allowed; }
 
@@ -567,7 +573,7 @@
                   </div>
                 </div>
 
-                <div class="row" style="justify-content: space-between; margin-top:8px;">
+                <div class="row" style="justify-content: space-between; margin-top:8px; min-width:0;">
                   <button class="btn primary" id="btnReadyFinal">I'm done making questions</button>
                 </div>
               </div>
