@@ -153,7 +153,7 @@
       border-radius: 10px;
       display: block;
     }
-    .llmCompactSelect { max-width: 320px; }
+    .llmCompactSelect { width: 100%; max-width: 100%; }
     .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:800; }
     .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
     @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
@@ -252,13 +252,9 @@
 <body>
   <div class="pageShell">
     <h1>Dissertation Prompt App</h1>
-    <p class="sub">Enter your participant code to begin this session.</p>
-
     <!-- Access gate -->
     <div class="card" id="accessGate">
-      <p class="accessPrompt" style="margin:0 0 10px;">
-        Please enter your code:
-      </p>
+      <p class="muted small" style="margin:0 0 10px;">Enter your participant code to begin this session.</p>
 
       <form class="accessRow" id="accessForm">
         <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" />
@@ -349,15 +345,15 @@
                 </details>
 
                 <div style="margin-top:10px;">
-                  <label id="llmConfirmLabel">Which option appears selected?</label>
+                  <label id="llmConfirmLabel">Which of these best matches what you see in the menu?</label>
                   <select id="llmExpectedChoice" class="llmCompactSelect"></select>
                 </div>
 
                 <p class="muted small" id="llmMismatchNote" style="display:none; margin:8px 0 0;">Please describe what you see. This helps us keep the instructions current.</p>
 
                 <div id="llmMismatchWrap" style="display:none; margin-top:10px;">
-                  <label for="llmMismatchDescription">Please briefly describe what you see</label>
-                  <textarea id="llmMismatchDescription" placeholder="Briefly describe the visible option(s) or interface you see."></textarea>
+                  <label for="llmMismatchDescription">Please briefly describe the options you see in the menu.</label>
+                  <textarea id="llmMismatchDescription" placeholder="Example: Auto, Instant 5.5, Thinking 5.6"></textarea>
                 </div>
               </div>
 
@@ -638,10 +634,10 @@
         instruction: "Use ChatGPT in its default mode for this activity. Do not manually switch to Instant or Thinking.",
         whereText: "Click the model selector at the top of the chat.",
         expectedOptions: [
-          { value: "auto", label: "Auto" },
+          { value: "auto_menu", label: "Auto selected; menu shows Instant 5.3 and Thinking 5.4" },
           { value: "different", label: "I see something different" }
         ],
-        defaultExpected: "auto",
+        defaultExpected: "auto_menu",
         image1Alt: "ChatGPT model selector location",
         image2Alt: "ChatGPT dropdown example"
       },
@@ -650,10 +646,10 @@
         instruction: "Use Claude in its default mode for this activity. Do not manually change the model or enable extended thinking unless it is already selected.",
         whereText: "Click the model selector near the chat input box.",
         expectedOptions: [
-          { value: "sonnet46", label: "Sonnet 4.6" },
+          { value: "sonnet46_menu", label: "Sonnet 4.6 selected; menu also shows Opus 4.6 and Haiku 4.5" },
           { value: "different", label: "I see something different" }
         ],
-        defaultExpected: "sonnet46",
+        defaultExpected: "sonnet46_menu",
         image1Alt: "Claude model selector location",
         image2Alt: "Claude dropdown example"
       },
@@ -662,10 +658,10 @@
         instruction: "Use Gemini in its default mode for this activity. Do not manually switch modes.",
         whereText: "Click the mode dropdown next to the prompt box.",
         expectedOptions: [
-          { value: "fast", label: "Fast" },
+          { value: "fast_menu", label: "Fast selected; menu also shows Thinking and Pro" },
           { value: "different", label: "I see something different" }
         ],
-        defaultExpected: "fast",
+        defaultExpected: "fast_menu",
         image1Alt: "Gemini mode selector location",
         image2Alt: "Gemini dropdown example"
       },
@@ -674,10 +670,10 @@
         instruction: "Use Microsoft Copilot in its default mode for this activity. Do not manually change the conversation mode.",
         whereText: "Click the dropdown next to the prompt box that shows the current mode.",
         expectedOptions: [
-          { value: "smart", label: "Smart" },
+          { value: "smart_menu", label: "Smart selected; menu also shows Think deeper, Study and learn, and Search" },
           { value: "different", label: "I see something different" }
         ],
-        defaultExpected: "smart",
+        defaultExpected: "smart_menu",
         image1Alt: "Copilot mode selector location",
         image2Alt: "Copilot dropdown example"
       }
@@ -992,7 +988,7 @@ Provide the results in a table with the following columns:
 
       $("llmInstructionText").textContent = config.instruction;
       $("llmWhereText").textContent = config.whereText;
-      $("llmConfirmLabel").textContent = "Which option appears selected?";
+      $("llmConfirmLabel").textContent = "Which of these best matches what you see in the menu?";
 
       const [p1, p2] = getLlmPlaceholderText(productKey);
       const img1 = $("llmImage1");
