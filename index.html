@@ -208,17 +208,25 @@
     .appHeaderBar { display:flex; justify-content:flex-start; align-items:center; margin-bottom:10px; padding:6px 2px; }
     .timerCard {
       margin-top: 12px;
-      padding: 12px;
+      padding: 10px 12px;
     }
-    .timerCard h3 {
-      margin: 0 0 6px;
-      font-size: 16px;
-    }
-    .timerTopRow {
+    .timerHeaderRow {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .timerCard h3 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+    .timerInlineControls {
+      display: flex;
+      align-items: center;
       gap: 8px;
+      flex: 0 0 auto;
     }
     .timerDisplay {
       font-size: 16px;
@@ -229,6 +237,12 @@
     #btnPauseTimer {
       flex: 0 0 auto;
     }
+    .timerCard .muted.small {
+      line-height: 1.2;
+    }
+    .timerCard .muted.small > div + div {
+      margin-top: 2px;
+    }
     .timerCard.timerComplete {
       border-color: #16a34a;
       background: #f0fdf4;
@@ -236,10 +250,24 @@
     .toast.timerNotice {
       background: #1f4ca4;
       border-color: #1f4ca4;
-      padding: 14px 16px;
+      padding: 12px 14px;
       font-size: 14px;
-      max-width: 420px;
-      text-align: center;
+      max-width: 460px;
+      text-align: left;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .toastClose {
+      background: transparent;
+      border: 0;
+      color: #ffffff;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      flex: 0 0 auto;
     }
     .helpFaqLink {
       color: var(--accent);
@@ -768,10 +796,12 @@
             </div>
           </div>
           <div class="card timerCard" id="sessionTimerCard">
-            <h3 style="margin:0 0 6px; font-size:16px;">Session Timer</h3>
-            <div class="timerTopRow">
-              <div id="sessionTimerDisplay" class="timerDisplay">00:00</div>
-              <button class="btn" id="btnPauseTimer" type="button">Pause</button>
+            <div class="timerHeaderRow">
+              <h3>Session Timer</h3>
+              <div class="timerInlineControls">
+                <div id="sessionTimerDisplay" class="timerDisplay">00:00</div>
+                <button class="btn" id="btnPauseTimer" type="button">Pause</button>
+              </div>
             </div>
             <div class="muted small" style="margin-top:8px;">
               <div>Goal: Build a 10-question set</div>
@@ -1059,16 +1089,45 @@ Provide the results in a table with the following columns:
     let llmMismatchReported = false;
     let llmMismatchAlertAttempted = false;
 
-    const toast = (msg, { duration = 1400, className = "" } = {}) => {
+    function hideToast() {
       const t = $("toast");
+      if (!t) return;
+      if (t._hideTimer) clearTimeout(t._hideTimer);
+      t.style.display = "none";
+      t.classList.remove("timerNotice");
+      t.textContent = "";
+      t.innerHTML = "";
+    }
+
+    function showTimerNotice(message) {
+      const t = $("toast");
+      if (!t) return;
+      if (t._hideTimer) clearTimeout(t._hideTimer);
+      t.classList.add("timerNotice");
+      t.innerHTML = `<span class="toastMessage">${message}</span><button class="toastClose" id="toastCloseBtn" type="button" aria-label="Dismiss notification">×</button>`;
+      t.style.display = "flex";
+      const closeBtn = $("toastCloseBtn");
+      if (closeBtn) {
+        closeBtn.onclick = () => hideToast();
+      }
+      t._hideTimer = setTimeout(() => {
+        hideToast();
+      }, 60000);
+    }
+
+    const toast = (msg, { duration = 1400, className = "" } = {}) => {
+      if (className === "timerNotice") {
+        showTimerNotice(msg);
+        return;
+      }
+      const t = $("toast");
+      if (!t) return;
       if (t._hideTimer) clearTimeout(t._hideTimer);
       t.classList.remove("timerNotice");
-      if (className) t.classList.add(className);
       t.textContent = msg;
       t.style.display = "block";
       t._hideTimer = setTimeout(() => {
-        t.style.display = "none";
-        t.classList.remove("timerNotice");
+        hideToast();
       }, duration);
     };
 
