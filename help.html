@@ -83,13 +83,6 @@
       margin:0;
     }
 
-    .row {
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
-
     .btn {
       background: #f1f7ff;
       border:1px solid var(--border);
@@ -188,7 +181,23 @@
 
     .faqList {
       display:grid;
+      gap:14px;
+    }
+
+    .faqSection {
+      display:grid;
       gap:10px;
+    }
+
+    .faqSectionHeader {
+      margin: 0;
+      padding: 10px 12px;
+      border:1px solid var(--border);
+      border-radius: 10px;
+      background: var(--accent-soft);
+      color: #1f4ca4;
+      font-size: 15px;
+      font-weight: 800;
     }
 
     details.faqItem {
@@ -457,6 +466,15 @@
       return String(value || "").trim();
     }
 
+    function formatAnswer(text) {
+      let html = escapeHTML(normalizeText(text));
+
+      html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+      html = html.replace(/\n/g, "<br>");
+
+      return html;
+    }
+
     function setStatus(message, isError = false) {
       statusCardEl.textContent = message;
       statusCardEl.classList.toggle("error", !!isError);
@@ -477,6 +495,18 @@
         : `${visibleCount} of ${totalCount} shown`;
     }
 
+    function groupItemsBySection(items) {
+      const grouped = {};
+
+      items.forEach(item => {
+        const section = item.section || "Other";
+        if (!grouped[section]) grouped[section] = [];
+        grouped[section].push(item);
+      });
+
+      return grouped;
+    }
+
     function renderFaqList(items) {
       faqListEl.innerHTML = "";
 
@@ -490,29 +520,43 @@
       emptyStateEl.style.display = "none";
       faqListEl.style.display = "grid";
 
-      items.forEach((item, index) => {
-        const details = document.createElement("details");
-        details.className = "faqItem";
+      const grouped = groupItemsBySection(items);
 
-        const summary = document.createElement("summary");
-        summary.innerHTML = `
-          <div class="faqLeft">
-            <span class="faqNumber">${index + 1}</span>
-            <div class="faqQuestion">
-              ${escapeHTML(item.question)}
-              ${item.sourceRow ? `<div class="faqMeta">Sheet row ${item.sourceRow}</div>` : ""}
+      Object.entries(grouped).forEach(([sectionName, sectionItems]) => {
+        const sectionWrap = document.createElement("section");
+        sectionWrap.className = "faqSection";
+
+        const sectionHeader = document.createElement("h2");
+        sectionHeader.className = "faqSectionHeader";
+        sectionHeader.textContent = sectionName;
+        sectionWrap.appendChild(sectionHeader);
+
+        sectionItems.forEach((item, index) => {
+          const details = document.createElement("details");
+          details.className = "faqItem";
+
+          const summary = document.createElement("summary");
+          summary.innerHTML = `
+            <div class="faqLeft">
+              <span class="faqNumber">${index + 1}</span>
+              <div class="faqQuestion">
+                ${escapeHTML(item.question)}
+                ${item.sourceRow ? `<div class="faqMeta">Sheet row ${item.sourceRow}</div>` : ""}
+              </div>
             </div>
-          </div>
-          <span class="faqChevron" aria-hidden="true">▼</span>
-        `;
+            <span class="faqChevron" aria-hidden="true">▼</span>
+          `;
 
-        const body = document.createElement("div");
-        body.className = "faqBody";
-        body.textContent = item.answer;
+          const body = document.createElement("div");
+          body.className = "faqBody";
+          body.innerHTML = formatAnswer(item.answer);
 
-        details.appendChild(summary);
-        details.appendChild(body);
-        faqListEl.appendChild(details);
+          details.appendChild(summary);
+          details.appendChild(body);
+          sectionWrap.appendChild(details);
+        });
+
+        faqListEl.appendChild(sectionWrap);
       });
 
       updateCountBadge(items.length, allFaqItems.length);
@@ -527,7 +571,8 @@
       }
 
       const filtered = allFaqItems.filter(item => {
-        return item.question.toLowerCase().includes(query) ||
+        return item.section.toLowerCase().includes(query) ||
+               item.question.toLowerCase().includes(query) ||
                item.answer.toLowerCase().includes(query);
       });
 
@@ -553,19 +598,21 @@
         .map((item, index) => {
           if (Array.isArray(item)) {
             return {
-              question: normalizeText(item[0]),
-              answer: normalizeText(item[1]),
+              section: normalizeText(item[0]),
+              question: normalizeText(item[1]),
+              answer: normalizeText(item[2]),
               sourceRow: index + 2
             };
           }
 
           return {
+            section: normalizeText(item.section ?? item.category ?? item.group),
             question: normalizeText(item.question ?? item.title ?? item.q),
             answer: normalizeText(item.answer ?? item.text ?? item.a),
             sourceRow: item.row || item.sourceRow || (index + 2)
           };
         })
-        .filter(item => item.question && item.answer);
+        .filter(item => item.section && item.question && item.answer);
     }
 
     async function loadFAQ() {
