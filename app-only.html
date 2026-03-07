@@ -452,6 +452,9 @@
   <div class="pageShell">
     <h1>Dissertation Prompt App</h1>
     <div id="appShell">
+      <div class="appHeaderBar">
+        <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
+      </div>
       <div class="layoutGrid">
         <div class="main">
           <details class="band" id="bandSetup" open>
@@ -562,6 +565,17 @@
             </div>
           </div>
         </aside>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBackdrop" id="modalReset">
+    <div class="modalCard">
+      <h3 style="margin:0 0 8px;">Reset this device?</h3>
+      <p class="muted" style="margin:0 0 12px;">This clears saved settings and history in this browser only.</p>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn" id="btnResetCancel" type="button">Cancel</button>
+        <button class="btn danger" id="btnResetConfirm" type="button">Reset</button>
       </div>
     </div>
   </div>
@@ -878,6 +892,13 @@ After that list, give me the current time.`;
       });
     }
 
+    function clearSessionData() {
+      Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
+      lastCopiedText = "";
+      lastCopiedLabel = "";
+      lastCopiedAt = null;
+    }
+
     function init() {
       const ctx = getContext();
       $("ctxCourse").value = ctx.course || "";
@@ -926,6 +947,21 @@ After that list, give me the current time.`;
       });
       $("btnClearRecent").addEventListener("click", () => {
         lastCopiedText = ""; lastCopiedLabel = ""; lastCopiedAt = null; renderMostRecentCopied();
+      });
+
+      const openModal = (id) => { const m = $(id); if (m) m.style.display = "flex"; };
+      const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
+
+      $("btnResetSession").addEventListener("click", () => {
+        openModal("modalReset");
+      });
+      $("btnResetCancel").addEventListener("click", () => {
+        closeModal("modalReset");
+      });
+      $("btnResetConfirm").addEventListener("click", () => {
+        clearSessionData();
+        closeModal("modalReset");
+        location.reload();
       });
 
       renderPromptList();
