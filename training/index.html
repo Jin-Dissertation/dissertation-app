@@ -163,7 +163,7 @@
       transition: background 0.2s;
     }
 
-    .gate-btn:hover { background: #0f1829; }
+    .gate-btn:hover { background: var(--navy-mid); }
 
     .gate-error {
       margin-top: 14px;
@@ -335,7 +335,7 @@
     .quiz-header {
       padding: 16px 22px 12px;
       border-bottom: 1px solid var(--rule);
-      background: #f9f7f3;
+      background: var(--cream-dark);
     }
 
     .quiz-header-label {
@@ -391,7 +391,7 @@
       width: 100%;
       text-align: left;
       padding: 12px 16px;
-      background: var(--cream);
+      background: var(--white);
       border: 1px solid var(--rule);
       border-radius: var(--radius);
       font-family: var(--sans);
@@ -407,7 +407,7 @@
     }
 
     .option-btn:hover:not(:disabled) {
-      background: var(--cream-dark);
+      background: var(--cream);
       border-color: var(--gold);
     }
 
@@ -493,7 +493,7 @@
     .feedback-box.correct-fb {
       background: var(--green-lt);
       border: 1px solid var(--green);
-      color: #1a4d35;
+      color: #14532d;
     }
 
     .feedback-box.incorrect-fb {
@@ -529,7 +529,7 @@
     }
 
     .feedback-next-btn.show { display: inline-block; }
-    .feedback-next-btn:hover { background: #0f1829; }
+    .feedback-next-btn:hover { background: var(--navy-mid); }
 
     /* ── QUIZ COMPLETE ── */
     .quiz-complete {
@@ -562,7 +562,8 @@
 
     .quiz-complete-text span {
       font-size: 0.82rem;
-      color: #2d6040;
+      color: var(--green);
+      opacity: 0.8;
     }
 
     /* ── ACTION BUTTON (Done Watching / Continue) ── */
@@ -584,7 +585,7 @@
       transition: background 0.2s, transform 0.15s;
     }
 
-    .action-btn:hover { background: #0f1829; transform: translateY(-1px); }
+    .action-btn:hover { background: var(--navy-mid); transform: translateY(-1px); }
     .action-btn:active { transform: translateY(0); }
 
     .action-btn svg { flex: 0 0 14px; }
