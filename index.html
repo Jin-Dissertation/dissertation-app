@@ -232,12 +232,27 @@
     .copyMeta { margin:0 0 8px; color: var(--muted); font-size:12px; }
     .timerCard {
       margin-top: 12px;
+      padding: 12px;
+    }
+    .timerCard h3 {
+      margin: 0 0 6px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .timerTopRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
     }
     .timerDisplay {
-      font-size: 28px;
-      font-weight: 700;
-      line-height: 1.1;
-      letter-spacing: 0.02em;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: 0.01em;
+    }
+    #btnPauseTimer {
+      flex: 0 0 auto;
     }
     .timerCard.timerComplete {
       border-color: #16a34a;
@@ -736,15 +751,14 @@
             </div>
           </div>
           <div class="card timerCard" id="sessionTimerCard">
-            <h3 style="margin:0 0 6px; font-size:16px;">Session Timer</h3>
-            <div id="sessionTimerDisplay" class="timerDisplay">00:00</div>
+            <h3>Session Timer</h3>
+            <div class="timerTopRow">
+              <div id="sessionTimerDisplay" class="timerDisplay">00:00</div>
+              <button class="btn" id="btnPauseTimer" type="button">Pause</button>
+            </div>
             <div class="muted small" style="margin-top:8px;">
               <div>Goal: Build a 10-question set</div>
               <div>Maximum task time: 40 minutes</div>
-              <div>You may stop earlier if your set is complete.</div>
-            </div>
-            <div class="row" style="margin-top:10px;">
-              <button class="btn" id="btnPauseTimer" type="button">Pause</button>
             </div>
           </div>
         </aside>
