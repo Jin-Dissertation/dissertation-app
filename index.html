@@ -1170,6 +1170,7 @@ Provide the results in a table with the following columns:
       const modelUsed = localStorage.getItem(KEYS.modelUsed) || "";
       const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
       const llmExpectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
+      const timerState = getCurrentTimerState();
       events.push({
         t: nowIso(),
         type,
@@ -1179,6 +1180,9 @@ Provide the results in a table with the following columns:
         modelUsed,
         llmProduct,
         llmExpectedChoice,
+        elapsed_ms: timerState.elapsedMs,
+        elapsed_mmss: timerState.elapsedMmss,
+        timer_paused: timerState.timerPaused,
         ...data
       });
       saveJSON(KEYS.events, events);
@@ -1201,6 +1205,16 @@ Provide the results in a table with the following columns:
       const startedAt = Number(localStorage.getItem(KEYS.timerStartedAt) || "0") || 0;
       if (!startedAt) return elapsedBeforePause;
       return elapsedBeforePause + Math.max(0, Date.now() - startedAt);
+    }
+
+    function getCurrentTimerState() {
+      const elapsedMs = getTimerElapsedMs();
+      const timerPaused = localStorage.getItem(KEYS.timerPaused) === "true";
+      return {
+        elapsedMs,
+        elapsedMmss: formatElapsed(elapsedMs),
+        timerPaused
+      };
     }
 
     function restoreTimerButtonState() {
@@ -2087,6 +2101,7 @@ After that list, give me the current time.`
     // Submit / JSON
     // -----------------------------
     function buildSessionRecord() {
+      const timerState = getCurrentTimerState();
       return {
         participant_code: localStorage.getItem(KEYS.accessCode) || "",
         session_id: localStorage.getItem(KEYS.sessionId) || "",
@@ -2106,6 +2121,13 @@ After that list, give me the current time.`
         final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
         llm_response: ($("llmResponse").value || "").trim(),
         session_notes: ($("sessionNotes")?.value || "").trim(),
+        timer_elapsed_ms: timerState.elapsedMs,
+        timer_elapsed_mmss: timerState.elapsedMmss,
+        timer_paused: timerState.timerPaused,
+        timer_started_at: localStorage.getItem(KEYS.timerStartedAt) || "",
+        timer_elapsed_before_pause: Number(localStorage.getItem(KEYS.timerElapsedBeforePause) || 0),
+        timer_warned_35: localStorage.getItem(KEYS.timerWarned35) === "true",
+        timer_warned_40: localStorage.getItem(KEYS.timerWarned40) === "true",
         submitted_at: new Date().toISOString(),
         page_last_updated: document.lastModified || ""
       };
