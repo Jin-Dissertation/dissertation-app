@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Dissertation Prompt App - Simplified</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+    :root {
+      --bg:#edf4ff;
+      --card:#ffffff;
+      --muted:#5f718f;
+      --text:#10213d;
+      --accent:#2f6edc;
+      --accent-soft:#dbe9ff;
+      --border:#c8d8f0;
+      --warn:#f59e0b;
+      --danger:#dc2626;
+    }
+
+    body {
+      margin:0;
+      font-family:"Inter","Segoe UI",Roboto,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      letter-spacing:.01em;
+    }
+
+    .pageShell {
+      max-width:1240px;
+      margin:0 auto;
+      padding:24px;
+    }
+
+    h1 {
+      font-size:30px;
+      font-weight:700;
+      margin:0 0 10px;
+    }
+
+    .sub {
+      color:var(--muted);
+      margin:0 0 18px;
+    }
+
+    .layoutGrid {
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 248px;
+      gap:16px;
+      align-items:start;
+    }
+
+    .main { min-width:0; }
+
+    .sidebar {
+      width:248px;
+      position:sticky;
+      top:16px;
+      align-self:start;
+      max-height:calc(100vh - 32px);
+    }
+
+    .card {
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:14px;
+      box-shadow:0 4px 10px rgba(16,33,61,0.05);
+    }
+
+    .stickySidebar.recentCard {
+      display:flex;
+      flex-direction:column;
+      max-height:calc(100vh - 32px);
+      overflow:hidden;
+    }
+
+    .row {
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    label {
+      font-size:12px;
+      color:var(--muted);
+      display:block;
+      margin-bottom:4px;
+    }
+
+    input, textarea {
+      width:100%;
+      background:#f8fbff;
+      border:1px solid var(--border);
+      color:var(--text);
+      border-radius:10px;
+      padding:10px;
+      box-sizing:border-box;
+      font:inherit;
+    }
+
+    textarea {
+      min-height:140px;
+      resize:vertical;
+      line-height:1.4;
+    }
+
+    .btn {
+      background:#f1f7ff;
+      border:1px solid var(--border);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font:inherit;
+    }
+
+    .btn.primary {
+      background:var(--accent);
+      border-color:var(--accent);
+      color:#fff;
+      font-weight:650;
+    }
+
+    .btn.danger {
+      border-color:var(--danger);
+      color:#991b1b;
+      background:#fef2f2;
+    }
+
+    .small { font-size:12px; }
+    .muted { color:var(--muted); }
+
+    .copyMeta {
+      margin:0 0 8px;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .copiedText.recentTextarea {
+      width:100%;
+      flex:1 1 auto;
+      min-height:360px;
+      overflow:auto;
+      white-space:pre-wrap;
+      word-break:break-word;
+      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+    .toast {
+      position:fixed;
+      bottom:18px;
+      left:50%;
+      transform:translateX(-50%);
+      background:rgba(16,33,61,.95);
+      border:1px solid #2f6edc;
+      padding:10px 12px;
+      border-radius:10px;
+      color:#fff;
+      display:none;
+      z-index:9999;
+    }
+
+    details.band { margin-top:18px; }
+    details.band:first-of-type { margin-top:0; }
+
+    details.band > summary {
+      list-style:none;
+      cursor:pointer;
+      user-select:none;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:#f3f8ff;
+    }
+
+    details.band > summary::-webkit-details-marker { display:none; }
+
+    .summaryLeft {
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .tag {
+      font-size:12px;
+      padding:3px 8px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      color:var(--muted);
+    }
+
+    .tag.ok {
+      border-color:rgba(47,110,220,.45);
+      color:#1f4ca4;
+      background:var(--accent-soft);
+    }
+
+    .tag.lock {
+      border-color:rgba(245,158,11,.5);
+      color:#9a5800;
+      background:#fff7e8;
+    }
+
+    .bandBody {
+      padding:16px 6px 6px;
+      min-width:0;
+    }
+
+    .lockMsg {
+      border:1px dashed var(--border);
+      border-radius:10px;
+      padding:10px;
+      color:var(--muted);
+      background:#f7faff;
+    }
+
+    .promptSections {
+      display:grid;
+      gap:6px;
+      min-width:0;
+    }
+
+    .promptSection {
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:#f8fbff;
+      padding:5px;
+      min-width:0;
+    }
+
+    .promptSectionTitle {
+      margin:0 0 4px;
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .promptListCompact {
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:8px;
+      min-width:0;
+    }
+
+    .promptListSingle {
+      display:block;
+      min-width:0;
+      width:100%;
+    }
+
+    .promptCard {
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:#fff;
+      padding:6px;
+      min-height:40px;
+      min-width:0;
+      box-sizing:border-box;
+    }
+
+    .promptHeader {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      min-width:0;
+    }
+
+    .promptActions {
+      display:flex;
+      align-items:center;
+      gap:6px;
+      min-width:0;
+    }
+
+    .promptTitle {
+      font-weight:600;
+      font-size:14px;
+      margin:0 0 4px;
+      line-height:1.2;
+      min-width:0;
+      overflow-wrap:anywhere;
+      color:var(--text);
+    }
+
+    .promptDesc {
+      margin:2px 0 0;
+      font-size:12px;
+      color:#6b7280;
+      line-height:1.25;
+      min-width:0;
+      overflow-wrap:anywhere;
+    }
+
+    .copyIconBtn {
+      width:30px;
+      height:30px;
+      border:1px solid var(--border);
+      border-radius:6px;
+      background:transparent;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--text);
+      cursor:pointer;
+      padding:0;
+      line-height:1;
+      flex:0 0 30px;
+    }
+
+    .copyIconBtn svg { width:14px; height:14px; }
+
+    .copyIconBtn.isActive {
+      background:var(--accent-soft);
+      border-color:var(--accent);
+      color:#1f4ca4;
+    }
+
+    .copyPromptRow {
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .copyPromptLabel {
+      font-weight:600;
+      font-size:15px;
+      color:var(--text);
+      line-height:1.2;
+    }
+
+    .copyPromptLabel::before {
+      content:"↳ ";
+      opacity:0.6;
+    }
+
+    .finalExplain {
+      margin-top:14px;
+      padding:14px;
+      border:1px solid var(--border);
+      background:#f8fbff;
+      border-radius:10px;
+    }
+
+    .hidden { display:none !important; }
+
+    .modalBackdrop {
+      position:fixed;
+      inset:0;
+      background:rgba(16,33,61,.35);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:10000;
+    }
+
+    .modalCard {
+      width:min(460px, calc(100vw - 24px));
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:14px;
+    }
+
+    footer.small.muted {
+      padding:8px 24px 20px;
+    }
+
+    @media (max-width: 960px) {
+      .layoutGrid {
+        grid-template-columns:1fr;
+      }
+
+      .sidebar {
+        width:auto;
+        position:static;
+        max-height:none;
+      }
+
+      .promptListCompact {
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="pageShell">
+    <h1>Dissertation Prompt App</h1>
+    <p class="sub">Use this version to jump directly into course context, question creation, and the closing prompt.</p>
+
+    <div class="layoutGrid">
+      <div class="main">
+
+        <details class="band" id="bandSetup" open>
+          <summary id="sumSetup">
+            <div class="summaryLeft">
+              <strong>1) Course context</strong>
+              <span class="tag" id="tagSetup">In progress</span>
+            </div>
+          </summary>
+
+          <div class="bandBody">
+            <div class="card">
+              <div class="row" style="margin-top:10px;">
+                <div style="flex:1; min-width:240px;">
+                  <label>Course / class context</label>
+                  <input id="ctxCourse" placeholder="e.g., Health Assessment (first semester)" />
+                </div>
+                <div style="flex:1; min-width:240px;">
+                  <label>Content area</label>
+                  <input id="ctxArea" placeholder="e.g., Respiratory assessment" />
+                </div>
+              </div>
+
+              <div class="row" style="margin-top:10px;">
+                <div style="flex:1; min-width:240px;">
+                  <label>Desired number of questions</label>
+                  <input id="ctxQuestionCount" type="number" min="1" value="10" />
+                </div>
+                <div style="flex:1; min-width:240px;">
+                  <label>Any additional desired instructions or parameters (optional)</label>
+                  <input id="ctxNotes" placeholder="Optional guidance (e.g., difficulty level, tone, formatting preferences)" />
+                </div>
+              </div>
+
+              <p class="muted small" style="margin:10px 0 0;">
+                Click the icon to copy the starter prompt, paste it into your LLM, then click the button below to continue.
+              </p>
+
+              <div class="row" style="margin-top:12px;">
+                <div class="copyPromptRow">
+                  <span class="small copyPromptLabel">Copy starter prompt</span>
+                  <button class="copyIconBtn" id="btnCopyStarter" aria-label="Copy starter prompt" title="Copy starter prompt" type="button"></button>
+                </div>
+              </div>
+
+              <p class="muted small hidden" id="setupMsg" style="margin:10px 0 0;"></p>
+
+              <div class="row" style="margin-top:8px;">
+                <button class="btn" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="band" id="bandPrompts">
+          <summary id="sumPrompts">
+            <div class="summaryLeft">
+              <strong>2) Making questions</strong>
+              <span class="tag lock" id="tagPrompts">Locked</span>
+            </div>
+          </summary>
+
+          <div class="bandBody">
+            <div class="lockMsg" id="lockPrompts">
+              Complete <strong>1) Course context</strong>, copy the starter prompt, and click Continue to unlock prompts.
+            </div>
+
+            <div id="promptsInner" class="hidden">
+              <div class="card">
+                <div class="row" style="justify-content:space-between;">
+                  <div class="muted small">Click the copy icon to copy the selected prompt.</div>
+                  <button class="btn" id="btnEditContext" type="button">Go back and edit context</button>
+                </div>
+
+                <div style="margin-top:8px;">
+                  <div class="promptSections">
+                    <div class="promptSection">
+                      <h4 class="promptSectionTitle">Accept or Replace Question</h4>
+                      <div id="promptGroupAcceptReplace" class="promptListCompact"></div>
+                    </div>
+
+                    <div class="promptSection">
+                      <h4 class="promptSectionTitle">Refine Options</h4>
+                      <div id="promptGroupRefine" class="promptListCompact"></div>
+                    </div>
+
+                    <div class="promptSection">
+                      <h4 class="promptSectionTitle">Review Questions</h4>
+                      <div id="promptGroupReview" class="promptListSingle"></div>
+                    </div>
+
+                    <div class="promptSection">
+                      <h4 class="promptSectionTitle">Audit Options</h4>
+                      <div id="promptGroupAudit" class="promptListCompact"></div>
+                    </div>
+                  </div>
+
+                  <div class="row" style="justify-content:space-between; margin-top:8px;">
+                    <button class="btn primary" id="btnReadyFinal" type="button">I'm done making questions</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="band" id="bandFinalize">
+          <summary id="sumFinalize">
+            <div class="summaryLeft">
+              <strong>3) Final prompt</strong>
+              <span class="tag lock" id="tagFinalize">Locked</span>
+            </div>
+          </summary>
+
+          <div class="bandBody">
+            <div class="lockMsg" id="lockFinalize">
+              Complete <strong>2) Making questions</strong> and click <strong>I'm done making questions</strong> to unlock the final prompt.
+            </div>
+
+            <div id="finalizeInner" class="hidden">
+              <div class="card">
+                <div class="row" style="justify-content:space-between;">
+                  <div class="copyPromptRow">
+                    <span class="small copyPromptLabel">Copy final prompt</span>
+                    <button class="copyIconBtn" id="btnCopyFinal" aria-label="Copy final prompt" title="Copy final prompt" type="button"></button>
+                  </div>
+                  <button class="btn" id="btnBackToPrompts" type="button">Go back to making questions</button>
+                </div>
+
+                <div id="finalExplainWrap" class="hidden">
+                  <div class="finalExplain">
+                    <p style="margin:0 0 10px;"><strong>How the final prompt works:</strong></p>
+                    <p class="muted" style="margin:0 0 10px;">
+                      Paste the final prompt into your LLM after you have finished creating questions.
+                      It asks the model to do three things: show the full table of questions, perform a final audit of those questions, and suggest additional untested subtopics.
+                    </p>
+                    <p class="muted" style="margin:0;">
+                      After reviewing that output, you can end the session on this page.
+                    </p>
+                  </div>
+
+                  <div class="row" style="margin-top:12px;">
+                    <button class="btn danger" id="btnEndSession" type="button">End session</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <aside class="sidebar">
+        <div class="card stickySidebar recentCard">
+          <h3 style="margin:0 0 6px; font-size:16px;">Most Recently Copied</h3>
+          <p class="copyMeta" id="recentCopiedMeta">Nothing copied yet. Click any Copy button to see it here.</p>
+          <textarea id="recentCopiedText" class="copiedText recentTextarea" readonly placeholder="Nothing copied yet. Click any Copy button to see it here."></textarea>
+          <div class="row" style="margin-top:10px;">
+            <div class="copyPromptRow">
+              <span class="small">Copy</span>
+              <button class="copyIconBtn" id="btnCopyAgain" disabled type="button" aria-label="Copy" title="Copy"></button>
+            </div>
+            <button class="btn" id="btnClearRecent" disabled type="button">Clear</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="modalBackdrop" id="modalEnd">
+    <div class="modalCard">
+      <h3 style="margin:0 0 8px;">End session?</h3>
+      <p class="muted" style="margin:0 0 12px;">Ending the session will clear this browser’s saved data for this page.</p>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn" id="btnEndCancel" type="button">Cancel</button>
+        <button class="btn danger" id="btnEndConfirm" type="button">End session</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="small muted" id="buildInfo"></footer>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const PROMPTS = [
+      {
+        id: "next_question",
+        title: "Accept & Continue",
+        description: "Accept this question and generate the next one.",
+        prompt: `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
+      },
+      {
+        id: "replace_question",
+        title: "Generate Alternatives",
+        description: "Generate replacement versions of this question.",
+        prompt: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
+      },
+      {
+        id: "distractor_options",
+        title: "Refine Distractors",
+        description: "Generate additional plausible distractor options.",
+        prompt: `I want to improve the distractors for this question. Please list the 3 you already provided, then add 10 more plausible distractors that fit the same parameters. Number them 1-13 so I can tell you which ones to keep.`
+      },
+      {
+        id: "correct_answer_options",
+        title: "Refine Correct Answer",
+        description: "Generate alternate versions of the correct answer.",
+        prompt: `Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors.`
+      },
+      {
+        id: "pause_review",
+        title: "Review Questions",
+        description: "Show all questions generated so far.",
+        prompt: `Pause and show me all of the questions that have been generated so far in this session. Organize them in the same table format as before so I can review them before moving on.`
+      },
+      {
+        id: "rebalance_content",
+        title: "Topic Coverage Audit",
+        description: "Identify overrepresented and underrepresented subtopics.",
+        prompt: `Pause and audit how the questions are balanced between potential subtopics. Please break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance.`
+      },
+      {
+        id: "core_or_peripheral",
+        title: "Breadth Audit",
+        description: "Classify questions as core or peripheral in focus.",
+        prompt: `Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
+Core: The most common, obvious, first-line, or 'go-to' fact or intervention.
+Peripheral: A less obvious but still clinically important area.
+
+Provide the results in a table with the following columns:
+1. Question Number
+2. Focus: Core or Peripheral
+3. Topic Covered: 2–4 words only
+4. Suggestion: If the question is core, suggest one peripheral angle within the same content area that has not yet been tested.`
+      },
+      {
+        id: "rebalance_question_type",
+        title: "Question Type Audit",
+        description: "Analyze the distribution of question types.",
+        prompt: `I would like to pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I rebalance the types of questions.`
+      },
+      {
+        id: "difficulty_audit",
+        title: "Difficulty Audit",
+        description: "Analyze the distribution of difficulty levels.",
+        prompt: `Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix.`
+      },
+      {
+        id: "blooms_taxonomy_audit",
+        title: "Bloom’s Level Audit",
+        description: "Analyze the distribution of Bloom’s taxonomy levels.",
+        prompt: `Please pause and audit my current MCQ set for Bloom’s taxonomy alignment. For each question, assign the primary level (Remember, Understand, Apply, Analyze, Evaluate, or Create). Show me the counts and percentages in each category. Then, suggest underrepresented levels and give me ideas for how to add or revise questions to cover them.`
+      }
+    ];
+
+    const KEYS = {
+      context: "simple.context",
+      stage: "simple.stage",
+      starterCopied: "simple.starterCopied",
+      finalPrompt: "simple.finalPrompt",
+      finalPromptCopied: "simple.finalPromptCopied"
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    let lastCopiedText = "";
+    let lastCopiedLabel = "";
+    let lastCopiedAt = null;
+
+    function loadJSON(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+      catch { return fallback; }
+    }
+
+    function saveJSON(key, val) {
+      localStorage.setItem(key, JSON.stringify(val));
+    }
+
+    function getContext() {
+      return loadJSON(KEYS.context, { course: "", area: "", notes: "", questionCount: "10" });
+    }
+
+    function setContext(ctx) {
+      saveJSON(KEYS.context, ctx);
+    }
+
+    function getStage() {
+      return localStorage.getItem(KEYS.stage) || "setup";
+    }
+
+    function setStage(stage) {
+      localStorage.setItem(KEYS.stage, stage);
+      applyStageUI();
+    }
+
+    function toast(msg) {
+      const t = $("toast");
+      t.textContent = msg;
+      t.style.display = "block";
+      setTimeout(() => t.style.display = "none", 1400);
+    }
+
+    function getClipboardSvg() {
+      return `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="9" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect><rect x="5" y="3" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect></svg>`;
+    }
+
+    function hydrateCopyIconButton(btn) {
+      if (!btn) return;
+      btn.innerHTML = getClipboardSvg();
+    }
+
+    function formatCopiedTime(dt) {
+      if (!dt) return "—";
+      return dt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+    }
+
+    function renderMostRecentCopied() {
+      const has = !!lastCopiedText.trim();
+      const meta = $("recentCopiedMeta");
+      const text = $("recentCopiedText");
+      const copyAgain = $("btnCopyAgain");
+      const clear = $("btnClearRecent");
+
+      if (!has) {
+        meta.textContent = "Nothing copied yet. Click any Copy button to see it here.";
+        text.value = "";
+        copyAgain.disabled = true;
+        clear.disabled = true;
+        return;
+      }
+
+      meta.textContent = `Source: ${lastCopiedLabel || "Unknown"} · Copied: ${formatCopiedTime(lastCopiedAt)}`;
+      text.value = lastCopiedText;
+      copyAgain.disabled = false;
+      clear.disabled = false;
+    }
+
+    async function copyToClipboard(text, label) {
+      let copied = false;
+
+      try {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } catch (e) {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.setAttribute("readonly", "");
+          ta.style.position = "fixed";
+          ta.style.top = "-1000px";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          copied = document.execCommand("copy");
+          document.body.removeChild(ta);
+        } catch (_) {
+          copied = false;
+        }
+      }
+
+      lastCopiedText = text;
+      lastCopiedLabel = label;
+      lastCopiedAt = new Date();
+      renderMostRecentCopied();
+
+      toast(copied ? "Copied ✅" : "Clipboard blocked — text saved in panel");
+      return true;
+    }
+
+    function buildStarterPrompt() {
+      const ctx = getContext();
+      const notesLine = (ctx.notes || "").trim()
+        ? `Additional instructions/parameters: ${ctx.notes.trim()}`
+        : `Additional instructions/parameters: (none)`;
+
+      return `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
+
+1. Class Context (e.g., subject, course objectives, level, etc.): ${ctx.course || "(not provided)"}
+2. Content Area (specific topic or unit): ${ctx.area || "(not provided)"}
+3. Desired Number of Questions: ${ctx.questionCount || "10"}
+4. Additional parameters to consider (if blank, ignore): ${notesLine}
+
+I may attach documents (e.g., lecture notes, flashcards, readings) to guide question creation. Use them as a general reference, but do not rely on them exclusively. Try to create a question set that reflects the concepts within the content area that are most relevant to NCLEX and nursing practice.
+
+When outputting the questions, do not use any interactive widgets, quizzes, or UI tools. I want the output strictly in text form and placed in a table format with the following columns:
+1. Question Name: Number of the question, followed by a 4-word descriptive title, followed by four randomly chosen letters.
+2. Question Stem: The question stem.
+3. Correct Answer: The correct answer.
+4. Distractor 1: The first distractor.
+5. Distractor 2: The second distractor.
+6. Distractor 3: The third distractor.
+You will create 1 question at a time. Pause after each one so I can give feedback on the overall format or on individual questions. Once I respond, adjust if requested, or continue with the next question, until I have reached the goal number of questions.
+
+For now, give me the current time, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`;
+    }
+
+    function buildFinalPrompt() {
+      return `Please provide a full table of questions.
+
+Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
+1. Question Number
+2. Difficulty – Classify as Easy, Moderate, or Hard.
+3. Bloom’s Level – Classify as Remember, Understand, Apply, Analyze, Evaluate, or Create.
+4. Question Type – 1–2 words (e.g., Assessment, Prioritization, Delegation, Teaching, Pharmacology).
+5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
+
+After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.
+After that list, give me the current time.`;
+    }
+
+    function renderPromptList() {
+      const grouped = {
+        acceptReplace: ["next_question", "replace_question"],
+        refine: ["correct_answer_options", "distractor_options"],
+        review: ["pause_review"],
+        audit: ["rebalance_content", "core_or_peripheral", "rebalance_question_type", "difficulty_audit", "blooms_taxonomy_audit"]
+      };
+
+      $("promptGroupAcceptReplace").innerHTML = "";
+      $("promptGroupRefine").innerHTML = "";
+      $("promptGroupReview").innerHTML = "";
+      $("promptGroupAudit").innerHTML = "";
+
+      function makePromptCard(prompt) {
+        const card = document.createElement("div");
+        card.className = "promptCard";
+
+        const header = document.createElement("div");
+        header.className = "promptHeader";
+
+        const title = document.createElement("div");
+        title.className = "promptTitle";
+        title.textContent = prompt.title;
+        header.appendChild(title);
+
+        const actions = document.createElement("div");
+        actions.className = "promptActions";
+
+        const btn = document.createElement("button");
+        btn.className = "copyIconBtn";
+        btn.type = "button";
+        btn.dataset.id = prompt.id;
+        btn.setAttribute("aria-label", "Copy prompt");
+        btn.setAttribute("title", "Copy prompt");
+        btn.innerHTML = getClipboardSvg();
+
+        actions.appendChild(btn);
+        header.appendChild(actions);
+        card.appendChild(header);
+
+        if (prompt.description) {
+          const desc = document.createElement("p");
+          desc.className = "promptDesc";
+          desc.textContent = prompt.description;
+          card.appendChild(desc);
+        }
+
+        return card;
+      }
+
+      grouped.acceptReplace.forEach(id => {
+        const p = PROMPTS.find(x => x.id === id);
+        if (p) $("promptGroupAcceptReplace").appendChild(makePromptCard(p));
+      });
+
+      grouped.refine.forEach(id => {
+        const p = PROMPTS.find(x => x.id === id);
+        if (p) $("promptGroupRefine").appendChild(makePromptCard(p));
+      });
+
+      grouped.review.forEach(id => {
+        const p = PROMPTS.find(x => x.id === id);
+        if (p) $("promptGroupReview").appendChild(makePromptCard(p));
+      });
+
+      grouped.audit.forEach(id => {
+        const p = PROMPTS.find(x => x.id === id);
+        if (p) $("promptGroupAudit").appendChild(makePromptCard(p));
+      });
+
+      $("promptsInner").addEventListener("click", async (e) => {
+        const btn = e.target.closest("button.copyIconBtn");
+        if (!btn) return;
+
+        const prompt = PROMPTS.find(x => x.id === btn.dataset.id);
+        if (!prompt) return;
+
+        await copyToClipboard(prompt.prompt, prompt.title);
+        btn.classList.add("isActive");
+        setTimeout(() => btn.classList.remove("isActive"), 400);
+      });
+    }
+
+    function isSetupComplete() {
+      const ctx = getContext();
+      return !!ctx.course.trim() && !!ctx.area.trim() && localStorage.getItem(KEYS.starterCopied) === "true";
+    }
+
+    function isPromptsUnlocked() {
+      const stage = getStage();
+      return (stage === "prompts" || stage === "finalize") && isSetupComplete();
+    }
+
+    function isFinalizeUnlocked() {
+      return getStage() === "finalize" && isPromptsUnlocked();
+    }
+
+    function applyStageUI() {
+      const setupComplete = isSetupComplete();
+      const promptsUnlocked = isPromptsUnlocked();
+      const finalizeUnlocked = isFinalizeUnlocked();
+      const stage = getStage();
+
+      $("tagSetup").textContent = setupComplete ? "Complete" : "In progress";
+      $("tagSetup").className = setupComplete ? "tag ok" : "tag";
+
+      $("tagPrompts").textContent = promptsUnlocked ? "Open" : "Locked";
+      $("tagPrompts").className = promptsUnlocked ? "tag ok" : "tag lock";
+      $("lockPrompts").classList.toggle("hidden", promptsUnlocked);
+      $("promptsInner").classList.toggle("hidden", !promptsUnlocked);
+
+      $("tagFinalize").textContent = finalizeUnlocked ? "Open" : "Locked";
+      $("tagFinalize").className = finalizeUnlocked ? "tag ok" : "tag lock";
+      $("lockFinalize").classList.toggle("hidden", finalizeUnlocked);
+      $("finalizeInner").classList.toggle("hidden", !finalizeUnlocked);
+
+      $("btnGoPrompts").disabled = !setupComplete;
+
+      if (stage === "setup" || !promptsUnlocked) {
+        $("bandSetup").open = true;
+        $("bandPrompts").open = false;
+        $("bandFinalize").open = false;
+      } else if (stage === "prompts" || !finalizeUnlocked) {
+        $("bandSetup").open = false;
+        $("bandPrompts").open = true;
+        $("bandFinalize").open = false;
+      } else {
+        $("bandSetup").open = false;
+        $("bandPrompts").open = false;
+        $("bandFinalize").open = true;
+      }
+
+      $("buildInfo").textContent = `Last updated: ${document.lastModified || "—"}`;
+    }
+
+    function openModal(id) {
+      $(id).style.display = "flex";
+    }
+
+    function closeModal(id) {
+      $(id).style.display = "none";
+    }
+
+    function clearSessionData() {
+      Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+      lastCopiedText = "";
+      lastCopiedLabel = "";
+      lastCopiedAt = null;
+    }
+
+    function init() {
+      hydrateCopyIconButton($("btnCopyStarter"));
+      hydrateCopyIconButton($("btnCopyFinal"));
+      hydrateCopyIconButton($("btnCopyAgain"));
+
+      const ctx = getContext();
+      $("ctxCourse").value = ctx.course || "";
+      $("ctxArea").value = ctx.area || "";
+      $("ctxNotes").value = ctx.notes || "";
+      $("ctxQuestionCount").value = ctx.questionCount || "10";
+
+      renderPromptList();
+      renderMostRecentCopied();
+
+      ["ctxCourse", "ctxArea", "ctxNotes", "ctxQuestionCount"].forEach(id => {
+        $(id).addEventListener("input", () => {
+          const current = {
+            course: $("ctxCourse").value || "",
+            area: $("ctxArea").value || "",
+            notes: $("ctxNotes").value || "",
+            questionCount: $("ctxQuestionCount").value || "10"
+          };
+          setContext(current);
+          localStorage.setItem(KEYS.starterCopied, "false");
+          $("setupMsg").classList.add("hidden");
+          applyStageUI();
+        });
+      });
+
+      $("btnCopyStarter").addEventListener("click", async () => {
+        const course = $("ctxCourse").value.trim();
+        const area = $("ctxArea").value.trim();
+        const notes = $("ctxNotes").value.trim();
+        const questionCount = ($("ctxQuestionCount").value || "10").trim() || "10";
+
+        if (!course || !area) {
+          $("setupMsg").textContent = "Please fill in course context and content area before continuing.";
+          $("setupMsg").classList.remove("hidden");
+          toast("Complete required fields");
+          return;
+        }
+
+        setContext({ course, area, notes, questionCount });
+        await copyToClipboard(buildStarterPrompt(), "Starter prompt");
+        localStorage.setItem(KEYS.starterCopied, "true");
+        $("setupMsg").textContent = "Starter prompt copied. Paste it into your LLM, then click Proceed to 2) Making questions.";
+        $("setupMsg").classList.remove("hidden");
+        applyStageUI();
+
+        const btn = $("btnCopyStarter");
+        btn.classList.add("isActive");
+        setTimeout(() => btn.classList.remove("isActive"), 400);
+      });
+
+      $("btnGoPrompts").addEventListener("click", () => {
+        if (!isSetupComplete()) {
+          toast("Copy starter prompt first");
+          return;
+        }
+        setStage("prompts");
+      });
+
+      $("btnEditContext").addEventListener("click", () => {
+        setStage("setup");
+      });
+
+      $("btnReadyFinal").addEventListener("click", () => {
+        localStorage.setItem(KEYS.finalPrompt, buildFinalPrompt());
+        localStorage.setItem(KEYS.finalPromptCopied, "false");
+        $("finalExplainWrap").classList.add("hidden");
+        setStage("finalize");
+      });
+
+      $("btnBackToPrompts").addEventListener("click", () => {
+        setStage("prompts");
+      });
+
+      $("btnCopyFinal").addEventListener("click", async () => {
+        const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+        await copyToClipboard(fp, "Final prompt");
+        localStorage.setItem(KEYS.finalPromptCopied, "true");
+        $("finalExplainWrap").classList.remove("hidden");
+
+        const btn = $("btnCopyFinal");
+        btn.classList.add("isActive");
+        setTimeout(() => btn.classList.remove("isActive"), 400);
+      });
+
+      $("btnCopyAgain").addEventListener("click", async () => {
+        if (!lastCopiedText.trim()) return;
+        await copyToClipboard(lastCopiedText, lastCopiedLabel || "Most Recently Copied");
+      });
+
+      $("btnClearRecent").addEventListener("click", () => {
+        lastCopiedText = "";
+        lastCopiedLabel = "";
+        lastCopiedAt = null;
+        renderMostRecentCopied();
+      });
+
+      $("btnEndSession").addEventListener("click", () => openModal("modalEnd"));
+      $("btnEndCancel").addEventListener("click", () => closeModal("modalEnd"));
+      $("btnEndConfirm").addEventListener("click", () => {
+        clearSessionData();
+        closeModal("modalEnd");
+        location.reload();
+      });
+
+      $("sumPrompts").addEventListener("click", (e) => {
+        if (!isPromptsUnlocked()) {
+          e.preventDefault();
+          toast("Making questions is locked until you copy the starter prompt and continue.");
+          $("bandSetup").open = true;
+        }
+      });
+
+      $("sumFinalize").addEventListener("click", (e) => {
+        if (!isFinalizeUnlocked()) {
+          e.preventDefault();
+          toast("Final prompt is locked until you finish making questions.");
+          $("bandPrompts").open = true;
+        }
+      });
+
+      if (!localStorage.getItem(KEYS.stage)) {
+        localStorage.setItem(KEYS.stage, "setup");
+      }
+
+      applyStageUI();
+    }
+
+    init();
+  </script>
+</body>
+</html>
