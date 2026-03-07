@@ -1858,23 +1858,26 @@ After that list, give me the current time.`
       const response = await fetch(SUBMIT_URL, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "text/plain;charset=utf-8"
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        redirect: "follow"
       });
+
+      const text = await response.text();
 
       let data = null;
       try {
-        data = await response.json();
+        data = JSON.parse(text);
       } catch (_) {
-        data = null;
+        data = { ok: false, error: "invalid_json_response", raw: text };
       }
 
       if (!response.ok) {
         throw new Error(data?.error || `http_${response.status}`);
       }
 
-      return data || { ok: false, error: "invalid_json_response" };
+      return data;
     }
 
     // -----------------------------
