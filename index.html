@@ -459,11 +459,9 @@
         <div class="bandBody">
           <div class="card">
             <div class="subBand" style="margin-top:0;">
-              <h4 class="subBandTitle">1A) Select product and confirm version</h4>
+              <h4 class="subBandTitle">1) Select product and version</h4>
               <div class="row">
                 <div style="flex:1; min-width: 240px;">
-                  <label>Product used</label>
-                  <p class="muted small" style="margin:0 0 8px;">Select the AI product you are using.</p>
                   <input type="hidden" id="modelUsed" />
                   <div class="modelGrid product-grid" id="modelGrid">
 
@@ -477,8 +475,8 @@
               </div>
 
               <div id="productVersionEditor" class="subBand hidden" style="margin-top:10px;">
-              <h4 class="subBandTitle">Confirm product version</h4>
-              <p class="muted small llmConfirmIntro">Please leave the product in its default mode for this activity, then confirm what you see in the menu.</p>
+              <h4 class="subBandTitle" id="productVersionTitle">Confirm product version</h4>
+              <p class="muted small llmConfirmIntro" id="llmConfirmIntro"></p>
 
               <div id="llmConfirmPanel" class="subBand" style="display:none; margin-top:8px;">
                 <p id="llmInstructionText" class="muted small" style="margin:0 0 6px;"></p>
@@ -493,11 +491,11 @@
                 </details>
 
                 <div style="margin-top:10px;">
-                  <label id="llmConfirmLabel">Which of these best matches what you see in the menu?</label>
+                  <label id="llmConfirmLabel"></label>
                   <select id="llmExpectedChoice" class="llmCompactSelect"></select>
                 </div>
 
-                <p class="muted small" id="llmMismatchNote" style="display:none; margin:8px 0 0;">Please describe what you see. This helps us keep the instructions current.</p>
+                <p class="muted small" id="llmMismatchNote" style="display:none; margin:8px 0 0;"></p>
 
                 <div id="llmMismatchWrap" style="display:none; margin-top:10px;">
                   <label for="llmMismatchDescription">Please briefly describe the options you see in the menu.</label>
@@ -506,7 +504,7 @@
               </div>
 
               <div id="llmOtherWrap" style="display:none; margin-top:8px;">
-                <label for="llmOtherDescription">Please describe the AI product you are using.</label>
+                <label for="llmOtherDescription">Please set the product to its default mode. In the box below briefly describe the AI products you are using, including the specific version.</label>
                 <textarea id="llmOtherDescription" placeholder="Briefly describe the AI product you are using."></textarea>
               </div>
 
@@ -584,7 +582,7 @@
           <div id="promptsInner" style="display:none;">
             <div class="card">
               <div class="row" style="justify-content: space-between;">
-                <div class="muted small">Click “Copy” to copy the selected prompt.</div>
+
                 <button class="btn" id="btnEditContext">Go back and edit context</button>
               </div>
 
@@ -644,7 +642,7 @@
               <div id="finalizeLockedArea" class="finalizeLockedContent" style="margin-top:8px; display:none;">
 
                 <div style="margin-top:12px;">
-                  <label>Paste the LLM Final Response</label>
+
                   <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
                 </div>
 
@@ -809,7 +807,7 @@
         instruction: "Use Claude in its default mode for this activity. Do not manually change the model or enable extended thinking unless it is already selected.",
         whereText: "Click the model selector near the chat input box.",
         expectedOptions: [
-          { value: "sonnet46_menu", label: "Sonnet 4.6 selected; menu also shows Opus 4.6 and Haiku 4.5" },
+          { value: "sonnet46_menu", label: "Sonnet 4.6 selected" },
           { value: "different", label: "I see something different" }
         ],
         defaultExpected: "sonnet46_menu",
@@ -821,7 +819,7 @@
         instruction: "Use Gemini in its default mode for this activity. Do not manually switch modes.",
         whereText: "Click the mode dropdown next to the prompt box.",
         expectedOptions: [
-          { value: "fast_menu", label: "Fast selected; menu also shows Thinking and Pro" },
+          { value: "fast_menu", label: "Fast selected; menu shows Gemini 3" },
           { value: "different", label: "I see something different" }
         ],
         defaultExpected: "fast_menu",
@@ -833,7 +831,7 @@
         instruction: "Use Microsoft Copilot in its default mode for this activity. Do not manually change the conversation mode.",
         whereText: "Click the dropdown next to the prompt box that shows the current mode.",
         expectedOptions: [
-          { value: "smart_menu", label: "Smart selected; menu also shows Think deeper, Study and learn, and Search" },
+          { value: "smart_menu", label: "Smart selected; menu shows GPT 5.1" },
           { value: "different", label: "I see something different" }
         ],
         defaultExpected: "smart_menu",
@@ -1209,8 +1207,16 @@ Provide the results in a table with the following columns:
         llmMismatchAlertAttempted = false;
 
         if (productKey === "other") {
+          const productVersionTitle = $("productVersionTitle");
+          const llmConfirmIntro = $("llmConfirmIntro");
+          if (productVersionTitle) productVersionTitle.textContent = "";
+          if (llmConfirmIntro) llmConfirmIntro.textContent = "";
           otherWrap.style.display = "block";
         } else {
+          const productVersionTitle = $("productVersionTitle");
+          const llmConfirmIntro = $("llmConfirmIntro");
+          if (productVersionTitle) productVersionTitle.textContent = "Confirm product version";
+          if (llmConfirmIntro) llmConfirmIntro.textContent = "";
           otherWrap.style.display = "none";
           localStorage.removeItem(KEYS.llmOtherDescription);
           if ($("llmOtherDescription")) $("llmOtherDescription").value = "";
@@ -1224,15 +1230,19 @@ Provide the results in a table with the following columns:
       if ($("llmOtherDescription")) $("llmOtherDescription").value = "";
       localStorage.removeItem(KEYS.llmOtherDescription);
 
-      $("llmInstructionText").textContent = config.instruction;
-      $("llmWhereText").textContent = config.whereText;
-      $("llmConfirmLabel").textContent = "Which of these best matches what you see in the menu?";
+      const productVersionTitle = $("productVersionTitle");
+      const llmConfirmIntro = $("llmConfirmIntro");
+      if (productVersionTitle) productVersionTitle.textContent = "Confirm product version";
+      if (llmConfirmIntro) llmConfirmIntro.textContent = `Set ${config.label} to its default mode and use the dropdown menu below to select the version you are using.`;
+      $("llmInstructionText").textContent = "";
+      $("llmWhereText").textContent = "";
+      $("llmConfirmLabel").textContent = "";
 
       const helpImages = getLlmHelpImages(productKey);
       const img1 = $("llmImage1");
       const img2 = $("llmImage2");
-      const caption1 = "Click the model selector to open the dropdown menu.";
-      const caption2 = "Confirm the default model matches one of the options below. If not, select “Other.”";
+      const caption1 = "Click here to open the dropdown menu.";
+      const caption2 = "Confirm that the text here matches the option in the dropdown menu.";
       if (img1) {
         if (helpImages) {
           img1.innerHTML = `<div class="helpExampleItem"><img src="${helpImages.image1Src}" class="helpExampleImage" alt="${helpImages.image1Alt}"><div class="helpExampleText">${caption1}</div></div>`;
@@ -1343,7 +1353,7 @@ Provide the results in a table with the following columns:
           notice.style.display = "block";
           notice.innerHTML = `
             1) Paste the final prompt into your selected LLM.<br><br>
-            2) Copy the model's full response.<br>
+            2) Click on the copy button below the response to copy it in its entirety<br>
             <details class="helpToggle" style="display:inline-block; margin-top:6px;">
               <summary class="whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
               <div style="margin-top:6px;">${getFinalizeCopyInstructionLine(model)}</div>
