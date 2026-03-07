@@ -658,14 +658,14 @@
                   <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
                 </div>
 
-                <p class="muted small" style="margin:10px 0 0;">This will open a Google Form where you will submit your session.</p>
+                <p class="muted small" style="margin:10px 0 0;">This will submit your session automatically.</p>
                 <div class="row" style="margin-top:8px;">
-                  <button class="btn primary finalActionBtn" id="btnSubmitForm">Submit session (Google Form)</button>
+                  <button class="btn primary finalActionBtn" id="btnSubmitForm">Submit session</button>
                 </div>
 
                 <details id="formFailedDetails" style="margin-top:12px; display:none;">
                 <summary class="btn warn finalActionBtn warningButton">
-                  Click here if the Google Form failed to be filled properly
+                  Click here if automatic submission failed
                 </summary>
 
                 <div style="margin-top:12px;">
@@ -741,7 +741,7 @@
   <div class="modalBackdrop" id="modalEnd">
     <div class="modalCard">
       <h3 style="margin:0 0 8px;">End session?</h3>
-      <p class="muted" style="margin:0 0 12px;">Before ending, make sure you have submitted your info in the Google Form or downloaded/saved your work. Ending the session will clear this browser’s stored data.</p>
+      <p class="muted" style="margin:0 0 12px;">Before ending, make sure your session was submitted successfully or downloaded/saved as a backup. Ending the session will clear this browser’s stored data.</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnEndCancel" type="button">Cancel</button>
         <button class="btn danger" id="btnEndConfirm" type="button">I saved it — end session</button>
@@ -792,11 +792,7 @@
       "open-horizon": {}
     };
 
-    // Google Form settings (your entry IDs)
-    const FORM_BASE =
-      "https://docs.google.com/forms/d/e/1FAIpQLSeSkJtABOlLhpP2_lywUseUT017l9qmtuW8vUv7GQXODR89Sg/viewform?usp=pp_url";
-    const ENTRY_EVENT_LOG = "252595248"; // Event Log
-    const ENTRY_LLM_FINAL = "86462815";  // LLM Final Response
+    const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbzwdkF5ojxU3Anj2gjACKo75ZFDEFtKofLqxL0cm9WNwQOSjN6vYxVNknw6_ybg-rn0Zg/exec";
 
     // Paste your webhook URL into LLM_MISMATCH_ALERT_WEBHOOK to receive immediate mismatch alerts.
     const LLM_MISMATCH_ALERT_WEBHOOK = "";
@@ -1832,49 +1828,53 @@ After that list, give me the current time.`
     }
 
     // -----------------------------
-    // Submit / CSV
+    // Submit / JSON
     // -----------------------------
-    function buildEventLogCSV() {
-      const events = loadJSON(KEYS.events, []);
-      const code = localStorage.getItem(KEYS.accessCode) || "";
-      const sid = localStorage.getItem(KEYS.sessionId) || "";
-      const model = localStorage.getItem(KEYS.modelUsed) || "";
-
-      const header = ["t","type","promptId","stage","accessCode","sessionId","modelUsed"].join(",");
-      const rows = events.map(e => {
-        const cols = [
-          e.t || "",
-          e.type || "",
-          e.promptId || "",
-          e.stage || "",
-          e.accessCode || code,
-          e.sessionId || sid,
-          e.modelUsed || model
-        ];
-        return cols.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",");
-      });
-
-      return [header, ...rows].join("\n");
+    function buildSessionRecord() {
+      return {
+        participant_code: localStorage.getItem(KEYS.accessCode) || "",
+        session_id: localStorage.getItem(KEYS.sessionId) || "",
+        session_started_at: localStorage.getItem(KEYS.sessionStartTime) || "",
+        product_used: localStorage.getItem(KEYS.modelUsed) || "",
+        model_used: localStorage.getItem(KEYS.modelUsed) || "",
+        llm_product: localStorage.getItem(KEYS.llmProduct) || "",
+        llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
+        llm_mismatch_description: localStorage.getItem(KEYS.llmMismatchDescription) || "",
+        llm_other_description: localStorage.getItem(KEYS.llmOtherDescription) || "",
+        context: getContext(),
+        events: loadJSON(KEYS.events, []),
+        stage: getStage(),
+        final_prompt_copied: localStorage.getItem(KEYS.finalPromptCopied) || "false",
+        submit_clicked: localStorage.getItem(KEYS.submitClicked) || "false",
+        last_copied_text: lastCopiedText || "",
+        final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
+        llm_response: ($("llmResponse").value || "").trim(),
+        submitted_at: new Date().toISOString(),
+        page_last_updated: document.lastModified || ""
+      };
     }
 
-    function openPrefilledGoogleForm() {
-      const csv = buildEventLogCSV();
-      const llm = ($("llmResponse").value || "").trim();
+    async function submitSessionJson(payload) {
+      const response = await fetch(SUBMIT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
 
-      if (!llm) {
-        $("finalizeMsg").textContent = "Please paste the LLM Final Response before submitting.";
-        toast("Paste LLM response first");
-        return;
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (_) {
+        data = null;
       }
 
-      const url =
-        `${FORM_BASE}` +
-        `&entry.${ENTRY_EVENT_LOG}=${encodeURIComponent(csv)}` +
-        `&entry.${ENTRY_LLM_FINAL}=${encodeURIComponent(llm)}`;
+      if (!response.ok) {
+        throw new Error(data?.error || `http_${response.status}`);
+      }
 
-      logEvent("form_prefill_opened", { approx_csv_chars: csv.length, llm_chars: llm.length });
-      window.open(url, "_blank", "noopener,noreferrer");
-      toast("Opened Google Form (prefilled) ✅");
+      return data || { ok: false, error: "invalid_json_response" };
     }
 
     // -----------------------------
@@ -2236,12 +2236,54 @@ After that list, give me the current time.`
         updateFinalizeContentUI();
       });
 
-      $("btnSubmitForm").addEventListener("click", () => {
+      $("btnSubmitForm").addEventListener("click", async () => {
         if ($("btnSubmitForm").disabled) return;
+
+        const llm = ($("llmResponse").value || "").trim();
+        if (!llm) {
+          $("finalizeMsg").textContent = "Please paste the LLM Final Response before submitting.";
+          toast("Paste LLM response first");
+          return;
+        }
+
         logEvent("submit_form_clicked");
         localStorage.setItem(KEYS.submitClicked, "true");
         updateFinalizeContentUI();
-        openPrefilledGoogleForm();
+
+        const payload = buildSessionRecord();
+        const submitBtn = $("btnSubmitForm");
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+          const result = await submitSessionJson(payload);
+          if (result?.ok) {
+            $("finalizeMsg").textContent = "Session submitted successfully.";
+            logEvent("session_submitted", {
+              method: "apps_script",
+              ok: true,
+              fileName: result.fileName || ""
+            });
+            toast("Session submitted ✅");
+          } else {
+            $("finalizeMsg").textContent = "Automatic submission failed. Please download the backup file and email it.";
+            logEvent("session_submitted", {
+              method: "apps_script",
+              ok: false,
+              error: result?.error || "unknown"
+            });
+            toast("Automatic submission failed");
+          }
+        } catch (err) {
+          $("finalizeMsg").textContent = "Automatic submission failed. Please download the backup file and email it.";
+          logEvent("session_submitted", {
+            method: "apps_script",
+            ok: false,
+            error: String(err?.message || err || "unknown")
+          });
+          toast("Automatic submission failed");
+        } finally {
+          updateFinalizeContentUI();
+        }
       });
 
       $("llmResponse").addEventListener("input", () => {
@@ -2261,18 +2303,8 @@ After that list, give me the current time.`
       $("btnDownload").addEventListener("click", () => {
         logEvent("backup_download_clicked");
         const record = {
-          participant_code: localStorage.getItem(KEYS.accessCode),
-          session_id: localStorage.getItem(KEYS.sessionId),
-          session_started_at: localStorage.getItem(KEYS.sessionStartTime),
-          model_used: localStorage.getItem(KEYS.modelUsed),
-          context: getContext(),
-          events: loadJSON(KEYS.events, []),
-          last_copied_text: lastCopiedText || "",
-          final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
+          ...buildSessionRecord(),
           llm_response: $("llmResponse").value || "",
-          llm_product: localStorage.getItem(KEYS.llmProduct) || "",
-          llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
-          llm_mismatch_description: localStorage.getItem(KEYS.llmMismatchDescription) || "",
           exported_at: nowIso()
         };
 
