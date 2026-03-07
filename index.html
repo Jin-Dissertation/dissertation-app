@@ -21,6 +21,7 @@
       border-radius: 10px; padding: 10px; box-sizing:border-box;
     }
     textarea { min-height: 140px; resize: vertical; line-height: 1.4; }
+    #sessionNotes { min-height: 70px; }
         .btn {
       background: #f1f7ff; border:1px solid var(--border); color:var(--text);
       padding:10px 12px; border-radius: 10px; cursor:pointer;
@@ -1620,6 +1621,7 @@ Provide the results in a table with the following columns:
       const lockedArea = $("finalizeLockedArea");
       const formFailed = $("formFailedDetails");
       const endRow = $("endSessionRow");
+      const reviseBtn = $("btnReviseAfterSubmit");
       const submitBtn = $("btnSubmitForm");
       const llm = $("llmResponse");
 
@@ -1650,6 +1652,7 @@ Provide the results in a table with the following columns:
       const hasResponse = !!((llm?.value || "").trim());
       if (submitBtn) submitBtn.disabled = !copied || !hasResponse;
       if (formFailed) formFailed.style.display = copied && submitted ? "block" : "none";
+      if (reviseBtn) reviseBtn.style.display = copied && submitted ? "inline-flex" : "none";
       if (endRow) endRow.style.display = copied && submitted ? "flex" : "none";
     }
 
