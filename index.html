@@ -288,12 +288,12 @@
       gap: 6px;
       cursor: pointer;
     }
-    .whereToggleIcon {
+    .helpToggle .whereToggleIcon {
       display: inline-block;
       transition: transform 0.2s ease;
       transform-origin: center;
     }
-    details[open] .whereToggleIcon {
+    .helpToggle[open] .whereToggleIcon {
       transform: rotate(90deg);
     }
 
@@ -420,7 +420,7 @@
                 <p id="llmInstructionText" class="muted small" style="margin:0 0 6px;"></p>
                 <p id="llmWhereText" class="muted small" style="margin:0;"></p>
 
-                <details style="margin-top:8px;">
+                <details class="helpToggle" style="margin-top:8px;">
                   <summary class="muted small whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
                   <div class="llmImageRow">
                     <!--
@@ -1280,7 +1280,7 @@ Provide the results in a table with the following columns:
           notice.innerHTML = `
             1) Paste the final prompt into your selected LLM.<br><br>
             2) Copy the model's full response.<br>
-            <details style="display:inline-block; margin-top:6px;">
+            <details class="helpToggle" style="display:inline-block; margin-top:6px;">
               <summary class="whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
               <div style="margin-top:6px;">${getFinalizeCopyInstructionLine(model)}</div>
             </details><br><br>
