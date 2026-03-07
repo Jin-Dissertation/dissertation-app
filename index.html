@@ -157,31 +157,38 @@
     .subBand { border:1px solid var(--border); border-radius: 10px; background:rgba(16,33,61,0.02); padding:16px 18px; margin-top:14px; }
     .llmConfirmIntro { margin:10px 0 8px; }
     .llmImageRow {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
       margin-top: 8px;
     }
-    .llmImagePlaceholder {
-      width: 240px;
-      height: 140px;
-      border: 2px dashed var(--border);
-      border-radius: 10px;
+    .helpExampleItem {
       display: flex;
       align-items: center;
-      justify-content: center;
-      color: var(--muted);
-      font-size: 12px;
-      background: #f8fbff;
-      text-align: center;
-      padding: 8px;
-      box-sizing: border-box;
+      gap: 18px;
+      margin-top: 14px;
     }
-    .llmInstructionImage {
-      width: 240px;
-      border: 1px solid var(--border);
+    .helpExampleImage {
+      width: 420px;
+      height: 236px;
+      object-fit: contain;
       border-radius: 10px;
-      display: block;
+      border: 1px solid #d1d5db;
+    }
+    .helpExampleText {
+      max-width: 260px;
+      font-size: 14px;
+      line-height: 1.4;
+      color: #4b5563;
+    }
+    @media (max-width: 900px) {
+      .helpExampleItem {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .helpExampleImage {
+        width: 100%;
+        max-width: 420px;
+        height: auto;
+        aspect-ratio: 16 / 9;
+      }
     }
     .llmCompactSelect { width: 100%; max-width: 100%; min-width: 0; }
     .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:600; }
@@ -463,38 +470,8 @@
                 <details class="helpToggle" style="margin-top:8px;">
                   <summary class="muted small whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
                   <div class="llmImageRow">
-                    <!--
-                    Replace this placeholder with a real screenshot by replacing the div with:
-
-                    <img
-                      src="images/chatgpt-selector-location.png"
-                      alt="ChatGPT model selector location"
-                      class="llmInstructionImage"
-                    />
-
-                    Recommended size:
-                    - width: 240px
-                    - height: auto
-
-                    For the second image, use the dropdown screenshot instead.
-                    -->
-                    <div class="llmImagePlaceholder" id="llmImage1">[IMAGE PLACEHOLDER]</div>
-                    <!--
-                    Replace this placeholder with a real screenshot by replacing the div with:
-
-                    <img
-                      src="images/chatgpt-dropdown-example.png"
-                      alt="ChatGPT dropdown example"
-                      class="llmInstructionImage"
-                    />
-
-                    Recommended size:
-                    - width: 240px
-                    - height: auto
-
-                    For product-specific images, swap file names and alt text accordingly.
-                    -->
-                    <div class="llmImagePlaceholder" id="llmImage2">[IMAGE PLACEHOLDER]</div>
+                    <div id="llmImage1"></div>
+                    <div id="llmImage2"></div>
                   </div>
                 </details>
 
@@ -1070,15 +1047,36 @@ Provide the results in a table with the following columns:
       return match?.label || expectedChoice;
     }
 
-    function getLlmPlaceholderText(productKey) {
+    function getLlmHelpImages(productKey) {
       const map = {
-        chatgpt: ["ChatGPT: where to click", "ChatGPT: dropdown example"],
-        claude: ["Claude: where to click", "Claude: dropdown example"],
-        gemini: ["Gemini: where to click", "Gemini: dropdown example"],
-        copilot: ["Copilot: where to click", "Copilot: dropdown example"]
+        chatgpt: {
+          image1Src: "images/chatgpt-1.png",
+          image2Src: "images/chatgpt-2.png",
+          image1Alt: "ChatGPT where to click",
+          image2Alt: "ChatGPT dropdown example"
+        },
+        claude: {
+          image1Src: "images/claude-1.png",
+          image2Src: "images/claude-2.png",
+          image1Alt: "Claude where to click",
+          image2Alt: "Claude dropdown example"
+        },
+        copilot: {
+          image1Src: "images/copilot-1.png",
+          image2Src: "images/copilot-2.png",
+          image1Alt: "Copilot where to click",
+          image2Alt: "Copilot dropdown example"
+        },
+        gemini: {
+          image1Src: "images/gemini-1.png",
+          image2Src: "images/gemini-2.png",
+          image1Alt: "Gemini where to click",
+          image2Alt: "Gemini dropdown example"
+        }
       };
-      return map[productKey] || ["[IMAGE PLACEHOLDER]", "[IMAGE PLACEHOLDER]"];
+      return map[productKey] || null;
     }
+
 
     function setLlmMismatchVisibility(show, shouldFocus = false) {
       const wrap = $("llmMismatchWrap");
@@ -1213,16 +1211,24 @@ Provide the results in a table with the following columns:
       $("llmWhereText").textContent = config.whereText;
       $("llmConfirmLabel").textContent = "Which of these best matches what you see in the menu?";
 
-      const [p1, p2] = getLlmPlaceholderText(productKey);
+      const helpImages = getLlmHelpImages(productKey);
       const img1 = $("llmImage1");
       const img2 = $("llmImage2");
+      const caption1 = "Click the model selector to open the dropdown menu.";
+      const caption2 = "Confirm the default model matches one of the options below. If not, select “Other.”";
       if (img1) {
-        img1.textContent = p1;
-        img1.setAttribute("aria-label", config.image1Alt);
+        if (helpImages) {
+          img1.innerHTML = `<div class="helpExampleItem"><img src="${helpImages.image1Src}" class="helpExampleImage" alt="${helpImages.image1Alt}"><div class="helpExampleText">${caption1}</div></div>`;
+        } else {
+          img1.innerHTML = "";
+        }
       }
       if (img2) {
-        img2.textContent = p2;
-        img2.setAttribute("aria-label", config.image2Alt);
+        if (helpImages) {
+          img2.innerHTML = `<div class="helpExampleItem"><img src="${helpImages.image2Src}" class="helpExampleImage" alt="${helpImages.image2Alt}"><div class="helpExampleText">${caption2}</div></div>`;
+        } else {
+          img2.innerHTML = "";
+        }
       }
 
       const existingValue = localStorage.getItem(KEYS.llmExpectedChoice) || "";
