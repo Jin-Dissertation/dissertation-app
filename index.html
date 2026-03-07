@@ -228,6 +228,15 @@
     .headerTimer.timerComplete #sessionTimerDisplay {
       color: #16a34a;
     }
+    .helpFaqLink {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .helpFaqLink:hover {
+      text-decoration: underline;
+    }
     .btn.ghost { background:#f1f7ff; border:1px solid var(--border); color:var(--text); padding:6px 10px; }
         .modalBackdrop { position:fixed; inset:0; background:rgba(16,33,61,.35); display:none; align-items:center; justify-content:center; z-index:10000; }
     .modalCard { width:min(460px, calc(100vw - 24px)); background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; }
@@ -465,6 +474,7 @@
     <!-- Access gate -->
     <div class="card accessCard" id="accessGate">
       <p class="muted small" style="margin:0 0 10px;">Enter your participant code to begin this session.</p>
+      <p class="muted small" style="margin:0 0 10px;">If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
 
       <form class="accessRow" id="accessForm">
         <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" />
@@ -791,6 +801,16 @@
   </div>
 
   <footer class="small muted" style="padding: 8px 24px 20px;" id="buildInfo"></footer>
+  <div id="helpLinkRow" class="small" style="padding: 0 24px 24px;">
+    <a
+      href="https://jin-dissertation.github.io/dissertation-app/help.html"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="helpFaqLink"
+    >
+      Help / FAQ
+    </a>
+  </div>
 
   <div class="toast" id="toast"></div>
 
