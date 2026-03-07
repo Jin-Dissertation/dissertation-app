@@ -21,6 +21,7 @@
       border-radius: 10px; padding: 10px; box-sizing:border-box;
     }
     textarea { min-height: 140px; resize: vertical; line-height: 1.4; }
+    #sessionNotes { min-height: 70px; }
         .btn {
       background: #f1f7ff; border:1px solid var(--border); color:var(--text);
       padding:10px 12px; border-radius: 10px; cursor:pointer;
@@ -95,11 +96,24 @@
     .modelOption:active, .product-card:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
     .modelOption.active, .modelOption.selected, .product-card.selected { border:2px solid var(--accent); background: var(--accent-soft); transform: translateY(-1px); }
     .logoDot { width:30px; height:30px; border-radius:999px; display:grid; place-items:center; font-size:10px; font-weight:700; color:#fff; }
-    .productLogoImage {
-      width: 32px;
-      height: 32px;
+    .productIconCircle {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .productIconImage {
+      max-width: 70%;
+      max-height: 70%;
       object-fit: contain;
       display: block;
+    }
+    .productButton.selected .productIconCircle,
+    .product-card.selected .productIconCircle {
+      background: #e8f0ff;
     }
     .logo-openai{ background:#111827; }
     .logo-gemini{ background:#6d5ef6; }
@@ -144,31 +158,38 @@
     .subBand { border:1px solid var(--border); border-radius: 10px; background:rgba(16,33,61,0.02); padding:16px 18px; margin-top:14px; }
     .llmConfirmIntro { margin:10px 0 8px; }
     .llmImageRow {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
       margin-top: 8px;
     }
-    .llmImagePlaceholder {
-      width: 240px;
-      height: 140px;
-      border: 2px dashed var(--border);
-      border-radius: 10px;
+    .helpExampleItem {
       display: flex;
       align-items: center;
-      justify-content: center;
-      color: var(--muted);
-      font-size: 12px;
-      background: #f8fbff;
-      text-align: center;
-      padding: 8px;
-      box-sizing: border-box;
+      gap: 18px;
+      margin-top: 14px;
     }
-    .llmInstructionImage {
-      width: 240px;
-      border: 1px solid var(--border);
+    .helpExampleImage {
+      width: 420px;
+      height: 236px;
+      object-fit: contain;
       border-radius: 10px;
-      display: block;
+      border: 1px solid #d1d5db;
+    }
+    .helpExampleText {
+      max-width: 260px;
+      font-size: 14px;
+      line-height: 1.4;
+      color: #4b5563;
+    }
+    @media (max-width: 900px) {
+      .helpExampleItem {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .helpExampleImage {
+        width: 100%;
+        max-width: 420px;
+        height: auto;
+        aspect-ratio: 16 / 9;
+      }
     }
     .llmCompactSelect { width: 100%; max-width: 100%; min-width: 0; }
     .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:600; }
@@ -186,6 +207,89 @@
     @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
     .centerCard { max-width:420px; margin: 0 auto; }
     .appHeaderBar { display:flex; justify-content:flex-start; align-items:center; margin-bottom:10px; padding:6px 2px; }
+    .timerCard {
+      margin-top: 12px;
+      padding: 10px 12px;
+    }
+    .timerHeaderRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .timerCard h3 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+    .timerInlineControls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+    .timerDisplay {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: 0.01em;
+    }
+    #btnPauseTimer {
+      flex: 0 0 auto;
+    }
+    .timerCard .muted.small {
+      line-height: 1.2;
+    }
+    .timerCard .muted.small > div + div {
+      margin-top: 2px;
+    }
+    .timerCard.timerComplete {
+      border-color: #16a34a;
+      background: #f0fdf4;
+    }
+    .timerNotice {
+      position: fixed;
+      bottom: 72px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f4ca4;
+      color: #ffffff;
+      border: 1px solid #1f4ca4;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: none;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      max-width: 460px;
+      width: calc(100% - 32px);
+      z-index: 10000;
+      box-shadow: 0 8px 20px rgba(16,33,61,0.18);
+    }
+    .timerNoticeMessage {
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .timerNoticeClose {
+      background: transparent;
+      border: 0;
+      color: #ffffff;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      flex: 0 0 auto;
+    }
+    .helpFaqLink {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .helpFaqLink:hover {
+      text-decoration: underline;
+    }
     .btn.ghost { background:#f1f7ff; border:1px solid var(--border); color:var(--text); padding:6px 10px; }
         .modalBackdrop { position:fixed; inset:0; background:rgba(16,33,61,.35); display:none; align-items:center; justify-content:center; z-index:10000; }
     .modalCard { width:min(460px, calc(100vw - 24px)); background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; }
@@ -210,6 +314,24 @@
       overflow: hidden;
     }
     .copyMeta { margin:0 0 8px; color: var(--muted); font-size:12px; }
+
+    .copyHelpExample {
+      margin-top: 10px;
+      max-width: 260px;
+    }
+    .copyHelpImage {
+      width: 220px;
+      height: 220px;
+      object-fit: contain;
+      border-radius: 12px;
+      display: block;
+    }
+    .copyHelpCaption {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #4b5563;
+      line-height: 1.3;
+    }
     .copiedText.recentTextarea {
       width: 100%;
       flex: 1 1 auto;
@@ -259,6 +381,44 @@
       flex: 0 0 30px;
     }
     .copyIconBtn svg { width: 14px; height: 14px; }
+    .copyIconImage {
+      width: 18px;
+      height: 18px;
+      object-fit: contain;
+      display: block;
+    }
+    .tooltipWrapper { position: relative; }
+    .tooltipBubble {
+      position: absolute;
+      bottom: 130%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937;
+      color: #ffffff;
+      font-size: 12px;
+      line-height: 1;
+      padding: 6px 8px;
+      border-radius: 8px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      z-index: 20;
+    }
+    .tooltipBubble::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 5px;
+      border-style: solid;
+      border-color: #1f2937 transparent transparent transparent;
+    }
+    .tooltipWrapper:hover .tooltipBubble,
+    .copyIconBtn.copiedState .tooltipBubble {
+      opacity: 1;
+    }
     .copyIconBtn.isActive { background: var(--accent-soft); border-color: var(--accent); color: #1f4ca4; }
     .starterCopyControl { display:flex; align-items:center; gap:8px; }
     .copyPromptRow { display:flex; align-items:center; gap:10px; }
@@ -278,25 +438,34 @@
     .promptArea { min-width: 0; overflow-x: hidden; }
     .finalizeNotice { margin:10px 0 0; display:none; }
     .finalizeLockedContent { opacity:.6; pointer-events:none; user-select:none; }
-    .finalActionBtn { min-height: 36px; padding: 8px 12px; border-radius: 10px; font-size: 14px; font-weight: 600; }
-      .finalActionBtn.btn.warn { font-weight: 600; }
-    .warningButton {
+    .finalActionBtn {
+      min-height: 44px;
+      padding: 0 16px;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 8px 14px;
-      line-height: 1.2;
-      min-height: 36px;
-      font-size: 14px;
-      white-space: nowrap;
+      box-sizing: border-box;
       border-radius: 10px;
-      font-weight: 500;
+    }
+      .finalActionBtn.btn.warn { font-weight: 600; }
+    .warningButton {
+      white-space: nowrap;
+      font-weight: 600;
     }
     @media (max-width: 640px) {
       .warningButton {
         white-space: normal;
         max-width: 420px;
       }
+    }
+    #formFailedDetails > summary.finalActionBtn {
+      min-height: 44px;
+      padding: 0 16px;
+      display: inline-flex;
+      align-items: center;
     }
     #formFailedDetails > summary.finalActionBtn,
     #btnEndSession.finalActionBtn {
@@ -329,6 +498,18 @@
     .helpToggle[open] .whereToggleIcon {
       transform: rotate(90deg);
     }
+    #llmConfirmPanel {
+      padding: 14px;
+    }
+    #llmConfirmPanel > :first-child {
+      margin-top: 0;
+    }
+    #llmConfirmPanel > :last-child {
+      margin-bottom: 0;
+    }
+    #llmConfirmPanel select {
+      margin-bottom: 0;
+    }
 
     .promptTitle { font-weight:600; font-size:14px; margin:0 0 4px; line-height:1.2; min-width: 0; overflow-wrap: anywhere; color: var(--text); }
     .promptDesc {
@@ -355,6 +536,7 @@
     <!-- Access gate -->
     <div class="card accessCard" id="accessGate">
       <p class="muted small" style="margin:0 0 10px;">Enter your participant code to begin this session.</p>
+      <p class="muted small" style="margin:0 0 10px;">If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
 
       <form class="accessRow" id="accessForm">
         <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" />
@@ -368,7 +550,6 @@
     <div id="appShell" style="display:none;">
       <div class="appHeaderBar">
         <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
-
       </div>
       <div class="layoutGrid">
         <div class="main">
@@ -384,70 +565,24 @@
         <div class="bandBody">
           <div class="card">
             <div class="subBand" style="margin-top:0;">
-              <h4 class="subBandTitle">1A) Select product and confirm version</h4>
+              <h4 class="subBandTitle">1) Select product and version</h4>
               <div class="row">
                 <div style="flex:1; min-width: 240px;">
-                  <label>Product used</label>
-                  <p class="muted small" style="margin:0 0 8px;">Select the AI product you are using.</p>
                   <input type="hidden" id="modelUsed" />
                   <div class="modelGrid product-grid" id="modelGrid">
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
 
-                  <img
-                    src="images/chatgpt-logo.png"
-                    alt="ChatGPT logo"
-                    class="productLogoImage"
-                  />
-                  -->
-                  <button class="modelOption product-card" data-model="ChatGPT" type="button"><span class="logoDot logo-openai">GPT</span><span>ChatGPT</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/gemini-logo.png"
-                    alt="Gemini logo"
-                    class="productLogoImage"
-                  />
-                  -->
-                  <button class="modelOption product-card" data-model="Gemini" type="button"><span class="logoDot logo-gemini">G</span><span>Gemini</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/copilot-logo.png"
-                    alt="Copilot logo"
-                    class="productLogoImage"
-                  />
-                  -->
-                  <button class="modelOption product-card" data-model="Copilot" type="button"><span class="logoDot logo-copilot">Co</span><span>Copilot</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/claude-logo.png"
-                    alt="Claude logo"
-                    class="productLogoImage"
-                  />
-                  -->
-                  <button class="modelOption product-card" data-model="Claude" type="button"><span class="logoDot logo-claude">Cl</span><span>Claude</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/other-logo.png"
-                    alt="Other logo"
-                    class="productLogoImage"
-                  />
-                  -->
-                  <button class="modelOption product-card" data-model="Other" type="button"><span class="logoDot logo-other">AI</span><span>Other</span></button>
+                  <button class="modelOption product-card productButton" data-model="ChatGPT" type="button"><div class="productIconCircle"><img src="images/chatgpt.png" class="productIconImage" alt="ChatGPT"></div><span>ChatGPT</span></button>
+<button class="modelOption product-card productButton" data-model="Gemini" type="button"><div class="productIconCircle"><img src="images/gemini.png" class="productIconImage" alt="Gemini"></div><span>Gemini</span></button>
+<button class="modelOption product-card productButton" data-model="Copilot" type="button"><div class="productIconCircle"><img src="images/copilot.png" class="productIconImage" alt="Copilot"></div><span>Copilot</span></button>
+<button class="modelOption product-card productButton" data-model="Claude" type="button"><div class="productIconCircle"><img src="images/claude.png" class="productIconImage" alt="Claude"></div><span>Claude</span></button>
+<button class="modelOption product-card productButton" data-model="Other" type="button"><div class="productIconCircle"><img src="images/generic.png" class="productIconImage" alt="Other"></div><span>Other</span></button>
                   </div>
                 </div>
               </div>
 
               <div id="productVersionEditor" class="subBand hidden" style="margin-top:10px;">
-              <h4 class="subBandTitle">Confirm product version</h4>
-              <p class="muted small llmConfirmIntro">Please leave the product in its default mode for this activity, then confirm what you see in the menu.</p>
+              <h4 class="subBandTitle" id="productVersionTitle">Confirm product version</h4>
+              <p class="muted small llmConfirmIntro" id="llmConfirmIntro"></p>
 
               <div id="llmConfirmPanel" class="subBand" style="display:none; margin-top:8px;">
                 <p id="llmInstructionText" class="muted small" style="margin:0 0 6px;"></p>
@@ -456,47 +591,17 @@
                 <details class="helpToggle" style="margin-top:8px;">
                   <summary class="muted small whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
                   <div class="llmImageRow">
-                    <!--
-                    Replace this placeholder with a real screenshot by replacing the div with:
-
-                    <img
-                      src="images/chatgpt-selector-location.png"
-                      alt="ChatGPT model selector location"
-                      class="llmInstructionImage"
-                    />
-
-                    Recommended size:
-                    - width: 240px
-                    - height: auto
-
-                    For the second image, use the dropdown screenshot instead.
-                    -->
-                    <div class="llmImagePlaceholder" id="llmImage1">[IMAGE PLACEHOLDER]</div>
-                    <!--
-                    Replace this placeholder with a real screenshot by replacing the div with:
-
-                    <img
-                      src="images/chatgpt-dropdown-example.png"
-                      alt="ChatGPT dropdown example"
-                      class="llmInstructionImage"
-                    />
-
-                    Recommended size:
-                    - width: 240px
-                    - height: auto
-
-                    For product-specific images, swap file names and alt text accordingly.
-                    -->
-                    <div class="llmImagePlaceholder" id="llmImage2">[IMAGE PLACEHOLDER]</div>
+                    <div id="llmImage1"></div>
+                    <div id="llmImage2"></div>
                   </div>
                 </details>
 
                 <div style="margin-top:10px;">
-                  <label id="llmConfirmLabel">Which of these best matches what you see in the menu?</label>
+                  <label id="llmConfirmLabel"></label>
                   <select id="llmExpectedChoice" class="llmCompactSelect"></select>
                 </div>
 
-                <p class="muted small" id="llmMismatchNote" style="display:none; margin:8px 0 0;">Please describe what you see. This helps us keep the instructions current.</p>
+                <p class="muted small" id="llmMismatchNote" style="display:none; margin:8px 0 0;"></p>
 
                 <div id="llmMismatchWrap" style="display:none; margin-top:10px;">
                   <label for="llmMismatchDescription">Please briefly describe the options you see in the menu.</label>
@@ -505,7 +610,7 @@
               </div>
 
               <div id="llmOtherWrap" style="display:none; margin-top:8px;">
-                <label for="llmOtherDescription">Please describe the AI product you are using.</label>
+                <label for="llmOtherDescription">Please set the product to its default mode. In the box below briefly describe the AI products you are using, including the specific version.</label>
                 <textarea id="llmOtherDescription" placeholder="Briefly describe the AI product you are using."></textarea>
               </div>
 
@@ -553,7 +658,7 @@
             <div class="row" style="margin-top:12px;">
               <div class="starterCopyControl copyPromptRow">
                 <span class="small copyPromptLabel">Copy starter prompt</span>
-                <button class="copyIconBtn" id="btnCopyStarter" aria-label="Copy starter prompt" title="Copy starter prompt" type="button"></button>
+                <button class="copyIconBtn" id="btnCopyStarter" aria-label="Copy starter prompt" type="button"></button>
               </div>
             </div>
 
@@ -583,7 +688,7 @@
           <div id="promptsInner" style="display:none;">
             <div class="card">
               <div class="row" style="justify-content: space-between;">
-                <div class="muted small">Click “Copy” to copy the selected prompt.</div>
+
                 <button class="btn" id="btnEditContext">Go back and edit context</button>
               </div>
 
@@ -634,7 +739,7 @@
           <div id="finalizeInner" style="display:none;">
             <div class="card">
               <div class="row" style="justify-content: space-between;">
-                <div class="starterCopyControl copyPromptRow"><span class="small copyPromptLabel">Copy final prompt</span><button class="copyIconBtn" id="btnCopyFinal" aria-label="Copy final prompt" title="Copy final prompt" type="button"></button></div>
+                <div class="starterCopyControl copyPromptRow"><span class="small copyPromptLabel">Copy final prompt</span><button class="copyIconBtn" id="btnCopyFinal" aria-label="Copy final prompt" type="button"></button></div>
                 <button class="btn" id="btnBackToPrompts">Go back to making questions</button>
               </div>
 
@@ -643,18 +748,27 @@
               <div id="finalizeLockedArea" class="finalizeLockedContent" style="margin-top:8px; display:none;">
 
                 <div style="margin-top:12px;">
-                  <label>Paste the LLM Final Response</label>
+
                   <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
                 </div>
 
-                <p class="muted small" style="margin:10px 0 0;">This will open a Google Form where you will submit your session.</p>
+                <div style="margin-top:12px;">
+                  <label for="sessionNotes">Anything unusual about your session? (optional)</label>
+                  <textarea
+                    id="sessionNotes"
+                    placeholder="Let me know if anything went out of the ordinary during your session."
+                  ></textarea>
+                </div>
+
+                <p class="muted small" style="margin:10px 0 0;">This will submit your session automatically.</p>
                 <div class="row" style="margin-top:8px;">
-                  <button class="btn primary finalActionBtn" id="btnSubmitForm">Submit session (Google Form)</button>
+                  <button class="btn primary finalActionBtn" id="btnSubmitForm">Submit session</button>
+                  <button class="btn finalActionBtn" id="btnReviseAfterSubmit" type="button" style="display:none;">Return to question editing</button>
                 </div>
 
                 <details id="formFailedDetails" style="margin-top:12px; display:none;">
                 <summary class="btn warn finalActionBtn warningButton">
-                  Click here if the Google Form failed to be filled properly
+                  Click here if automatic submission failed
                 </summary>
 
                 <div style="margin-top:12px;">
@@ -706,8 +820,21 @@
             <p class="copyMeta" id="recentCopiedMeta">Nothing copied yet. Click any Copy button to see it here.</p>
             <textarea id="recentCopiedText" class="copiedText recentTextarea" readonly placeholder="Nothing copied yet. Click any Copy button to see it here."></textarea>
             <div class="row" style="margin-top:10px;">
-              <div class="starterCopyControl"><span class="small">Copy</span><button class="copyIconBtn" id="btnCopyAgain" disabled type="button" aria-label="Copy" title="Copy"></button></div>
+              <div class="starterCopyControl"><span class="small">Copy</span><button class="copyIconBtn" id="btnCopyAgain" disabled type="button" aria-label="Copy"></button></div>
               <button class="btn" id="btnClearRecent" disabled>Clear</button>
+            </div>
+          </div>
+          <div class="card timerCard" id="sessionTimerCard">
+            <div class="timerHeaderRow">
+              <h3>Session Timer</h3>
+              <div class="timerInlineControls">
+                <div id="sessionTimerDisplay" class="timerDisplay">00:00</div>
+                <button class="btn" id="btnPauseTimer" type="button">Pause</button>
+              </div>
+            </div>
+            <div class="muted small" style="margin-top:8px;">
+              <div>Goal: Build a 10-question set</div>
+              <div>Maximum task time: 40 minutes</div>
             </div>
           </div>
         </aside>
@@ -730,7 +857,7 @@
   <div class="modalBackdrop" id="modalEnd">
     <div class="modalCard">
       <h3 style="margin:0 0 8px;">End session?</h3>
-      <p class="muted" style="margin:0 0 12px;">Before ending, make sure you have submitted your info in the Google Form or downloaded/saved your work. Ending the session will clear this browser’s stored data.</p>
+      <p class="muted" style="margin:0 0 12px;">Before ending, make sure your session was submitted successfully or downloaded/saved as a backup. Ending the session will clear this browser’s stored data.</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnEndCancel" type="button">Cancel</button>
         <button class="btn danger" id="btnEndConfirm" type="button">I saved it — end session</button>
@@ -739,8 +866,22 @@
   </div>
 
   <footer class="small muted" style="padding: 8px 24px 20px;" id="buildInfo"></footer>
+  <div id="helpLinkRow" class="small" style="padding: 0 24px 24px;">
+    <a
+      href="https://jin-dissertation.github.io/dissertation-app/help.html"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="helpFaqLink"
+    >
+      Help / FAQ
+    </a>
+  </div>
 
   <div class="toast" id="toast"></div>
+  <div class="timerNotice" id="timerNotice" style="display:none;">
+    <div class="timerNoticeMessage" id="timerNoticeMessage"></div>
+    <button class="timerNoticeClose" id="timerNoticeClose" type="button" aria-label="Dismiss notification">×</button>
+  </div>
 
   <script>
     // -----------------------------
@@ -781,11 +922,7 @@
       "open-horizon": {}
     };
 
-    // Google Form settings (your entry IDs)
-    const FORM_BASE =
-      "https://docs.google.com/forms/d/e/1FAIpQLSeSkJtABOlLhpP2_lywUseUT017l9qmtuW8vUv7GQXODR89Sg/viewform?usp=pp_url";
-    const ENTRY_EVENT_LOG = "252595248"; // Event Log
-    const ENTRY_LLM_FINAL = "86462815";  // LLM Final Response
+    const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbzwdkF5ojxU3Anj2gjACKo75ZFDEFtKofLqxL0cm9WNwQOSjN6vYxVNknw6_ybg-rn0Zg/exec";
 
     // Paste your webhook URL into LLM_MISMATCH_ALERT_WEBHOOK to receive immediate mismatch alerts.
     const LLM_MISMATCH_ALERT_WEBHOOK = "";
@@ -808,7 +945,7 @@
         instruction: "Use Claude in its default mode for this activity. Do not manually change the model or enable extended thinking unless it is already selected.",
         whereText: "Click the model selector near the chat input box.",
         expectedOptions: [
-          { value: "sonnet46_menu", label: "Sonnet 4.6 selected; menu also shows Opus 4.6 and Haiku 4.5" },
+          { value: "sonnet46_menu", label: "Sonnet 4.6 selected" },
           { value: "different", label: "I see something different" }
         ],
         defaultExpected: "sonnet46_menu",
@@ -820,7 +957,7 @@
         instruction: "Use Gemini in its default mode for this activity. Do not manually switch modes.",
         whereText: "Click the mode dropdown next to the prompt box.",
         expectedOptions: [
-          { value: "fast_menu", label: "Fast selected; menu also shows Thinking and Pro" },
+          { value: "fast_menu", label: "Fast selected; menu shows Gemini 3" },
           { value: "different", label: "I see something different" }
         ],
         defaultExpected: "fast_menu",
@@ -832,7 +969,7 @@
         instruction: "Use Microsoft Copilot in its default mode for this activity. Do not manually change the conversation mode.",
         whereText: "Click the dropdown next to the prompt box that shows the current mode.",
         expectedOptions: [
-          { value: "smart_menu", label: "Smart selected; menu also shows Think deeper, Study and learn, and Search" },
+          { value: "smart_menu", label: "Smart selected; menu shows GPT 5.1" },
           { value: "different", label: "I see something different" }
         ],
         defaultExpected: "smart_menu",
@@ -962,7 +1099,19 @@ Provide the results in a table with the following columns:
       llmExpectedChoice: "dissertation.llmExpectedChoice",
       llmMismatchDescription: "dissertation.llmMismatchDescription",
       llmOtherDescription: "dissertation.llmOtherDescription",
-      productVersionConfirmed: "dissertation.productVersionConfirmed"
+      productVersionConfirmed: "dissertation.productVersionConfirmed",
+      resubmitting: "dissertation.resubmitting",
+      timerStartedAt: "dissertation.timerStartedAt",
+      timerElapsedBeforePause: "dissertation.timerElapsedBeforePause",
+      timerPaused: "dissertation.timerPaused",
+      timerWarned35: "dissertation.timerWarned35",
+      timerWarned40: "dissertation.timerWarned40",
+      submissionAttempted: "dissertation.submissionAttempted",
+      submissionStatus: "dissertation.submissionStatus",
+      submissionCompletedAt: "dissertation.submissionCompletedAt",
+      submissionError: "dissertation.submissionError",
+      appsScriptResponseFileName: "dissertation.appsScriptResponseFileName",
+      appsScriptResponseFileId: "dissertation.appsScriptResponseFileId"
     };
 
     // -----------------------------
@@ -975,14 +1124,48 @@ Provide the results in a table with the following columns:
     let lastCopiedText = "";
     let lastCopiedLabel = "";
     let lastCopiedAt = null;
+    let sessionTimerIntervalId = null;
     let llmMismatchReported = false;
     let llmMismatchAlertAttempted = false;
 
-    const toast = (msg) => {
+    function hideToast() {
       const t = $("toast");
+      if (!t) return;
+      if (t._hideTimer) clearTimeout(t._hideTimer);
+      t.style.display = "none";
+      t.textContent = "";
+    }
+
+    function hideTimerNotice() {
+      const notice = $("timerNotice");
+      const msg = $("timerNoticeMessage");
+      if (!notice || !msg) return;
+      if (notice._hideTimer) clearTimeout(notice._hideTimer);
+      notice.style.display = "none";
+      msg.textContent = "";
+    }
+
+    function showTimerNotice(message) {
+      const notice = $("timerNotice");
+      const msg = $("timerNoticeMessage");
+      if (!notice || !msg) return;
+      if (notice._hideTimer) clearTimeout(notice._hideTimer);
+      msg.textContent = message;
+      notice.style.display = "flex";
+      notice._hideTimer = setTimeout(() => {
+        hideTimerNotice();
+      }, 60000);
+    }
+
+    const toast = (msg, { duration = 1400 } = {}) => {
+      const t = $("toast");
+      if (!t) return;
+      if (t._hideTimer) clearTimeout(t._hideTimer);
       t.textContent = msg;
       t.style.display = "block";
-      setTimeout(() => t.style.display = "none", 1400);
+      t._hideTimer = setTimeout(() => {
+        hideToast();
+      }, duration);
     };
 
     function normalizeCode(s) {
@@ -1003,6 +1186,7 @@ Provide the results in a table with the following columns:
       const modelUsed = localStorage.getItem(KEYS.modelUsed) || "";
       const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
       const llmExpectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
+      const timerState = getCurrentTimerState();
       events.push({
         t: nowIso(),
         type,
@@ -1012,9 +1196,172 @@ Provide the results in a table with the following columns:
         modelUsed,
         llmProduct,
         llmExpectedChoice,
+        elapsed_ms: timerState.elapsedMs,
+        elapsed_mmss: timerState.elapsedMmss,
+        timer_paused: timerState.timerPaused,
         ...data
       });
       saveJSON(KEYS.events, events);
+    }
+
+    const TIMER_35_MIN_MS = 35 * 60 * 1000;
+    const TIMER_40_MIN_MS = 40 * 60 * 1000;
+
+    function formatElapsed(ms) {
+      const totalSeconds = Math.max(0, Math.floor((ms || 0) / 1000));
+      const mm = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+      const ss = String(totalSeconds % 60).padStart(2, "0");
+      return `${mm}:${ss}`;
+    }
+
+    function getTimerElapsedMs() {
+      const elapsedBeforePause = Number(localStorage.getItem(KEYS.timerElapsedBeforePause) || "0") || 0;
+      const paused = localStorage.getItem(KEYS.timerPaused) === "true";
+      if (paused) return elapsedBeforePause;
+      const startedAt = Number(localStorage.getItem(KEYS.timerStartedAt) || "0") || 0;
+      if (!startedAt) return elapsedBeforePause;
+      return elapsedBeforePause + Math.max(0, Date.now() - startedAt);
+    }
+
+    function getCurrentTimerState() {
+      const elapsedMs = getTimerElapsedMs();
+      const timerPaused = localStorage.getItem(KEYS.timerPaused) === "true";
+      return {
+        elapsedMs,
+        elapsedMmss: formatElapsed(elapsedMs),
+        timerPaused
+      };
+    }
+
+    function restoreTimerButtonState() {
+      const btn = $("btnPauseTimer");
+      if (!btn) return;
+      const paused = localStorage.getItem(KEYS.timerPaused) === "true";
+      btn.textContent = paused ? "Resume" : "Pause";
+    }
+
+    function initializeSessionTimerIfNeeded() {
+      const startedAt = localStorage.getItem(KEYS.timerStartedAt);
+      const elapsed = localStorage.getItem(KEYS.timerElapsedBeforePause);
+      const paused = localStorage.getItem(KEYS.timerPaused);
+
+      if (!elapsed) localStorage.setItem(KEYS.timerElapsedBeforePause, "0");
+      if (!paused) localStorage.setItem(KEYS.timerPaused, "false");
+      if (!localStorage.getItem(KEYS.timerWarned35)) localStorage.setItem(KEYS.timerWarned35, "false");
+      if (!localStorage.getItem(KEYS.timerWarned40)) localStorage.setItem(KEYS.timerWarned40, "false");
+
+      const isPaused = localStorage.getItem(KEYS.timerPaused) === "true";
+      if (!startedAt && !isPaused) {
+        localStorage.setItem(KEYS.timerStartedAt, String(Date.now()));
+        logEvent("timer_started");
+      }
+
+      restoreTimerButtonState();
+    }
+
+
+    function resetSubmissionMeta() {
+      localStorage.setItem(KEYS.submissionAttempted, "false");
+      localStorage.setItem(KEYS.submissionStatus, "unknown");
+      localStorage.setItem(KEYS.submissionCompletedAt, "");
+      localStorage.setItem(KEYS.submissionError, "");
+      localStorage.setItem(KEYS.appsScriptResponseFileName, "");
+      localStorage.setItem(KEYS.appsScriptResponseFileId, "");
+    }
+
+    function setSubmissionMeta({
+      attempted,
+      status,
+      completedAt,
+      error,
+      fileName,
+      fileId
+    } = {}) {
+      if (typeof attempted === "boolean") localStorage.setItem(KEYS.submissionAttempted, attempted ? "true" : "false");
+      if (typeof status === "string") localStorage.setItem(KEYS.submissionStatus, status || "unknown");
+      if (typeof completedAt === "string") localStorage.setItem(KEYS.submissionCompletedAt, completedAt);
+      if (typeof error === "string") localStorage.setItem(KEYS.submissionError, error);
+      if (typeof fileName === "string") localStorage.setItem(KEYS.appsScriptResponseFileName, fileName);
+      if (typeof fileId === "string") localStorage.setItem(KEYS.appsScriptResponseFileId, fileId);
+    }
+
+    function ensureSubmissionRecordConsistency() {
+      const events = loadJSON(KEYS.events, []);
+      const hasSubmitFormClicked = events.some((e) => e?.type === "submit_form_clicked");
+      const submitClicked = localStorage.getItem(KEYS.submitClicked) === "true";
+
+      if (hasSubmitFormClicked && !submitClicked) {
+        localStorage.setItem(KEYS.submitClicked, "true");
+      }
+
+      if (localStorage.getItem(KEYS.submissionAttempted) !== "true" && (hasSubmitFormClicked || submitClicked)) {
+        localStorage.setItem(KEYS.submissionAttempted, "true");
+      }
+
+      if (!localStorage.getItem(KEYS.submissionStatus)) {
+        localStorage.setItem(KEYS.submissionStatus, "unknown");
+      }
+      if (!localStorage.getItem(KEYS.submissionCompletedAt)) {
+        localStorage.setItem(KEYS.submissionCompletedAt, "");
+      }
+      if (!localStorage.getItem(KEYS.submissionError)) {
+        localStorage.setItem(KEYS.submissionError, "");
+      }
+      if (!localStorage.getItem(KEYS.appsScriptResponseFileName)) {
+        localStorage.setItem(KEYS.appsScriptResponseFileName, "");
+      }
+      if (!localStorage.getItem(KEYS.appsScriptResponseFileId)) {
+        localStorage.setItem(KEYS.appsScriptResponseFileId, "");
+      }
+    }
+
+    function updateSessionTimer() {
+      const display = $("sessionTimerDisplay");
+      const card = $("sessionTimerCard");
+      if (!display || !card) return;
+
+      const elapsed = getTimerElapsedMs();
+      display.textContent = formatElapsed(elapsed);
+
+      if (elapsed >= TIMER_35_MIN_MS && localStorage.getItem(KEYS.timerWarned35) !== "true") {
+        localStorage.setItem(KEYS.timerWarned35, "true");
+        showTimerNotice("5 minutes remaining in the task window. If your question set is close to 10 questions, you may want to finish your current item and run any final audits.");
+        logEvent("timer_35min_warning");
+      }
+
+      if (elapsed >= TIMER_40_MIN_MS) {
+        card.classList.add("timerComplete");
+        if (localStorage.getItem(KEYS.timerWarned40) !== "true") {
+          localStorage.setItem(KEYS.timerWarned40, "true");
+          showTimerNotice("You have reached 40 minutes. If your question set is complete (about 10 usable questions), you may stop. You may also continue working if needed.");
+          logEvent("timer_40min_notice");
+        }
+      } else {
+        card.classList.remove("timerComplete");
+      }
+
+      restoreTimerButtonState();
+    }
+
+    function startSessionTimerLoop() {
+      if (sessionTimerIntervalId) clearInterval(sessionTimerIntervalId);
+      sessionTimerIntervalId = setInterval(updateSessionTimer, 1000);
+      updateSessionTimer();
+    }
+
+    function handlePauseResumeTimer() {
+      const paused = localStorage.getItem(KEYS.timerPaused) === "true";
+      if (paused) {
+        localStorage.setItem(KEYS.timerStartedAt, String(Date.now()));
+        localStorage.setItem(KEYS.timerPaused, "false");
+        logEvent("timer_resumed");
+      } else {
+        localStorage.setItem(KEYS.timerElapsedBeforePause, String(getTimerElapsedMs()));
+        localStorage.removeItem(KEYS.timerStartedAt);
+        localStorage.setItem(KEYS.timerPaused, "true");
+        logEvent("timer_paused");
+      }
+      updateSessionTimer();
     }
 
     function makeSessionId(participantCode) {
@@ -1063,15 +1410,36 @@ Provide the results in a table with the following columns:
       return match?.label || expectedChoice;
     }
 
-    function getLlmPlaceholderText(productKey) {
+    function getLlmHelpImages(productKey) {
       const map = {
-        chatgpt: ["ChatGPT: where to click", "ChatGPT: dropdown example"],
-        claude: ["Claude: where to click", "Claude: dropdown example"],
-        gemini: ["Gemini: where to click", "Gemini: dropdown example"],
-        copilot: ["Copilot: where to click", "Copilot: dropdown example"]
+        chatgpt: {
+          image1Src: "images/chatgpt-1.png",
+          image2Src: "images/chatgpt-2.png",
+          image1Alt: "ChatGPT where to click",
+          image2Alt: "ChatGPT dropdown example"
+        },
+        claude: {
+          image1Src: "images/claude-1.png",
+          image2Src: "images/claude-2.png",
+          image1Alt: "Claude where to click",
+          image2Alt: "Claude dropdown example"
+        },
+        copilot: {
+          image1Src: "images/copilot-1.png",
+          image2Src: "images/copilot-2.png",
+          image1Alt: "Copilot where to click",
+          image2Alt: "Copilot dropdown example"
+        },
+        gemini: {
+          image1Src: "images/gemini-1.png",
+          image2Src: "images/gemini-2.png",
+          image1Alt: "Gemini where to click",
+          image2Alt: "Gemini dropdown example"
+        }
       };
-      return map[productKey] || ["[IMAGE PLACEHOLDER]", "[IMAGE PLACEHOLDER]"];
+      return map[productKey] || null;
     }
+
 
     function setLlmMismatchVisibility(show, shouldFocus = false) {
       const wrap = $("llmMismatchWrap");
@@ -1187,8 +1555,16 @@ Provide the results in a table with the following columns:
         llmMismatchAlertAttempted = false;
 
         if (productKey === "other") {
+          const productVersionTitle = $("productVersionTitle");
+          const llmConfirmIntro = $("llmConfirmIntro");
+          if (productVersionTitle) productVersionTitle.textContent = "";
+          if (llmConfirmIntro) llmConfirmIntro.textContent = "";
           otherWrap.style.display = "block";
         } else {
+          const productVersionTitle = $("productVersionTitle");
+          const llmConfirmIntro = $("llmConfirmIntro");
+          if (productVersionTitle) productVersionTitle.textContent = "Confirm product version";
+          if (llmConfirmIntro) llmConfirmIntro.textContent = "";
           otherWrap.style.display = "none";
           localStorage.removeItem(KEYS.llmOtherDescription);
           if ($("llmOtherDescription")) $("llmOtherDescription").value = "";
@@ -1202,20 +1578,32 @@ Provide the results in a table with the following columns:
       if ($("llmOtherDescription")) $("llmOtherDescription").value = "";
       localStorage.removeItem(KEYS.llmOtherDescription);
 
-      $("llmInstructionText").textContent = config.instruction;
-      $("llmWhereText").textContent = config.whereText;
-      $("llmConfirmLabel").textContent = "Which of these best matches what you see in the menu?";
+      const productVersionTitle = $("productVersionTitle");
+      const llmConfirmIntro = $("llmConfirmIntro");
+      if (productVersionTitle) productVersionTitle.textContent = "Confirm product version";
+      if (llmConfirmIntro) llmConfirmIntro.textContent = `Set ${config.label} to its default mode and use the dropdown menu below to select the version you are using.`;
+      $("llmInstructionText").textContent = "";
+      $("llmWhereText").textContent = "";
+      $("llmConfirmLabel").textContent = "";
 
-      const [p1, p2] = getLlmPlaceholderText(productKey);
+      const helpImages = getLlmHelpImages(productKey);
       const img1 = $("llmImage1");
       const img2 = $("llmImage2");
+      const caption1 = "Click here to open the dropdown menu.";
+      const caption2 = "Confirm that the text here matches the option in the dropdown menu.";
       if (img1) {
-        img1.textContent = p1;
-        img1.setAttribute("aria-label", config.image1Alt);
+        if (helpImages) {
+          img1.innerHTML = `<div class="helpExampleItem"><img src="${helpImages.image1Src}" class="helpExampleImage" alt="${helpImages.image1Alt}"><div class="helpExampleText">${caption1}</div></div>`;
+        } else {
+          img1.innerHTML = "";
+        }
       }
       if (img2) {
-        img2.textContent = p2;
-        img2.setAttribute("aria-label", config.image2Alt);
+        if (helpImages) {
+          img2.innerHTML = `<div class="helpExampleItem"><img src="${helpImages.image2Src}" class="helpExampleImage" alt="${helpImages.image2Alt}"><div class="helpExampleText">${caption2}</div></div>`;
+        } else {
+          img2.innerHTML = "";
+        }
       }
 
       const existingValue = localStorage.getItem(KEYS.llmExpectedChoice) || "";
@@ -1289,11 +1677,12 @@ Provide the results in a table with the following columns:
 
     function getFinalizeCopyInstructionLine(model) {
       const m = (model || "").trim();
-      if (m === "ChatGPT") return "[[ICON_PLACEHOLDER_CHATGPT]]";
-      if (m === "Gemini") return "[[ICON_PLACEHOLDER_GEMINI]]";
-      if (m === "Copilot") return "[[ICON_PLACEHOLDER_COPILOT]]";
-      if (m === "Claude") return "[[ICON_PLACEHOLDER_CLAUDE]]";
-      return "[[ICON_PLACEHOLDER_OTHER]]";
+      const caption = "Click the copy button beneath the AI response.";
+      if (m === "ChatGPT") return `<div class="copyHelpExample"><img src="images/chatgpt-copy.png" class="copyHelpImage" alt="ChatGPT copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      if (m === "Gemini") return `<div class="copyHelpExample"><img src="images/gemini-copy.png" class="copyHelpImage" alt="Gemini copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      if (m === "Copilot") return `<div class="copyHelpExample"><img src="images/copilot-copy.png" class="copyHelpImage" alt="Copilot copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      if (m === "Claude") return `<div class="copyHelpExample"><img src="images/claude-copy.png" class="copyHelpImage" alt="Claude copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      return caption;
     }
 
     function updateFinalizeContentUI() {
@@ -1303,6 +1692,7 @@ Provide the results in a table with the following columns:
       const lockedArea = $("finalizeLockedArea");
       const formFailed = $("formFailedDetails");
       const endRow = $("endSessionRow");
+      const reviseBtn = $("btnReviseAfterSubmit");
       const submitBtn = $("btnSubmitForm");
       const llm = $("llmResponse");
 
@@ -1312,7 +1702,7 @@ Provide the results in a table with the following columns:
           notice.style.display = "block";
           notice.innerHTML = `
             1) Paste the final prompt into your selected LLM.<br><br>
-            2) Copy the model's full response.<br>
+            2) Click on the copy button below the response to copy it in its entirety<br>
             <details class="helpToggle" style="display:inline-block; margin-top:6px;">
               <summary class="whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
               <div style="margin-top:6px;">${getFinalizeCopyInstructionLine(model)}</div>
@@ -1333,6 +1723,7 @@ Provide the results in a table with the following columns:
       const hasResponse = !!((llm?.value || "").trim());
       if (submitBtn) submitBtn.disabled = !copied || !hasResponse;
       if (formFailed) formFailed.style.display = copied && submitted ? "block" : "none";
+      if (reviseBtn) reviseBtn.style.display = copied && submitted ? "inline-flex" : "none";
       if (endRow) endRow.style.display = copied && submitted ? "flex" : "none";
     }
 
@@ -1420,28 +1811,41 @@ After that list, give me the current time.`
     }
 
 
-    function getClipboardSvg() {
-      return `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="9" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect><rect x="5" y="3" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect></svg>`;
-    }
-
     function makeCopyIconButton({ id = "", label = "Copy prompt", title = "Copy prompt", className = "copyIconBtn" } = {}) {
       const btn = document.createElement("button");
       btn.type = "button";
       if (id) btn.id = id;
       btn.className = className;
       btn.setAttribute("aria-label", label);
-      btn.setAttribute("title", title);
-      btn.innerHTML = getClipboardSvg();
+      btn.dataset.copyAriaLabel = label;
+      btn.innerHTML = `<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>`;
+      btn.classList.add("tooltipWrapper");
       return btn;
     }
 
     function hydrateCopyIconButton(btn, { label = "Copy prompt", title = "Copy prompt" } = {}) {
       if (!btn) return;
       btn.classList.add("copyIconBtn");
+      btn.classList.add("tooltipWrapper");
       btn.setAttribute("aria-label", label);
-      btn.setAttribute("title", title);
+      btn.dataset.copyAriaLabel = label;
+      btn.removeAttribute("title");
       btn.type = "button";
-      btn.innerHTML = getClipboardSvg();
+      btn.innerHTML = `<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>`;
+    }
+
+    function showCopiedState(btn) {
+      if (!btn) return;
+      const tooltip = btn.querySelector(".tooltipBubble");
+      btn.classList.add("copiedState");
+      btn.setAttribute("aria-label", "Copied");
+      if (tooltip) tooltip.textContent = "Copied!";
+      if (btn._copiedTimer) clearTimeout(btn._copiedTimer);
+      btn._copiedTimer = setTimeout(() => {
+        btn.classList.remove("copiedState");
+        if (tooltip) tooltip.textContent = "Copy";
+        btn.setAttribute("aria-label", btn.dataset.copyAriaLabel || "Copy");
+      }, 800);
     }
 
     // -----------------------------
@@ -1705,6 +2109,7 @@ After that list, give me the current time.`
         if (!prompt) return;
 
         const promptText = fillTemplate(prompt.prompt);
+        showCopiedState(btn);
         const ok = await copyToClipboard(promptText, prompt.title);
         if (ok) {
           logEvent("prompt_copied", { promptId: id });
@@ -1756,6 +2161,8 @@ After that list, give me the current time.`
       }
 
       setLockedState(false);
+      initializeSessionTimerIfNeeded();
+      startSessionTimerLoop();
       if ($("topUser")) $("topUser").textContent = code || "User";
       logEvent("access_verified", { accessCode: code });
       toast("Access verified ✅");
@@ -1765,49 +2172,105 @@ After that list, give me the current time.`
     }
 
     // -----------------------------
-    // Submit / CSV
+    // Submit / JSON
     // -----------------------------
-    function buildEventLogCSV() {
-      const events = loadJSON(KEYS.events, []);
-      const code = localStorage.getItem(KEYS.accessCode) || "";
-      const sid = localStorage.getItem(KEYS.sessionId) || "";
-      const model = localStorage.getItem(KEYS.modelUsed) || "";
-
-      const header = ["t","type","promptId","stage","accessCode","sessionId","modelUsed"].join(",");
-      const rows = events.map(e => {
-        const cols = [
-          e.t || "",
-          e.type || "",
-          e.promptId || "",
-          e.stage || "",
-          e.accessCode || code,
-          e.sessionId || sid,
-          e.modelUsed || model
-        ];
-        return cols.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",");
-      });
-
-      return [header, ...rows].join("\n");
+    function buildSessionRecord() {
+      ensureSubmissionRecordConsistency();
+      const timerState = getCurrentTimerState();
+      return {
+        participant_code: localStorage.getItem(KEYS.accessCode) || "",
+        session_id: localStorage.getItem(KEYS.sessionId) || "",
+        session_started_at: localStorage.getItem(KEYS.sessionStartTime) || "",
+        product_used: localStorage.getItem(KEYS.modelUsed) || "",
+        model_used: localStorage.getItem(KEYS.modelUsed) || "",
+        llm_product: localStorage.getItem(KEYS.llmProduct) || "",
+        llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
+        llm_mismatch_description: localStorage.getItem(KEYS.llmMismatchDescription) || "",
+        llm_other_description: localStorage.getItem(KEYS.llmOtherDescription) || "",
+        context: getContext(),
+        events: loadJSON(KEYS.events, []),
+        stage: getStage(),
+        final_prompt_copied: localStorage.getItem(KEYS.finalPromptCopied) || "false",
+        submit_clicked: localStorage.getItem(KEYS.submitClicked) || "false",
+        submission_attempted: localStorage.getItem(KEYS.submissionAttempted) === "true",
+        submission_status: localStorage.getItem(KEYS.submissionStatus) || "unknown",
+        submission_completed_at: localStorage.getItem(KEYS.submissionCompletedAt) || "",
+        submission_error: localStorage.getItem(KEYS.submissionError) || "",
+        apps_script_response_file_name: localStorage.getItem(KEYS.appsScriptResponseFileName) || "",
+        apps_script_response_file_id: localStorage.getItem(KEYS.appsScriptResponseFileId) || "",
+        last_copied_text: lastCopiedText || "",
+        final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
+        llm_response: ($("llmResponse").value || "").trim(),
+        session_notes: ($("sessionNotes")?.value || "").trim(),
+        timer_elapsed_ms: timerState.elapsedMs,
+        timer_elapsed_mmss: timerState.elapsedMmss,
+        timer_paused: timerState.timerPaused,
+        timer_started_at: localStorage.getItem(KEYS.timerStartedAt) || "",
+        timer_elapsed_before_pause: Number(localStorage.getItem(KEYS.timerElapsedBeforePause) || 0),
+        timer_warned_35: localStorage.getItem(KEYS.timerWarned35) === "true",
+        timer_warned_40: localStorage.getItem(KEYS.timerWarned40) === "true",
+        submitted_at: new Date().toISOString(),
+        page_last_updated: document.lastModified || ""
+      };
     }
 
-    function openPrefilledGoogleForm() {
-      const csv = buildEventLogCSV();
-      const llm = ($("llmResponse").value || "").trim();
+    function getShortSessionSuffix(sessionId) {
+      const sid = (sessionId || "").trim();
+      if (!sid) return "session";
+      const parts = sid.split("-").filter(Boolean);
+      return parts[parts.length - 1] || "session";
+    }
 
-      if (!llm) {
-        $("finalizeMsg").textContent = "Please paste the LLM Final Response before submitting.";
-        toast("Paste LLM response first");
-        return;
+    function formatDateYYYYMMDD(isoString) {
+      const d = new Date(isoString || nowIso());
+      if (Number.isNaN(d.getTime())) return nowIso().slice(0, 10).replace(/-/g, "");
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(d.getUTCDate()).padStart(2, "0");
+      return `${y}${m}${day}`;
+    }
+
+    function buildSessionFilename(record, { revised = false } = {}) {
+      const participant = (record?.participant_code || "participant").trim() || "participant";
+      const datePart = formatDateYYYYMMDD(record?.submitted_at);
+      const shortSession = getShortSessionSuffix(record?.session_id);
+      const revisedSuffix = revised ? "_REVISED" : "";
+      return `${participant}_${datePart}_${shortSession}${revisedSuffix}.json`.replace(/[^\w.-]/g, "_");
+    }
+
+    function resetSubmitButtonToDefaultState() {
+      const submitBtn = $("btnSubmitForm");
+      if (!submitBtn) return;
+      submitBtn.textContent = "Submit session";
+      submitBtn.style.background = "";
+      submitBtn.style.borderColor = "";
+      submitBtn.style.color = "";
+    }
+
+    async function submitSessionJson(payload) {
+      const response = await fetch(SUBMIT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(payload),
+        redirect: "follow"
+      });
+
+      const text = await response.text();
+
+      let data = null;
+      try {
+        data = JSON.parse(text);
+      } catch (_) {
+        data = { ok: false, error: "invalid_json_response", raw: text };
       }
 
-      const url =
-        `${FORM_BASE}` +
-        `&entry.${ENTRY_EVENT_LOG}=${encodeURIComponent(csv)}` +
-        `&entry.${ENTRY_LLM_FINAL}=${encodeURIComponent(llm)}`;
+      if (!response.ok) {
+        throw new Error(data?.error || `http_${response.status}`);
+      }
 
-      logEvent("form_prefill_opened", { approx_csv_chars: csv.length, llm_chars: llm.length });
-      window.open(url, "_blank", "noopener,noreferrer");
-      toast("Opened Google Form (prefilled) ✅");
+      return data;
     }
 
     // -----------------------------
@@ -1824,6 +2287,7 @@ After that list, give me the current time.`
       }
       if (alreadyVerified) {
         setLockedState(false);
+        initializeSessionTimerIfNeeded();
       } else {
         setLockedState(true);
       }
@@ -1838,6 +2302,11 @@ After that list, give me the current time.`
         e.preventDefault();
         verifyAccessCode();
       });
+      if ($("timerNoticeClose")) {
+        $("timerNoticeClose").addEventListener("click", () => {
+          hideTimerNotice();
+        });
+      }
 
       // Lockable summaries (Option C behavior)
       lockableSummary(
@@ -2019,6 +2488,17 @@ After that list, give me the current time.`
       renderMostRecentCopied();
       if (!localStorage.getItem(KEYS.finalPromptCopied)) localStorage.setItem(KEYS.finalPromptCopied, "false");
       if (!localStorage.getItem(KEYS.submitClicked)) localStorage.setItem(KEYS.submitClicked, "false");
+      if (!localStorage.getItem(KEYS.resubmitting)) localStorage.setItem(KEYS.resubmitting, "false");
+      if (!localStorage.getItem(KEYS.submissionAttempted)) localStorage.setItem(KEYS.submissionAttempted, "false");
+      if (!localStorage.getItem(KEYS.submissionStatus)) localStorage.setItem(KEYS.submissionStatus, "unknown");
+      if (!localStorage.getItem(KEYS.submissionCompletedAt)) localStorage.setItem(KEYS.submissionCompletedAt, "");
+      if (!localStorage.getItem(KEYS.submissionError)) localStorage.setItem(KEYS.submissionError, "");
+      if (!localStorage.getItem(KEYS.appsScriptResponseFileName)) localStorage.setItem(KEYS.appsScriptResponseFileName, "");
+      if (!localStorage.getItem(KEYS.appsScriptResponseFileId)) localStorage.setItem(KEYS.appsScriptResponseFileId, "");
+      if ($("btnPauseTimer")) {
+        $("btnPauseTimer").addEventListener("click", handlePauseResumeTimer);
+      }
+      startSessionTimerLoop();
       updateFinalizeContentUI();
 
       $("btnCopyAgain").addEventListener("click", async (e) => {
@@ -2026,6 +2506,7 @@ After that list, give me the current time.`
         if (!lastCopiedText.trim()) return;
         logEvent("copy_again_clicked");
         const btn = $("btnCopyAgain");
+        showCopiedState(btn);
         btn.classList.add("isActive");
         if (btn._activeTimer) clearTimeout(btn._activeTimer);
         btn._activeTimer = setTimeout(() => btn?.classList.remove("isActive"), 400);
@@ -2099,6 +2580,7 @@ After that list, give me the current time.`
         // Log + copy only
         logEvent("starter_prepared", { accessCode: code, sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
         const starterBtn = $("btnCopyStarter");
+        showCopiedState(starterBtn);
         starterBtn.classList.add("isActive");
         if (starterBtn._activeTimer) clearTimeout(starterBtn._activeTimer);
         starterBtn._activeTimer = setTimeout(() => starterBtn?.classList.remove("isActive"), 400);
@@ -2140,6 +2622,7 @@ After that list, give me the current time.`
         localStorage.setItem(KEYS.finalPrompt, fp);
         localStorage.setItem(KEYS.finalPromptCopied, "false");
         localStorage.setItem(KEYS.submitClicked, "false");
+        resetSubmissionMeta();
         logEvent("final_prompt_ready", {});
         setStage("finalize");
       });
@@ -2155,6 +2638,7 @@ After that list, give me the current time.`
         e.preventDefault();
         const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
         const finalBtn = $("btnCopyFinal");
+        showCopiedState(finalBtn);
         finalBtn.classList.add("isActive");
         if (finalBtn._activeTimer) clearTimeout(finalBtn._activeTimer);
         finalBtn._activeTimer = setTimeout(() => finalBtn?.classList.remove("isActive"), 400);
@@ -2166,16 +2650,142 @@ After that list, give me the current time.`
         updateFinalizeContentUI();
       });
 
-      $("btnSubmitForm").addEventListener("click", () => {
+      $("btnSubmitForm").addEventListener("click", async () => {
         if ($("btnSubmitForm").disabled) return;
-        logEvent("submit_form_clicked");
+
+        const llm = ($("llmResponse").value || "").trim();
+        if (!llm) {
+          $("finalizeMsg").textContent = "Please paste the LLM Final Response before submitting.";
+          toast("Paste LLM response first");
+          return;
+        }
+
         localStorage.setItem(KEYS.submitClicked, "true");
-        updateFinalizeContentUI();
-        openPrefilledGoogleForm();
+        setSubmissionMeta({
+          attempted: true,
+          status: "unknown",
+          completedAt: "",
+          error: "",
+          fileName: "",
+          fileId: ""
+        });
+        logEvent("submit_form_clicked");
+        const payload = buildSessionRecord();
+        const revisedSubmission = localStorage.getItem(KEYS.resubmitting) === "true";
+        const clientFileName = buildSessionFilename(payload, { revised: revisedSubmission });
+        const submitBtn = $("btnSubmitForm");
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Submitting...";
+        }
+        $("finalizeMsg").textContent = "";
+
+        try {
+          const result = await submitSessionJson(payload);
+          if (result?.ok) {
+            const submitBtn = $("btnSubmitForm");
+
+            submitBtn.textContent = "Success! ✓";
+            submitBtn.style.background = "#16a34a";
+            submitBtn.style.borderColor = "#16a34a";
+            submitBtn.style.color = "#ffffff";
+            submitBtn.disabled = true;
+
+            $("finalizeMsg").textContent = "";
+            const completedAt = nowIso();
+            const resultFileName = String(result.fileName || clientFileName || "");
+            const resultFileId = String(result.fileId || "");
+            setSubmissionMeta({
+              attempted: true,
+              status: "success",
+              completedAt,
+              error: "",
+              fileName: resultFileName,
+              fileId: resultFileId
+            });
+            logEvent("session_submitted", {
+              method: "apps_script",
+              ok: true,
+              fileName: resultFileName,
+              fileId: resultFileId,
+              revised: revisedSubmission
+            });
+            localStorage.setItem(KEYS.resubmitting, "false");
+            toast("Session submitted ✅");
+          } else {
+            const submitBtn = $("btnSubmitForm");
+            submitBtn.textContent = "Success! ✓";
+            submitBtn.style.background = "#16a34a";
+            submitBtn.style.borderColor = "#16a34a";
+            submitBtn.style.color = "#ffffff";
+            submitBtn.disabled = true;
+
+            const completedAt = nowIso();
+            const submissionError = String(result?.error || "unknown");
+            setSubmissionMeta({
+              attempted: true,
+              status: "failure",
+              completedAt,
+              error: submissionError,
+              fileName: String(result?.fileName || ""),
+              fileId: String(result?.fileId || "")
+            });
+            $("finalizeMsg").textContent = "Automatic submission failed. Please download the backup file and email it.";
+            logEvent("session_submitted", {
+              method: "apps_script",
+              ok: false,
+              error: submissionError,
+              fileName: String(result?.fileName || ""),
+              fileId: String(result?.fileId || "")
+            });
+            toast("Automatic submission failed");
+          }
+        } catch (err) {
+          const submitBtn = $("btnSubmitForm");
+          submitBtn.textContent = "Success! ✓";
+          submitBtn.style.background = "#16a34a";
+          submitBtn.style.borderColor = "#16a34a";
+          submitBtn.style.color = "#ffffff";
+          submitBtn.disabled = true;
+
+          const completedAt = nowIso();
+          const submissionError = String(err?.message || err || "unknown");
+          setSubmissionMeta({
+            attempted: true,
+            status: "failure",
+            completedAt,
+            error: submissionError,
+            fileName: "",
+            fileId: ""
+          });
+          $("finalizeMsg").textContent = "Automatic submission failed. Please download the backup file and email it.";
+          logEvent("session_submitted", {
+            method: "apps_script",
+            ok: false,
+            error: submissionError
+          });
+          toast("Automatic submission failed");
+        } finally {
+          localStorage.setItem(KEYS.submitClicked, "true");
+          updateFinalizeContentUI();
+        }
       });
 
       $("llmResponse").addEventListener("input", () => {
         updateFinalizeContentUI();
+      });
+
+      $("btnReviseAfterSubmit").addEventListener("click", () => {
+        localStorage.setItem(KEYS.resubmitting, "true");
+        localStorage.setItem(KEYS.submitClicked, "false");
+        resetSubmissionMeta();
+        resetSubmitButtonToDefaultState();
+        const reviseBtn = $("btnReviseAfterSubmit");
+        if (reviseBtn) reviseBtn.style.display = "none";
+        $("finalizeMsg").textContent = "You can now revise your work and submit again.";
+        logEvent("submission_revise_requested", { revised: true });
+        updateFinalizeContentUI();
+        setStage("prompts");
       });
 
       const formFailedDetails = $("formFailedDetails");
@@ -2191,24 +2801,15 @@ After that list, give me the current time.`
       $("btnDownload").addEventListener("click", () => {
         logEvent("backup_download_clicked");
         const record = {
-          participant_code: localStorage.getItem(KEYS.accessCode),
-          session_id: localStorage.getItem(KEYS.sessionId),
-          session_started_at: localStorage.getItem(KEYS.sessionStartTime),
-          model_used: localStorage.getItem(KEYS.modelUsed),
-          context: getContext(),
-          events: loadJSON(KEYS.events, []),
-          last_copied_text: lastCopiedText || "",
-          final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
+          ...buildSessionRecord(),
           llm_response: $("llmResponse").value || "",
-          llm_product: localStorage.getItem(KEYS.llmProduct) || "",
-          llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
-          llm_mismatch_description: localStorage.getItem(KEYS.llmMismatchDescription) || "",
           exported_at: nowIso()
         };
 
         const blob = new Blob([JSON.stringify(record, null, 2)], { type: "application/json" });
         const a = document.createElement("a");
-        const fname = `${record.participant_code || "participant"}-${record.session_id || "session"}-backup.json`.replace(/[^\w.-]/g, "_");
+        const revisedSubmission = localStorage.getItem(KEYS.resubmitting) === "true";
+        const fname = buildSessionFilename(record, { revised: revisedSubmission });
         a.href = URL.createObjectURL(blob);
         a.download = fname;
         a.click();
