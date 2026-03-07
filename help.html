@@ -126,18 +126,6 @@
       gap: 14px;
     }
 
-    @media (min-width: 980px) {
-      .grid {
-        grid-template-columns: minmax(0, 1fr) 300px;
-        align-items:start;
-      }
-    }
-
-    .sidebarCard {
-      position: sticky;
-      top: 16px;
-    }
-
     .faqControls {
       display:flex;
       gap:10px;
@@ -228,27 +216,6 @@
       display:none;
     }
 
-    .faqLeft {
-      display:flex;
-      align-items:flex-start;
-      gap:10px;
-      min-width:0;
-    }
-
-    .faqNumber {
-      flex:0 0 auto;
-      width:24px;
-      height:24px;
-      border-radius:999px;
-      background: var(--accent-soft);
-      color:#1f4ca4;
-      display:grid;
-      place-items:center;
-      font-size:12px;
-      font-weight:800;
-      margin-top: 1px;
-    }
-
     .faqQuestion {
       min-width:0;
       overflow-wrap:anywhere;
@@ -265,17 +232,11 @@
     }
 
     .faqBody {
-      padding: 0 14px 14px 48px;
+      padding: 0 14px 14px;
       color: var(--text);
       line-height: 1.6;
       white-space: pre-wrap;
       overflow-wrap:anywhere;
-    }
-
-    .faqMeta {
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 12px;
     }
 
     .emptyState {
@@ -287,21 +248,6 @@
       line-height:1.5;
     }
 
-    .helpSectionTitle {
-      margin:0 0 10px;
-      font-size:16px;
-      font-weight:800;
-    }
-
-    .quickList {
-      display:grid;
-      gap:8px;
-      margin:0;
-      padding-left:18px;
-      color:var(--text);
-      line-height:1.5;
-    }
-
     .footerRow {
       display:flex;
       justify-content:space-between;
@@ -309,12 +255,6 @@
       gap:10px;
       flex-wrap:wrap;
       margin-top: 18px;
-    }
-
-    .hr {
-      height:1px;
-      background: var(--border);
-      margin: 12px 0;
     }
 
     .topLink {
@@ -370,7 +310,7 @@
       </div>
       <p class="sub" style="margin-bottom:0;">
         If you forget the study instructions at any point, use this page as a quick reference.
-        Click any question below to expand the answer. This page updates automatically from the linked Google Sheet.
+        Click any question below to expand the answer.
       </p>
     </div>
 
@@ -414,28 +354,6 @@
         </div>
       </main>
 
-      <aside>
-        <div class="card sidebarCard">
-          <h3 class="helpSectionTitle">Quick reminders</h3>
-          <ol class="quickList">
-            <li>Select your AI product and confirm the version before continuing.</li>
-            <li>Enter your course context before copying the starter prompt.</li>
-            <li>Paste copied prompts into the selected LLM.</li>
-            <li>When finished, use the final prompt and paste the LLM’s final response back into the app.</li>
-            <li>If submission fails, download the backup JSON file and email it.</li>
-          </ol>
-
-          <div class="hr"></div>
-
-          <h3 class="helpSectionTitle">Tips</h3>
-          <p class="small muted" style="margin:0 0 8px;">
-            You can keep this help page open in a separate tab while working.
-          </p>
-          <p class="small muted" style="margin:0;">
-            Updating the Google Sheet will update this page automatically on refresh.
-          </p>
-        </div>
-      </aside>
     </div>
   </div>
 
@@ -531,19 +449,13 @@
         sectionHeader.textContent = sectionName;
         sectionWrap.appendChild(sectionHeader);
 
-        sectionItems.forEach((item, index) => {
+        sectionItems.forEach(item => {
           const details = document.createElement("details");
           details.className = "faqItem";
 
           const summary = document.createElement("summary");
           summary.innerHTML = `
-            <div class="faqLeft">
-              <span class="faqNumber">${index + 1}</span>
-              <div class="faqQuestion">
-                ${escapeHTML(item.question)}
-                ${item.sourceRow ? `<div class="faqMeta">Sheet row ${item.sourceRow}</div>` : ""}
-              </div>
-            </div>
+            <div class="faqQuestion">${escapeHTML(item.question)}</div>
             <span class="faqChevron" aria-hidden="true">▼</span>
           `;
 
