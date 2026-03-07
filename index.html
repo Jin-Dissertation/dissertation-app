@@ -504,10 +504,6 @@
               <div class="muted small" id="productVersionSummaryText"></div>
             </div>
             </div>
-            </div>
-
-            <div id="contextSubband" class="subBand hidden" style="margin-top:10px;">
-              <h4 class="subBandTitle">1B) Question context</h4>
 
             <div id="contextSubband" class="subBand hidden" style="margin-top:10px;">
               <h4 class="subBandTitle">1B) Question context</h4>
@@ -1485,11 +1481,13 @@ Do not include extra commentary before or after the table unless the user explic
     }
 
     function isPromptsUnlocked() {
-      return getStage() === "prompts" || getStage() === "finalize";
+      const stage = getStage();
+      const copied = localStorage.getItem(KEYS.starterCopied) === "true";
+      return (stage === "prompts" || stage === "finalize") && isSetupComplete() && copied;
     }
 
     function isFinalizeUnlocked() {
-      return getStage() === "finalize";
+      return getStage() === "finalize" && isPromptsUnlocked();
     }
 
     function lockableSummary(summaryEl, isLockedFn, openBandId, lockMsg) {
@@ -1509,6 +1507,8 @@ Do not include extra commentary before or after the table unless the user explic
 
     function applyStageUI() {
       const stage = getStage();
+      const promptsUnlocked = isPromptsUnlocked();
+      const finalizeUnlocked = isFinalizeUnlocked();
 
       // Setup tag
       if (isSetupComplete()) {
@@ -1520,7 +1520,7 @@ Do not include extra commentary before or after the table unless the user explic
       }
 
       // Prompts lock/unlock
-      if (isPromptsUnlocked()) {
+      if (promptsUnlocked) {
         $("tagPrompts").textContent = "Open";
         $("tagPrompts").className = "tag ok";
         $("lockPrompts").style.display = "none";
@@ -1533,7 +1533,7 @@ Do not include extra commentary before or after the table unless the user explic
       }
 
       // Finalize lock/unlock
-      if (isFinalizeUnlocked()) {
+      if (finalizeUnlocked) {
         $("tagFinalize").textContent = "Open";
         $("tagFinalize").className = "tag ok";
         $("lockFinalize").style.display = "none";
@@ -1546,15 +1546,15 @@ Do not include extra commentary before or after the table unless the user explic
       }
 
       // Which band should be open?
-      if (stage === "setup") {
+      if (stage === "setup" || !promptsUnlocked) {
         $("bandSetup").open = true;
         $("bandPrompts").open = false;
         $("bandFinalize").open = false;
-      } else if (stage === "prompts") {
+      } else if (stage === "prompts" || !finalizeUnlocked) {
         $("bandSetup").open = false;
         $("bandPrompts").open = true;
         $("bandFinalize").open = false;
-      } else if (stage === "finalize") {
+      } else if (stage === "finalize" && finalizeUnlocked) {
         $("bandSetup").open = false;
         $("bandPrompts").open = false;
         $("bandFinalize").open = true;
