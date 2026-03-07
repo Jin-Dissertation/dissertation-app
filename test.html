@@ -680,6 +680,12 @@ Provide the results in a table with the following columns:
       saveJSON(KEYS.context, ctx);
     }
 
+    function normalizeQuestionCount(value) {
+      const parsed = Number.parseInt(String(value ?? "").trim(), 10);
+      if (Number.isNaN(parsed) || parsed < 1) return "10";
+      return String(parsed);
+    }
+
     function getStage() {
       return localStorage.getItem(KEYS.stage) || "setup";
     }
@@ -767,8 +773,8 @@ Provide the results in a table with the following columns:
     function buildStarterPrompt() {
       const ctx = getContext();
       const notesLine = (ctx.notes || "").trim()
-        ? `Additional instructions/parameters: ${ctx.notes.trim()}`
-        : `Additional instructions/parameters: (none)`;
+        ? ctx.notes.trim()
+        : `(none)`;
 
       return `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
 
@@ -964,7 +970,7 @@ After that list, give me the current time.`;
       $("ctxCourse").value = ctx.course || "";
       $("ctxArea").value = ctx.area || "";
       $("ctxNotes").value = ctx.notes || "";
-      $("ctxQuestionCount").value = ctx.questionCount || "10";
+      $("ctxQuestionCount").value = normalizeQuestionCount(ctx.questionCount);
 
       renderPromptList();
       renderMostRecentCopied();
@@ -975,7 +981,7 @@ After that list, give me the current time.`;
             course: $("ctxCourse").value || "",
             area: $("ctxArea").value || "",
             notes: $("ctxNotes").value || "",
-            questionCount: $("ctxQuestionCount").value || "10"
+            questionCount: normalizeQuestionCount($("ctxQuestionCount").value)
           };
           setContext(current);
           localStorage.setItem(KEYS.starterCopied, "false");
@@ -988,7 +994,8 @@ After that list, give me the current time.`;
         const course = $("ctxCourse").value.trim();
         const area = $("ctxArea").value.trim();
         const notes = $("ctxNotes").value.trim();
-        const questionCount = ($("ctxQuestionCount").value || "10").trim() || "10";
+        const questionCount = normalizeQuestionCount($("ctxQuestionCount").value);
+        $("ctxQuestionCount").value = questionCount;
 
         if (!course || !area) {
           $("setupMsg").textContent = "Please fill in course context and content area before continuing.";
