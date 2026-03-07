@@ -95,11 +95,24 @@
     .modelOption:active, .product-card:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
     .modelOption.active, .modelOption.selected, .product-card.selected { border:2px solid var(--accent); background: var(--accent-soft); transform: translateY(-1px); }
     .logoDot { width:30px; height:30px; border-radius:999px; display:grid; place-items:center; font-size:10px; font-weight:700; color:#fff; }
-    .productLogoImage {
-      width: 32px;
-      height: 32px;
+    .productIconCircle {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .productIconImage {
+      max-width: 70%;
+      max-height: 70%;
       object-fit: contain;
       display: block;
+    }
+    .productButton.selected .productIconCircle,
+    .product-card.selected .productIconCircle {
+      background: #e8f0ff;
     }
     .logo-openai{ background:#111827; }
     .logo-gemini{ background:#6d5ef6; }
@@ -144,31 +157,38 @@
     .subBand { border:1px solid var(--border); border-radius: 10px; background:rgba(16,33,61,0.02); padding:16px 18px; margin-top:14px; }
     .llmConfirmIntro { margin:10px 0 8px; }
     .llmImageRow {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
       margin-top: 8px;
     }
-    .llmImagePlaceholder {
-      width: 240px;
-      height: 140px;
-      border: 2px dashed var(--border);
-      border-radius: 10px;
+    .helpExampleItem {
       display: flex;
       align-items: center;
-      justify-content: center;
-      color: var(--muted);
-      font-size: 12px;
-      background: #f8fbff;
-      text-align: center;
-      padding: 8px;
-      box-sizing: border-box;
+      gap: 18px;
+      margin-top: 14px;
     }
-    .llmInstructionImage {
-      width: 240px;
-      border: 1px solid var(--border);
+    .helpExampleImage {
+      width: 420px;
+      height: 236px;
+      object-fit: contain;
       border-radius: 10px;
-      display: block;
+      border: 1px solid #d1d5db;
+    }
+    .helpExampleText {
+      max-width: 260px;
+      font-size: 14px;
+      line-height: 1.4;
+      color: #4b5563;
+    }
+    @media (max-width: 900px) {
+      .helpExampleItem {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .helpExampleImage {
+        width: 100%;
+        max-width: 420px;
+        height: auto;
+        aspect-ratio: 16 / 9;
+      }
     }
     .llmCompactSelect { width: 100%; max-width: 100%; min-width: 0; }
     .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:600; }
@@ -210,6 +230,23 @@
       overflow: hidden;
     }
     .copyMeta { margin:0 0 8px; color: var(--muted); font-size:12px; }
+    .copyHelpExample {
+      margin-top: 10px;
+      max-width: 260px;
+    }
+    .copyHelpImage {
+      width: 220px;
+      height: 220px;
+      object-fit: contain;
+      border-radius: 12px;
+      display: block;
+    }
+    .copyHelpCaption {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #4b5563;
+      line-height: 1.3;
+    }
     .copiedText.recentTextarea {
       width: 100%;
       flex: 1 1 auto;
@@ -259,6 +296,44 @@
       flex: 0 0 30px;
     }
     .copyIconBtn svg { width: 14px; height: 14px; }
+    .copyIconImage {
+      width: 18px;
+      height: 18px;
+      object-fit: contain;
+      display: block;
+    }
+    .tooltipWrapper { position: relative; }
+    .tooltipBubble {
+      position: absolute;
+      bottom: 130%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937;
+      color: #ffffff;
+      font-size: 12px;
+      line-height: 1;
+      padding: 6px 8px;
+      border-radius: 8px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      z-index: 20;
+    }
+    .tooltipBubble::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 5px;
+      border-style: solid;
+      border-color: #1f2937 transparent transparent transparent;
+    }
+    .tooltipWrapper:hover .tooltipBubble,
+    .copyIconBtn.copiedState .tooltipBubble {
+      opacity: 1;
+    }
     .copyIconBtn.isActive { background: var(--accent-soft); border-color: var(--accent); color: #1f4ca4; }
     .starterCopyControl { display:flex; align-items:center; gap:8px; }
     .copyPromptRow { display:flex; align-items:center; gap:10px; }
@@ -391,56 +466,12 @@
                   <p class="muted small" style="margin:0 0 8px;">Select the AI product you are using.</p>
                   <input type="hidden" id="modelUsed" />
                   <div class="modelGrid product-grid" id="modelGrid">
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
 
-                  <img
-                    src="images/chatgpt-logo.png"
-                    alt="ChatGPT logo"
-                    class="productLogoImage"
-                  />
-                  -->
-                  <button class="modelOption product-card" data-model="ChatGPT" type="button"><span class="logoDot logo-openai">GPT</span><span>ChatGPT</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/gemini-logo.png"
-                    alt="Gemini logo"
-                    class="productLogoImage"
-                  />
-                  -->
-                  <button class="modelOption product-card" data-model="Gemini" type="button"><span class="logoDot logo-gemini">G</span><span>Gemini</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/copilot-logo.png"
-                    alt="Copilot logo"
-                    class="productLogoImage"
-                  />
-                  -->
-                  <button class="modelOption product-card" data-model="Copilot" type="button"><span class="logoDot logo-copilot">Co</span><span>Copilot</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/claude-logo.png"
-                    alt="Claude logo"
-                    class="productLogoImage"
-                  />
-                  -->
-                  <button class="modelOption product-card" data-model="Claude" type="button"><span class="logoDot logo-claude">Cl</span><span>Claude</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/other-logo.png"
-                    alt="Other logo"
-                    class="productLogoImage"
-                  />
-                  -->
-                  <button class="modelOption product-card" data-model="Other" type="button"><span class="logoDot logo-other">AI</span><span>Other</span></button>
+                  <button class="modelOption product-card productButton" data-model="ChatGPT" type="button"><div class="productIconCircle"><img src="images/chatgpt.png" class="productIconImage" alt="ChatGPT"></div><span>ChatGPT</span></button>
+<button class="modelOption product-card productButton" data-model="Gemini" type="button"><div class="productIconCircle"><img src="images/gemini.png" class="productIconImage" alt="Gemini"></div><span>Gemini</span></button>
+<button class="modelOption product-card productButton" data-model="Copilot" type="button"><div class="productIconCircle"><img src="images/copilot.png" class="productIconImage" alt="Copilot"></div><span>Copilot</span></button>
+<button class="modelOption product-card productButton" data-model="Claude" type="button"><div class="productIconCircle"><img src="images/claude.png" class="productIconImage" alt="Claude"></div><span>Claude</span></button>
+<button class="modelOption product-card productButton" data-model="Other" type="button"><div class="productIconCircle"><img src="images/generic.png" class="productIconImage" alt="Other"></div><span>Other</span></button>
                   </div>
                 </div>
               </div>
@@ -456,38 +487,8 @@
                 <details class="helpToggle" style="margin-top:8px;">
                   <summary class="muted small whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
                   <div class="llmImageRow">
-                    <!--
-                    Replace this placeholder with a real screenshot by replacing the div with:
-
-                    <img
-                      src="images/chatgpt-selector-location.png"
-                      alt="ChatGPT model selector location"
-                      class="llmInstructionImage"
-                    />
-
-                    Recommended size:
-                    - width: 240px
-                    - height: auto
-
-                    For the second image, use the dropdown screenshot instead.
-                    -->
-                    <div class="llmImagePlaceholder" id="llmImage1">[IMAGE PLACEHOLDER]</div>
-                    <!--
-                    Replace this placeholder with a real screenshot by replacing the div with:
-
-                    <img
-                      src="images/chatgpt-dropdown-example.png"
-                      alt="ChatGPT dropdown example"
-                      class="llmInstructionImage"
-                    />
-
-                    Recommended size:
-                    - width: 240px
-                    - height: auto
-
-                    For product-specific images, swap file names and alt text accordingly.
-                    -->
-                    <div class="llmImagePlaceholder" id="llmImage2">[IMAGE PLACEHOLDER]</div>
+                    <div id="llmImage1"></div>
+                    <div id="llmImage2"></div>
                   </div>
                 </details>
 
@@ -553,7 +554,7 @@
             <div class="row" style="margin-top:12px;">
               <div class="starterCopyControl copyPromptRow">
                 <span class="small copyPromptLabel">Copy starter prompt</span>
-                <button class="copyIconBtn" id="btnCopyStarter" aria-label="Copy starter prompt" title="Copy starter prompt" type="button"></button>
+                <button class="copyIconBtn" id="btnCopyStarter" aria-label="Copy starter prompt" type="button"></button>
               </div>
             </div>
 
@@ -634,7 +635,7 @@
           <div id="finalizeInner" style="display:none;">
             <div class="card">
               <div class="row" style="justify-content: space-between;">
-                <div class="starterCopyControl copyPromptRow"><span class="small copyPromptLabel">Copy final prompt</span><button class="copyIconBtn" id="btnCopyFinal" aria-label="Copy final prompt" title="Copy final prompt" type="button"></button></div>
+                <div class="starterCopyControl copyPromptRow"><span class="small copyPromptLabel">Copy final prompt</span><button class="copyIconBtn" id="btnCopyFinal" aria-label="Copy final prompt" type="button"></button></div>
                 <button class="btn" id="btnBackToPrompts">Go back to making questions</button>
               </div>
 
@@ -706,7 +707,7 @@
             <p class="copyMeta" id="recentCopiedMeta">Nothing copied yet. Click any Copy button to see it here.</p>
             <textarea id="recentCopiedText" class="copiedText recentTextarea" readonly placeholder="Nothing copied yet. Click any Copy button to see it here."></textarea>
             <div class="row" style="margin-top:10px;">
-              <div class="starterCopyControl"><span class="small">Copy</span><button class="copyIconBtn" id="btnCopyAgain" disabled type="button" aria-label="Copy" title="Copy"></button></div>
+              <div class="starterCopyControl"><span class="small">Copy</span><button class="copyIconBtn" id="btnCopyAgain" disabled type="button" aria-label="Copy"></button></div>
               <button class="btn" id="btnClearRecent" disabled>Clear</button>
             </div>
           </div>
@@ -1063,15 +1064,36 @@ Provide the results in a table with the following columns:
       return match?.label || expectedChoice;
     }
 
-    function getLlmPlaceholderText(productKey) {
+    function getLlmHelpImages(productKey) {
       const map = {
-        chatgpt: ["ChatGPT: where to click", "ChatGPT: dropdown example"],
-        claude: ["Claude: where to click", "Claude: dropdown example"],
-        gemini: ["Gemini: where to click", "Gemini: dropdown example"],
-        copilot: ["Copilot: where to click", "Copilot: dropdown example"]
+        chatgpt: {
+          image1Src: "images/chatgpt-1.png",
+          image2Src: "images/chatgpt-2.png",
+          image1Alt: "ChatGPT where to click",
+          image2Alt: "ChatGPT dropdown example"
+        },
+        claude: {
+          image1Src: "images/claude-1.png",
+          image2Src: "images/claude-2.png",
+          image1Alt: "Claude where to click",
+          image2Alt: "Claude dropdown example"
+        },
+        copilot: {
+          image1Src: "images/copilot-1.png",
+          image2Src: "images/copilot-2.png",
+          image1Alt: "Copilot where to click",
+          image2Alt: "Copilot dropdown example"
+        },
+        gemini: {
+          image1Src: "images/gemini-1.png",
+          image2Src: "images/gemini-2.png",
+          image1Alt: "Gemini where to click",
+          image2Alt: "Gemini dropdown example"
+        }
       };
-      return map[productKey] || ["[IMAGE PLACEHOLDER]", "[IMAGE PLACEHOLDER]"];
+      return map[productKey] || null;
     }
+
 
     function setLlmMismatchVisibility(show, shouldFocus = false) {
       const wrap = $("llmMismatchWrap");
@@ -1206,16 +1228,24 @@ Provide the results in a table with the following columns:
       $("llmWhereText").textContent = config.whereText;
       $("llmConfirmLabel").textContent = "Which of these best matches what you see in the menu?";
 
-      const [p1, p2] = getLlmPlaceholderText(productKey);
+      const helpImages = getLlmHelpImages(productKey);
       const img1 = $("llmImage1");
       const img2 = $("llmImage2");
+      const caption1 = "Click the model selector to open the dropdown menu.";
+      const caption2 = "Confirm the default model matches one of the options below. If not, select “Other.”";
       if (img1) {
-        img1.textContent = p1;
-        img1.setAttribute("aria-label", config.image1Alt);
+        if (helpImages) {
+          img1.innerHTML = `<div class="helpExampleItem"><img src="${helpImages.image1Src}" class="helpExampleImage" alt="${helpImages.image1Alt}"><div class="helpExampleText">${caption1}</div></div>`;
+        } else {
+          img1.innerHTML = "";
+        }
       }
       if (img2) {
-        img2.textContent = p2;
-        img2.setAttribute("aria-label", config.image2Alt);
+        if (helpImages) {
+          img2.innerHTML = `<div class="helpExampleItem"><img src="${helpImages.image2Src}" class="helpExampleImage" alt="${helpImages.image2Alt}"><div class="helpExampleText">${caption2}</div></div>`;
+        } else {
+          img2.innerHTML = "";
+        }
       }
 
       const existingValue = localStorage.getItem(KEYS.llmExpectedChoice) || "";
@@ -1289,11 +1319,12 @@ Provide the results in a table with the following columns:
 
     function getFinalizeCopyInstructionLine(model) {
       const m = (model || "").trim();
-      if (m === "ChatGPT") return "[[ICON_PLACEHOLDER_CHATGPT]]";
-      if (m === "Gemini") return "[[ICON_PLACEHOLDER_GEMINI]]";
-      if (m === "Copilot") return "[[ICON_PLACEHOLDER_COPILOT]]";
-      if (m === "Claude") return "[[ICON_PLACEHOLDER_CLAUDE]]";
-      return "[[ICON_PLACEHOLDER_OTHER]]";
+      const caption = "Click the copy button beneath the AI response.";
+      if (m === "ChatGPT") return `<div class="copyHelpExample"><img src="images/chatgpt-copy.png" class="copyHelpImage" alt="ChatGPT copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      if (m === "Gemini") return `<div class="copyHelpExample"><img src="images/gemini-copy.png" class="copyHelpImage" alt="Gemini copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      if (m === "Copilot") return `<div class="copyHelpExample"><img src="images/copilot-copy.png" class="copyHelpImage" alt="Copilot copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      if (m === "Claude") return `<div class="copyHelpExample"><img src="images/claude-copy.png" class="copyHelpImage" alt="Claude copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      return caption;
     }
 
     function updateFinalizeContentUI() {
@@ -1420,28 +1451,41 @@ After that list, give me the current time.`
     }
 
 
-    function getClipboardSvg() {
-      return `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="9" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect><rect x="5" y="3" width="10" height="12" rx="2" stroke="currentColor" stroke-width="1.8"></rect></svg>`;
-    }
-
     function makeCopyIconButton({ id = "", label = "Copy prompt", title = "Copy prompt", className = "copyIconBtn" } = {}) {
       const btn = document.createElement("button");
       btn.type = "button";
       if (id) btn.id = id;
       btn.className = className;
       btn.setAttribute("aria-label", label);
-      btn.setAttribute("title", title);
-      btn.innerHTML = getClipboardSvg();
+      btn.dataset.copyAriaLabel = label;
+      btn.innerHTML = `<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>`;
+      btn.classList.add("tooltipWrapper");
       return btn;
     }
 
     function hydrateCopyIconButton(btn, { label = "Copy prompt", title = "Copy prompt" } = {}) {
       if (!btn) return;
       btn.classList.add("copyIconBtn");
+      btn.classList.add("tooltipWrapper");
       btn.setAttribute("aria-label", label);
-      btn.setAttribute("title", title);
+      btn.dataset.copyAriaLabel = label;
+      btn.removeAttribute("title");
       btn.type = "button";
-      btn.innerHTML = getClipboardSvg();
+      btn.innerHTML = `<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>`;
+    }
+
+    function showCopiedState(btn) {
+      if (!btn) return;
+      const tooltip = btn.querySelector(".tooltipBubble");
+      btn.classList.add("copiedState");
+      btn.setAttribute("aria-label", "Copied");
+      if (tooltip) tooltip.textContent = "Copied!";
+      if (btn._copiedTimer) clearTimeout(btn._copiedTimer);
+      btn._copiedTimer = setTimeout(() => {
+        btn.classList.remove("copiedState");
+        if (tooltip) tooltip.textContent = "Copy";
+        btn.setAttribute("aria-label", btn.dataset.copyAriaLabel || "Copy");
+      }, 800);
     }
 
     // -----------------------------
@@ -1705,6 +1749,7 @@ After that list, give me the current time.`
         if (!prompt) return;
 
         const promptText = fillTemplate(prompt.prompt);
+        showCopiedState(btn);
         const ok = await copyToClipboard(promptText, prompt.title);
         if (ok) {
           logEvent("prompt_copied", { promptId: id });
@@ -2026,6 +2071,7 @@ After that list, give me the current time.`
         if (!lastCopiedText.trim()) return;
         logEvent("copy_again_clicked");
         const btn = $("btnCopyAgain");
+        showCopiedState(btn);
         btn.classList.add("isActive");
         if (btn._activeTimer) clearTimeout(btn._activeTimer);
         btn._activeTimer = setTimeout(() => btn?.classList.remove("isActive"), 400);
@@ -2099,6 +2145,7 @@ After that list, give me the current time.`
         // Log + copy only
         logEvent("starter_prepared", { accessCode: code, sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
         const starterBtn = $("btnCopyStarter");
+        showCopiedState(starterBtn);
         starterBtn.classList.add("isActive");
         if (starterBtn._activeTimer) clearTimeout(starterBtn._activeTimer);
         starterBtn._activeTimer = setTimeout(() => starterBtn?.classList.remove("isActive"), 400);
@@ -2155,6 +2202,7 @@ After that list, give me the current time.`
         e.preventDefault();
         const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
         const finalBtn = $("btnCopyFinal");
+        showCopiedState(finalBtn);
         finalBtn.classList.add("isActive");
         if (finalBtn._activeTimer) clearTimeout(finalBtn._activeTimer);
         finalBtn._activeTimer = setTimeout(() => finalBtn?.classList.remove("isActive"), 400);
