@@ -95,11 +95,24 @@
     .modelOption:active, .product-card:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
     .modelOption.active, .modelOption.selected, .product-card.selected { border:2px solid var(--accent); background: var(--accent-soft); transform: translateY(-1px); }
     .logoDot { width:30px; height:30px; border-radius:999px; display:grid; place-items:center; font-size:10px; font-weight:700; color:#fff; }
-    .productLogoImage {
-      width: 32px;
-      height: 32px;
+    .productIconCircle {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .productIconImage {
+      max-width: 70%;
+      max-height: 70%;
       object-fit: contain;
       display: block;
+    }
+    .productButton.selected .productIconCircle,
+    .product-card.selected .productIconCircle {
+      background: #e8f0ff;
     }
     .logo-openai{ background:#111827; }
     .logo-gemini{ background:#6d5ef6; }
@@ -429,56 +442,12 @@
                   <p class="muted small" style="margin:0 0 8px;">Select the AI product you are using.</p>
                   <input type="hidden" id="modelUsed" />
                   <div class="modelGrid product-grid" id="modelGrid">
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
 
-                  <img
-                    src="images/chatgpt-logo.png"
-                    alt="ChatGPT logo"
-                    class="productLogoImage"
-                  />
-                  -->
-                  <button class="modelOption product-card" data-model="ChatGPT" type="button"><span class="logoDot logo-openai">GPT</span><span>ChatGPT</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/gemini-logo.png"
-                    alt="Gemini logo"
-                    class="productLogoImage"
-                  />
-                  -->
-                  <button class="modelOption product-card" data-model="Gemini" type="button"><span class="logoDot logo-gemini">G</span><span>Gemini</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/copilot-logo.png"
-                    alt="Copilot logo"
-                    class="productLogoImage"
-                  />
-                  -->
-                  <button class="modelOption product-card" data-model="Copilot" type="button"><span class="logoDot logo-copilot">Co</span><span>Copilot</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/claude-logo.png"
-                    alt="Claude logo"
-                    class="productLogoImage"
-                  />
-                  -->
-                  <button class="modelOption product-card" data-model="Claude" type="button"><span class="logoDot logo-claude">Cl</span><span>Claude</span></button>
-                  <!--
-                  To replace this text circle with an image logo, replace the span/logo element with:
-
-                  <img
-                    src="images/other-logo.png"
-                    alt="Other logo"
-                    class="productLogoImage"
-                  />
-                  -->
-                  <button class="modelOption product-card" data-model="Other" type="button"><span class="logoDot logo-other">AI</span><span>Other</span></button>
+                  <button class="modelOption product-card productButton" data-model="ChatGPT" type="button"><div class="productIconCircle"><img src="images/chatgpt.png" class="productIconImage" alt="ChatGPT"></div><span>ChatGPT</span></button>
+<button class="modelOption product-card productButton" data-model="Gemini" type="button"><div class="productIconCircle"><img src="images/gemini.png" class="productIconImage" alt="Gemini"></div><span>Gemini</span></button>
+<button class="modelOption product-card productButton" data-model="Copilot" type="button"><div class="productIconCircle"><img src="images/copilot.png" class="productIconImage" alt="Copilot"></div><span>Copilot</span></button>
+<button class="modelOption product-card productButton" data-model="Claude" type="button"><div class="productIconCircle"><img src="images/claude.png" class="productIconImage" alt="Claude"></div><span>Claude</span></button>
+<button class="modelOption product-card productButton" data-model="Other" type="button"><div class="productIconCircle"><img src="images/generic.png" class="productIconImage" alt="Other"></div><span>Other</span></button>
                   </div>
                 </div>
               </div>
