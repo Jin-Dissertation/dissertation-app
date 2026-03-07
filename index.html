@@ -230,6 +230,19 @@
       overflow: hidden;
     }
     .copyMeta { margin:0 0 8px; color: var(--muted); font-size:12px; }
+    .timerCard {
+      margin-top: 12px;
+    }
+    .timerDisplay {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: 0.02em;
+    }
+    .timerCard.timerComplete {
+      border-color: #16a34a;
+      background: #f0fdf4;
+    }
     .copyHelpExample {
       margin-top: 10px;
       max-width: 260px;
@@ -661,6 +674,7 @@
                 <p class="muted small" style="margin:10px 0 0;">This will submit your session automatically.</p>
                 <div class="row" style="margin-top:8px;">
                   <button class="btn primary finalActionBtn" id="btnSubmitForm">Submit session</button>
+                  <button class="btn" id="btnReviseAfterSubmit" type="button" style="display:none;">Actually, I want to go back and work on it some more…</button>
                 </div>
 
                 <details id="formFailedDetails" style="margin-top:12px; display:none;">
@@ -719,6 +733,18 @@
             <div class="row" style="margin-top:10px;">
               <div class="starterCopyControl"><span class="small">Copy</span><button class="copyIconBtn" id="btnCopyAgain" disabled type="button" aria-label="Copy"></button></div>
               <button class="btn" id="btnClearRecent" disabled>Clear</button>
+            </div>
+          </div>
+          <div class="card timerCard" id="sessionTimerCard">
+            <h3 style="margin:0 0 6px; font-size:16px;">Session Timer</h3>
+            <div id="sessionTimerDisplay" class="timerDisplay">00:00</div>
+            <div class="muted small" style="margin-top:8px;">
+              <div>Goal: Build a 10-question set</div>
+              <div>Maximum task time: 40 minutes</div>
+              <div>You may stop earlier if your set is complete.</div>
+            </div>
+            <div class="row" style="margin-top:10px;">
+              <button class="btn" id="btnPauseTimer" type="button">Pause</button>
             </div>
           </div>
         </aside>
@@ -969,7 +995,13 @@ Provide the results in a table with the following columns:
       llmExpectedChoice: "dissertation.llmExpectedChoice",
       llmMismatchDescription: "dissertation.llmMismatchDescription",
       llmOtherDescription: "dissertation.llmOtherDescription",
-      productVersionConfirmed: "dissertation.productVersionConfirmed"
+      productVersionConfirmed: "dissertation.productVersionConfirmed",
+      resubmitting: "dissertation.resubmitting",
+      timerStartedAt: "dissertation.timerStartedAt",
+      timerElapsedBeforePause: "dissertation.timerElapsedBeforePause",
+      timerPaused: "dissertation.timerPaused",
+      timerWarned35: "dissertation.timerWarned35",
+      timerWarned40: "dissertation.timerWarned40"
     };
 
     // -----------------------------
@@ -982,6 +1014,7 @@ Provide the results in a table with the following columns:
     let lastCopiedText = "";
     let lastCopiedLabel = "";
     let lastCopiedAt = null;
+    let sessionTimerIntervalId = null;
     let llmMismatchReported = false;
     let llmMismatchAlertAttempted = false;
 
@@ -1022,6 +1055,100 @@ Provide the results in a table with the following columns:
         ...data
       });
       saveJSON(KEYS.events, events);
+    }
+
+    const TIMER_35_MIN_MS = 35 * 60 * 1000;
+    const TIMER_40_MIN_MS = 40 * 60 * 1000;
+
+    function formatElapsed(ms) {
+      const totalSeconds = Math.max(0, Math.floor((ms || 0) / 1000));
+      const mm = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+      const ss = String(totalSeconds % 60).padStart(2, "0");
+      return `${mm}:${ss}`;
+    }
+
+    function getTimerElapsedMs() {
+      const elapsedBeforePause = Number(localStorage.getItem(KEYS.timerElapsedBeforePause) || "0") || 0;
+      const paused = localStorage.getItem(KEYS.timerPaused) === "true";
+      if (paused) return elapsedBeforePause;
+      const startedAt = Number(localStorage.getItem(KEYS.timerStartedAt) || "0") || 0;
+      if (!startedAt) return elapsedBeforePause;
+      return elapsedBeforePause + Math.max(0, Date.now() - startedAt);
+    }
+
+    function restoreTimerButtonState() {
+      const btn = $("btnPauseTimer");
+      if (!btn) return;
+      const paused = localStorage.getItem(KEYS.timerPaused) === "true";
+      btn.textContent = paused ? "Resume" : "Pause";
+    }
+
+    function initializeSessionTimerIfNeeded() {
+      const startedAt = localStorage.getItem(KEYS.timerStartedAt);
+      const elapsed = localStorage.getItem(KEYS.timerElapsedBeforePause);
+      const paused = localStorage.getItem(KEYS.timerPaused);
+
+      if (!elapsed) localStorage.setItem(KEYS.timerElapsedBeforePause, "0");
+      if (!paused) localStorage.setItem(KEYS.timerPaused, "false");
+      if (!localStorage.getItem(KEYS.timerWarned35)) localStorage.setItem(KEYS.timerWarned35, "false");
+      if (!localStorage.getItem(KEYS.timerWarned40)) localStorage.setItem(KEYS.timerWarned40, "false");
+
+      const isPaused = localStorage.getItem(KEYS.timerPaused) === "true";
+      if (!startedAt && !isPaused) {
+        localStorage.setItem(KEYS.timerStartedAt, String(Date.now()));
+        logEvent("timer_started");
+      }
+
+      restoreTimerButtonState();
+    }
+
+    function updateSessionTimer() {
+      const display = $("sessionTimerDisplay");
+      const card = $("sessionTimerCard");
+      if (!display || !card) return;
+
+      const elapsed = getTimerElapsedMs();
+      display.textContent = formatElapsed(elapsed);
+
+      if (elapsed >= TIMER_35_MIN_MS && localStorage.getItem(KEYS.timerWarned35) !== "true") {
+        localStorage.setItem(KEYS.timerWarned35, "true");
+        toast("5 minutes remaining in the task window. If your question set is close to 10 questions, you may want to finish your current item and run any final audits.");
+        logEvent("timer_35min_warning");
+      }
+
+      if (elapsed >= TIMER_40_MIN_MS) {
+        card.classList.add("timerComplete");
+        if (localStorage.getItem(KEYS.timerWarned40) !== "true") {
+          localStorage.setItem(KEYS.timerWarned40, "true");
+          toast("You have reached 40 minutes. If your question set is complete (about 10 usable questions), you may stop. You may also continue working if needed.");
+          logEvent("timer_40min_notice");
+        }
+      } else {
+        card.classList.remove("timerComplete");
+      }
+
+      restoreTimerButtonState();
+    }
+
+    function startSessionTimerLoop() {
+      if (sessionTimerIntervalId) clearInterval(sessionTimerIntervalId);
+      sessionTimerIntervalId = setInterval(updateSessionTimer, 1000);
+      updateSessionTimer();
+    }
+
+    function handlePauseResumeTimer() {
+      const paused = localStorage.getItem(KEYS.timerPaused) === "true";
+      if (paused) {
+        localStorage.setItem(KEYS.timerStartedAt, String(Date.now()));
+        localStorage.setItem(KEYS.timerPaused, "false");
+        logEvent("timer_resumed");
+      } else {
+        localStorage.setItem(KEYS.timerElapsedBeforePause, String(getTimerElapsedMs()));
+        localStorage.removeItem(KEYS.timerStartedAt);
+        localStorage.setItem(KEYS.timerPaused, "true");
+        logEvent("timer_paused");
+      }
+      updateSessionTimer();
     }
 
     function makeSessionId(participantCode) {
@@ -1819,6 +1946,8 @@ After that list, give me the current time.`
       }
 
       setLockedState(false);
+      initializeSessionTimerIfNeeded();
+      startSessionTimerLoop();
       if ($("topUser")) $("topUser").textContent = code || "User";
       logEvent("access_verified", { accessCode: code });
       toast("Access verified ✅");
@@ -1852,6 +1981,39 @@ After that list, give me the current time.`
         submitted_at: new Date().toISOString(),
         page_last_updated: document.lastModified || ""
       };
+    }
+
+    function getShortSessionSuffix(sessionId) {
+      const sid = (sessionId || "").trim();
+      if (!sid) return "session";
+      const parts = sid.split("-").filter(Boolean);
+      return parts[parts.length - 1] || "session";
+    }
+
+    function formatDateYYYYMMDD(isoString) {
+      const d = new Date(isoString || nowIso());
+      if (Number.isNaN(d.getTime())) return nowIso().slice(0, 10).replace(/-/g, "");
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(d.getUTCDate()).padStart(2, "0");
+      return `${y}${m}${day}`;
+    }
+
+    function buildSessionFilename(record, { revised = false } = {}) {
+      const participant = (record?.participant_code || "participant").trim() || "participant";
+      const datePart = formatDateYYYYMMDD(record?.submitted_at);
+      const shortSession = getShortSessionSuffix(record?.session_id);
+      const revisedSuffix = revised ? "_REVISED" : "";
+      return `${participant}_${datePart}_${shortSession}${revisedSuffix}.json`.replace(/[^\w.-]/g, "_");
+    }
+
+    function resetSubmitButtonToDefaultState() {
+      const submitBtn = $("btnSubmitForm");
+      if (!submitBtn) return;
+      submitBtn.textContent = "Submit session";
+      submitBtn.style.background = "";
+      submitBtn.style.borderColor = "";
+      submitBtn.style.color = "";
     }
 
     async function submitSessionJson(payload) {
@@ -1894,6 +2056,7 @@ After that list, give me the current time.`
       }
       if (alreadyVerified) {
         setLockedState(false);
+        initializeSessionTimerIfNeeded();
       } else {
         setLockedState(true);
       }
@@ -2089,6 +2252,11 @@ After that list, give me the current time.`
       renderMostRecentCopied();
       if (!localStorage.getItem(KEYS.finalPromptCopied)) localStorage.setItem(KEYS.finalPromptCopied, "false");
       if (!localStorage.getItem(KEYS.submitClicked)) localStorage.setItem(KEYS.submitClicked, "false");
+      if (!localStorage.getItem(KEYS.resubmitting)) localStorage.setItem(KEYS.resubmitting, "false");
+      if ($("btnPauseTimer")) {
+        $("btnPauseTimer").addEventListener("click", handlePauseResumeTimer);
+      }
+      startSessionTimerLoop();
       updateFinalizeContentUI();
 
       $("btnCopyAgain").addEventListener("click", async (e) => {
@@ -2254,6 +2422,8 @@ After that list, give me the current time.`
         updateFinalizeContentUI();
 
         const payload = buildSessionRecord();
+        const revisedSubmission = localStorage.getItem(KEYS.resubmitting) === "true";
+        const clientFileName = buildSessionFilename(payload, { revised: revisedSubmission });
         const submitBtn = $("btnSubmitForm");
         if (submitBtn) submitBtn.disabled = true;
 
@@ -2261,19 +2431,24 @@ After that list, give me the current time.`
           const result = await submitSessionJson(payload);
           if (result?.ok) {
             const submitBtn = $("btnSubmitForm");
-            if (submitBtn) {
-              submitBtn.textContent = "Success! ✓";
-              submitBtn.style.background = "#16a34a";
-              submitBtn.style.borderColor = "#16a34a";
-              submitBtn.style.color = "#ffffff";
-              submitBtn.disabled = true;
-            }
+
+            submitBtn.textContent = "Success! ✓";
+            submitBtn.style.background = "#16a34a";
+            submitBtn.style.borderColor = "#16a34a";
+            submitBtn.style.color = "#ffffff";
+            submitBtn.disabled = true;
+
+            const reviseBtn = $("btnReviseAfterSubmit");
+            if (reviseBtn) reviseBtn.style.display = "inline-flex";
+
             $("finalizeMsg").textContent = "Session submitted successfully.";
             logEvent("session_submitted", {
               method: "apps_script",
               ok: true,
-              fileName: result.fileName || ""
+              fileName: result.fileName || clientFileName,
+              revised: revisedSubmission
             });
+            localStorage.setItem(KEYS.resubmitting, "false");
             toast("Session submitted ✅");
           } else {
             $("finalizeMsg").textContent = "Automatic submission failed. Please download the backup file and email it.";
@@ -2301,6 +2476,18 @@ After that list, give me the current time.`
         updateFinalizeContentUI();
       });
 
+      $("btnReviseAfterSubmit").addEventListener("click", () => {
+        localStorage.setItem(KEYS.resubmitting, "true");
+        localStorage.setItem(KEYS.submitClicked, "false");
+        resetSubmitButtonToDefaultState();
+        const reviseBtn = $("btnReviseAfterSubmit");
+        if (reviseBtn) reviseBtn.style.display = "none";
+        $("finalizeMsg").textContent = "You can now revise your work and submit again.";
+        logEvent("submission_revise_requested", { revised: true });
+        updateFinalizeContentUI();
+        setStage("prompts");
+      });
+
       const formFailedDetails = $("formFailedDetails");
       if (formFailedDetails) {
         formFailedDetails.addEventListener("toggle", () => {
@@ -2321,7 +2508,8 @@ After that list, give me the current time.`
 
         const blob = new Blob([JSON.stringify(record, null, 2)], { type: "application/json" });
         const a = document.createElement("a");
-        const fname = `${record.participant_code || "participant"}-${record.session_id || "session"}-backup.json`.replace(/[^\w.-]/g, "_");
+        const revisedSubmission = localStorage.getItem(KEYS.resubmitting) === "true";
+        const fname = buildSessionFilename(record, { revised: revisedSubmission });
         a.href = URL.createObjectURL(blob);
         a.download = fname;
         a.click();
