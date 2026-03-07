@@ -21,7 +21,6 @@
       border-radius: 10px; padding: 10px; box-sizing:border-box;
     }
     textarea { min-height: 140px; resize: vertical; line-height: 1.4; }
-    #sessionNotes { min-height: 70px; }
         .btn {
       background: #f1f7ff; border:1px solid var(--border); color:var(--text);
       padding:10px 12px; border-radius: 10px; cursor:pointer;
@@ -207,88 +206,8 @@
     @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
     .centerCard { max-width:420px; margin: 0 auto; }
     .appHeaderBar { display:flex; justify-content:flex-start; align-items:center; margin-bottom:10px; padding:6px 2px; }
-    .timerCard {
-      margin-top: 12px;
-      padding: 10px 12px;
-    }
-    .timerHeaderRow {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 6px;
-    }
-    .timerCard h3 {
-      margin: 0;
-      font-size: 16px;
-      line-height: 1.2;
-    }
-    .timerInlineControls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex: 0 0 auto;
-    }
-    .timerDisplay {
-      font-size: 16px;
-      font-weight: 600;
-      line-height: 1.2;
-      letter-spacing: 0.01em;
-    }
     #btnPauseTimer {
       flex: 0 0 auto;
-    }
-    .timerCard .muted.small {
-      line-height: 1.2;
-    }
-    .timerCard .muted.small > div + div {
-      margin-top: 2px;
-    }
-    .timerCard.timerComplete {
-      border-color: #16a34a;
-      background: #f0fdf4;
-    }
-    .timerNotice {
-      position: fixed;
-      bottom: 72px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #1f4ca4;
-      color: #ffffff;
-      border: 1px solid #1f4ca4;
-      border-radius: 12px;
-      padding: 12px 14px;
-      display: none;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      max-width: 460px;
-      width: calc(100% - 32px);
-      z-index: 10000;
-      box-shadow: 0 8px 20px rgba(16,33,61,0.18);
-    }
-    .timerNoticeMessage {
-      font-size: 14px;
-      line-height: 1.35;
-    }
-    .timerNoticeClose {
-      background: transparent;
-      border: 0;
-      color: #ffffff;
-      font-size: 18px;
-      line-height: 1;
-      cursor: pointer;
-      padding: 0;
-      flex: 0 0 auto;
-    }
-    .helpFaqLink {
-      color: var(--accent);
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 500;
-    }
-    .helpFaqLink:hover {
-      text-decoration: underline;
     }
     .btn.ghost { background:#f1f7ff; border:1px solid var(--border); color:var(--text); padding:6px 10px; }
         .modalBackdrop { position:fixed; inset:0; background:rgba(16,33,61,.35); display:none; align-items:center; justify-content:center; z-index:10000; }
@@ -526,292 +445,113 @@
       .btn { padding: 6px 8px; }
       .promptArea { max-height: calc(100vh - 260px); overflow:auto; padding-right:4px; min-width: 0; overflow-x: hidden; }
     }
-            #btnSubmitForm[disabled] { background:#d6e1f3; color:#678; border-color:#c8d8f0; cursor:not-allowed; }
 
   </style>
 </head>
 <body>
   <div class="pageShell">
     <h1>Dissertation Prompt App</h1>
-    <!-- Access gate -->
-    <div class="card accessCard" id="accessGate">
-      <p class="muted small" style="margin:0 0 10px;">Enter your participant code to begin this session.</p>
-      <p class="muted small" style="margin:0 0 10px;">If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
-
-      <form class="accessRow" id="accessForm">
-        <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" />
-        <button class="btn primary accessBtn" id="btnVerifyAccess" type="submit">Continue</button>
-      </form>
-
-      <p id="accessMsg" class="muted small accessError" style="margin:8px 0 0;"></p>
-    </div>
-
-    <!-- Main app -->
-    <div id="appShell" style="display:none;">
+    <div id="appShell">
       <div class="appHeaderBar">
         <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
       </div>
       <div class="layoutGrid">
         <div class="main">
-          <!-- Accordion bands -->
-      <details class="band" id="bandSetup">
-        <summary id="sumSetup">
-          <div class="summaryLeft">
-            <strong>1) Set up</strong>
-            <span class="tag" id="tagSetup">In progress</span>
-          </div>
-
-        </summary>
-        <div class="bandBody">
-          <div class="card">
-            <div class="subBand" style="margin-top:0;">
-              <h4 class="subBandTitle">1) Select product and version</h4>
-              <div class="row">
-                <div style="flex:1; min-width: 240px;">
-                  <input type="hidden" id="modelUsed" />
-                  <div class="modelGrid product-grid" id="modelGrid">
-
-                  <button class="modelOption product-card productButton" data-model="ChatGPT" type="button"><div class="productIconCircle"><img src="images/chatgpt.png" class="productIconImage" alt="ChatGPT"></div><span>ChatGPT</span></button>
-<button class="modelOption product-card productButton" data-model="Gemini" type="button"><div class="productIconCircle"><img src="images/gemini.png" class="productIconImage" alt="Gemini"></div><span>Gemini</span></button>
-<button class="modelOption product-card productButton" data-model="Copilot" type="button"><div class="productIconCircle"><img src="images/copilot.png" class="productIconImage" alt="Copilot"></div><span>Copilot</span></button>
-<button class="modelOption product-card productButton" data-model="Claude" type="button"><div class="productIconCircle"><img src="images/claude.png" class="productIconImage" alt="Claude"></div><span>Claude</span></button>
-<button class="modelOption product-card productButton" data-model="Other" type="button"><div class="productIconCircle"><img src="images/generic.png" class="productIconImage" alt="Other"></div><span>Other</span></button>
+          <details class="band" id="bandSetup" open>
+            <summary id="sumSetup">
+              <div class="summaryLeft">
+                <strong>1) Set up</strong>
+                <span class="tag" id="tagSetup">In progress</span>
+              </div>
+            </summary>
+            <div class="bandBody">
+              <div class="card">
+                <div class="subBand" style="margin-top:0;">
+                  <h4 class="subBandTitle">Question context</h4>
+                  <div class="row" style="margin-top:10px;">
+                    <div style="flex:1; min-width: 240px;">
+                      <label>Course / class context</label>
+                      <input id="ctxCourse" placeholder="e.g., Health Assessment (first semester)" />
+                    </div>
+                    <div style="flex:1; min-width: 240px;">
+                      <label>Content area</label>
+                      <input id="ctxArea" placeholder="e.g., Respiratory assessment" />
+                    </div>
                   </div>
-                </div>
-              </div>
-
-              <div id="productVersionEditor" class="subBand hidden" style="margin-top:10px;">
-              <h4 class="subBandTitle" id="productVersionTitle">Confirm product version</h4>
-              <p class="muted small llmConfirmIntro" id="llmConfirmIntro"></p>
-
-              <div id="llmConfirmPanel" class="subBand" style="display:none; margin-top:8px;">
-                <p id="llmInstructionText" class="muted small" style="margin:0 0 6px;"></p>
-                <p id="llmWhereText" class="muted small" style="margin:0;"></p>
-
-                <details class="helpToggle" style="margin-top:8px;">
-                  <summary class="muted small whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
-                  <div class="llmImageRow">
-                    <div id="llmImage1"></div>
-                    <div id="llmImage2"></div>
-                  </div>
-                </details>
-
-                <div style="margin-top:10px;">
-                  <label id="llmConfirmLabel"></label>
-                  <select id="llmExpectedChoice" class="llmCompactSelect"></select>
-                </div>
-
-                <p class="muted small" id="llmMismatchNote" style="display:none; margin:8px 0 0;"></p>
-
-                <div id="llmMismatchWrap" style="display:none; margin-top:10px;">
-                  <label for="llmMismatchDescription">Please briefly describe the options you see in the menu.</label>
-                  <textarea id="llmMismatchDescription" placeholder="Example: Auto, Instant 5.5, Thinking 5.6"></textarea>
-                </div>
-              </div>
-
-              <div id="llmOtherWrap" style="display:none; margin-top:8px;">
-                <label for="llmOtherDescription">Please set the product to its default mode. In the box below briefly describe the AI products you are using, including the specific version.</label>
-                <textarea id="llmOtherDescription" placeholder="Briefly describe the AI product you are using."></textarea>
-              </div>
-
-              <div class="row" style="margin-top:10px;">
-                <button class="btn" id="btnConfirmProductVersion" type="button" disabled>Confirm product and version</button>
-              </div>
-            </div>
-
-            <div id="productVersionSummary" class="subBand productVersionSummary" style="display:none;" role="button" tabindex="0">
-              <div class="title">Product and version confirmed</div>
-              <div class="muted small" id="productVersionSummaryText"></div>
-            </div>
-            </div>
-
-            <div id="contextSubband" class="subBand hidden" style="margin-top:10px;">
-              <h4 class="subBandTitle">1B) Question context</h4>
-
-              <div id="contextFields">
-            <div class="row" style="margin-top:10px;">
-              <div style="flex:1; min-width: 240px;">
-                <label>Course / class context</label>
-                <input id="ctxCourse" placeholder="e.g., Health Assessment (first semester)" />
-              </div>
-              <div style="flex:1; min-width: 240px;">
-                <label>Content area</label>
-                <input id="ctxArea" placeholder="e.g., Respiratory assessment" />
-              </div>
-            </div>
-
-            <div class="row" style="margin-top:10px;">
-              <div style="flex:1; min-width: 240px;">
-                <label>Desired number of questions</label>
-                <input id="ctxQuestionCount" type="number" min="1" value="10" />
-              </div>
-              <div style="flex:1; min-width: 240px;">
-                <label>Any additional desired instructions or parameters (optional)</label>
-                <input id="ctxNotes" placeholder="Optional guidance (e.g., difficulty level, tone, formatting preferences)" />
-              </div>
-            </div>
-
-            <p class="muted small" style="margin:10px 0 0;">
-              Click the icon to copy the starter prompt, paste it into your selected LLM, then click the button below to continue.
-            </p>
-
-            <div class="row" style="margin-top:12px;">
-              <div class="starterCopyControl copyPromptRow">
-                <span class="small copyPromptLabel">Copy starter prompt</span>
-                <button class="copyIconBtn" id="btnCopyStarter" aria-label="Copy starter prompt" type="button"></button>
-              </div>
-            </div>
-
-            <p class="muted small" id="setupMsg" style="margin:10px 0 0; display:none;"></p>
-            <div class="row" style="margin-top:8px;">
-              <button class="btn" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
-            </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </details>
-
-      <details class="band" id="bandPrompts">
-        <summary id="sumPrompts">
-          <div class="summaryLeft">
-            <strong>2) Making questions</strong>
-            <span class="tag lock" id="tagPrompts">Locked</span>
-          </div>
-
-        </summary>
-        <div class="bandBody">
-          <div class="lockMsg" id="lockPrompts">
-            Complete <strong>1) Set up</strong>, copy the starter prompt, and click Continue to unlock prompts.
-          </div>
-
-          <div id="promptsInner" style="display:none;">
-            <div class="card">
-              <div class="row" style="justify-content: space-between;">
-
-                <button class="btn" id="btnEditContext">Go back and edit context</button>
-              </div>
-
-              <div class="promptArea" style="margin-top:8px;">
-                <div class="promptSections">
-                  <div class="promptSection">
-                    <h4 class="promptSectionTitle">Accept or Replace Question</h4>
-                    <div id="promptGroupAcceptReplace" class="promptListCompact"></div>
-                  </div>
-
-                  <div class="promptSection">
-                    <h4 class="promptSectionTitle">Refine Options</h4>
-                    <div id="promptGroupRefine" class="promptListCompact"></div>
-                  </div>
-
-                  <div class="promptReviewBlock">
-                    <div id="promptGroupReview" class="promptListSingle"></div>
-                  </div>
-
-                  <div class="promptSection">
-                    <h4 class="promptSectionTitle">Audit Options</h4>
-                    <div id="promptGroupAudit" class="promptListCompact"></div>
-                  </div>
-                </div>
-
-                <div class="row" style="justify-content: space-between; margin-top:8px; min-width:0;">
-                  <button class="btn primary" id="btnReadyFinal">I'm done making questions</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </details>
-
-      <details class="band" id="bandFinalize">
-        <summary id="sumFinalize">
-          <div class="summaryLeft">
-            <strong>3) Finalize & submit</strong>
-            <span class="tag lock" id="tagFinalize">Locked</span>
-          </div>
-
-        </summary>
-        <div class="bandBody">
-          <div class="lockMsg" id="lockFinalize">
-            Complete <strong>2) Making questions</strong> and click <strong>I'm done making questions</strong> to unlock final submission.
-          </div>
-
-          <div id="finalizeInner" style="display:none;">
-            <div class="card">
-              <div class="row" style="justify-content: space-between;">
-                <div class="starterCopyControl copyPromptRow"><span class="small copyPromptLabel">Copy final prompt</span><button class="copyIconBtn" id="btnCopyFinal" aria-label="Copy final prompt" type="button"></button></div>
-                <button class="btn" id="btnBackToPrompts">Go back to making questions</button>
-              </div>
-
-              <p class="muted small finalizeNotice" id="finalizeCopyNotice"></p>
-
-              <div id="finalizeLockedArea" class="finalizeLockedContent" style="margin-top:8px; display:none;">
-
-                <div style="margin-top:12px;">
-
-                  <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
-                </div>
-
-                <div style="margin-top:12px;">
-                  <label for="sessionNotes">Anything unusual about your session? (optional)</label>
-                  <textarea
-                    id="sessionNotes"
-                    placeholder="Let me know if anything went out of the ordinary during your session."
-                  ></textarea>
-                </div>
-
-                <p class="muted small" style="margin:10px 0 0;">This will submit your session automatically.</p>
-                <div class="row" style="margin-top:8px;">
-                  <button class="btn primary finalActionBtn" id="btnSubmitForm">Submit session</button>
-                  <button class="btn finalActionBtn" id="btnReviseAfterSubmit" type="button" style="display:none;">Return to question editing</button>
-                </div>
-
-                <details id="formFailedDetails" style="margin-top:12px; display:none;">
-                <summary class="btn warn finalActionBtn warningButton">
-                  Click here if automatic submission failed
-                </summary>
-
-                <div style="margin-top:12px;">
-                  <p class="muted small" style="margin:0 0 10px;">
-                    Backup method (only if needed):
-                  </p>
-
-                  <ol class="muted small" style="margin:0 0 10px; padding-left:18px;">
-                    <li>Click <strong>Download backup file (.json)</strong> below.</li>
-                    <li>Email the downloaded file to <strong>tjin@crimson.ua.edu</strong>.</li>
-                    <li>Complete your recorded reflection using your usual submission method.</li>
-                  </ol>
 
                   <div class="row" style="margin-top:10px;">
-                    <button class="btn" id="btnDownload">Download backup file (.json)</button>
+                    <div style="flex:1; min-width: 240px;">
+                      <label>Desired number of questions</label>
+                      <input id="ctxQuestionCount" type="number" min="1" value="10" />
+                    </div>
+                    <div style="flex:1; min-width: 240px;">
+                      <label>Any additional desired instructions or parameters (optional)</label>
+                      <input id="ctxNotes" placeholder="Optional guidance (e.g., difficulty level, tone, formatting preferences)" />
+                    </div>
                   </div>
 
-                  <div class="hr"></div>
+                  <p class="muted small" style="margin:10px 0 0;">Click the icon to copy the starter prompt, then proceed to prompt controls.</p>
+                  <div class="row" style="margin-top:12px;">
+                    <div class="starterCopyControl copyPromptRow">
+                      <span class="small copyPromptLabel">Copy starter prompt</span>
+                      <button class="copyIconBtn" id="btnCopyStarter" aria-label="Copy starter prompt" type="button"></button>
+                    </div>
+                  </div>
 
-                  <div class="muted small">
-                    <p style="margin:0 0 8px;"><strong>Recorded reflection prompts:</strong></p>
-                    <ol style="margin:0 0 8px; padding-left:18px;">
-                      <li>In your own words, how do you understand the purpose of this activity and what it is intended to help educators accomplish?</li>
-                      <li>To what extent do you see yourself or other educators being willing to use an approach like this when creating exam questions?</li>
-                      <li>Thinking about your own teaching context, how practical would it be to incorporate a process like this into your workflow?</li>
-                      <li>After completing today's session, how do you evaluate the usefulness of this approach for generating multiple-choice questions?</li>
-                    </ol>
-                    <p style="margin:0;">A single, unscripted take is preferred. Please do not feel the need to prepare, re-record, or edit your response.</p>
+                  <div class="row" style="margin-top:8px;">
+                    <button class="btn" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
                   </div>
                 </div>
-              </details>
-
-              </div>
-
-              <p class="muted small" id="finalizeMsg" style="margin:10px 0 0;"></p>
-
-              <div class="row" id="endSessionRow" style="margin-top:10px; display:none;">
-                <button class="btn danger finalActionBtn" id="btnEndSession" type="button">End session</button>
               </div>
             </div>
-          </div>
-        </div>
-      </details>
+          </details>
+
+          <details class="band" id="bandPrompts">
+            <summary id="sumPrompts">
+              <div class="summaryLeft">
+                <strong>2) Making questions</strong>
+                <span class="tag lock" id="tagPrompts">Locked</span>
+              </div>
+            </summary>
+            <div class="bandBody">
+              <div class="lockMsg" id="lockPrompts">Complete setup, copy the starter prompt, and click Continue to unlock prompts.</div>
+
+              <div id="promptsInner" style="display:none;">
+                <div class="card">
+                  <div class="row" style="justify-content: space-between;">
+                    <button class="btn" id="btnEditContext">Go back and edit context</button>
+                  </div>
+
+                  <div class="promptArea" style="margin-top:8px;">
+                    <div class="promptSections">
+                      <div class="promptSection">
+                        <h4 class="promptSectionTitle">Accept or Replace Question</h4>
+                        <div id="promptGroupAcceptReplace" class="promptListCompact"></div>
+                      </div>
+
+                      <div class="promptSection">
+                        <h4 class="promptSectionTitle">Refine Options</h4>
+                        <div id="promptGroupRefine" class="promptListCompact"></div>
+                      </div>
+
+                      <div class="promptReviewBlock">
+                        <div id="promptGroupReview" class="promptListSingle"></div>
+                      </div>
+
+                      <div class="promptSection">
+                        <h4 class="promptSectionTitle">Audit Options</h4>
+                        <div id="promptGroupAudit" class="promptListCompact"></div>
+                      </div>
+                    </div>
+
+                    <div class="row" style="justify-content: flex-end; margin-top:12px;">
+                      <div class="starterCopyControl copyPromptRow"><span class="small copyPromptLabel">Copy final prompt</span><button class="copyIconBtn" id="btnCopyFinal" aria-label="Copy final prompt" type="button"></button></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </details>
         </div>
 
         <aside class="sidebar">
@@ -824,24 +564,10 @@
               <button class="btn" id="btnClearRecent" disabled>Clear</button>
             </div>
           </div>
-          <div class="card timerCard" id="sessionTimerCard">
-            <div class="timerHeaderRow">
-              <h3>Session Timer</h3>
-              <div class="timerInlineControls">
-                <div id="sessionTimerDisplay" class="timerDisplay">00:00</div>
-                <button class="btn" id="btnPauseTimer" type="button">Pause</button>
-              </div>
-            </div>
-            <div class="muted small" style="margin-top:8px;">
-              <div>Goal: Build a 10-question set</div>
-              <div>Maximum task time: 40 minutes</div>
-            </div>
-          </div>
         </aside>
       </div>
     </div>
   </div>
-
 
   <div class="modalBackdrop" id="modalReset">
     <div class="modalCard">
@@ -854,131 +580,10 @@
     </div>
   </div>
 
-  <div class="modalBackdrop" id="modalEnd">
-    <div class="modalCard">
-      <h3 style="margin:0 0 8px;">End session?</h3>
-      <p class="muted" style="margin:0 0 12px;">Before ending, make sure your session was submitted successfully or downloaded/saved as a backup. Ending the session will clear this browser’s stored data.</p>
-      <div class="row" style="justify-content:flex-end;">
-        <button class="btn" id="btnEndCancel" type="button">Cancel</button>
-        <button class="btn danger" id="btnEndConfirm" type="button">I saved it — end session</button>
-      </div>
-    </div>
-  </div>
-
   <footer class="small muted" style="padding: 8px 24px 20px;" id="buildInfo"></footer>
-  <div id="helpLinkRow" class="small" style="padding: 0 24px 24px;">
-    <a
-      href="https://jin-dissertation.github.io/dissertation-app/help.html"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="helpFaqLink"
-    >
-      Help / FAQ
-    </a>
-  </div>
-
   <div class="toast" id="toast"></div>
-  <div class="timerNotice" id="timerNotice" style="display:none;">
-    <div class="timerNoticeMessage" id="timerNoticeMessage"></div>
-    <button class="timerNoticeClose" id="timerNoticeClose" type="button" aria-label="Dismiss notification">×</button>
-  </div>
 
   <script>
-    // -----------------------------
-    // Config
-    // -----------------------------
-
-    // Access code allowlist (your current codes; access code = participant identifier)
-    const ACCESS_CODES = {
-      "blue-sky": {},
-      "green-grass": {},
-      "bright-light": {},
-      "calm-water": {},
-      "morning-sun": {},
-      "quiet-night": {},
-      "tall-tree": {},
-      "warm-breeze": {},
-      "clear-path": {},
-      "soft-cloud": {},
-      "deep-ocean": {},
-      "fresh-air": {},
-      "open-field": {},
-      "gentle-rain": {},
-      "golden-hour": {},
-      "rising-tide": {},
-      "distant-hill": {},
-      "summer-wind": {},
-      "early-dawn": {},
-      "cool-shade": {},
-      "wide-river": {},
-      "bright-star": {},
-      "falling-leaf": {},
-      "white-sand": {},
-      "silver-moon": {},
-      "calm-harbor": {},
-      "quiet-forest": {},
-      "warm-sunlight": {},
-      "soft-snow": {},
-      "open-horizon": {}
-    };
-
-    const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbzwdkF5ojxU3Anj2gjACKo75ZFDEFtKofLqxL0cm9WNwQOSjN6vYxVNknw6_ybg-rn0Zg/exec";
-
-    // Paste your webhook URL into LLM_MISMATCH_ALERT_WEBHOOK to receive immediate mismatch alerts.
-    const LLM_MISMATCH_ALERT_WEBHOOK = "";
-
-    const LLM_UI_CONFIG = {
-      chatgpt: {
-        label: "ChatGPT",
-        instruction: "Use ChatGPT in its default mode for this activity. Do not manually switch to Instant or Thinking.",
-        whereText: "Click the model selector at the top of the chat.",
-        expectedOptions: [
-          { value: "auto_menu", label: "Auto selected; menu shows Instant 5.3 and Thinking 5.4" },
-          { value: "different", label: "I see something different" }
-        ],
-        defaultExpected: "auto_menu",
-        image1Alt: "ChatGPT model selector location",
-        image2Alt: "ChatGPT dropdown example"
-      },
-      claude: {
-        label: "Claude",
-        instruction: "Use Claude in its default mode for this activity. Do not manually change the model or enable extended thinking unless it is already selected.",
-        whereText: "Click the model selector near the chat input box.",
-        expectedOptions: [
-          { value: "sonnet46_menu", label: "Sonnet 4.6 selected" },
-          { value: "different", label: "I see something different" }
-        ],
-        defaultExpected: "sonnet46_menu",
-        image1Alt: "Claude model selector location",
-        image2Alt: "Claude dropdown example"
-      },
-      gemini: {
-        label: "Gemini",
-        instruction: "Use Gemini in its default mode for this activity. Do not manually switch modes.",
-        whereText: "Click the mode dropdown next to the prompt box.",
-        expectedOptions: [
-          { value: "fast_menu", label: "Fast selected; menu shows Gemini 3" },
-          { value: "different", label: "I see something different" }
-        ],
-        defaultExpected: "fast_menu",
-        image1Alt: "Gemini mode selector location",
-        image2Alt: "Gemini dropdown example"
-      },
-      copilot: {
-        label: "Microsoft Copilot",
-        instruction: "Use Microsoft Copilot in its default mode for this activity. Do not manually change the conversation mode.",
-        whereText: "Click the dropdown next to the prompt box that shows the current mode.",
-        expectedOptions: [
-          { value: "smart_menu", label: "Smart selected; menu shows GPT 5.1" },
-          { value: "different", label: "I see something different" }
-        ],
-        defaultExpected: "smart_menu",
-        image1Alt: "Copilot mode selector location",
-        image2Alt: "Copilot dropdown example"
-      }
-    };
-
-// Prompt library (grouped for UI)
 const PROMPTS = [
   // -----------------------------
   // Question Refinement
@@ -1077,56 +682,17 @@ Provide the results in a table with the following columns:
   }
 ];
 
-    // -----------------------------
-    // Storage keys
-    // -----------------------------
     const KEYS = {
-      accessVerified: "dissertation.accessVerified",
-      accessCode: "dissertation.accessCode",
-      sessionId: "dissertation.sessionId",
-      sessionStartTime: "dissertation.sessionStartTime",
-      modelUsed: "dissertation.modelUsed",
       context: "dissertation.context",
       starterCopied: "dissertation.starterCopied",
-      stage: "dissertation.stage", // "setup" | "prompts" | "finalize"
-      events: "dissertation.events",
-      finalPrompt: "dissertation.finalPrompt",
-      anyCopy: "dissertation.anyCopy",
-      finalizeVisited: "dissertation.finalizeVisited",
-      finalPromptCopied: "dissertation.finalPromptCopied",
-      submitClicked: "dissertation.submitClicked",
-      llmProduct: "dissertation.llmProduct",
-      llmExpectedChoice: "dissertation.llmExpectedChoice",
-      llmMismatchDescription: "dissertation.llmMismatchDescription",
-      llmOtherDescription: "dissertation.llmOtherDescription",
-      productVersionConfirmed: "dissertation.productVersionConfirmed",
-      resubmitting: "dissertation.resubmitting",
-      timerStartedAt: "dissertation.timerStartedAt",
-      timerElapsedBeforePause: "dissertation.timerElapsedBeforePause",
-      timerPaused: "dissertation.timerPaused",
-      timerWarned35: "dissertation.timerWarned35",
-      timerWarned40: "dissertation.timerWarned40",
-      submissionAttempted: "dissertation.submissionAttempted",
-      submissionStatus: "dissertation.submissionStatus",
-      submissionCompletedAt: "dissertation.submissionCompletedAt",
-      submissionError: "dissertation.submissionError",
-      appsScriptResponseFileName: "dissertation.appsScriptResponseFileName",
-      appsScriptResponseFileId: "dissertation.appsScriptResponseFileId"
+      stage: "dissertation.stage",
+      finalPrompt: "dissertation.finalPrompt"
     };
 
-    // -----------------------------
-    // Utilities
-    // -----------------------------
     const $ = (id) => document.getElementById(id);
-    const nowIso = () => new Date().toISOString();
-
-    // Most recently copied state (desktop sidebar)
     let lastCopiedText = "";
     let lastCopiedLabel = "";
     let lastCopiedAt = null;
-    let sessionTimerIntervalId = null;
-    let llmMismatchReported = false;
-    let llmMismatchAlertAttempted = false;
 
     function hideToast() {
       const t = $("toast");
@@ -1136,630 +702,36 @@ Provide the results in a table with the following columns:
       t.textContent = "";
     }
 
-    function hideTimerNotice() {
-      const notice = $("timerNotice");
-      const msg = $("timerNoticeMessage");
-      if (!notice || !msg) return;
-      if (notice._hideTimer) clearTimeout(notice._hideTimer);
-      notice.style.display = "none";
-      msg.textContent = "";
-    }
-
-    function showTimerNotice(message) {
-      const notice = $("timerNotice");
-      const msg = $("timerNoticeMessage");
-      if (!notice || !msg) return;
-      if (notice._hideTimer) clearTimeout(notice._hideTimer);
-      msg.textContent = message;
-      notice.style.display = "flex";
-      notice._hideTimer = setTimeout(() => {
-        hideTimerNotice();
-      }, 60000);
-    }
-
     const toast = (msg, { duration = 1400 } = {}) => {
       const t = $("toast");
       if (!t) return;
       if (t._hideTimer) clearTimeout(t._hideTimer);
       t.textContent = msg;
       t.style.display = "block";
-      t._hideTimer = setTimeout(() => {
-        hideToast();
-      }, duration);
+      t._hideTimer = setTimeout(() => hideToast(), duration);
     };
 
-    function normalizeCode(s) {
-      return (s || "").trim().toLowerCase();
-    }
-
-    function loadJSON(key, fallback) {
-      try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
-      catch { return fallback; }
-    }
-    function saveJSON(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
-
-    function logEvent(type, data = {}) {
-      const events = loadJSON(KEYS.events, []);
-      const stage = getStage();
-      const accessCode = localStorage.getItem(KEYS.accessCode) || "";
-      const sessionId = localStorage.getItem(KEYS.sessionId) || "";
-      const modelUsed = localStorage.getItem(KEYS.modelUsed) || "";
-      const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-      const llmExpectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-      const timerState = getCurrentTimerState();
-      events.push({
-        t: nowIso(),
-        type,
-        stage,
-        accessCode,
-        sessionId,
-        modelUsed,
-        llmProduct,
-        llmExpectedChoice,
-        elapsed_ms: timerState.elapsedMs,
-        elapsed_mmss: timerState.elapsedMmss,
-        timer_paused: timerState.timerPaused,
-        ...data
-      });
-      saveJSON(KEYS.events, events);
-    }
-
-    const TIMER_35_MIN_MS = 35 * 60 * 1000;
-    const TIMER_40_MIN_MS = 40 * 60 * 1000;
-
-    function formatElapsed(ms) {
-      const totalSeconds = Math.max(0, Math.floor((ms || 0) / 1000));
-      const mm = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
-      const ss = String(totalSeconds % 60).padStart(2, "0");
-      return `${mm}:${ss}`;
-    }
-
-    function getTimerElapsedMs() {
-      const elapsedBeforePause = Number(localStorage.getItem(KEYS.timerElapsedBeforePause) || "0") || 0;
-      const paused = localStorage.getItem(KEYS.timerPaused) === "true";
-      if (paused) return elapsedBeforePause;
-      const startedAt = Number(localStorage.getItem(KEYS.timerStartedAt) || "0") || 0;
-      if (!startedAt) return elapsedBeforePause;
-      return elapsedBeforePause + Math.max(0, Date.now() - startedAt);
-    }
-
-    function getCurrentTimerState() {
-      const elapsedMs = getTimerElapsedMs();
-      const timerPaused = localStorage.getItem(KEYS.timerPaused) === "true";
-      return {
-        elapsedMs,
-        elapsedMmss: formatElapsed(elapsedMs),
-        timerPaused
-      };
-    }
-
-    function restoreTimerButtonState() {
-      const btn = $("btnPauseTimer");
-      if (!btn) return;
-      const paused = localStorage.getItem(KEYS.timerPaused) === "true";
-      btn.textContent = paused ? "Resume" : "Pause";
-    }
-
-    function initializeSessionTimerIfNeeded() {
-      const startedAt = localStorage.getItem(KEYS.timerStartedAt);
-      const elapsed = localStorage.getItem(KEYS.timerElapsedBeforePause);
-      const paused = localStorage.getItem(KEYS.timerPaused);
-
-      if (!elapsed) localStorage.setItem(KEYS.timerElapsedBeforePause, "0");
-      if (!paused) localStorage.setItem(KEYS.timerPaused, "false");
-      if (!localStorage.getItem(KEYS.timerWarned35)) localStorage.setItem(KEYS.timerWarned35, "false");
-      if (!localStorage.getItem(KEYS.timerWarned40)) localStorage.setItem(KEYS.timerWarned40, "false");
-
-      const isPaused = localStorage.getItem(KEYS.timerPaused) === "true";
-      if (!startedAt && !isPaused) {
-        localStorage.setItem(KEYS.timerStartedAt, String(Date.now()));
-        logEvent("timer_started");
-      }
-
-      restoreTimerButtonState();
-    }
-
-
-    function resetSubmissionMeta() {
-      localStorage.setItem(KEYS.submissionAttempted, "false");
-      localStorage.setItem(KEYS.submissionStatus, "unknown");
-      localStorage.setItem(KEYS.submissionCompletedAt, "");
-      localStorage.setItem(KEYS.submissionError, "");
-      localStorage.setItem(KEYS.appsScriptResponseFileName, "");
-      localStorage.setItem(KEYS.appsScriptResponseFileId, "");
-    }
-
-    function setSubmissionMeta({
-      attempted,
-      status,
-      completedAt,
-      error,
-      fileName,
-      fileId
-    } = {}) {
-      if (typeof attempted === "boolean") localStorage.setItem(KEYS.submissionAttempted, attempted ? "true" : "false");
-      if (typeof status === "string") localStorage.setItem(KEYS.submissionStatus, status || "unknown");
-      if (typeof completedAt === "string") localStorage.setItem(KEYS.submissionCompletedAt, completedAt);
-      if (typeof error === "string") localStorage.setItem(KEYS.submissionError, error);
-      if (typeof fileName === "string") localStorage.setItem(KEYS.appsScriptResponseFileName, fileName);
-      if (typeof fileId === "string") localStorage.setItem(KEYS.appsScriptResponseFileId, fileId);
-    }
-
-    function ensureSubmissionRecordConsistency() {
-      const events = loadJSON(KEYS.events, []);
-      const hasSubmitFormClicked = events.some((e) => e?.type === "submit_form_clicked");
-      const submitClicked = localStorage.getItem(KEYS.submitClicked) === "true";
-
-      if (hasSubmitFormClicked && !submitClicked) {
-        localStorage.setItem(KEYS.submitClicked, "true");
-      }
-
-      if (localStorage.getItem(KEYS.submissionAttempted) !== "true" && (hasSubmitFormClicked || submitClicked)) {
-        localStorage.setItem(KEYS.submissionAttempted, "true");
-      }
-
-      if (!localStorage.getItem(KEYS.submissionStatus)) {
-        localStorage.setItem(KEYS.submissionStatus, "unknown");
-      }
-      if (!localStorage.getItem(KEYS.submissionCompletedAt)) {
-        localStorage.setItem(KEYS.submissionCompletedAt, "");
-      }
-      if (!localStorage.getItem(KEYS.submissionError)) {
-        localStorage.setItem(KEYS.submissionError, "");
-      }
-      if (!localStorage.getItem(KEYS.appsScriptResponseFileName)) {
-        localStorage.setItem(KEYS.appsScriptResponseFileName, "");
-      }
-      if (!localStorage.getItem(KEYS.appsScriptResponseFileId)) {
-        localStorage.setItem(KEYS.appsScriptResponseFileId, "");
-      }
-    }
-
-    function updateSessionTimer() {
-      const display = $("sessionTimerDisplay");
-      const card = $("sessionTimerCard");
-      if (!display || !card) return;
-
-      const elapsed = getTimerElapsedMs();
-      display.textContent = formatElapsed(elapsed);
-
-      if (elapsed >= TIMER_35_MIN_MS && localStorage.getItem(KEYS.timerWarned35) !== "true") {
-        localStorage.setItem(KEYS.timerWarned35, "true");
-        showTimerNotice("5 minutes remaining in the task window. If your question set is close to 10 questions, you may want to finish your current item and run any final audits.");
-        logEvent("timer_35min_warning");
-      }
-
-      if (elapsed >= TIMER_40_MIN_MS) {
-        card.classList.add("timerComplete");
-        if (localStorage.getItem(KEYS.timerWarned40) !== "true") {
-          localStorage.setItem(KEYS.timerWarned40, "true");
-          showTimerNotice("You have reached 40 minutes. If your question set is complete (about 10 usable questions), you may stop. You may also continue working if needed.");
-          logEvent("timer_40min_notice");
-        }
-      } else {
-        card.classList.remove("timerComplete");
-      }
-
-      restoreTimerButtonState();
-    }
-
-    function startSessionTimerLoop() {
-      if (sessionTimerIntervalId) clearInterval(sessionTimerIntervalId);
-      sessionTimerIntervalId = setInterval(updateSessionTimer, 1000);
-      updateSessionTimer();
-    }
-
-    function handlePauseResumeTimer() {
-      const paused = localStorage.getItem(KEYS.timerPaused) === "true";
-      if (paused) {
-        localStorage.setItem(KEYS.timerStartedAt, String(Date.now()));
-        localStorage.setItem(KEYS.timerPaused, "false");
-        logEvent("timer_resumed");
-      } else {
-        localStorage.setItem(KEYS.timerElapsedBeforePause, String(getTimerElapsedMs()));
-        localStorage.removeItem(KEYS.timerStartedAt);
-        localStorage.setItem(KEYS.timerPaused, "true");
-        logEvent("timer_paused");
-      }
-      updateSessionTimer();
-    }
-
-    function makeSessionId(participantCode) {
-      const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
-      const stamp = new Date().toISOString().replace(/[-:]/g,"").slice(0,13); // YYYYMMDDTHH
-      return `${participantCode}-${stamp}-${rand}`;
-    }
-
-    function setLockedState(isLocked, msg = "") {
-      $("appShell").style.display = isLocked ? "none" : "block";
-      $("accessGate").style.display = isLocked ? "block" : "none";
-      if ($("accessMsg")) $("accessMsg").textContent = msg;
-    }
-
     function getContext() {
-      return loadJSON(KEYS.context, { course: "", area: "", notes: "", questionCount: "10" });
+      return JSON.parse(localStorage.getItem(KEYS.context) || "{}");
     }
 
     function setContext(ctx) {
-      saveJSON(KEYS.context, ctx);
-      logEvent("context_saved", { ctx });
+      localStorage.setItem(KEYS.context, JSON.stringify(ctx || {}));
     }
 
     function getStage() {
-      return localStorage.getItem(KEYS.stage) || "setup";
-    }
-
-
-    function normalizeLlmProduct(model) {
-      const m = (model || "").trim().toLowerCase();
-      if (!m) return "";
-      if (["chatgpt", "claude", "gemini", "copilot", "other"].includes(m)) return m;
-      return "other";
-    }
-
-    function formatLlmProductLabel(productKey) {
-      if (LLM_UI_CONFIG[productKey]?.label) return LLM_UI_CONFIG[productKey].label;
-      if (productKey === "other") return "Other";
-      return "—";
-    }
-
-    function formatLlmExpectedChoiceLabel(productKey, expectedChoice) {
-      if (!expectedChoice) return "—";
-      const options = LLM_UI_CONFIG[productKey]?.expectedOptions || [];
-      const match = options.find((o) => o.value === expectedChoice);
-      return match?.label || expectedChoice;
-    }
-
-    function getLlmHelpImages(productKey) {
-      const map = {
-        chatgpt: {
-          image1Src: "images/chatgpt-1.png",
-          image2Src: "images/chatgpt-2.png",
-          image1Alt: "ChatGPT where to click",
-          image2Alt: "ChatGPT dropdown example"
-        },
-        claude: {
-          image1Src: "images/claude-1.png",
-          image2Src: "images/claude-2.png",
-          image1Alt: "Claude where to click",
-          image2Alt: "Claude dropdown example"
-        },
-        copilot: {
-          image1Src: "images/copilot-1.png",
-          image2Src: "images/copilot-2.png",
-          image1Alt: "Copilot where to click",
-          image2Alt: "Copilot dropdown example"
-        },
-        gemini: {
-          image1Src: "images/gemini-1.png",
-          image2Src: "images/gemini-2.png",
-          image1Alt: "Gemini where to click",
-          image2Alt: "Gemini dropdown example"
-        }
-      };
-      return map[productKey] || null;
-    }
-
-
-    function setLlmMismatchVisibility(show, shouldFocus = false) {
-      const wrap = $("llmMismatchWrap");
-      const note = $("llmMismatchNote");
-      if (wrap) wrap.style.display = show ? "block" : "none";
-      if (note) note.style.display = show ? "block" : "none";
-      if (show && shouldFocus) {
-        requestAnimationFrame(() => $("llmMismatchDescription")?.focus());
-      }
-    }
-
-    async function sendLlmMismatchAlert(payload) {
-      if (!LLM_MISMATCH_ALERT_WEBHOOK.trim()) return;
-      try {
-        const res = await fetch(LLM_MISMATCH_ALERT_WEBHOOK, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        logEvent("llm_mismatch_alert_sent", { llmProduct: payload.llmProduct });
-      } catch (err) {
-        logEvent("llm_mismatch_alert_failed", {
-          llmProduct: payload.llmProduct,
-          error: String(err?.message || err || "unknown_error")
-        });
-      }
-    }
-
-    function isLlmConfirmationComplete() {
-      const product = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
-      const otherDescription = ($("llmOtherDescription")?.value || localStorage.getItem(KEYS.llmOtherDescription) || "").trim();
-
-      if (!product) return false;
-      if (product === "other") return !!otherDescription;
-      if (!["chatgpt", "claude", "gemini", "copilot"].includes(product)) return false;
-      if (!expectedChoice) return false;
-      if (expectedChoice === "different" && !mismatchDescription) return false;
-      return true;
-    }
-
-
-    function isSetupVersionConfirmedForContext() {
-      const product = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      const otherDescription = ($("llmOtherDescription")?.value || localStorage.getItem(KEYS.llmOtherDescription) || "").trim();
-      if (!product) return false;
-      if (product === "other") return !!otherDescription;
-      return !!expectedChoice;
-    }
-
-    function getProductVersionSummaryText() {
-      const productKey = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-      const otherDescription = (localStorage.getItem(KEYS.llmOtherDescription) || "").trim();
-      const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
-      const productLabel = formatLlmProductLabel(productKey);
-
-      let versionLabel = formatLlmExpectedChoiceLabel(productKey, expectedChoice);
-      if (productKey === "other") {
-        versionLabel = otherDescription || "(described by participant)";
-      } else if (expectedChoice === "different") {
-        versionLabel = mismatchDescription || "I see something different";
-      }
-
-      return `Product: ${productLabel} · Version/menu: ${versionLabel || "—"}`;
-    }
-
-    function setProductVersionConfirmedState(isConfirmed) {
-      localStorage.setItem(KEYS.productVersionConfirmed, isConfirmed ? "true" : "false");
-    }
-
-    function updateSetupSubbandVisibility() {
-      const contextSubband = $("contextSubband");
-      const contextFields = $("contextFields");
-      const editor = $("productVersionEditor");
-      const summary = $("productVersionSummary");
-      const summaryText = $("productVersionSummaryText");
-      const confirmBtn = $("btnConfirmProductVersion");
-      const canConfirm = isSetupVersionConfirmedForContext();
-      const isConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
-      const showConfirmed = isConfirmed && canConfirm;
-
-      const productSelected = !!(localStorage.getItem(KEYS.llmProduct) || "");
-      if (confirmBtn) confirmBtn.disabled = !canConfirm;
-      if (summaryText) summaryText.textContent = getProductVersionSummaryText();
-      if (editor) {
-        editor.classList.toggle("hidden", !productSelected || showConfirmed);
-      }
-      if (summary) summary.style.display = showConfirmed ? "block" : "none";
-      if (contextSubband) contextSubband.classList.toggle("hidden", !showConfirmed);
-      if (contextFields) contextFields.classList.toggle("hidden", !showConfirmed);
-    }
-
-    function renderLlmConfirmPanel(productKey) {
-      const panel = $("llmConfirmPanel");
-      const otherWrap = $("llmOtherWrap");
-      const expectedSelect = $("llmExpectedChoice");
-      const mismatchInput = $("llmMismatchDescription");
-      const config = LLM_UI_CONFIG[productKey];
-
-      if (!panel || !otherWrap || !expectedSelect || !mismatchInput) return;
-
-      if (!config) {
-        panel.style.display = "none";
-        expectedSelect.innerHTML = "";
-        setLlmMismatchVisibility(false);
-        localStorage.removeItem(KEYS.llmExpectedChoice);
-        localStorage.removeItem(KEYS.llmMismatchDescription);
-        llmMismatchReported = false;
-        llmMismatchAlertAttempted = false;
-
-        if (productKey === "other") {
-          const productVersionTitle = $("productVersionTitle");
-          const llmConfirmIntro = $("llmConfirmIntro");
-          if (productVersionTitle) productVersionTitle.textContent = "";
-          if (llmConfirmIntro) llmConfirmIntro.textContent = "";
-          otherWrap.style.display = "block";
-        } else {
-          const productVersionTitle = $("productVersionTitle");
-          const llmConfirmIntro = $("llmConfirmIntro");
-          if (productVersionTitle) productVersionTitle.textContent = "Confirm product version";
-          if (llmConfirmIntro) llmConfirmIntro.textContent = "";
-          otherWrap.style.display = "none";
-          localStorage.removeItem(KEYS.llmOtherDescription);
-          if ($("llmOtherDescription")) $("llmOtherDescription").value = "";
-        }
-        updateSetupSubbandVisibility();
-        return;
-      }
-
-      panel.style.display = "block";
-      otherWrap.style.display = "none";
-      if ($("llmOtherDescription")) $("llmOtherDescription").value = "";
-      localStorage.removeItem(KEYS.llmOtherDescription);
-
-      const productVersionTitle = $("productVersionTitle");
-      const llmConfirmIntro = $("llmConfirmIntro");
-      if (productVersionTitle) productVersionTitle.textContent = "Confirm product version";
-      if (llmConfirmIntro) llmConfirmIntro.textContent = `Set ${config.label} to its default mode and use the dropdown menu below to select the version you are using.`;
-      $("llmInstructionText").textContent = "";
-      $("llmWhereText").textContent = "";
-      $("llmConfirmLabel").textContent = "";
-
-      const helpImages = getLlmHelpImages(productKey);
-      const img1 = $("llmImage1");
-      const img2 = $("llmImage2");
-      const caption1 = "Click here to open the dropdown menu.";
-      const caption2 = "Confirm that the text here matches the option in the dropdown menu.";
-      if (img1) {
-        if (helpImages) {
-          img1.innerHTML = `<div class="helpExampleItem"><img src="${helpImages.image1Src}" class="helpExampleImage" alt="${helpImages.image1Alt}"><div class="helpExampleText">${caption1}</div></div>`;
-        } else {
-          img1.innerHTML = "";
-        }
-      }
-      if (img2) {
-        if (helpImages) {
-          img2.innerHTML = `<div class="helpExampleItem"><img src="${helpImages.image2Src}" class="helpExampleImage" alt="${helpImages.image2Alt}"><div class="helpExampleText">${caption2}</div></div>`;
-        } else {
-          img2.innerHTML = "";
-        }
-      }
-
-      const existingValue = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-      expectedSelect.innerHTML = "";
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = "Select one";
-      expectedSelect.appendChild(placeholder);
-      config.expectedOptions.forEach((opt) => {
-        const el = document.createElement("option");
-        el.value = opt.value;
-        el.textContent = opt.label;
-        expectedSelect.appendChild(el);
-      });
-
-      const validValues = new Set(config.expectedOptions.map((o) => o.value));
-      const selectedValue = validValues.has(existingValue) ? existingValue : "";
-      expectedSelect.value = selectedValue;
-      if (!selectedValue) localStorage.removeItem(KEYS.llmExpectedChoice);
-
-      if (selectedValue === "different") {
-        const mismatch = localStorage.getItem(KEYS.llmMismatchDescription) || "";
-        mismatchInput.value = mismatch;
-        setLlmMismatchVisibility(true);
-        if (mismatch.trim()) {
-          llmMismatchReported = true;
-          llmMismatchAlertAttempted = true;
-        }
-      } else {
-        mismatchInput.value = "";
-        setLlmMismatchVisibility(false);
-        localStorage.removeItem(KEYS.llmMismatchDescription);
-        llmMismatchReported = false;
-        llmMismatchAlertAttempted = false;
-      }
-      updateSetupSubbandVisibility();
+      const value = localStorage.getItem(KEYS.stage);
+      return value === "prompts" ? "prompts" : "setup";
     }
 
     function setStage(stage) {
-      const previousStage = getStage();
-      if (previousStage !== stage) {
-        logEvent("stage_exited", { stage: previousStage });
-        localStorage.setItem(KEYS.stage, stage);
-        logEvent("stage_entered", { stage });
-        logEvent("stage_set", { stage });
-      } else {
-        localStorage.setItem(KEYS.stage, stage);
-        logEvent("stage_set", { stage });
-      }
-      applyStageUI();
+      localStorage.setItem(KEYS.stage, stage === "prompts" ? "prompts" : "setup");
     }
 
-    function markAnyCopy() {
-      localStorage.setItem(KEYS.anyCopy, "true");
-    }
-
-    function markFinalizeVisited() {
-      localStorage.setItem(KEYS.finalizeVisited, "true");
-    }
-
-    function isSessionReadyToEnd() {
-      return localStorage.getItem(KEYS.anyCopy) === "true" && localStorage.getItem(KEYS.finalizeVisited) === "true";
-    }
-
-    function updateEndSessionVisibility() {
-      const row = $("endSessionRow");
-      if (!row) return;
-      row.dataset.readyToEnd = isSessionReadyToEnd() ? "true" : "false";
-    }
-
-
-    function getFinalizeCopyInstructionLine(model) {
-      const m = (model || "").trim();
-      const caption = "Click the copy button beneath the AI response.";
-      if (m === "ChatGPT") return `<div class="copyHelpExample"><img src="images/chatgpt-copy.png" class="copyHelpImage" alt="ChatGPT copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
-      if (m === "Gemini") return `<div class="copyHelpExample"><img src="images/gemini-copy.png" class="copyHelpImage" alt="Gemini copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
-      if (m === "Copilot") return `<div class="copyHelpExample"><img src="images/copilot-copy.png" class="copyHelpImage" alt="Copilot copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
-      if (m === "Claude") return `<div class="copyHelpExample"><img src="images/claude-copy.png" class="copyHelpImage" alt="Claude copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
-      return caption;
-    }
-
-    function updateFinalizeContentUI() {
-      const copied = localStorage.getItem(KEYS.finalPromptCopied) === "true";
-      const submitted = localStorage.getItem(KEYS.submitClicked) === "true";
-      const notice = $("finalizeCopyNotice");
-      const lockedArea = $("finalizeLockedArea");
-      const formFailed = $("formFailedDetails");
-      const endRow = $("endSessionRow");
-      const reviseBtn = $("btnReviseAfterSubmit");
-      const submitBtn = $("btnSubmitForm");
-      const llm = $("llmResponse");
-
-      if (notice) {
-        if (copied) {
-          const model = localStorage.getItem(KEYS.modelUsed) || "Other";
-          notice.style.display = "block";
-          notice.innerHTML = `
-            1) Paste the final prompt into your selected LLM.<br><br>
-            2) Click on the copy button below the response to copy it in its entirety<br>
-            <details class="helpToggle" style="display:inline-block; margin-top:6px;">
-              <summary class="whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
-              <div style="margin-top:6px;">${getFinalizeCopyInstructionLine(model)}</div>
-            </details><br><br>
-            3) Paste that response below.
-          `;
-        } else {
-          notice.style.display = "none";
-          notice.textContent = "";
-        }
-      }
-
-      if (lockedArea) {
-        lockedArea.style.display = copied ? "block" : "none";
-        lockedArea.classList.toggle("finalizeLockedContent", !copied);
-      }
-      if (llm) llm.disabled = !copied;
-      const hasResponse = !!((llm?.value || "").trim());
-      if (submitBtn) submitBtn.disabled = !copied || !hasResponse;
-      if (formFailed) formFailed.style.display = copied && submitted ? "block" : "none";
-      if (reviseBtn) reviseBtn.style.display = copied && submitted ? "inline-flex" : "none";
-      if (endRow) endRow.style.display = copied && submitted ? "flex" : "none";
-    }
-
-    function clearSessionData() {
-      Object.values(KEYS).forEach(k => localStorage.removeItem(k));
-      lastCopiedText = "";
-      lastCopiedLabel = "";
-      lastCopiedAt = null;
-    }
-
-    // -----------------------------
-    // Footer status
-    // -----------------------------
-    function refreshFooterInfo() {
-      const code = localStorage.getItem(KEYS.accessCode) || "—";
-      const startIso = localStorage.getItem(KEYS.sessionStartTime);
-      const started = startIso ? new Date(startIso).toLocaleString() : "—";
-      const last = document.lastModified || "—";
-      $("buildInfo").textContent = `Participant: ${code} • Started: ${started} • Last updated: ${last}`;
-    }
-
-    // -----------------------------
-    // Build starter/final prompts
-    // -----------------------------
     function buildStarterPrompt() {
-      const code = localStorage.getItem(KEYS.accessCode) || "—";
-      const sid = localStorage.getItem(KEYS.sessionId) || "—";
-      const model = localStorage.getItem(KEYS.modelUsed) || "—";
       const ctx = getContext();
-
-      const notesLine = (ctx.notes || "").trim()
-        ? `Additional instructions/parameters: ${ctx.notes.trim()}`
-        : `Additional instructions/parameters: (none)`;
-
-      return (
-`I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
+      const notesLine = (ctx.notes || "").trim() ? `Additional instructions/parameters: ${ctx.notes.trim()}` : `Additional instructions/parameters: (none)`;
+      return `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
 
 1. Class Context (e.g., subject, course objectives, level, etc.): ${ctx.course || "(not provided)"}
 2. Content Area (specific topic or unit): ${ctx.area || "(not provided)"}
@@ -1777,14 +749,11 @@ When outputting the questions, do not use any interactive widgets, quizzes, or U
 6. Distractor 3: The third distractor.
 You will create 1 question at a time. Pause after each one so I can give feedback on the overall format or on individual questions. Once I respond, adjust if requested, or continue with the next question, until I have reached the goal number of questions.
 
-For now, give me the current time, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`
-      );
+For now, give me the current time, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`;
     }
 
     function buildFinalPrompt() {
-      const sid = localStorage.getItem(KEYS.sessionId) || "—";
-      return (
-`Please provide a full table of questions.
+      return `Please provide a full table of questions.
 
 Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
 1. Question Number
@@ -1794,1075 +763,210 @@ Then perform a final audit of all questions generated so far, and present the re
 5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
 
 After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.
-After that list, give me the current time.`
-      );
+After that list, give me the current time.`;
     }
 
     function fillTemplate(template) {
       const ctx = getContext();
-      const notesLine = (ctx.notes || "").trim()
-        ? `Additional instructions: ${ctx.notes.trim()}`
-        : `(No additional instructions.)`;
-
-      return template
-        .replaceAll("{{COURSE}}", ctx.course || "the course")
-        .replaceAll("{{AREA}}", ctx.area || "the content area")
-        .replaceAll("{{NOTES_LINE}}", notesLine);
-    }
-
-
-    function makeCopyIconButton({ id = "", label = "Copy prompt", title = "Copy prompt", className = "copyIconBtn" } = {}) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      if (id) btn.id = id;
-      btn.className = className;
-      btn.setAttribute("aria-label", label);
-      btn.dataset.copyAriaLabel = label;
-      btn.innerHTML = `<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>`;
-      btn.classList.add("tooltipWrapper");
-      return btn;
-    }
-
-    function hydrateCopyIconButton(btn, { label = "Copy prompt", title = "Copy prompt" } = {}) {
-      if (!btn) return;
-      btn.classList.add("copyIconBtn");
-      btn.classList.add("tooltipWrapper");
-      btn.setAttribute("aria-label", label);
-      btn.dataset.copyAriaLabel = label;
-      btn.removeAttribute("title");
-      btn.type = "button";
-      btn.innerHTML = `<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>`;
+      const notesLine = (ctx.notes || "").trim() ? `Additional instructions: ${ctx.notes.trim()}` : `(No additional instructions.)`;
+      return template.replaceAll("{{COURSE}}", ctx.course || "the course").replaceAll("{{AREA}}", ctx.area || "the content area").replaceAll("{{NOTES_LINE}}", notesLine);
     }
 
     function showCopiedState(btn) {
       if (!btn) return;
       const tooltip = btn.querySelector(".tooltipBubble");
       btn.classList.add("copiedState");
-      btn.setAttribute("aria-label", "Copied");
       if (tooltip) tooltip.textContent = "Copied!";
       if (btn._copiedTimer) clearTimeout(btn._copiedTimer);
       btn._copiedTimer = setTimeout(() => {
         btn.classList.remove("copiedState");
         if (tooltip) tooltip.textContent = "Copy";
-        btn.setAttribute("aria-label", btn.dataset.copyAriaLabel || "Copy");
       }, 800);
     }
 
-    // -----------------------------
-    // Copy helper
-    // -----------------------------
     async function copyToClipboard(text, label) {
       let copied = false;
-
-      try {
-        await navigator.clipboard.writeText(text);
-        copied = true;
-      } catch (e) {
-        try {
-          const ta = document.createElement("textarea");
-          ta.value = text;
-          ta.setAttribute("readonly", "");
-          ta.style.position = "fixed";
-          ta.style.top = "-1000px";
-          ta.style.opacity = "0";
-          document.body.appendChild(ta);
-          ta.focus();
-          ta.select();
-          copied = document.execCommand("copy");
-          document.body.removeChild(ta);
-        } catch (_) {
-          copied = false;
-        }
+      try { await navigator.clipboard.writeText(text); copied = true; } catch (_) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.top = "-1000px";
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        copied = document.execCommand("copy");
+        document.body.removeChild(ta);
       }
-
-      markAnyCopy();
       lastCopiedText = text;
       lastCopiedLabel = label;
       lastCopiedAt = new Date();
       renderMostRecentCopied();
-
-      if (copied) {
-        toast("Copied ✅");
-      } else {
-        toast("Clipboard blocked — text saved in panel");
-      }
-
+      toast(copied ? "Copied ✅" : "Clipboard blocked — text saved in panel");
       return true;
     }
 
-    // -----------------------------
-    // Accordion gating
-    // -----------------------------
-    function hasRequiredContextFields() {
-      const model = (localStorage.getItem(KEYS.modelUsed) || "").trim();
-      const ctx = getContext();
-      return !!model && !!ctx.course.trim() && !!ctx.area.trim();
-    }
-
     function isSetupComplete() {
-      const isConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
-      return isConfirmed && hasRequiredContextFields();
+      const ctx = getContext();
+      return !!(ctx.course || "").trim() && !!(ctx.area || "").trim();
     }
 
     function isPromptsUnlocked() {
-      const stage = getStage();
-      const copied = localStorage.getItem(KEYS.starterCopied) === "true";
-      return (stage === "prompts" || stage === "finalize") && isSetupComplete() && copied;
-    }
-
-    function isFinalizeUnlocked() {
-      return getStage() === "finalize" && isPromptsUnlocked();
-    }
-
-    function lockableSummary(summaryEl, isLockedFn, openBandId, lockMsg) {
-      summaryEl.addEventListener("click", (e) => {
-        if (isLockedFn()) {
-          e.preventDefault();
-          toast(lockMsg);
-          // keep focus/scroll on the band that needs work
-          const target = $(openBandId);
-          if (target) {
-            target.open = true;
-            target.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        }
-      });
+      return getStage() === "prompts" && localStorage.getItem(KEYS.starterCopied) === "true" && isSetupComplete();
     }
 
     function applyStageUI() {
-      const stage = getStage();
-      const promptsUnlocked = isPromptsUnlocked();
-      const finalizeUnlocked = isFinalizeUnlocked();
+      const setupDone = isSetupComplete();
+      const unlocked = isPromptsUnlocked();
+      $("tagSetup").textContent = setupDone ? "Complete" : "In progress";
+      $("tagSetup").className = setupDone ? "tag ok" : "tag";
 
-      // Setup tag
-      if (isSetupComplete()) {
-        $("tagSetup").textContent = "Complete";
-        $("tagSetup").className = "tag ok";
-      } else {
-        $("tagSetup").textContent = "In progress";
-        $("tagSetup").className = "tag";
-      }
+      $("tagPrompts").textContent = unlocked ? "Open" : "Locked";
+      $("tagPrompts").className = unlocked ? "tag ok" : "tag lock";
+      $("lockPrompts").style.display = unlocked ? "none" : "block";
+      $("promptsInner").style.display = unlocked ? "block" : "none";
 
-      // Prompts lock/unlock
-      if (promptsUnlocked) {
-        $("tagPrompts").textContent = "Open";
-        $("tagPrompts").className = "tag ok";
-        $("lockPrompts").style.display = "none";
-        $("promptsInner").style.display = "block";
-      } else {
-        $("tagPrompts").textContent = "Locked";
-        $("tagPrompts").className = "tag lock";
-        $("lockPrompts").style.display = "block";
-        $("promptsInner").style.display = "none";
-      }
-
-      // Finalize lock/unlock
-      if (finalizeUnlocked) {
-        $("tagFinalize").textContent = "Open";
-        $("tagFinalize").className = "tag ok";
-        $("lockFinalize").style.display = "none";
-        $("finalizeInner").style.display = "block";
-      } else {
-        $("tagFinalize").textContent = "Locked";
-        $("tagFinalize").className = "tag lock";
-        $("lockFinalize").style.display = "block";
-        $("finalizeInner").style.display = "none";
-      }
-
-      // Which band should be open?
-      if (stage === "setup" || !promptsUnlocked) {
-        $("bandSetup").open = true;
-        $("bandPrompts").open = false;
-        $("bandFinalize").open = false;
-      } else if (stage === "prompts" || !finalizeUnlocked) {
+      $("btnGoPrompts").disabled = !(setupDone && localStorage.getItem(KEYS.starterCopied) === "true");
+      if (getStage() === "prompts" && unlocked) {
         $("bandSetup").open = false;
         $("bandPrompts").open = true;
-        $("bandFinalize").open = false;
-      } else if (stage === "finalize" && finalizeUnlocked) {
-        $("bandSetup").open = false;
+      } else {
+        $("bandSetup").open = true;
         $("bandPrompts").open = false;
-        $("bandFinalize").open = true;
-        markFinalizeVisited();
       }
-
-      updateEndSessionVisibility();
-      updateFinalizeContentUI();
-      refreshFooterInfo();
-      const copied = localStorage.getItem(KEYS.starterCopied) === "true";
-      const canProceedToPrompts = copied && isSetupComplete();
-      $("btnGoPrompts").disabled = !canProceedToPrompts;
-      $("btnGoPrompts").classList.toggle("disabledBtn", !canProceedToPrompts);
+      $("buildInfo").textContent = `Last updated: ${document.lastModified || "—"}`;
     }
 
-    // -----------------------------
-    // Prompt rendering
-    // -----------------------------
     function formatCopiedTime(dt) {
-      if (!dt) return "—";
-      return dt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+      return dt ? dt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }) : "—";
     }
 
     function renderMostRecentCopied() {
       const has = !!lastCopiedText.trim();
-      const meta = $("recentCopiedMeta");
-      const text = $("recentCopiedText");
-      const copyAgain = $("btnCopyAgain");
-      const clear = $("btnClearRecent");
-
-      if (!meta || !text || !copyAgain || !clear) return;
-
       if (!has) {
-        meta.textContent = "Nothing copied yet. Click any Copy button to see it here.";
-        text.value = "";
-        copyAgain.disabled = true;
-        clear.disabled = true;
+        $("recentCopiedMeta").textContent = "Nothing copied yet. Click any Copy button to see it here.";
+        $("recentCopiedText").value = "";
+        $("btnCopyAgain").disabled = true;
+        $("btnClearRecent").disabled = true;
         return;
       }
+      $("recentCopiedMeta").textContent = `Source: ${lastCopiedLabel || "Unknown"} · Copied: ${formatCopiedTime(lastCopiedAt)}`;
+      $("recentCopiedText").value = lastCopiedText;
+      $("btnCopyAgain").disabled = false;
+      $("btnClearRecent").disabled = false;
+    }
 
-      meta.textContent = `Source: ${lastCopiedLabel || "Unknown"} · Copied: ${formatCopiedTime(lastCopiedAt)}`;
-      text.value = lastCopiedText;
-      copyAgain.disabled = false;
-      clear.disabled = false;
+    function makeCopyIconButton() {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "copyIconBtn tooltipWrapper";
+      btn.innerHTML = '<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>';
+      return btn;
     }
 
     function renderPromptList() {
-      const groupedPrompts = [
-        {
-          group: "Accept or Replace Question",
-          container: $("promptGroupAcceptReplace"),
-          items: ["next_question", "replace_question"]
-        },
-        {
-          group: "Refine Options",
-          container: $("promptGroupRefine"),
-          items: ["correct_answer_options", "distractor_options"]
-        },
-        {
-          group: "Review Questions",
-          container: $("promptGroupReview"),
-          items: ["pause_review"]
-        },
-        {
-          group: "Question Set Audits",
-          container: $("promptGroupAudit"),
-          items: ["rebalance_content", "core_or_peripheral", "rebalance_question_type", "difficulty_audit", "blooms_taxonomy_audit"]
-        }
-      ];
-
-      ["promptGroupAcceptReplace", "promptGroupRefine", "promptGroupReview", "promptGroupAudit"]
-        .forEach((id) => { const el = $(id); if (el) el.innerHTML = ""; });
-
-      const makePromptCard = (prompt) => {
-        const card = document.createElement("div");
-        card.className = "promptCard";
-
-        const header = document.createElement("div");
-        header.className = "promptHeader";
-
-        const title = document.createElement("div");
-        title.className = "promptTitle";
-        title.textContent = prompt.title;
-        header.appendChild(title);
-
-        const actions = document.createElement("div");
-        actions.className = "promptActions";
-
-        const btn = makeCopyIconButton({ label: "Copy prompt", title: "Copy prompt" });
-        btn.dataset.action = "copy";
-        btn.dataset.id = prompt.id;
-
-        actions.appendChild(btn);
-
-        header.appendChild(actions);
-        card.appendChild(header);
-
-        if (prompt.description) {
-          const desc = document.createElement("p");
-          desc.className = "promptDesc";
-          desc.textContent = prompt.description;
-          card.appendChild(desc);
-        }
-
-        return card;
+      const grouped = {
+        promptGroupAcceptReplace: ["next_question", "replace_question"],
+        promptGroupRefine: ["correct_answer_options", "distractor_options"],
+        promptGroupReview: ["pause_review"],
+        promptGroupAudit: ["rebalance_content", "core_or_peripheral", "rebalance_question_type", "difficulty_audit", "blooms_taxonomy_audit"]
       };
+      Object.keys(grouped).forEach((key) => { $(key).innerHTML = ""; grouped[key].forEach((id) => {
+        const prompt = PROMPTS.find((p) => p.id === id); if (!prompt) return;
+        const card = document.createElement("div"); card.className = "promptCard";
+        const header = document.createElement("div"); header.className = "promptHeader";
+        const title = document.createElement("div"); title.className = "promptTitle"; title.textContent = prompt.title;
+        const btn = makeCopyIconButton(); btn.dataset.id = id;
+        const actions = document.createElement("div"); actions.className = "promptActions"; actions.appendChild(btn);
+        header.appendChild(title); header.appendChild(actions); card.appendChild(header);
+        const desc = document.createElement("p"); desc.className = "promptDesc"; desc.textContent = prompt.description || ""; card.appendChild(desc);
+        $(key).appendChild(card);
+      }); });
 
-      groupedPrompts.forEach((group) => {
-        if (!group.container) return;
-        group.items.forEach((id) => {
-          const prompt = PROMPTS.find((p) => p.id === id);
-          if (!prompt) return;
-          group.container.appendChild(makePromptCard(prompt));
-        });
-      });
-
-      const wrapper = $("promptsInner");
-      wrapper.onclick = async (e) => {
-        const btn = e.target.closest("button");
-        if (btn) e.preventDefault();
-        if (!btn) return;
-
-        const action = btn.dataset.action;
-        const id = btn.dataset.id;
-        if (action !== "copy" || !id) return;
-
-        const prompt = PROMPTS.find((x) => x.id === id);
+      $("promptsInner").addEventListener("click", async (e) => {
+        const btn = e.target.closest("button.copyIconBtn");
+        if (!btn || !btn.dataset.id) return;
+        const prompt = PROMPTS.find((p) => p.id === btn.dataset.id);
         if (!prompt) return;
-
-        const promptText = fillTemplate(prompt.prompt);
         showCopiedState(btn);
-        const ok = await copyToClipboard(promptText, prompt.title);
-        if (ok) {
-          logEvent("prompt_copied", { promptId: id });
-          btn.classList.add("isActive");
-          if (btn._activeTimer) clearTimeout(btn._activeTimer);
-          btn._activeTimer = setTimeout(() => {
-            btn.classList.remove("isActive");
-          }, 400);
-        }
-        btn.blur();
-      };
-    }
-
-
-    // -----------------------------
-    // Access verification
-    // -----------------------------
-    function verifyAccessCode() {
-      const code = normalizeCode($("accessCodeInput").value);
-      const isValidCode = Object.hasOwn(ACCESS_CODES, code);
-
-      if (!isValidCode) {
-        setLockedState(true, "Access code not recognized. Please contact the study team.");
-        logEvent("access_denied", { code_entered: code });
-        return false;
-      }
-
-      localStorage.setItem(KEYS.accessVerified, "true");
-      localStorage.setItem(KEYS.accessCode, code);
-
-      // Start timestamp is the first step at sign-in (your request)
-      if (!localStorage.getItem(KEYS.sessionStartTime)) {
-        localStorage.setItem(KEYS.sessionStartTime, nowIso());
-      }
-
-      // Create a session id at sign-in (so it exists for starter prompt + logs)
-      if (!localStorage.getItem(KEYS.sessionId)) {
-        localStorage.setItem(KEYS.sessionId, makeSessionId(code));
-      }
-
-      // Initialize stage
-      if (!localStorage.getItem(KEYS.stage)) {
-        localStorage.setItem(KEYS.stage, "setup");
-      }
-
-      // Initialize events container if missing
-      if (!localStorage.getItem(KEYS.events)) {
-        saveJSON(KEYS.events, []);
-      }
-
-      setLockedState(false);
-      initializeSessionTimerIfNeeded();
-      startSessionTimerLoop();
-      if ($("topUser")) $("topUser").textContent = code || "User";
-      logEvent("access_verified", { accessCode: code });
-      toast("Access verified ✅");
-
-      applyStageUI();
-      return true;
-    }
-
-    // -----------------------------
-    // Submit / JSON
-    // -----------------------------
-    function buildSessionRecord() {
-      ensureSubmissionRecordConsistency();
-      const timerState = getCurrentTimerState();
-      return {
-        participant_code: localStorage.getItem(KEYS.accessCode) || "",
-        session_id: localStorage.getItem(KEYS.sessionId) || "",
-        session_started_at: localStorage.getItem(KEYS.sessionStartTime) || "",
-        product_used: localStorage.getItem(KEYS.modelUsed) || "",
-        model_used: localStorage.getItem(KEYS.modelUsed) || "",
-        llm_product: localStorage.getItem(KEYS.llmProduct) || "",
-        llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
-        llm_mismatch_description: localStorage.getItem(KEYS.llmMismatchDescription) || "",
-        llm_other_description: localStorage.getItem(KEYS.llmOtherDescription) || "",
-        context: getContext(),
-        events: loadJSON(KEYS.events, []),
-        stage: getStage(),
-        final_prompt_copied: localStorage.getItem(KEYS.finalPromptCopied) || "false",
-        submit_clicked: localStorage.getItem(KEYS.submitClicked) || "false",
-        submission_attempted: localStorage.getItem(KEYS.submissionAttempted) === "true",
-        submission_status: localStorage.getItem(KEYS.submissionStatus) || "unknown",
-        submission_completed_at: localStorage.getItem(KEYS.submissionCompletedAt) || "",
-        submission_error: localStorage.getItem(KEYS.submissionError) || "",
-        apps_script_response_file_name: localStorage.getItem(KEYS.appsScriptResponseFileName) || "",
-        apps_script_response_file_id: localStorage.getItem(KEYS.appsScriptResponseFileId) || "",
-        last_copied_text: lastCopiedText || "",
-        final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
-        llm_response: ($("llmResponse").value || "").trim(),
-        session_notes: ($("sessionNotes")?.value || "").trim(),
-        timer_elapsed_ms: timerState.elapsedMs,
-        timer_elapsed_mmss: timerState.elapsedMmss,
-        timer_paused: timerState.timerPaused,
-        timer_started_at: localStorage.getItem(KEYS.timerStartedAt) || "",
-        timer_elapsed_before_pause: Number(localStorage.getItem(KEYS.timerElapsedBeforePause) || 0),
-        timer_warned_35: localStorage.getItem(KEYS.timerWarned35) === "true",
-        timer_warned_40: localStorage.getItem(KEYS.timerWarned40) === "true",
-        submitted_at: new Date().toISOString(),
-        page_last_updated: document.lastModified || ""
-      };
-    }
-
-    function getShortSessionSuffix(sessionId) {
-      const sid = (sessionId || "").trim();
-      if (!sid) return "session";
-      const parts = sid.split("-").filter(Boolean);
-      return parts[parts.length - 1] || "session";
-    }
-
-    function formatDateYYYYMMDD(isoString) {
-      const d = new Date(isoString || nowIso());
-      if (Number.isNaN(d.getTime())) return nowIso().slice(0, 10).replace(/-/g, "");
-      const y = d.getUTCFullYear();
-      const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-      const day = String(d.getUTCDate()).padStart(2, "0");
-      return `${y}${m}${day}`;
-    }
-
-    function buildSessionFilename(record, { revised = false } = {}) {
-      const participant = (record?.participant_code || "participant").trim() || "participant";
-      const datePart = formatDateYYYYMMDD(record?.submitted_at);
-      const shortSession = getShortSessionSuffix(record?.session_id);
-      const revisedSuffix = revised ? "_REVISED" : "";
-      return `${participant}_${datePart}_${shortSession}${revisedSuffix}.json`.replace(/[^\w.-]/g, "_");
-    }
-
-    function resetSubmitButtonToDefaultState() {
-      const submitBtn = $("btnSubmitForm");
-      if (!submitBtn) return;
-      submitBtn.textContent = "Submit session";
-      submitBtn.style.background = "";
-      submitBtn.style.borderColor = "";
-      submitBtn.style.color = "";
-    }
-
-    async function submitSessionJson(payload) {
-      const response = await fetch(SUBMIT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8"
-        },
-        body: JSON.stringify(payload),
-        redirect: "follow"
+        await copyToClipboard(fillTemplate(prompt.prompt), prompt.title);
       });
-
-      const text = await response.text();
-
-      let data = null;
-      try {
-        data = JSON.parse(text);
-      } catch (_) {
-        data = { ok: false, error: "invalid_json_response", raw: text };
-      }
-
-      if (!response.ok) {
-        throw new Error(data?.error || `http_${response.status}`);
-      }
-
-      return data;
     }
 
-    // -----------------------------
-    // Init
-    // -----------------------------
+    function clearSessionData() {
+      Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
+      lastCopiedText = "";
+      lastCopiedLabel = "";
+      lastCopiedAt = null;
+    }
+
     function init() {
-      // Gate
-      const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
-
-      const endedFlag = sessionStorage.getItem("dissertation.ended");
-      if (endedFlag === "true") {
-        sessionStorage.removeItem("dissertation.ended");
-        toast("Session ended. Data cleared on this device.");
-      }
-      if (alreadyVerified) {
-        setLockedState(false);
-        initializeSessionTimerIfNeeded();
-      } else {
-        setLockedState(true);
-      }
-
-      requestAnimationFrame(() => {
-        if ($("accessGate")?.style.display !== "none") {
-          $("accessCodeInput")?.focus();
-        }
-      });
-
-      $("accessForm").addEventListener("submit", (e) => {
-        e.preventDefault();
-        verifyAccessCode();
-      });
-      if ($("timerNoticeClose")) {
-        $("timerNoticeClose").addEventListener("click", () => {
-          hideTimerNotice();
-        });
-      }
-
-      // Lockable summaries (Option C behavior)
-      lockableSummary(
-        $("sumPrompts"),
-        () => !isPromptsUnlocked(),
-        "bandSetup",
-        "Making questions is locked until you copy the starter prompt and click Proceed."
-      );
-      lockableSummary(
-        $("sumFinalize"),
-        () => !isFinalizeUnlocked(),
-        "bandPrompts",
-        "Finalize is locked until you click “I'm done making questions.”"
-      );
-
-      // Hydrate fields
-      $("modelUsed").value = localStorage.getItem(KEYS.modelUsed) || "";
       const ctx = getContext();
       $("ctxCourse").value = ctx.course || "";
       $("ctxArea").value = ctx.area || "";
-      $("ctxNotes").value = ctx.notes || "";
       $("ctxQuestionCount").value = ctx.questionCount || "10";
+      $("ctxNotes").value = ctx.notes || "";
 
-      const selectModel = (model, { logSelection = true } = {}) => {
-        $("modelUsed").value = model;
-        document.querySelectorAll(".modelOption").forEach((btn) => {
-          const isSelected = btn.dataset.model === model;
-          btn.classList.toggle("active", isSelected);
-          btn.classList.toggle("selected", isSelected);
-        });
-
-        const llmProduct = normalizeLlmProduct(model);
-        localStorage.setItem(KEYS.llmProduct, llmProduct);
-        if (logSelection) {
-          logEvent("llm_product_selected", { llmProduct });
-          setProductVersionConfirmedState(false);
-        }
-        renderLlmConfirmPanel(llmProduct);
-      };
-
-      document.querySelectorAll(".modelOption").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          selectModel(btn.dataset.model || "", { logSelection: true });
-          localStorage.setItem(KEYS.starterCopied, "false");
-          applyStageUI();
-        });
-      });
-      selectModel($("modelUsed").value || "", { logSelection: false });
-
-      const storedLlmProduct = localStorage.getItem(KEYS.llmProduct);
-      if (storedLlmProduct && storedLlmProduct !== normalizeLlmProduct($("modelUsed").value || "")) {
-        localStorage.setItem(KEYS.llmProduct, normalizeLlmProduct($("modelUsed").value || ""));
-      }
-      renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || normalizeLlmProduct($("modelUsed").value || ""));
-      updateSetupSubbandVisibility();
-
-      // Hydrate reusable copy icon buttons
-      hydrateCopyIconButton($("btnCopyStarter"), { label: "Copy starter prompt", title: "Copy starter prompt" });
-      hydrateCopyIconButton($("btnCopyFinal"), { label: "Copy final prompt", title: "Copy final prompt" });
-      hydrateCopyIconButton($("btnCopyAgain"), { label: "Copy", title: "Copy" });
-
-
-      const llmExpectedChoiceEl = $("llmExpectedChoice");
-      const llmMismatchDescriptionEl = $("llmMismatchDescription");
-      const llmOtherDescriptionEl = $("llmOtherDescription");
-
-      if (llmExpectedChoiceEl) {
-        llmExpectedChoiceEl.addEventListener("change", () => {
-          const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-          const expectedChoice = llmExpectedChoiceEl.value || "";
-          if (expectedChoice) {
-            localStorage.setItem(KEYS.llmExpectedChoice, expectedChoice);
-          } else {
-            localStorage.removeItem(KEYS.llmExpectedChoice);
-          }
-
-          logEvent("llm_expected_choice_selected", { llmProduct, expectedChoice });
-          setProductVersionConfirmedState(false);
-
-          if (expectedChoice === "different") {
-            setLlmMismatchVisibility(true, true);
-          } else {
-            setLlmMismatchVisibility(false);
-            if (llmMismatchDescriptionEl) llmMismatchDescriptionEl.value = "";
-            localStorage.removeItem(KEYS.llmMismatchDescription);
-            llmMismatchReported = false;
-            llmMismatchAlertAttempted = false;
-          }
-          updateSetupSubbandVisibility();
-        });
-      }
-
-      if (llmMismatchDescriptionEl) {
-        llmMismatchDescriptionEl.addEventListener("input", async () => {
-          const mismatchDescription = llmMismatchDescriptionEl.value || "";
-          localStorage.setItem(KEYS.llmMismatchDescription, mismatchDescription);
-          setProductVersionConfirmedState(false);
-          updateSetupSubbandVisibility();
-
-          const trimmed = mismatchDescription.trim();
-          const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-          const expectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-
-          if (!trimmed) {
-            llmMismatchReported = false;
-            llmMismatchAlertAttempted = false;
-            return;
-          }
-
-          if (!llmMismatchReported && trimmed) {
-            llmMismatchReported = true;
-            logEvent("llm_mismatch_reported", {
-              llmProduct,
-              expectedChoice: "different",
-              mismatchDescription: trimmed
-            });
-          }
-
-          if (!llmMismatchAlertAttempted && trimmed && expectedChoice === "different") {
-            llmMismatchAlertAttempted = true;
-            await sendLlmMismatchAlert({
-              accessCode: localStorage.getItem(KEYS.accessCode) || "",
-              sessionId: localStorage.getItem(KEYS.sessionId) || "",
-              stage: getStage(),
-              modelUsed: localStorage.getItem(KEYS.modelUsed) || "",
-              llmProduct,
-              llmExpectedChoice: expectedChoice,
-              llmMismatchDescription: trimmed,
-              timestamp: nowIso()
-            });
-          }
-        });
-      }
-
-      if (llmOtherDescriptionEl) {
-        llmOtherDescriptionEl.value = localStorage.getItem(KEYS.llmOtherDescription) || "";
-        llmOtherDescriptionEl.addEventListener("input", () => {
-          localStorage.setItem(KEYS.llmOtherDescription, llmOtherDescriptionEl.value || "");
-          setProductVersionConfirmedState(false);
-          updateSetupSubbandVisibility();
-        });
-      }
-
-      const confirmProductVersionBtn = $("btnConfirmProductVersion");
-      const productVersionSummary = $("productVersionSummary");
-      if (!localStorage.getItem(KEYS.productVersionConfirmed)) {
-        localStorage.setItem(KEYS.productVersionConfirmed, "false");
-      }
-
-      if (confirmProductVersionBtn) {
-        confirmProductVersionBtn.addEventListener("click", () => {
-          if (!isSetupVersionConfirmedForContext()) return;
-          setProductVersionConfirmedState(true);
-          logEvent("product_version_confirm_clicked");
-          updateSetupSubbandVisibility();
-        });
-      }
-
-      const reopenProductVersion = () => {
-        setProductVersionConfirmedState(false);
-        logEvent("product_version_reopened");
-        updateSetupSubbandVisibility();
-      };
-
-      if (productVersionSummary) {
-        productVersionSummary.addEventListener("click", reopenProductVersion);
-        productVersionSummary.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            reopenProductVersion();
-          }
-        });
-      }
-
-      // Render prompts
-      renderPromptList();
-
-      renderMostRecentCopied();
-      if (!localStorage.getItem(KEYS.finalPromptCopied)) localStorage.setItem(KEYS.finalPromptCopied, "false");
-      if (!localStorage.getItem(KEYS.submitClicked)) localStorage.setItem(KEYS.submitClicked, "false");
-      if (!localStorage.getItem(KEYS.resubmitting)) localStorage.setItem(KEYS.resubmitting, "false");
-      if (!localStorage.getItem(KEYS.submissionAttempted)) localStorage.setItem(KEYS.submissionAttempted, "false");
-      if (!localStorage.getItem(KEYS.submissionStatus)) localStorage.setItem(KEYS.submissionStatus, "unknown");
-      if (!localStorage.getItem(KEYS.submissionCompletedAt)) localStorage.setItem(KEYS.submissionCompletedAt, "");
-      if (!localStorage.getItem(KEYS.submissionError)) localStorage.setItem(KEYS.submissionError, "");
-      if (!localStorage.getItem(KEYS.appsScriptResponseFileName)) localStorage.setItem(KEYS.appsScriptResponseFileName, "");
-      if (!localStorage.getItem(KEYS.appsScriptResponseFileId)) localStorage.setItem(KEYS.appsScriptResponseFileId, "");
-      if ($("btnPauseTimer")) {
-        $("btnPauseTimer").addEventListener("click", handlePauseResumeTimer);
-      }
-      startSessionTimerLoop();
-      updateFinalizeContentUI();
-
-      $("btnCopyAgain").addEventListener("click", async (e) => {
-        e.preventDefault();
-        if (!lastCopiedText.trim()) return;
-        logEvent("copy_again_clicked");
-        const btn = $("btnCopyAgain");
-        showCopiedState(btn);
-        btn.classList.add("isActive");
-        if (btn._activeTimer) clearTimeout(btn._activeTimer);
-        btn._activeTimer = setTimeout(() => btn?.classList.remove("isActive"), 400);
-        await copyToClipboard(lastCopiedText, lastCopiedLabel || "Most Recently Copied");
-        btn.blur();
-      });
-
-      $("btnClearRecent").addEventListener("click", () => {
-        logEvent("clear_recent_clicked");
-        lastCopiedText = "";
-        lastCopiedLabel = "";
-        lastCopiedAt = null;
-        renderMostRecentCopied();
-      });
-
-      if (!($("setupMsg").textContent || "").trim()) {
-        $("setupMsg").style.display = "none";
-      }
-
-      ["ctxCourse", "ctxArea", "ctxNotes", "ctxQuestionCount"].forEach((id) => {
+      ["ctxCourse", "ctxArea", "ctxQuestionCount", "ctxNotes"].forEach((id) => {
         $(id).addEventListener("input", () => {
-          localStorage.setItem(KEYS.starterCopied, "false");
+          setContext({
+            course: $("ctxCourse").value,
+            area: $("ctxArea").value,
+            questionCount: $("ctxQuestionCount").value || "10",
+            notes: $("ctxNotes").value
+          });
           applyStageUI();
         });
       });
 
-      // Setup: Copy starter prompt only
-      $("btnCopyStarter").addEventListener("click", async (e) => {
-        e.preventDefault();
-        // Validate required items
-        const model = ($("modelUsed").value || "").trim();
-        const course = ($("ctxCourse").value || "").trim();
-        const area = ($("ctxArea").value || "").trim();
-        const notes = ($("ctxNotes").value || "").trim();
-        const questionCount = ($("ctxQuestionCount").value || "10").trim() || "10";
+      $("btnCopyStarter").innerHTML = '<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>';
+      $("btnCopyStarter").classList.add("tooltipWrapper");
+      $("btnCopyFinal").innerHTML = '<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>';
+      $("btnCopyFinal").classList.add("tooltipWrapper");
+      $("btnCopyAgain").innerHTML = '<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>';
+      $("btnCopyAgain").classList.add("tooltipWrapper");
 
-        $("setupMsg").textContent = "";
-        $("setupMsg").style.display = "none";
-
-        if (!model || !course || !area) {
-          $("setupMsg").textContent = "Please select a model and fill in course + content area before continuing.";
-          $("setupMsg").style.display = "block";
-          toast("Complete required fields");
-          return;
-        }
-
-        if (!isLlmConfirmationComplete() || localStorage.getItem(KEYS.productVersionConfirmed) !== "true") {
-          $("setupMsg").textContent = "Please confirm product version before continuing.";
-          $("setupMsg").style.display = "block";
-          toast("Complete required fields");
-          return;
-        }
-
-        // Save model + context
-        localStorage.setItem(KEYS.modelUsed, model);
-        setContext({ course, area, notes, questionCount });
-
-        // Ensure access/session exist (in case someone bypassed sign-in state)
-        const code = localStorage.getItem(KEYS.accessCode);
-        if (!code) {
-          alert("No access code found. Please refresh and sign in again.");
-          return;
-        }
-        if (!localStorage.getItem(KEYS.sessionStartTime)) {
-          localStorage.setItem(KEYS.sessionStartTime, nowIso());
-        }
-        if (!localStorage.getItem(KEYS.sessionId)) {
-          localStorage.setItem(KEYS.sessionId, makeSessionId(code));
-        }
-
-        // Log + copy only
-        logEvent("starter_prepared", { accessCode: code, sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
-        const starterBtn = $("btnCopyStarter");
-        showCopiedState(starterBtn);
-        starterBtn.classList.add("isActive");
-        if (starterBtn._activeTimer) clearTimeout(starterBtn._activeTimer);
-        starterBtn._activeTimer = setTimeout(() => starterBtn?.classList.remove("isActive"), 400);
-        const ok = await copyToClipboard(buildStarterPrompt(), "Starter prompt");
-        starterBtn.blur();
-        if (ok) {
-          logEvent("starter_copied", {});
-          localStorage.setItem(KEYS.starterCopied, "true");
-          $("setupMsg").textContent = "Starter prompt copied. Paste it into your selected LLM, then click Proceed to 2) Making questions.";
-          $("setupMsg").style.display = "block";
-        }
-
+      $("btnCopyStarter").addEventListener("click", async () => {
+        showCopiedState($("btnCopyStarter"));
+        await copyToClipboard(buildStarterPrompt(), "Starter prompt");
+        localStorage.setItem(KEYS.starterCopied, "true");
         applyStageUI();
       });
 
-      $("btnGoPrompts").addEventListener("click", () => {
-        logEvent("go_prompts_clicked");
-        if (localStorage.getItem(KEYS.starterCopied) !== "true") {
-          toast("Copy starter prompt first");
-          return;
-        }
-        if (!isSetupComplete()) {
-          toast("Complete required fields");
-          return;
-        }
-        $("bandSetup").open = false;
-        setStage("prompts");
+      $("btnGoPrompts").addEventListener("click", () => { setStage("prompts"); applyStageUI(); });
+      $("btnEditContext").addEventListener("click", () => { setStage("setup"); applyStageUI(); });
+      $("btnCopyFinal").addEventListener("click", async () => {
+        const text = buildFinalPrompt();
+        localStorage.setItem(KEYS.finalPrompt, text);
+        showCopiedState($("btnCopyFinal"));
+        await copyToClipboard(text, "Final prompt");
+      });
+      $("btnCopyAgain").addEventListener("click", async () => {
+        if (!lastCopiedText) return;
+        showCopiedState($("btnCopyAgain"));
+        await copyToClipboard(lastCopiedText, lastCopiedLabel || "Most recently copied");
+      });
+      $("btnClearRecent").addEventListener("click", () => {
+        lastCopiedText = ""; lastCopiedLabel = ""; lastCopiedAt = null; renderMostRecentCopied();
       });
 
-      // Prompts controls
-      $("btnEditContext").addEventListener("click", () => {
-        logEvent("edit_context_clicked");
-        setStage("setup");
-      });
-
-      $("btnReadyFinal").addEventListener("click", () => {
-        logEvent("done_making_questions_clicked");
-        const fp = buildFinalPrompt();
-        localStorage.setItem(KEYS.finalPrompt, fp);
-        localStorage.setItem(KEYS.finalPromptCopied, "false");
-        localStorage.setItem(KEYS.submitClicked, "false");
-        resetSubmissionMeta();
-        logEvent("final_prompt_ready", {});
-        setStage("finalize");
-      });
-
-      // Finalize controls
-      $("btnBackToPrompts").addEventListener("click", () => {
-        logEvent("back_to_making_questions_clicked");
-        logEvent("returned_from_finalize_to_prompts");
-        setStage("prompts");
-      });
-
-      $("btnCopyFinal").addEventListener("click", async (e) => {
-        e.preventDefault();
-        const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
-        const finalBtn = $("btnCopyFinal");
-        showCopiedState(finalBtn);
-        finalBtn.classList.add("isActive");
-        if (finalBtn._activeTimer) clearTimeout(finalBtn._activeTimer);
-        finalBtn._activeTimer = setTimeout(() => finalBtn?.classList.remove("isActive"), 400);
-        const ok = await copyToClipboard(fp, "Final prompt");
-        finalBtn.blur();
-        if (!ok) return;
-        localStorage.setItem(KEYS.finalPromptCopied, "true");
-        logEvent("final_prompt_copied", {});
-        updateFinalizeContentUI();
-      });
-
-      $("btnSubmitForm").addEventListener("click", async () => {
-        if ($("btnSubmitForm").disabled) return;
-
-        const llm = ($("llmResponse").value || "").trim();
-        if (!llm) {
-          $("finalizeMsg").textContent = "Please paste the LLM Final Response before submitting.";
-          toast("Paste LLM response first");
-          return;
-        }
-
-        localStorage.setItem(KEYS.submitClicked, "true");
-        setSubmissionMeta({
-          attempted: true,
-          status: "unknown",
-          completedAt: "",
-          error: "",
-          fileName: "",
-          fileId: ""
-        });
-        logEvent("submit_form_clicked");
-        const payload = buildSessionRecord();
-        const revisedSubmission = localStorage.getItem(KEYS.resubmitting) === "true";
-        const clientFileName = buildSessionFilename(payload, { revised: revisedSubmission });
-        const submitBtn = $("btnSubmitForm");
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.textContent = "Submitting...";
-        }
-        $("finalizeMsg").textContent = "";
-
-        try {
-          const result = await submitSessionJson(payload);
-          if (result?.ok) {
-            const submitBtn = $("btnSubmitForm");
-
-            submitBtn.textContent = "Success! ✓";
-            submitBtn.style.background = "#16a34a";
-            submitBtn.style.borderColor = "#16a34a";
-            submitBtn.style.color = "#ffffff";
-            submitBtn.disabled = true;
-
-            $("finalizeMsg").textContent = "";
-            const completedAt = nowIso();
-            const resultFileName = String(result.fileName || clientFileName || "");
-            const resultFileId = String(result.fileId || "");
-            setSubmissionMeta({
-              attempted: true,
-              status: "success",
-              completedAt,
-              error: "",
-              fileName: resultFileName,
-              fileId: resultFileId
-            });
-            logEvent("session_submitted", {
-              method: "apps_script",
-              ok: true,
-              fileName: resultFileName,
-              fileId: resultFileId,
-              revised: revisedSubmission
-            });
-            localStorage.setItem(KEYS.resubmitting, "false");
-            toast("Session submitted ✅");
-          } else {
-            const submitBtn = $("btnSubmitForm");
-            submitBtn.textContent = "Success! ✓";
-            submitBtn.style.background = "#16a34a";
-            submitBtn.style.borderColor = "#16a34a";
-            submitBtn.style.color = "#ffffff";
-            submitBtn.disabled = true;
-
-            const completedAt = nowIso();
-            const submissionError = String(result?.error || "unknown");
-            setSubmissionMeta({
-              attempted: true,
-              status: "failure",
-              completedAt,
-              error: submissionError,
-              fileName: String(result?.fileName || ""),
-              fileId: String(result?.fileId || "")
-            });
-            $("finalizeMsg").textContent = "Automatic submission failed. Please download the backup file and email it.";
-            logEvent("session_submitted", {
-              method: "apps_script",
-              ok: false,
-              error: submissionError,
-              fileName: String(result?.fileName || ""),
-              fileId: String(result?.fileId || "")
-            });
-            toast("Automatic submission failed");
-          }
-        } catch (err) {
-          const submitBtn = $("btnSubmitForm");
-          submitBtn.textContent = "Success! ✓";
-          submitBtn.style.background = "#16a34a";
-          submitBtn.style.borderColor = "#16a34a";
-          submitBtn.style.color = "#ffffff";
-          submitBtn.disabled = true;
-
-          const completedAt = nowIso();
-          const submissionError = String(err?.message || err || "unknown");
-          setSubmissionMeta({
-            attempted: true,
-            status: "failure",
-            completedAt,
-            error: submissionError,
-            fileName: "",
-            fileId: ""
-          });
-          $("finalizeMsg").textContent = "Automatic submission failed. Please download the backup file and email it.";
-          logEvent("session_submitted", {
-            method: "apps_script",
-            ok: false,
-            error: submissionError
-          });
-          toast("Automatic submission failed");
-        } finally {
-          localStorage.setItem(KEYS.submitClicked, "true");
-          updateFinalizeContentUI();
-        }
-      });
-
-      $("llmResponse").addEventListener("input", () => {
-        updateFinalizeContentUI();
-      });
-
-      $("btnReviseAfterSubmit").addEventListener("click", () => {
-        localStorage.setItem(KEYS.resubmitting, "true");
-        localStorage.setItem(KEYS.submitClicked, "false");
-        resetSubmissionMeta();
-        resetSubmitButtonToDefaultState();
-        const reviseBtn = $("btnReviseAfterSubmit");
-        if (reviseBtn) reviseBtn.style.display = "none";
-        $("finalizeMsg").textContent = "You can now revise your work and submit again.";
-        logEvent("submission_revise_requested", { revised: true });
-        updateFinalizeContentUI();
-        setStage("prompts");
-      });
-
-      const formFailedDetails = $("formFailedDetails");
-      if (formFailedDetails) {
-        formFailedDetails.addEventListener("toggle", () => {
-          if (formFailedDetails.open) {
-            logEvent("form_failed_details_opened");
-          }
-        });
-      }
-
-      // Download backup json
-      $("btnDownload").addEventListener("click", () => {
-        logEvent("backup_download_clicked");
-        const record = {
-          ...buildSessionRecord(),
-          llm_response: $("llmResponse").value || "",
-          exported_at: nowIso()
-        };
-
-        const blob = new Blob([JSON.stringify(record, null, 2)], { type: "application/json" });
-        const a = document.createElement("a");
-        const revisedSubmission = localStorage.getItem(KEYS.resubmitting) === "true";
-        const fname = buildSessionFilename(record, { revised: revisedSubmission });
-        a.href = URL.createObjectURL(blob);
-        a.download = fname;
-        a.click();
-        URL.revokeObjectURL(a.href);
-
-        logEvent("backup_exported", { filename: fname });
-        toast("Downloaded ✅");
-      });
-
-      // Reset session (header)
       const openModal = (id) => { const m = $(id); if (m) m.style.display = "flex"; };
       const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
 
       $("btnResetSession").addEventListener("click", () => {
-        logEvent("reset_opened");
         openModal("modalReset");
       });
       $("btnResetCancel").addEventListener("click", () => {
-        logEvent("reset_cancelled");
         closeModal("modalReset");
       });
       $("btnResetConfirm").addEventListener("click", () => {
-        logEvent("reset_confirmed");
         clearSessionData();
         closeModal("modalReset");
         location.reload();
       });
 
-      $("btnEndSession").addEventListener("click", () => {
-        logEvent("end_session_opened");
-        openModal("modalEnd");
-      });
-      $("btnEndCancel").addEventListener("click", () => {
-        logEvent("end_session_cancelled");
-        closeModal("modalEnd");
-      });
-      $("btnEndConfirm").addEventListener("click", () => {
-        logEvent("end_session_confirmed");
-        clearSessionData();
-        sessionStorage.setItem("dissertation.ended", "true");
-        closeModal("modalEnd");
-        location.reload();
-      });
-
-      // Always show footer status immediately (even before access is verified)
-      refreshFooterInfo();
-
-      // Finally apply stage UI if already verified
-      if (alreadyVerified) {
-        // Ensure stage exists
-        if (!localStorage.getItem(KEYS.stage)) localStorage.setItem(KEYS.stage, "setup");
-        applyStageUI();
-      }
+      renderPromptList();
+      renderMostRecentCopied();
+      applyStageUI();
     }
 
     init();
