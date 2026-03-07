@@ -860,7 +860,7 @@ const PROMPTS = [
     title: "Generate Alternatives",
     description: "Generate replacement versions of this question.",
     prompt:
-`Write five possible replacements for this question. Begin with three new questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
+`Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
   },
   {
     id: "distractor_options",
@@ -1370,35 +1370,40 @@ Provide the results in a table with the following columns:
       return (
 `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
 
-SESSION_ID: ${sid}
-PARTICIPANT_CODE: ${code}
-MODEL_USED: ${model}
+1. Class Context (e.g., subject, course objectives, level, etc.): ${ctx.course || "(not provided)"}
+2. Content Area (specific topic or unit): ${ctx.area || "(not provided)"}
+3. Desired Number of Questions: ${ctx.questionCount || "10"}
+4. Additional parameters to consider (if blank, ignore): ${notesLine}
 
-Course/context: ${ctx.course || "(not provided)"}
-Content area: ${ctx.area || "(not provided)"}
-Desired number of questions: ${ctx.questionCount || "10"}
-${notesLine}
+I may attach documents (e.g., lecture notes, flashcards, readings) to guide question creation. Use them as a general reference, but do not rely on them exclusively. Try to create a question set that reflects the concepts within the content area that are most relevant to NCLEX and nursing practice.
 
-Follow these rules:
-- Use only the content provided by the user in this chat.
-- Do not add outside facts or new content.
-- If something is missing, ask a single clarifying question.
-- Output must be easy to copy and paste.
+When outputting the questions, do not use any interactive widgets, quizzes, or UI tools. I want the output strictly in text form and placed in a table format with the following columns:
+1. Question Name: Number of the question, followed by a 4-word descriptive title, followed by four randomly chosen letters.
+2. Question Stem: The question stem.
+3. Correct Answer: The correct answer.
+4. Distractor 1: The first distractor.
+5. Distractor 2: The second distractor.
+6. Distractor 3: The third distractor.
+You will create 1 question at a time. Pause after each one so I can give feedback on the overall format or on individual questions. Once I respond, adjust if requested, or continue with the next question, until I have reached the goal number of questions.
 
-Acknowledge these rules briefly, then proceed with the next instruction.`
+For now, give me the current time, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`
       );
     }
 
     function buildFinalPrompt() {
       const sid = localStorage.getItem(KEYS.sessionId) || "—";
       return (
-`You are at the final step.
+`Please provide a full table of questions.
 
-Include this line exactly at the very top of your response:
-SESSION_ID: ${sid}
+Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
+1. Question Number
+2. Difficulty – Classify as Easy, Moderate, or Hard.
+3. Bloom’s Level – Classify as Remember, Understand, Apply, Analyze, Evaluate, or Create.
+4. Question Type – 1–2 words (e.g., Assessment, Prioritization, Delegation, Teaching, Pharmacology).
+5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
 
-Now produce the final table output for this session. Keep the table clean and copy/paste friendly.
-Do not include extra commentary before or after the table unless the user explicitly requests it.`
+After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.
+After that list, give me the current time.`
       );
     }
 
