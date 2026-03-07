@@ -205,28 +205,41 @@
     .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
     @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
     .centerCard { max-width:420px; margin: 0 auto; }
-    .appHeaderBar { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; padding:6px 2px; gap:10px; }
-    .headerTimer {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 2px;
+    .appHeaderBar { display:flex; justify-content:flex-start; align-items:center; margin-bottom:10px; padding:6px 2px; }
+    .timerCard {
+      margin-top: 12px;
+      padding: 12px;
     }
-    .headerTimerTop {
+    .timerCard h3 {
+      margin: 0 0 6px;
+      font-size: 16px;
+    }
+    .timerTopRow {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 8px;
     }
-    #sessionTimerDisplay {
+    .timerDisplay {
       font-size: 16px;
       font-weight: 600;
       line-height: 1.2;
+      letter-spacing: 0.01em;
     }
-    .headerTimerMeta {
-      text-align: right;
+    #btnPauseTimer {
+      flex: 0 0 auto;
     }
-    .headerTimer.timerComplete #sessionTimerDisplay {
-      color: #16a34a;
+    .timerCard.timerComplete {
+      border-color: #16a34a;
+      background: #f0fdf4;
+    }
+    .toast.timerNotice {
+      background: #1f4ca4;
+      border-color: #1f4ca4;
+      padding: 14px 16px;
+      font-size: 14px;
+      max-width: 420px;
+      text-align: center;
     }
     .helpFaqLink {
       color: var(--accent);
@@ -488,13 +501,6 @@
     <div id="appShell" style="display:none;">
       <div class="appHeaderBar">
         <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
-        <div class="headerTimer" id="headerTimer">
-          <div class="headerTimerTop">
-            <span id="sessionTimerDisplay">00:00</span>
-            <button class="btn" id="btnPauseTimer" type="button">Pause</button>
-          </div>
-          <div class="headerTimerMeta muted small">Goal: 10 questions</div>
-        </div>
       </div>
       <div class="layoutGrid">
         <div class="main">
@@ -762,7 +768,7 @@
             </div>
           </div>
           <div class="card timerCard" id="sessionTimerCard">
-            <h3>Session Timer</h3>
+            <h3 style="margin:0 0 6px; font-size:16px;">Session Timer</h3>
             <div class="timerTopRow">
               <div id="sessionTimerDisplay" class="timerDisplay">00:00</div>
               <button class="btn" id="btnPauseTimer" type="button">Pause</button>
@@ -1053,11 +1059,17 @@ Provide the results in a table with the following columns:
     let llmMismatchReported = false;
     let llmMismatchAlertAttempted = false;
 
-    const toast = (msg) => {
+    const toast = (msg, { duration = 1400, className = "" } = {}) => {
       const t = $("toast");
+      if (t._hideTimer) clearTimeout(t._hideTimer);
+      t.classList.remove("timerNotice");
+      if (className) t.classList.add(className);
       t.textContent = msg;
       t.style.display = "block";
-      setTimeout(() => t.style.display = "none", 1400);
+      t._hideTimer = setTimeout(() => {
+        t.style.display = "none";
+        t.classList.remove("timerNotice");
+      }, duration);
     };
 
     function normalizeCode(s) {
@@ -1139,7 +1151,7 @@ Provide the results in a table with the following columns:
 
     function updateSessionTimer() {
       const display = $("sessionTimerDisplay");
-      const card = $("headerTimer");
+      const card = $("sessionTimerCard");
       if (!display || !card) return;
 
       const elapsed = getTimerElapsedMs();
@@ -1147,7 +1159,7 @@ Provide the results in a table with the following columns:
 
       if (elapsed >= TIMER_35_MIN_MS && localStorage.getItem(KEYS.timerWarned35) !== "true") {
         localStorage.setItem(KEYS.timerWarned35, "true");
-        toast("5 minutes remaining in the task window. If your question set is close to 10 questions, you may want to finish your current item and run any final audits.");
+        toast("5 minutes remaining in the task window. If your question set is close to 10 questions, you may want to finish your current item and run any final audits.", { duration: 60000, className: "timerNotice" });
         logEvent("timer_35min_warning");
       }
 
@@ -1155,7 +1167,7 @@ Provide the results in a table with the following columns:
         card.classList.add("timerComplete");
         if (localStorage.getItem(KEYS.timerWarned40) !== "true") {
           localStorage.setItem(KEYS.timerWarned40, "true");
-          toast("You have reached 40 minutes. If your question set is complete (about 10 usable questions), you may stop. You may also continue working if needed.");
+          toast("You have reached 40 minutes. If your question set is complete (about 10 usable questions), you may stop. You may also continue working if needed.", { duration: 60000, className: "timerNotice" });
           logEvent("timer_40min_notice");
         }
       } else {
