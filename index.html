@@ -1105,7 +1105,13 @@ Provide the results in a table with the following columns:
       timerElapsedBeforePause: "dissertation.timerElapsedBeforePause",
       timerPaused: "dissertation.timerPaused",
       timerWarned35: "dissertation.timerWarned35",
-      timerWarned40: "dissertation.timerWarned40"
+      timerWarned40: "dissertation.timerWarned40",
+      submissionAttempted: "dissertation.submissionAttempted",
+      submissionStatus: "dissertation.submissionStatus",
+      submissionCompletedAt: "dissertation.submissionCompletedAt",
+      submissionError: "dissertation.submissionError",
+      appsScriptResponseFileName: "dissertation.appsScriptResponseFileName",
+      appsScriptResponseFileId: "dissertation.appsScriptResponseFileId"
     };
 
     // -----------------------------
@@ -1251,6 +1257,62 @@ Provide the results in a table with the following columns:
       }
 
       restoreTimerButtonState();
+    }
+
+
+    function resetSubmissionMeta() {
+      localStorage.setItem(KEYS.submissionAttempted, "false");
+      localStorage.setItem(KEYS.submissionStatus, "unknown");
+      localStorage.setItem(KEYS.submissionCompletedAt, "");
+      localStorage.setItem(KEYS.submissionError, "");
+      localStorage.setItem(KEYS.appsScriptResponseFileName, "");
+      localStorage.setItem(KEYS.appsScriptResponseFileId, "");
+    }
+
+    function setSubmissionMeta({
+      attempted,
+      status,
+      completedAt,
+      error,
+      fileName,
+      fileId
+    } = {}) {
+      if (typeof attempted === "boolean") localStorage.setItem(KEYS.submissionAttempted, attempted ? "true" : "false");
+      if (typeof status === "string") localStorage.setItem(KEYS.submissionStatus, status || "unknown");
+      if (typeof completedAt === "string") localStorage.setItem(KEYS.submissionCompletedAt, completedAt);
+      if (typeof error === "string") localStorage.setItem(KEYS.submissionError, error);
+      if (typeof fileName === "string") localStorage.setItem(KEYS.appsScriptResponseFileName, fileName);
+      if (typeof fileId === "string") localStorage.setItem(KEYS.appsScriptResponseFileId, fileId);
+    }
+
+    function ensureSubmissionRecordConsistency() {
+      const events = loadJSON(KEYS.events, []);
+      const hasSubmitFormClicked = events.some((e) => e?.type === "submit_form_clicked");
+      const submitClicked = localStorage.getItem(KEYS.submitClicked) === "true";
+
+      if (hasSubmitFormClicked && !submitClicked) {
+        localStorage.setItem(KEYS.submitClicked, "true");
+      }
+
+      if (localStorage.getItem(KEYS.submissionAttempted) !== "true" && (hasSubmitFormClicked || submitClicked)) {
+        localStorage.setItem(KEYS.submissionAttempted, "true");
+      }
+
+      if (!localStorage.getItem(KEYS.submissionStatus)) {
+        localStorage.setItem(KEYS.submissionStatus, "unknown");
+      }
+      if (!localStorage.getItem(KEYS.submissionCompletedAt)) {
+        localStorage.setItem(KEYS.submissionCompletedAt, "");
+      }
+      if (!localStorage.getItem(KEYS.submissionError)) {
+        localStorage.setItem(KEYS.submissionError, "");
+      }
+      if (!localStorage.getItem(KEYS.appsScriptResponseFileName)) {
+        localStorage.setItem(KEYS.appsScriptResponseFileName, "");
+      }
+      if (!localStorage.getItem(KEYS.appsScriptResponseFileId)) {
+        localStorage.setItem(KEYS.appsScriptResponseFileId, "");
+      }
     }
 
     function updateSessionTimer() {
@@ -2113,6 +2175,7 @@ After that list, give me the current time.`
     // Submit / JSON
     // -----------------------------
     function buildSessionRecord() {
+      ensureSubmissionRecordConsistency();
       const timerState = getCurrentTimerState();
       return {
         participant_code: localStorage.getItem(KEYS.accessCode) || "",
@@ -2129,6 +2192,12 @@ After that list, give me the current time.`
         stage: getStage(),
         final_prompt_copied: localStorage.getItem(KEYS.finalPromptCopied) || "false",
         submit_clicked: localStorage.getItem(KEYS.submitClicked) || "false",
+        submission_attempted: localStorage.getItem(KEYS.submissionAttempted) === "true",
+        submission_status: localStorage.getItem(KEYS.submissionStatus) || "unknown",
+        submission_completed_at: localStorage.getItem(KEYS.submissionCompletedAt) || "",
+        submission_error: localStorage.getItem(KEYS.submissionError) || "",
+        apps_script_response_file_name: localStorage.getItem(KEYS.appsScriptResponseFileName) || "",
+        apps_script_response_file_id: localStorage.getItem(KEYS.appsScriptResponseFileId) || "",
         last_copied_text: lastCopiedText || "",
         final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
         llm_response: ($("llmResponse").value || "").trim(),
@@ -2420,6 +2489,12 @@ After that list, give me the current time.`
       if (!localStorage.getItem(KEYS.finalPromptCopied)) localStorage.setItem(KEYS.finalPromptCopied, "false");
       if (!localStorage.getItem(KEYS.submitClicked)) localStorage.setItem(KEYS.submitClicked, "false");
       if (!localStorage.getItem(KEYS.resubmitting)) localStorage.setItem(KEYS.resubmitting, "false");
+      if (!localStorage.getItem(KEYS.submissionAttempted)) localStorage.setItem(KEYS.submissionAttempted, "false");
+      if (!localStorage.getItem(KEYS.submissionStatus)) localStorage.setItem(KEYS.submissionStatus, "unknown");
+      if (!localStorage.getItem(KEYS.submissionCompletedAt)) localStorage.setItem(KEYS.submissionCompletedAt, "");
+      if (!localStorage.getItem(KEYS.submissionError)) localStorage.setItem(KEYS.submissionError, "");
+      if (!localStorage.getItem(KEYS.appsScriptResponseFileName)) localStorage.setItem(KEYS.appsScriptResponseFileName, "");
+      if (!localStorage.getItem(KEYS.appsScriptResponseFileId)) localStorage.setItem(KEYS.appsScriptResponseFileId, "");
       if ($("btnPauseTimer")) {
         $("btnPauseTimer").addEventListener("click", handlePauseResumeTimer);
       }
@@ -2547,6 +2622,7 @@ After that list, give me the current time.`
         localStorage.setItem(KEYS.finalPrompt, fp);
         localStorage.setItem(KEYS.finalPromptCopied, "false");
         localStorage.setItem(KEYS.submitClicked, "false");
+        resetSubmissionMeta();
         logEvent("final_prompt_ready", {});
         setStage("finalize");
       });
@@ -2584,6 +2660,15 @@ After that list, give me the current time.`
           return;
         }
 
+        localStorage.setItem(KEYS.submitClicked, "true");
+        setSubmissionMeta({
+          attempted: true,
+          status: "unknown",
+          completedAt: "",
+          error: "",
+          fileName: "",
+          fileId: ""
+        });
         logEvent("submit_form_clicked");
         const payload = buildSessionRecord();
         const revisedSubmission = localStorage.getItem(KEYS.resubmitting) === "true";
@@ -2607,10 +2692,22 @@ After that list, give me the current time.`
             submitBtn.disabled = true;
 
             $("finalizeMsg").textContent = "";
+            const completedAt = nowIso();
+            const resultFileName = String(result.fileName || clientFileName || "");
+            const resultFileId = String(result.fileId || "");
+            setSubmissionMeta({
+              attempted: true,
+              status: "success",
+              completedAt,
+              error: "",
+              fileName: resultFileName,
+              fileId: resultFileId
+            });
             logEvent("session_submitted", {
               method: "apps_script",
               ok: true,
-              fileName: result.fileName || clientFileName,
+              fileName: resultFileName,
+              fileId: resultFileId,
               revised: revisedSubmission
             });
             localStorage.setItem(KEYS.resubmitting, "false");
@@ -2623,11 +2720,23 @@ After that list, give me the current time.`
             submitBtn.style.color = "#ffffff";
             submitBtn.disabled = true;
 
+            const completedAt = nowIso();
+            const submissionError = String(result?.error || "unknown");
+            setSubmissionMeta({
+              attempted: true,
+              status: "failure",
+              completedAt,
+              error: submissionError,
+              fileName: String(result?.fileName || ""),
+              fileId: String(result?.fileId || "")
+            });
             $("finalizeMsg").textContent = "Automatic submission failed. Please download the backup file and email it.";
             logEvent("session_submitted", {
               method: "apps_script",
               ok: false,
-              error: result?.error || "unknown"
+              error: submissionError,
+              fileName: String(result?.fileName || ""),
+              fileId: String(result?.fileId || "")
             });
             toast("Automatic submission failed");
           }
@@ -2639,11 +2748,21 @@ After that list, give me the current time.`
           submitBtn.style.color = "#ffffff";
           submitBtn.disabled = true;
 
+          const completedAt = nowIso();
+          const submissionError = String(err?.message || err || "unknown");
+          setSubmissionMeta({
+            attempted: true,
+            status: "failure",
+            completedAt,
+            error: submissionError,
+            fileName: "",
+            fileId: ""
+          });
           $("finalizeMsg").textContent = "Automatic submission failed. Please download the backup file and email it.";
           logEvent("session_submitted", {
             method: "apps_script",
             ok: false,
-            error: String(err?.message || err || "unknown")
+            error: submissionError
           });
           toast("Automatic submission failed");
         } finally {
@@ -2659,6 +2778,7 @@ After that list, give me the current time.`
       $("btnReviseAfterSubmit").addEventListener("click", () => {
         localStorage.setItem(KEYS.resubmitting, "true");
         localStorage.setItem(KEYS.submitClicked, "false");
+        resetSubmissionMeta();
         resetSubmitButtonToDefaultState();
         const reviseBtn = $("btnReviseAfterSubmit");
         if (reviseBtn) reviseBtn.style.display = "none";
