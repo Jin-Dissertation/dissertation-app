@@ -230,6 +230,23 @@
       overflow: hidden;
     }
     .copyMeta { margin:0 0 8px; color: var(--muted); font-size:12px; }
+    .copyHelpExample {
+      margin-top: 10px;
+      max-width: 260px;
+    }
+    .copyHelpImage {
+      width: 220px;
+      height: 220px;
+      object-fit: contain;
+      border-radius: 12px;
+      display: block;
+    }
+    .copyHelpCaption {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #4b5563;
+      line-height: 1.3;
+    }
     .copiedText.recentTextarea {
       width: 100%;
       flex: 1 1 auto;
@@ -1302,11 +1319,12 @@ Provide the results in a table with the following columns:
 
     function getFinalizeCopyInstructionLine(model) {
       const m = (model || "").trim();
-      if (m === "ChatGPT") return "[[ICON_PLACEHOLDER_CHATGPT]]";
-      if (m === "Gemini") return "[[ICON_PLACEHOLDER_GEMINI]]";
-      if (m === "Copilot") return "[[ICON_PLACEHOLDER_COPILOT]]";
-      if (m === "Claude") return "[[ICON_PLACEHOLDER_CLAUDE]]";
-      return "[[ICON_PLACEHOLDER_OTHER]]";
+      const caption = "Click the copy button beneath the AI response.";
+      if (m === "ChatGPT") return `<div class="copyHelpExample"><img src="images/chatgpt-copy.png" class="copyHelpImage" alt="ChatGPT copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      if (m === "Gemini") return `<div class="copyHelpExample"><img src="images/gemini-copy.png" class="copyHelpImage" alt="Gemini copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      if (m === "Copilot") return `<div class="copyHelpExample"><img src="images/copilot-copy.png" class="copyHelpImage" alt="Copilot copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      if (m === "Claude") return `<div class="copyHelpExample"><img src="images/claude-copy.png" class="copyHelpImage" alt="Claude copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      return caption;
     }
 
     function updateFinalizeContentUI() {
