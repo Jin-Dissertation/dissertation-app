@@ -2260,6 +2260,14 @@ After that list, give me the current time.`
         try {
           const result = await submitSessionJson(payload);
           if (result?.ok) {
+            const submitBtn = $("btnSubmitForm");
+            if (submitBtn) {
+              submitBtn.textContent = "Success! ✓";
+              submitBtn.style.background = "#16a34a";
+              submitBtn.style.borderColor = "#16a34a";
+              submitBtn.style.color = "#ffffff";
+              submitBtn.disabled = true;
+            }
             $("finalizeMsg").textContent = "Session submitted successfully.";
             logEvent("session_submitted", {
               method: "apps_script",
