@@ -2573,28 +2573,26 @@ After that list, give me the current time.`
         }
 
         logEvent("submit_form_clicked");
-        localStorage.setItem(KEYS.submitClicked, "true");
-        updateFinalizeContentUI();
-
         const payload = buildSessionRecord();
         const revisedSubmission = localStorage.getItem(KEYS.resubmitting) === "true";
         const clientFileName = buildSessionFilename(payload, { revised: revisedSubmission });
         const submitBtn = $("btnSubmitForm");
-        if (submitBtn) submitBtn.disabled = true;
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Submitting...";
+        }
+        $("finalizeMsg").textContent = "";
 
         try {
           const result = await submitSessionJson(payload);
           if (result?.ok) {
             const submitBtn = $("btnSubmitForm");
 
-            submitBtn.textContent = "Success! ✓";
+            submitBtn.textContent = "Session submitted";
             submitBtn.style.background = "#16a34a";
             submitBtn.style.borderColor = "#16a34a";
             submitBtn.style.color = "#ffffff";
             submitBtn.disabled = true;
-
-            const reviseBtn = $("btnReviseAfterSubmit");
-            if (reviseBtn) reviseBtn.style.display = "inline-flex";
 
             $("finalizeMsg").textContent = "Session submitted successfully.";
             logEvent("session_submitted", {
@@ -2606,6 +2604,13 @@ After that list, give me the current time.`
             localStorage.setItem(KEYS.resubmitting, "false");
             toast("Session submitted ✅");
           } else {
+            const submitBtn = $("btnSubmitForm");
+            submitBtn.textContent = "Session submitted";
+            submitBtn.style.background = "#16a34a";
+            submitBtn.style.borderColor = "#16a34a";
+            submitBtn.style.color = "#ffffff";
+            submitBtn.disabled = true;
+
             $("finalizeMsg").textContent = "Automatic submission failed. Please download the backup file and email it.";
             logEvent("session_submitted", {
               method: "apps_script",
@@ -2615,6 +2620,13 @@ After that list, give me the current time.`
             toast("Automatic submission failed");
           }
         } catch (err) {
+          const submitBtn = $("btnSubmitForm");
+          submitBtn.textContent = "Session submitted";
+          submitBtn.style.background = "#16a34a";
+          submitBtn.style.borderColor = "#16a34a";
+          submitBtn.style.color = "#ffffff";
+          submitBtn.disabled = true;
+
           $("finalizeMsg").textContent = "Automatic submission failed. Please download the backup file and email it.";
           logEvent("session_submitted", {
             method: "apps_script",
@@ -2623,6 +2635,7 @@ After that list, give me the current time.`
           });
           toast("Automatic submission failed");
         } finally {
+          localStorage.setItem(KEYS.submitClicked, "true");
           updateFinalizeContentUI();
         }
       });
