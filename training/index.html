@@ -12,23 +12,23 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --navy:       #1a2744;
-      --navy-mid:   #243258;
-      --cream:      #f5f0e8;
-      --cream-dark: #ede6d6;
-      --gold:       #b8922a;
-      --gold-lt:    #d4a843;
-      --green:      #2d7a4f;
-      --green-lt:   #e8f5ee;
-      --red:        #9b2c2c;
-      --red-lt:     #fdf0f0;
-      --muted:      #5a6480;
-      --rule:       #d0c8b8;
+      --navy:       #10213d;
+      --navy-mid:   #1a3560;
+      --cream:      #edf4ff;
+      --cream-dark: #dbe9ff;
+      --gold:       #2f6edc;
+      --gold-lt:    #4d87f0;
+      --green:      #166534;
+      --green-lt:   #dcfce7;
+      --red:        #991b1b;
+      --red-lt:     #fef2f2;
+      --muted:      #5f718f;
+      --rule:       #c8d8f0;
       --white:      #ffffff;
       --serif:      'Playfair Display', Georgia, serif;
       --sans:       'Source Sans 3', 'Gill Sans', Optima, sans-serif;
-      --radius:     6px;
-      --shadow:     0 2px 16px rgba(26,39,68,0.09);
+      --radius:     10px;
+      --shadow:     0 4px 10px rgba(16,33,61,0.05);
     }
 
     html { font-size: 17px; scroll-behavior: smooth; }
@@ -1267,7 +1267,7 @@ async function submitSession() {
 
   // Google Apps Script requires no-cors from cross-origin pages (GitHub Pages).
   // With no-cors we cannot read the response body, so we treat a non-throwing
-  // fetch as a success and offer a download fallback regardless.
+  // fetch as a success.
   try {
     await fetch(SUBMIT_URL, {
       method: 'POST',
@@ -1275,39 +1275,49 @@ async function submitSession() {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
     });
-    // If we get here without throwing, the request was sent.
+    // Request was sent without network error — treat as success.
     btn.textContent = '✓ Submitted';
-    btn.style.background = '#2d7a4f';
+    btn.style.background = '#166534';
     btn.disabled = true;
-    status.textContent = 'Session data submitted. As a backup, you may also download your session file below.';
+    status.textContent = 'Session data submitted successfully. You may now close this window.';
     logEvent('session_submitted', { ok: true, mode: 'no-cors' });
   } catch (err) {
+    // Network failure — show download fallback with instructions
     btn.disabled = false;
     btn.textContent = 'Retry submission';
-    status.textContent = 'Submission failed. Please use the download button below to save your session file and email it to the study team.';
     logEvent('session_submit_failed', { error: String(err.message) });
+    offerDownload(payload);
   }
-
-  // Always offer a local download as backup
-  offerDownload(payload);
 }
 
 function offerDownload(payload) {
-  const existing = $('download-backup-btn');
+  const existing = $('download-backup-wrap');
   if (existing) return; // already shown
 
   const status = $('submit-status');
+
+  const wrap = document.createElement('div');
+  wrap.id = 'download-backup-wrap';
+  wrap.style.cssText = 'margin-top:14px; padding:14px 16px; background:#fef9ec; border:1px solid #c8a84b; border-radius:10px; font-size:0.88rem; line-height:1.6; color:#10213d;';
+  wrap.innerHTML = `
+    <strong style="display:block; margin-bottom:6px;">Automatic submission failed.</strong>
+    Please save your session data manually:
+    <ol style="margin: 8px 0 12px 18px; padding:0;">
+      <li>Click <strong>Download session file</strong> below.</li>
+      <li>Email the downloaded file to <strong>tjin@crimson.ua.edu</strong>.</li>
+    </ol>
+  `;
+
   const dlBtn = document.createElement('button');
-  dlBtn.id = 'download-backup-btn';
   dlBtn.className = 'action-btn';
-  dlBtn.style.marginTop = '12px';
-  dlBtn.style.background = '#2d5a8e';
+  dlBtn.style.cssText = 'background:#2f6edc; font-size:0.82rem;';
   dlBtn.innerHTML = `
-    Download session backup (.json)
-    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+    Download session file (.json)
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" style="flex:0 0 14px">
       <path d="M7 2v8M3 7l4 4 4-4M2 12h10"/>
     </svg>
   `;
+
   dlBtn.addEventListener('click', () => {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -1316,9 +1326,17 @@ function offerDownload(payload) {
     a.click();
     URL.revokeObjectURL(a.href);
     logEvent('backup_downloaded', { participant: payload.participant_code });
+
+    // Confirm download and hide the button
+    dlBtn.remove();
+    const confirm = document.createElement('p');
+    confirm.style.cssText = 'margin-top:8px; font-size:0.85rem; color:#166534; font-weight:600;';
+    confirm.textContent = '✓ File downloaded. Please email it to tjin@crimson.ua.edu.';
+    wrap.appendChild(confirm);
   });
 
-  status.insertAdjacentElement('afterend', dlBtn);
+  wrap.appendChild(dlBtn);
+  status.insertAdjacentElement('afterend', wrap);
 }
 
 // ─────────────────────────────────────────────
@@ -1379,4 +1397,10 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 </body>
+<footer style="text-align:center; padding: 12px 24px 24px; font-size: 0.72rem; color: var(--muted); font-family: var(--sans);">
+  Last updated: <span id="last-updated"></span>
+</footer>
+<script>
+  document.getElementById('last-updated').textContent = document.lastModified;
+</script>
 </html>
