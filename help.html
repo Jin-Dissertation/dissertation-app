@@ -216,27 +216,6 @@
       display:none;
     }
 
-    .faqLeft {
-      display:flex;
-      align-items:flex-start;
-      gap:10px;
-      min-width:0;
-    }
-
-    .faqNumber {
-      flex:0 0 auto;
-      width:24px;
-      height:24px;
-      border-radius:999px;
-      background: var(--accent-soft);
-      color:#1f4ca4;
-      display:grid;
-      place-items:center;
-      font-size:12px;
-      font-weight:800;
-      margin-top: 1px;
-    }
-
     .faqQuestion {
       min-width:0;
       overflow-wrap:anywhere;
@@ -253,17 +232,11 @@
     }
 
     .faqBody {
-      padding: 0 14px 14px 48px;
+      padding: 0 14px 14px;
       color: var(--text);
       line-height: 1.6;
       white-space: pre-wrap;
       overflow-wrap:anywhere;
-    }
-
-    .faqMeta {
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 12px;
     }
 
     .emptyState {
@@ -476,19 +449,13 @@
         sectionHeader.textContent = sectionName;
         sectionWrap.appendChild(sectionHeader);
 
-        sectionItems.forEach((item, index) => {
+        sectionItems.forEach(item => {
           const details = document.createElement("details");
           details.className = "faqItem";
 
           const summary = document.createElement("summary");
           summary.innerHTML = `
-            <div class="faqLeft">
-              <span class="faqNumber">${index + 1}</span>
-              <div class="faqQuestion">
-                ${escapeHTML(item.question)}
-                ${item.sourceRow ? `<div class="faqMeta">Sheet row ${item.sourceRow}</div>` : ""}
-              </div>
-            </div>
+            <div class="faqQuestion">${escapeHTML(item.question)}</div>
             <span class="faqChevron" aria-hidden="true">▼</span>
           `;
 
