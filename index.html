@@ -742,10 +742,18 @@
                   <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
                 </div>
 
+                <div style="margin-top:12px;">
+                  <label for="sessionNotes">Anything unusual about your session? (optional)</label>
+                  <textarea
+                    id="sessionNotes"
+                    placeholder="Let me know if anything went out of the ordinary during your session."
+                  ></textarea>
+                </div>
+
                 <p class="muted small" style="margin:10px 0 0;">This will submit your session automatically.</p>
                 <div class="row" style="margin-top:8px;">
                   <button class="btn primary finalActionBtn" id="btnSubmitForm">Submit session</button>
-                  <button class="btn" id="btnReviseAfterSubmit" type="button" style="display:none;">Actually, I want to go back and work on it some more…</button>
+                  <button class="btn" id="btnReviseAfterSubmit" type="button" style="display:none;">Return to question editing</button>
                 </div>
 
                 <details id="formFailedDetails" style="margin-top:12px; display:none;">
@@ -2097,6 +2105,7 @@ After that list, give me the current time.`
         last_copied_text: lastCopiedText || "",
         final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
         llm_response: ($("llmResponse").value || "").trim(),
+        session_notes: ($("sessionNotes")?.value || "").trim(),
         submitted_at: new Date().toISOString(),
         page_last_updated: document.lastModified || ""
       };
