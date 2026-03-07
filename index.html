@@ -247,19 +247,30 @@
       border-color: #16a34a;
       background: #f0fdf4;
     }
-    .toast.timerNotice {
+    .timerNotice {
+      position: fixed;
+      bottom: 72px;
+      left: 50%;
+      transform: translateX(-50%);
       background: #1f4ca4;
-      border-color: #1f4ca4;
+      color: #ffffff;
+      border: 1px solid #1f4ca4;
+      border-radius: 12px;
       padding: 12px 14px;
-      font-size: 14px;
-      max-width: 460px;
-      text-align: left;
-      display: flex;
+      display: none;
       align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
+      max-width: 460px;
+      width: calc(100% - 32px);
+      z-index: 10000;
+      box-shadow: 0 8px 20px rgba(16,33,61,0.18);
     }
-    .toastClose {
+    .timerNoticeMessage {
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .timerNoticeClose {
       background: transparent;
       border: 0;
       color: #ffffff;
@@ -849,6 +860,10 @@
   </div>
 
   <div class="toast" id="toast"></div>
+  <div class="timerNotice" id="timerNotice" style="display:none;">
+    <div class="timerNoticeMessage" id="timerNoticeMessage"></div>
+    <button class="timerNoticeClose" id="timerNoticeClose" type="button" aria-label="Dismiss notification">×</button>
+  </div>
 
   <script>
     // -----------------------------
@@ -1094,36 +1109,34 @@ Provide the results in a table with the following columns:
       if (!t) return;
       if (t._hideTimer) clearTimeout(t._hideTimer);
       t.style.display = "none";
-      t.classList.remove("timerNotice");
       t.textContent = "";
-      t.innerHTML = "";
+    }
+
+    function hideTimerNotice() {
+      const notice = $("timerNotice");
+      const msg = $("timerNoticeMessage");
+      if (!notice || !msg) return;
+      if (notice._hideTimer) clearTimeout(notice._hideTimer);
+      notice.style.display = "none";
+      msg.textContent = "";
     }
 
     function showTimerNotice(message) {
-      const t = $("toast");
-      if (!t) return;
-      if (t._hideTimer) clearTimeout(t._hideTimer);
-      t.classList.add("timerNotice");
-      t.innerHTML = `<span class="toastMessage">${message}</span><button class="toastClose" id="toastCloseBtn" type="button" aria-label="Dismiss notification">×</button>`;
-      t.style.display = "flex";
-      const closeBtn = $("toastCloseBtn");
-      if (closeBtn) {
-        closeBtn.onclick = () => hideToast();
-      }
-      t._hideTimer = setTimeout(() => {
-        hideToast();
+      const notice = $("timerNotice");
+      const msg = $("timerNoticeMessage");
+      if (!notice || !msg) return;
+      if (notice._hideTimer) clearTimeout(notice._hideTimer);
+      msg.textContent = message;
+      notice.style.display = "flex";
+      notice._hideTimer = setTimeout(() => {
+        hideTimerNotice();
       }, 60000);
     }
 
-    const toast = (msg, { duration = 1400, className = "" } = {}) => {
-      if (className === "timerNotice") {
-        showTimerNotice(msg);
-        return;
-      }
+    const toast = (msg, { duration = 1400 } = {}) => {
       const t = $("toast");
       if (!t) return;
       if (t._hideTimer) clearTimeout(t._hideTimer);
-      t.classList.remove("timerNotice");
       t.textContent = msg;
       t.style.display = "block";
       t._hideTimer = setTimeout(() => {
@@ -1218,7 +1231,7 @@ Provide the results in a table with the following columns:
 
       if (elapsed >= TIMER_35_MIN_MS && localStorage.getItem(KEYS.timerWarned35) !== "true") {
         localStorage.setItem(KEYS.timerWarned35, "true");
-        toast("5 minutes remaining in the task window. If your question set is close to 10 questions, you may want to finish your current item and run any final audits.", { duration: 60000, className: "timerNotice" });
+        showTimerNotice("5 minutes remaining in the task window. If your question set is close to 10 questions, you may want to finish your current item and run any final audits.");
         logEvent("timer_35min_warning");
       }
 
@@ -1226,7 +1239,7 @@ Provide the results in a table with the following columns:
         card.classList.add("timerComplete");
         if (localStorage.getItem(KEYS.timerWarned40) !== "true") {
           localStorage.setItem(KEYS.timerWarned40, "true");
-          toast("You have reached 40 minutes. If your question set is complete (about 10 usable questions), you may stop. You may also continue working if needed.", { duration: 60000, className: "timerNotice" });
+          showTimerNotice("You have reached 40 minutes. If your question set is complete (about 10 usable questions), you may stop. You may also continue working if needed.");
           logEvent("timer_40min_notice");
         }
       } else {
@@ -2177,6 +2190,11 @@ After that list, give me the current time.`
         e.preventDefault();
         verifyAccessCode();
       });
+      if ($("timerNoticeClose")) {
+        $("timerNoticeClose").addEventListener("click", () => {
+          hideTimerNotice();
+        });
+      }
 
       // Lockable summaries (Option C behavior)
       lockableSummary(
