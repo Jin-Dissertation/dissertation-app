@@ -44,6 +44,10 @@
       margin:0 0 18px;
     }
 
+    .appHeaderBar {
+      margin:0 0 14px;
+    }
+
     .layoutGrid {
       display:grid;
       grid-template-columns:minmax(0,1fr) 248px;
@@ -115,6 +119,10 @@
       border-radius:10px;
       cursor:pointer;
       font:inherit;
+    }
+
+    .btn.ghost {
+      background:transparent;
     }
 
     .btn.primary {
@@ -372,27 +380,16 @@
       padding:8px 24px 20px;
     }
 
-    @media (max-width: 960px) {
-      .layoutGrid {
-        grid-template-columns:1fr;
-      }
-
-      .sidebar {
-        width:auto;
-        position:static;
-        max-height:none;
-      }
-
-      .promptListCompact {
-        grid-template-columns:1fr;
-      }
-    }
   </style>
 </head>
 <body>
   <div class="pageShell">
     <h1>Dissertation Prompt App</h1>
     <p class="sub">Use this version to jump directly into course context, question creation, and the closing prompt.</p>
+
+    <div class="appHeaderBar">
+      <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
+    </div>
 
     <div class="layoutGrid">
       <div class="main">
@@ -574,6 +571,17 @@
     </div>
   </div>
 
+  <div class="modalBackdrop" id="modalReset">
+    <div class="modalCard">
+      <h3 style="margin:0 0 8px;">Reset this session?</h3>
+      <p class="muted" style="margin:0 0 12px;">This clears saved data for this browser only.</p>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn" id="btnResetCancel" type="button">Cancel</button>
+        <button class="btn danger" id="btnResetConfirm" type="button">Reset</button>
+      </div>
+    </div>
+  </div>
+
   <footer class="small muted" id="buildInfo"></footer>
   <div class="toast" id="toast"></div>
 
@@ -680,6 +688,12 @@ Provide the results in a table with the following columns:
       saveJSON(KEYS.context, ctx);
     }
 
+    function normalizeQuestionCount(value) {
+      const parsed = Number.parseInt(String(value ?? "").trim(), 10);
+      if (Number.isNaN(parsed) || parsed < 1) return "10";
+      return String(parsed);
+    }
+
     function getStage() {
       return localStorage.getItem(KEYS.stage) || "setup";
     }
@@ -767,8 +781,8 @@ Provide the results in a table with the following columns:
     function buildStarterPrompt() {
       const ctx = getContext();
       const notesLine = (ctx.notes || "").trim()
-        ? `Additional instructions/parameters: ${ctx.notes.trim()}`
-        : `Additional instructions/parameters: (none)`;
+        ? ctx.notes.trim()
+        : `(none)`;
 
       return `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
 
@@ -964,7 +978,7 @@ After that list, give me the current time.`;
       $("ctxCourse").value = ctx.course || "";
       $("ctxArea").value = ctx.area || "";
       $("ctxNotes").value = ctx.notes || "";
-      $("ctxQuestionCount").value = ctx.questionCount || "10";
+      $("ctxQuestionCount").value = normalizeQuestionCount(ctx.questionCount);
 
       renderPromptList();
       renderMostRecentCopied();
@@ -975,7 +989,7 @@ After that list, give me the current time.`;
             course: $("ctxCourse").value || "",
             area: $("ctxArea").value || "",
             notes: $("ctxNotes").value || "",
-            questionCount: $("ctxQuestionCount").value || "10"
+            questionCount: normalizeQuestionCount($("ctxQuestionCount").value)
           };
           setContext(current);
           localStorage.setItem(KEYS.starterCopied, "false");
@@ -988,7 +1002,8 @@ After that list, give me the current time.`;
         const course = $("ctxCourse").value.trim();
         const area = $("ctxArea").value.trim();
         const notes = $("ctxNotes").value.trim();
-        const questionCount = ($("ctxQuestionCount").value || "10").trim() || "10";
+        const questionCount = normalizeQuestionCount($("ctxQuestionCount").value);
+        $("ctxQuestionCount").value = questionCount;
 
         if (!course || !area) {
           $("setupMsg").textContent = "Please fill in course context and content area before continuing.";
@@ -1053,6 +1068,14 @@ After that list, give me the current time.`;
         lastCopiedLabel = "";
         lastCopiedAt = null;
         renderMostRecentCopied();
+      });
+
+      $("btnResetSession").addEventListener("click", () => openModal("modalReset"));
+      $("btnResetCancel").addEventListener("click", () => closeModal("modalReset"));
+      $("btnResetConfirm").addEventListener("click", () => {
+        clearSessionData();
+        closeModal("modalReset");
+        location.reload();
       });
 
       $("btnEndSession").addEventListener("click", () => openModal("modalEnd"));
