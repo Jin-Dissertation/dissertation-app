@@ -746,7 +746,7 @@
 // ─────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────
-const SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbwJQ3QfQ9AdniKd46SYoesy6GMx2GvP52-HWiqlPRTZ8zJuGoyzi7BiHN6sio7dJiLb/exec';
+const SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbzwdkF5ojxU3Anj2gjACKo75ZFDEFtKofLqxL0cm9WNwQOSjN6vYxVNknw6_ybg-rn0Zg/exec';
 const CSV_PATH   = 'content.csv';
 
 const ACCESS_CODES = new Set([
@@ -1255,6 +1255,7 @@ async function submitSession() {
 
   const elapsed = sessionStart ? Date.now() - sessionStart : 0;
   const payload = {
+    source:           'training',
     participant_code: participantCode,
     session_id:       sessionId,
     session_start:    sessionStart ? new Date(sessionStart).toISOString() : null,
@@ -1266,24 +1267,29 @@ async function submitSession() {
     events
   };
 
-  // Google Apps Script requires no-cors from cross-origin pages (GitHub Pages).
-  // With no-cors we cannot read the response body, so we treat a non-throwing
-  // fetch as a success.
   try {
-    await fetch(SUBMIT_URL, {
+    const response = await fetch(SUBMIT_URL, {
       method: 'POST',
-      mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      redirect: 'follow'
     });
-    // Request was sent without network error — treat as success.
-    btn.textContent = '✓ Submitted';
-    btn.style.background = '#166534';
-    btn.disabled = true;
-    status.textContent = 'Session data submitted successfully. You may now close this window.';
-    logEvent('session_submitted', { ok: true, mode: 'no-cors' });
+
+    const text = await response.text();
+    let data = null;
+    try { data = JSON.parse(text); }
+    catch (_) { data = { ok: false, error: 'invalid_json_response', raw: text }; }
+
+    if (data && data.ok) {
+      btn.textContent = '✓ Submitted';
+      btn.style.background = '#166534';
+      btn.disabled = true;
+      status.textContent = 'Session data submitted successfully. You may now close this window.';
+      logEvent('session_submitted', { ok: true, fileName: data.fileName });
+    } else {
+      throw new Error(data?.error || 'unknown_error');
+    }
   } catch (err) {
-    // Network failure — show download fallback with instructions
     btn.disabled = false;
     btn.textContent = 'Retry submission';
     logEvent('session_submit_failed', { error: String(err.message) });
