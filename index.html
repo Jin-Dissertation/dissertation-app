@@ -438,25 +438,34 @@
     .promptArea { min-width: 0; overflow-x: hidden; }
     .finalizeNotice { margin:10px 0 0; display:none; }
     .finalizeLockedContent { opacity:.6; pointer-events:none; user-select:none; }
-    .finalActionBtn { min-height: 36px; padding: 8px 12px; border-radius: 10px; font-size: 14px; font-weight: 600; }
-      .finalActionBtn.btn.warn { font-weight: 600; }
-    .warningButton {
+    .finalActionBtn {
+      min-height: 44px;
+      padding: 0 16px;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 8px 14px;
-      line-height: 1.2;
-      min-height: 36px;
-      font-size: 14px;
-      white-space: nowrap;
+      box-sizing: border-box;
       border-radius: 10px;
-      font-weight: 500;
+    }
+      .finalActionBtn.btn.warn { font-weight: 600; }
+    .warningButton {
+      white-space: nowrap;
+      font-weight: 600;
     }
     @media (max-width: 640px) {
       .warningButton {
         white-space: normal;
         max-width: 420px;
       }
+    }
+    #formFailedDetails > summary.finalActionBtn {
+      min-height: 44px;
+      padding: 0 16px;
+      display: inline-flex;
+      align-items: center;
     }
     #formFailedDetails > summary.finalActionBtn,
     #btnEndSession.finalActionBtn {
@@ -751,10 +760,10 @@
                   ></textarea>
                 </div>
 
-                <p class="muted small" style="margin:10px 0 0;">The button below will submit your session data to the study.</p>
+                <p class="muted small" style="margin:10px 0 0;">This will submit your session automatically.</p>
                 <div class="row" style="margin-top:8px;">
                   <button class="btn primary finalActionBtn" id="btnSubmitForm">Submit session</button>
-                  <button class="btn" id="btnReviseAfterSubmit" type="button" style="display:none;">Return to question editing</button>
+                  <button class="btn finalActionBtn" id="btnReviseAfterSubmit" type="button" style="display:none;">Return to question editing</button>
                 </div>
 
                 <details id="formFailedDetails" style="margin-top:12px; display:none;">
