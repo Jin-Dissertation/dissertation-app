@@ -261,6 +261,20 @@
     .copyIconBtn svg { width: 14px; height: 14px; }
     .copyIconBtn.isActive { background: var(--accent-soft); border-color: var(--accent); color: #1f4ca4; }
     .starterCopyControl { display:flex; align-items:center; gap:8px; }
+    .copyPromptRow { display:flex; align-items:center; gap:10px; }
+    .copyPromptLabel {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.2;
+    }
+    .copyPromptLabel::before {
+      content: "↳ ";
+      opacity: 0.6;
+    }
+    .copyPromptRow:hover .copyPromptLabel {
+      color: var(--accent);
+    }
     .promptArea { min-width: 0; overflow-x: hidden; }
     .finalizeNotice { margin:10px 0 0; display:none; }
     .finalizeLockedContent { opacity:.6; pointer-events:none; user-select:none; }
@@ -537,8 +551,8 @@
             </p>
 
             <div class="row" style="margin-top:12px;">
-              <div class="starterCopyControl">
-                <span class="small">Copy starter prompt</span>
+              <div class="starterCopyControl copyPromptRow">
+                <span class="small copyPromptLabel">Copy starter prompt</span>
                 <button class="copyIconBtn" id="btnCopyStarter" aria-label="Copy starter prompt" title="Copy starter prompt" type="button"></button>
               </div>
             </div>
@@ -620,7 +634,7 @@
           <div id="finalizeInner" style="display:none;">
             <div class="card">
               <div class="row" style="justify-content: space-between;">
-                <div class="starterCopyControl"><span class="small">Copy final prompt</span><button class="copyIconBtn" id="btnCopyFinal" aria-label="Copy final prompt" title="Copy final prompt" type="button"></button></div>
+                <div class="starterCopyControl copyPromptRow"><span class="small copyPromptLabel">Copy final prompt</span><button class="copyIconBtn" id="btnCopyFinal" aria-label="Copy final prompt" title="Copy final prompt" type="button"></button></div>
                 <button class="btn" id="btnBackToPrompts">Go back to making questions</button>
               </div>
 
