@@ -1265,28 +1265,60 @@ async function submitSession() {
     events
   };
 
+  // Google Apps Script requires no-cors from cross-origin pages (GitHub Pages).
+  // With no-cors we cannot read the response body, so we treat a non-throwing
+  // fetch as a success and offer a download fallback regardless.
   try {
-    const res  = await fetch(SUBMIT_URL, {
+    await fetch(SUBMIT_URL, {
       method: 'POST',
+      mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload),
-      redirect: 'follow'
+      body: JSON.stringify(payload)
     });
-    const data = await res.json();
-    if (data.ok) {
-      btn.textContent = '✓ Submitted';
-      btn.style.background = '#2d7a4f';
-      status.textContent = `Session saved successfully (${data.fileName || 'confirmed'}).`;
-      logEvent('session_submitted', { ok: true, fileName: data.fileName });
-    } else {
-      throw new Error(data.error || 'Unknown error');
-    }
+    // If we get here without throwing, the request was sent.
+    btn.textContent = '✓ Submitted';
+    btn.style.background = '#2d7a4f';
+    btn.disabled = true;
+    status.textContent = 'Session data submitted. As a backup, you may also download your session file below.';
+    logEvent('session_submitted', { ok: true, mode: 'no-cors' });
   } catch (err) {
     btn.disabled = false;
     btn.textContent = 'Retry submission';
-    status.textContent = `Submission failed: ${err.message}. Please try again or contact the study team.`;
+    status.textContent = 'Submission failed. Please use the download button below to save your session file and email it to the study team.';
     logEvent('session_submit_failed', { error: String(err.message) });
   }
+
+  // Always offer a local download as backup
+  offerDownload(payload);
+}
+
+function offerDownload(payload) {
+  const existing = $('download-backup-btn');
+  if (existing) return; // already shown
+
+  const status = $('submit-status');
+  const dlBtn = document.createElement('button');
+  dlBtn.id = 'download-backup-btn';
+  dlBtn.className = 'action-btn';
+  dlBtn.style.marginTop = '12px';
+  dlBtn.style.background = '#2d5a8e';
+  dlBtn.innerHTML = `
+    Download session backup (.json)
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M7 2v8M3 7l4 4 4-4M2 12h10"/>
+    </svg>
+  `;
+  dlBtn.addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${payload.participant_code}_${payload.session_id}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    logEvent('backup_downloaded', { participant: payload.participant_code });
+  });
+
+  status.insertAdjacentElement('afterend', dlBtn);
 }
 
 // ─────────────────────────────────────────────
