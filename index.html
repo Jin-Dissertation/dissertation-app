@@ -265,6 +265,24 @@
     .finalizeLockedContent { opacity:.6; pointer-events:none; user-select:none; }
     .finalActionBtn { min-height: 36px; padding: 8px 12px; border-radius: 10px; font-size: 14px; font-weight: 600; }
       .finalActionBtn.btn.warn { font-weight: 600; }
+    .warningButton {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 14px;
+      line-height: 1.2;
+      min-height: 36px;
+      font-size: 14px;
+      white-space: nowrap;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+    @media (max-width: 640px) {
+      .warningButton {
+        white-space: normal;
+        max-width: 420px;
+      }
+    }
     #formFailedDetails > summary.finalActionBtn,
     #btnEndSession.finalActionBtn {
       opacity: 0.88;
@@ -486,6 +504,10 @@
               <div class="muted small" id="productVersionSummaryText"></div>
             </div>
             </div>
+            </div>
+
+            <div id="contextSubband" class="subBand hidden" style="margin-top:10px;">
+              <h4 class="subBandTitle">1B) Question context</h4>
 
             <div id="contextSubband" class="subBand hidden" style="margin-top:10px;">
               <h4 class="subBandTitle">1B) Question context</h4>
@@ -620,7 +642,7 @@
                 </div>
 
                 <details id="formFailedDetails" style="margin-top:12px; display:none;">
-                <summary class="btn warn finalActionBtn" style="display:inline-block;">
+                <summary class="btn warn finalActionBtn warningButton">
                   Click here if the Google Form failed to be filled properly
                 </summary>
 
