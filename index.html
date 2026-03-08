@@ -2178,6 +2178,7 @@ After that list, give me the current time.`
       ensureSubmissionRecordConsistency();
       const timerState = getCurrentTimerState();
       return {
+        source: 'dissertation',
         participant_code: localStorage.getItem(KEYS.accessCode) || "",
         session_id: localStorage.getItem(KEYS.sessionId) || "",
         session_started_at: localStorage.getItem(KEYS.sessionStartTime) || "",
