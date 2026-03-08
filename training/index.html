@@ -360,6 +360,7 @@
     }
 
     .question-block.active { display: block; }
+    .question-block.answered { display: block; }
 
     .question-progress {
       font-size: 0.72rem;
@@ -771,6 +772,9 @@ let totalSlots      = 0;
 let revealedSlots   = 0;
 let completedSlots  = new Set();
 let trainingActive  = false;
+let completionReached = false;
+let hasSuccessfulSubmission = false;
+let quizStates = {};
 
 // ─────────────────────────────────────────────
 // UTILITIES
@@ -835,7 +839,10 @@ function saveProgress() {
       completedSlotIndices: [...completedSlots],
       totalQuestions,
       correctFirst,
-      events
+      events,
+      completionReached,
+      hasSuccessfulSubmission,
+      quizStates
     }));
   } catch (_) {}
 }
@@ -996,12 +1003,24 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
 
   const letters = ['A','B','C','D','E'];
 
+  const sectionState = quizStates[sectionIndex] || {
+    currentQi: 0,
+    completed: false,
+    questions: [],
+    optionOrders: []
+  };
+  quizStates[sectionIndex] = sectionState;
+
   let questionsHTML = '';
   item.questions.forEach((q, qi) => {
-    const shuffledDistractors = shuffleArray(q.distractors);
-    const insertPos = Math.floor(Math.random() * (shuffledDistractors.length + 1));
-    shuffledDistractors.splice(insertPos, 0, q.correct);
-    const allOptions = shuffledDistractors;
+    let allOptions = sectionState.optionOrders[qi];
+    if (!allOptions || allOptions.length === 0) {
+      const shuffledDistractors = shuffleArray(q.distractors);
+      const insertPos = Math.floor(Math.random() * (shuffledDistractors.length + 1));
+      shuffledDistractors.splice(insertPos, 0, q.correct);
+      allOptions = shuffledDistractors;
+      sectionState.optionOrders[qi] = allOptions;
+    }
 
     let optionsHTML = allOptions.map((opt, oi) => `
       <li>
@@ -1077,7 +1096,7 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
     </div>
   `;
 
-  let currentQi  = 0;
+  let currentQi  = sectionState.currentQi || 0;
   let qCorrectFirst = new Array(item.questions.length).fill(null);
   let quizStartTime = null;
 
@@ -1099,12 +1118,21 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
     const q         = item.questions[qi];
     const answerMs  = quizStartTime ? Date.now() - quizStartTime : null;
 
-    const isFirstAttempt = qCorrectFirst[qi] === null;
+    const existingAnswer = sectionState.questions[qi];
+    const isFirstAttempt = qCorrectFirst[qi] === null && !existingAnswer;
     if (isFirstAttempt) {
       qCorrectFirst[qi] = isCorrect && !isIdk;
       totalQuestions++;
       if (isCorrect && !isIdk) correctFirst++;
     }
+
+    sectionState.questions[qi] = {
+      selectedText: isIdk ? 'I don\'t know' : btn.querySelector('.option-text').textContent,
+      isCorrect: isCorrect && !isIdk,
+      isIdk
+    };
+    sectionState.currentQi = currentQi;
+    saveProgress();
 
     logEvent('question_answered', {
       slot:        item.slot,
@@ -1156,9 +1184,12 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
 
       if (qi < item.questions.length - 1) {
         qBlock.classList.remove('active');
+        qBlock.classList.add('answered');
         currentQi = qi + 1;
+        sectionState.currentQi = currentQi;
         const nextBlock = block.querySelector(`.question-block[data-qi="${currentQi}"]`);
         nextBlock.classList.add('active');
+        saveProgress();
         scrollToEl(nextBlock, 100);
       } else {
         const correct = qCorrectFirst.filter(Boolean).length;
@@ -1176,22 +1207,71 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
 
         const continueRow = $(`continue-row-${sectionIndex}`);
         continueRow.classList.add('show');
+        sectionState.completed = true;
+        sectionState.currentQi = item.questions.length - 1;
+        saveProgress();
         scrollToEl(continueRow, 100);
 
         $(`continue-btn-${sectionIndex}`).addEventListener('click', () => {
           logEvent('continue_clicked', { slot: item.slot, sectionIndex });
           onComplete();
-        });
+        }, { once: true });
       }
-    }, { once: false });
+    }, { once: true });
   });
+
+  item.questions.forEach((q, qi) => {
+    const prior = sectionState.questions[qi];
+    if (!prior) return;
+    const qBlock = block.querySelector(`.question-block[data-qi="${qi}"]`);
+    qBlock.classList.remove('active');
+    qBlock.classList.add('answered');
+
+    qBlock.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      const text = b.querySelector('.option-text')?.textContent;
+      const isSelected = prior.isIdk ? b.dataset.isIdk === 'true' : text === prior.selectedText;
+      const isCorrect = b.dataset.isCorrect === 'true';
+      if (isSelected) {
+        b.classList.add(prior.isCorrect ? 'correct' : 'incorrect');
+      } else if (isCorrect) {
+        b.classList.add(prior.isCorrect ? 'dimmed' : 'correct');
+      } else {
+        b.classList.add('dimmed');
+      }
+    });
+
+    const fbBox   = $(`fb-${sectionIndex}-${qi}`);
+    const fbLabel = $(`fb-label-${sectionIndex}-${qi}`);
+    const fbText  = $(`fb-text-${sectionIndex}-${qi}`);
+    const fbNext  = $(`fb-next-${sectionIndex}-${qi}`);
+    if (prior.isCorrect) {
+      fbBox.className = 'feedback-box show correct-fb';
+      fbLabel.textContent = '✓ Correct';
+      fbText.textContent = q.feedback || 'Well done!';
+    } else {
+      fbBox.className = 'feedback-box show incorrect-fb';
+      fbLabel.textContent = prior.isIdk ? 'Here\'s the explanation:' : '✗ Not quite';
+      fbText.textContent = q.feedback || `The correct answer is: ${q.correct}`;
+    }
+    if (qi >= currentQi && !sectionState.completed) {
+      qBlock.classList.remove('answered');
+      qBlock.classList.add('active');
+      fbNext.classList.add('show');
+    }
+  });
+
+  if (sectionState.completed) {
+    $(`quiz-complete-${sectionIndex}`).classList.add('show');
+    $(`continue-row-${sectionIndex}`).classList.add('show');
+  }
 
   return block;
 }
 
 // Warn before leaving while training is active
 window.addEventListener('beforeunload', e => {
-  if (trainingActive) {
+  if (participantCode && !hasSuccessfulSubmission) {
     e.preventDefault();
     e.returnValue = '';
   }
@@ -1207,6 +1287,7 @@ function renderTraining(structure, savedState = null) {
   revealedSlots = 0;
   completedSlots = new Set();
   trainingActive = true;
+  completionReached = !!savedState?.completionReached;
 
   const preRevealCount  = savedState ? Math.min(savedState.revealedSlots, structure.length) : 1;
   const preCompletedSet = savedState ? new Set(savedState.completedSlotIndices) : new Set();
@@ -1216,6 +1297,7 @@ function renderTraining(structure, savedState = null) {
   structure.forEach((item, idx) => {
     const onComplete = () => {
       completedSlots.add(idx);
+      saveProgress();
       if (idx + 1 < blocks.length) {
         revealedSlots++;
         updateProgress();
@@ -1226,9 +1308,9 @@ function renderTraining(structure, savedState = null) {
         logEvent('section_revealed', { slot: structure[idx + 1].slot, sectionIndex: idx + 1 });
       } else {
         revealedSlots = totalSlots;
-        trainingActive = false;
+        completionReached = true;
         updateProgress();
-        clearSavedProgress();
+        saveProgress();
         showCompletion();
       }
     };
@@ -1272,6 +1354,10 @@ function renderTraining(structure, savedState = null) {
 
   updateProgress();
 
+  if (completionReached) {
+    showCompletion();
+  }
+
   if (savedState) {
     logEvent('training_resumed', { from_revealedSlots: savedState.revealedSlots, totalSlots: structure.length });
   } else {
@@ -1298,7 +1384,10 @@ function showCompletion() {
     duration_ms:     elapsed
   });
 
-  $('btn-submit-final').addEventListener('click', submitSession);
+  if (!$('btn-submit-final').dataset.bound) {
+    $('btn-submit-final').addEventListener('click', submitSession);
+    $('btn-submit-final').dataset.bound = 'true';
+  }
 }
 
 async function submitSession() {
@@ -1336,6 +1425,9 @@ async function submitSession() {
     catch (_) { data = { ok: false, error: 'invalid_json_response', raw: text }; }
 
     if (data && data.ok) {
+      hasSuccessfulSubmission = true;
+      trainingActive = false;
+      completionReached = true;
       clearSavedProgress();
       btn.textContent = '✓ Submitted';
       btn.style.background = '#166534';
@@ -1435,6 +1527,9 @@ document.addEventListener('DOMContentLoaded', () => {
         totalQuestions  = saved.totalQuestions || 0;
         correctFirst    = saved.correctFirst || 0;
         events          = saved.events || [];
+        completionReached = !!saved.completionReached;
+        hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
+        quizStates = saved.quizStates || {};
         resuming        = true;
       } else {
         clearSavedProgress();
@@ -1445,6 +1540,9 @@ document.addEventListener('DOMContentLoaded', () => {
       participantCode = entered;
       sessionId       = makeSessionId(entered);
       sessionStart    = Date.now();
+      completionReached = false;
+      hasSuccessfulSubmission = false;
+      quizStates = {};
     }
 
     $('gate').style.display    = 'none';
