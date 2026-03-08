@@ -769,6 +769,8 @@ let totalQuestions  = 0;
 let correctFirst    = 0;
 let totalSlots      = 0;
 let revealedSlots   = 0;
+let completedSlots  = new Set();
+let trainingActive  = false;
 
 // ─────────────────────────────────────────────
 // UTILITIES
@@ -818,6 +820,36 @@ function updateProgress() {
 }
 
 // ─────────────────────────────────────────────
+// PROGRESS PERSISTENCE
+// ─────────────────────────────────────────────
+const STORAGE_KEY = 'training_progress_v1';
+
+function saveProgress() {
+  if (!participantCode) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      participantCode,
+      sessionId,
+      sessionStart,
+      revealedSlots,
+      completedSlotIndices: [...completedSlots],
+      totalQuestions,
+      correctFirst,
+      events
+    }));
+  } catch (_) {}
+}
+
+function loadSavedProgress() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); }
+  catch (_) { return null; }
+}
+
+function clearSavedProgress() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+}
+
+// ─────────────────────────────────────────────
 // CSV PARSER
 // ─────────────────────────────────────────────
 function parseCSV(text) {
@@ -858,11 +890,9 @@ function parseCSVLine(line) {
 // BUILD CONTENT STRUCTURE FROM CSV ROWS
 // ─────────────────────────────────────────────
 function buildStructure(rows) {
-  // Separate video rows and quiz question rows
   const videoRows = rows.filter(r => r.type === 'video');
   const quizRows  = rows.filter(r => r.type === 'quiz');
 
-  // Get ordered unique slots
   const allSlots = [...new Set(rows.map(r => parseInt(r.slot, 10)))].sort((a,b)=>a-b);
 
   const structure = allSlots.map(slot => {
@@ -870,7 +900,6 @@ function buildStructure(rows) {
     if (videoRow) {
       return { type: 'video', slot, youtubeId: videoRow.youtube_id };
     }
-    // Quiz slot — collect all questions for this slot
     const qRows = quizRows.filter(r => parseInt(r.slot, 10) === slot)
       .sort((a, b) => parseInt(a.question_num,10) - parseInt(b.question_num,10));
 
@@ -933,7 +962,6 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
   const doneBtn = block.querySelector(`#video-done-${sectionIndex}`);
   let videoStart = null;
 
-  // Track when section becomes visible (approx watch start)
   const observer = new IntersectionObserver(entries => {
     if (entries[0].isIntersecting && !videoStart) {
       videoStart = Date.now();
@@ -968,10 +996,8 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
 
   const letters = ['A','B','C','D','E'];
 
-  // Build question HTML
   let questionsHTML = '';
   item.questions.forEach((q, qi) => {
-    // Shuffle distractors, then insert correct at random position
     const shuffledDistractors = shuffleArray(q.distractors);
     const insertPos = Math.floor(Math.random() * (shuffledDistractors.length + 1));
     shuffledDistractors.splice(insertPos, 0, q.correct);
@@ -1051,9 +1077,8 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
     </div>
   `;
 
-  // ── Quiz interaction logic ──
   let currentQi  = 0;
-  let qCorrectFirst = new Array(item.questions.length).fill(null); // null=unanswered
+  let qCorrectFirst = new Array(item.questions.length).fill(null);
   let quizStartTime = null;
 
   const observer = new IntersectionObserver(entries => {
@@ -1064,7 +1089,6 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
   }, { threshold: 0.2 });
   observer.observe(block);
 
-  // Delegate click on all option buttons
   block.addEventListener('click', e => {
     const btn = e.target.closest('.option-btn');
     if (!btn || btn.disabled) return;
@@ -1075,7 +1099,6 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
     const q         = item.questions[qi];
     const answerMs  = quizStartTime ? Date.now() - quizStartTime : null;
 
-    // Track first attempt
     const isFirstAttempt = qCorrectFirst[qi] === null;
     if (isFirstAttempt) {
       qCorrectFirst[qi] = isCorrect && !isIdk;
@@ -1098,14 +1121,12 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
       answer_duration_ms: answerMs
     });
 
-    // Disable all buttons in this question
     const qBlock = block.querySelector(`.question-block[data-qi="${qi}"]`);
     qBlock.querySelectorAll('.option-btn').forEach(b => {
       b.disabled = true;
       if (b === btn) {
         b.classList.add(isCorrect && !isIdk ? 'correct' : 'incorrect');
       } else if (b.dataset.isCorrect === 'true') {
-        // Reveal correct answer if they got it wrong
         if (!isCorrect || isIdk) b.classList.add('correct');
         else b.classList.add('dimmed');
       } else {
@@ -1113,7 +1134,6 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
       }
     });
 
-    // Show feedback
     const fbBox   = $(`fb-${sectionIndex}-${qi}`);
     const fbLabel = $(`fb-label-${sectionIndex}-${qi}`);
     const fbText  = $(`fb-text-${sectionIndex}-${qi}`);
@@ -1131,19 +1151,16 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
 
     fbNext.classList.add('show');
 
-    // Next question / finish quiz
     fbNext.addEventListener('click', () => {
       logEvent('feedback_dismissed', { slot: item.slot, sectionIndex, qi });
 
       if (qi < item.questions.length - 1) {
-        // Advance to next question
         qBlock.classList.remove('active');
         currentQi = qi + 1;
         const nextBlock = block.querySelector(`.question-block[data-qi="${currentQi}"]`);
         nextBlock.classList.add('active');
         scrollToEl(nextBlock, 100);
       } else {
-        // All questions done
         const correct = qCorrectFirst.filter(Boolean).length;
         const scoreEl = $(`quiz-score-${sectionIndex}`);
         scoreEl.textContent = `You got ${correct} of ${item.questions.length} correct on the first attempt.`;
@@ -1157,7 +1174,6 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
           duration_ms: quizStartTime ? Date.now() - quizStartTime : null
         });
 
-        // Show continue button
         const continueRow = $(`continue-row-${sectionIndex}`);
         continueRow.classList.add('show');
         scrollToEl(continueRow, 100);
@@ -1167,44 +1183,57 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
           onComplete();
         });
       }
-    }, { once: false }); // keep listener, controlled by qi
+    }, { once: false });
   });
 
   return block;
 }
 
+// Warn before leaving while training is active
+window.addEventListener('beforeunload', e => {
+  if (trainingActive) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 // ─────────────────────────────────────────────
 // RENDER ALL SECTIONS
 // ─────────────────────────────────────────────
-function renderTraining(structure) {
+function renderTraining(structure, savedState = null) {
   const container = $('sections-container');
   container.innerHTML = '';
-  totalSlots   = structure.length;
+  totalSlots    = structure.length;
   revealedSlots = 0;
+  completedSlots = new Set();
+  trainingActive = true;
+
+  const preRevealCount  = savedState ? Math.min(savedState.revealedSlots, structure.length) : 1;
+  const preCompletedSet = savedState ? new Set(savedState.completedSlotIndices) : new Set();
 
   const blocks = [];
 
   structure.forEach((item, idx) => {
-    let block;
-    const isLast = idx === structure.length - 1;
-
     const onComplete = () => {
-      // Reveal next block
+      completedSlots.add(idx);
       if (idx + 1 < blocks.length) {
         revealedSlots++;
         updateProgress();
+        saveProgress();
         const nextBlock = blocks[idx + 1];
         nextBlock.classList.add('revealed');
         scrollToEl(nextBlock, 80);
         logEvent('section_revealed', { slot: structure[idx + 1].slot, sectionIndex: idx + 1 });
       } else {
-        // Training complete
         revealedSlots = totalSlots;
+        trainingActive = false;
         updateProgress();
+        clearSavedProgress();
         showCompletion();
       }
     };
 
+    let block;
     if (item.type === 'video') {
       block = renderVideoBlock(item, idx, onComplete);
     } else {
@@ -1215,11 +1244,37 @@ function renderTraining(structure) {
     blocks.push(block);
   });
 
-  // Reveal first block
-  if (blocks.length > 0) {
-    revealedSlots = 1;
-    blocks[0].classList.add('revealed');
-    updateProgress();
+  // Reveal blocks up to the saved point
+  revealedSlots = preRevealCount;
+  for (let i = 0; i < preRevealCount; i++) {
+    blocks[i].classList.add('revealed');
+  }
+
+  // Mark pre-completed sections' UI as done
+  preCompletedSet.forEach(idx => {
+    if (idx >= blocks.length) return;
+    completedSlots.add(idx);
+    const block = blocks[idx];
+    if (structure[idx].type === 'video') {
+      const doneBtn = block.querySelector(`#video-done-${idx}`);
+      if (doneBtn) {
+        doneBtn.disabled = true;
+        doneBtn.textContent = '✓ Watched';
+        doneBtn.style.background = '#2d7a4f';
+      }
+    } else {
+      const qc = $(`quiz-complete-${idx}`);
+      if (qc) qc.classList.add('show');
+      const cr = $(`continue-row-${idx}`);
+      if (cr) cr.classList.add('show');
+    }
+  });
+
+  updateProgress();
+
+  if (savedState) {
+    logEvent('training_resumed', { from_revealedSlots: savedState.revealedSlots, totalSlots: structure.length });
+  } else {
     logEvent('training_started', { totalSlots: structure.length });
   }
 }
@@ -1281,6 +1336,7 @@ async function submitSession() {
     catch (_) { data = { ok: false, error: 'invalid_json_response', raw: text }; }
 
     if (data && data.ok) {
+      clearSavedProgress();
       btn.textContent = '✓ Submitted';
       btn.style.background = '#166534';
       btn.disabled = true;
@@ -1299,7 +1355,7 @@ async function submitSession() {
 
 function offerDownload(payload) {
   const existing = $('download-backup-wrap');
-  if (existing) return; // already shown
+  if (existing) return;
 
   const status = $('submit-status');
 
@@ -1334,7 +1390,6 @@ function offerDownload(payload) {
     URL.revokeObjectURL(a.href);
     logEvent('backup_downloaded', { participant: payload.participant_code });
 
-    // Confirm download and hide the button
     dlBtn.remove();
     const confirm = document.createElement('p');
     confirm.style.cssText = 'margin-top:8px; font-size:0.85rem; color:#166534; font-weight:600;';
@@ -1366,15 +1421,36 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    participantCode = entered;
-    sessionId       = makeSessionId(entered);
-    sessionStart    = Date.now();
+    // Check for saved progress with this code
+    const saved = loadSavedProgress();
+    let resuming = false;
+    if (saved && saved.participantCode === entered && saved.revealedSlots > 1) {
+      const doResume = confirm(
+        'You have a training session in progress.\n\nClick OK to resume where you left off, or Cancel to start over from the beginning.'
+      );
+      if (doResume) {
+        participantCode = saved.participantCode;
+        sessionId       = saved.sessionId;
+        sessionStart    = saved.sessionStart;
+        totalQuestions  = saved.totalQuestions || 0;
+        correctFirst    = saved.correctFirst || 0;
+        events          = saved.events || [];
+        resuming        = true;
+      } else {
+        clearSavedProgress();
+      }
+    }
 
-    // Show loading, fetch CSV
+    if (!resuming) {
+      participantCode = entered;
+      sessionId       = makeSessionId(entered);
+      sessionStart    = Date.now();
+    }
+
     $('gate').style.display    = 'none';
     $('loading').style.display = 'flex';
 
-    logEvent('access_granted', { participantCode });
+    if (!resuming) logEvent('access_granted', { participantCode });
 
     try {
       const res  = await fetch(CSV_PATH + '?nocache=' + Date.now());
@@ -1389,9 +1465,9 @@ document.addEventListener('DOMContentLoaded', () => {
       $('training').style.display   = 'block';
       $('participant-badge').textContent = `Participant: ${participantCode}`;
 
-      renderTraining(structure);
+      renderTraining(structure, resuming ? saved : null);
 
-      logEvent('content_loaded', { slots: structure.length });
+      logEvent('content_loaded', { slots: structure.length, resumed: resuming });
 
     } catch (err) {
       $('loading').style.display = 'none';
