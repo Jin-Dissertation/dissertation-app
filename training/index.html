@@ -825,16 +825,51 @@
     #img-lightbox-close:hover { opacity: 1; }
 
     /* ── RESPONSIVE ── */
-    @media (max-width: 580px) {
+    @media (max-width: 700px) {
+      /* Page shell */
       #app { padding: 0 16px 80px; }
+
+      /* Gate screen — cut the dead space */
+      #gate { min-height: 0; padding: 72px 20px 60px; }
+      .gate-form { flex-direction: column; align-items: stretch; width: 100%; max-width: 340px; }
+      .gate-input { width: 100%; }
+      .gate-btn   { width: 100%; }
+
+      /* Video footer */
       .video-footer { flex-direction: column; align-items: flex-start; }
-      .completion-stats { flex-direction: column; gap: 14px; text-align: center; }
-      #section-counter { display: none; }
+
+      /* Two-column reading + question layouts → single column */
       .text-image-inner,
       .question-image-inner { grid-template-columns: 1fr; }
-      .text-image-text { border-right: none; border-bottom: 1px solid var(--rule); }
+      .text-image-text  { border-right: none; border-bottom: 1px solid var(--rule); }
       .question-image-question { border-right: none; }
-      .question-image-aside { border-top: 1px solid var(--rule); }
+
+      /* On mobile, show the image ABOVE the question so the stem
+         ("look at the image on the right") still makes sense */
+      .question-image-inner { display: flex; flex-direction: column; }
+      .question-image-aside { order: -1; border-bottom: 1px solid var(--rule); }
+
+      /* Cards — tighter padding */
+      .text-card          { padding: 20px; }
+      .text-image-text    { padding: 20px; }
+      .question-image-question { padding: 20px; }
+
+      /* Option buttons — bigger touch targets */
+      .option-btn { padding: 14px 16px; font-size: 0.95rem; }
+
+      /* Action buttons — full width */
+      .continue-row { justify-content: stretch; }
+      .continue-row .action-btn,
+      .video-footer  .action-btn { width: 100%; justify-content: center; }
+
+      /* Completion stats */
+      .completion-stats { flex-direction: column; gap: 14px; text-align: center; }
+
+      /* Lightbox close — bigger tap target */
+      #img-lightbox-close { font-size: 2.4rem; top: 8px; right: 10px; padding: 8px 14px; }
+
+      /* Hide section counter (too small to be useful) */
+      #section-counter { display: none; }
     }
   </style>
 </head>
