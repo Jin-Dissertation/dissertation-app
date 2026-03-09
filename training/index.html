@@ -824,6 +824,31 @@
 
     #img-lightbox-close:hover { opacity: 1; }
 
+    /* ── BACKUP FALLBACK ── */
+    .btn-backup-toggle {
+      display: inline-flex;
+      align-items: center;
+      cursor: pointer;
+      padding: 10px 18px;
+      border: 2px solid #c8a84b;
+      border-radius: 8px;
+      background: transparent;
+      color: #c8a84b;
+      font-size: 0.88rem;
+      font-weight: 600;
+      font-family: inherit;
+      list-style: none;
+    }
+    .btn-backup-toggle::-webkit-details-marker { display: none; }
+    .btn-backup-toggle::marker { display: none; }
+    .backup-content {
+      margin-top: 10px;
+      padding: 14px 16px;
+      background: #fef9ec;
+      border: 1px solid #c8a84b;
+      border-radius: 10px;
+    }
+
     /* ── RESPONSIVE ── */
     @media (max-width: 800px) {
       /* Page shell */
@@ -924,6 +949,28 @@
         </svg>
       </button>
       <p class="submit-status" id="submit-status"></p>
+
+      <details id="backup-details" style="display:none; margin-top:14px; text-align:left;">
+        <summary class="btn-backup-toggle">
+          Click here if automatic submission failed
+        </summary>
+        <div class="backup-content">
+          <p style="margin:0 0 6px; font-size:0.85rem; color:#5b6a7a;">Backup method (only if needed):</p>
+          <ol style="margin:0 0 12px; padding-left:18px; font-size:0.85rem; line-height:1.7; color:#10213d;">
+            <li>Click <strong>Download backup file (.json)</strong> below.</li>
+            <li>Email the downloaded file to <strong>tjin@crimson.ua.edu</strong>.</li>
+          </ol>
+          <button class="action-btn" id="btn-download-backup">
+            Download backup file (.json)
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" style="flex:0 0 14px">
+              <path d="M7 2v8M3 7l4 4 4-4M2 12h10"/>
+            </svg>
+          </button>
+          <p id="download-confirm" style="display:none; margin-top:8px; font-size:0.85rem; color:#166534; font-weight:600;">
+            ✓ File downloaded. Please email it to tjin@crimson.ua.edu.
+          </p>
+        </div>
+      </details>
     </div>
   </div>
 
@@ -1888,7 +1935,14 @@ function showCompletion() {
     $('btn-submit-final').addEventListener('click', submitSession);
     $('btn-submit-final').dataset.bound = 'true';
   }
+
+  if (!$('btn-download-backup').dataset.bound) {
+    $('btn-download-backup').addEventListener('click', downloadBackup);
+    $('btn-download-backup').dataset.bound = 'true';
+  }
 }
+
+let lastPayload = null;
 
 async function submitSession() {
   const btn    = $('btn-submit-final');
@@ -1910,6 +1964,7 @@ async function submitSession() {
     correct_first:    correctFirst,
     events
   };
+  lastPayload = payload;
 
   try {
     const response = await fetch(SUBMIT_URL, {
@@ -1934,6 +1989,7 @@ async function submitSession() {
       btn.disabled = true;
       status.textContent = 'Session data submitted successfully. You may now close this window.';
       logEvent('session_submitted', { ok: true, fileName: data.fileName });
+      $('backup-details').style.display = '';
     } else {
       throw new Error(data?.error || 'unknown_error');
     }
@@ -1941,56 +1997,23 @@ async function submitSession() {
     btn.disabled = false;
     btn.textContent = 'Retry submission';
     logEvent('session_submit_failed', { error: String(err.message) });
-    offerDownload(payload);
+    const details = $('backup-details');
+    details.style.display = '';
+    details.open = true;
   }
 }
 
-function offerDownload(payload) {
-  const existing = $('download-backup-wrap');
-  if (existing) return;
-
-  const status = $('submit-status');
-
-  const wrap = document.createElement('div');
-  wrap.id = 'download-backup-wrap';
-  wrap.style.cssText = 'margin-top:14px; padding:14px 16px; background:#fef9ec; border:1px solid #c8a84b; border-radius:10px; font-size:0.88rem; line-height:1.6; color:#10213d;';
-  wrap.innerHTML = `
-    <strong style="display:block; margin-bottom:6px;">Automatic submission failed.</strong>
-    Please save your session data manually:
-    <ol style="margin: 8px 0 12px 18px; padding:0;">
-      <li>Click <strong>Download session file</strong> below.</li>
-      <li>Email the downloaded file to <strong>tjin@crimson.ua.edu</strong>.</li>
-    </ol>
-  `;
-
-  const dlBtn = document.createElement('button');
-  dlBtn.className = 'action-btn';
-  dlBtn.style.cssText = 'background:#2f6edc; font-size:0.82rem;';
-  dlBtn.innerHTML = `
-    Download session file (.json)
-    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" style="flex:0 0 14px">
-      <path d="M7 2v8M3 7l4 4 4-4M2 12h10"/>
-    </svg>
-  `;
-
-  dlBtn.addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${payload.participant_code}_${payload.session_id}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    logEvent('backup_downloaded', { participant: payload.participant_code });
-
-    dlBtn.remove();
-    const confirm = document.createElement('p');
-    confirm.style.cssText = 'margin-top:8px; font-size:0.85rem; color:#166534; font-weight:600;';
-    confirm.textContent = '✓ File downloaded. Please email it to tjin@crimson.ua.edu.';
-    wrap.appendChild(confirm);
-  });
-
-  wrap.appendChild(dlBtn);
-  status.insertAdjacentElement('afterend', wrap);
+function downloadBackup() {
+  if (!lastPayload) return;
+  const blob = new Blob([JSON.stringify(lastPayload, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${lastPayload.participant_code}_${lastPayload.session_id}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  logEvent('backup_downloaded', { participant: lastPayload.participant_code });
+  $('btn-download-backup').style.display = 'none';
+  $('download-confirm').style.display = '';
 }
 
 // ─────────────────────────────────────────────
