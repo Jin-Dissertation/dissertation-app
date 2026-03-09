@@ -678,12 +678,109 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
+    /* ── TEXT BLOCK ── */
+    .text-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      padding: 28px 30px;
+      box-shadow: var(--shadow);
+    }
+
+    .content-header {
+      font-family: var(--serif);
+      font-size: clamp(1.1rem, 3vw, 1.4rem);
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.3;
+      margin-bottom: 14px;
+    }
+
+    .content-body {
+      font-size: 0.95rem;
+      color: var(--navy);
+      line-height: 1.75;
+    }
+
+    /* ── TEXT + IMAGE BLOCK ── */
+    .text-image-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .text-image-inner {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+    }
+
+    .text-image-text {
+      padding: 28px 28px;
+      border-right: 1px solid var(--rule);
+    }
+
+    .text-image-img {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: var(--cream-dark);
+    }
+
+    .text-image-img img {
+      max-width: 100%;
+      max-height: 280px;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+
+    /* ── QUESTION + IMAGE BLOCK ── */
+    .question-image-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .question-image-inner {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      align-items: start;
+    }
+
+    .question-image-question {
+      padding: 24px 22px;
+      border-right: 1px solid var(--rule);
+    }
+
+    .question-image-aside {
+      background: var(--cream-dark);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 18px;
+    }
+
+    .question-image-aside img {
+      max-width: 100%;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+
     /* ── RESPONSIVE ── */
     @media (max-width: 580px) {
       #app { padding: 0 16px 80px; }
       .video-footer { flex-direction: column; align-items: flex-start; }
       .completion-stats { flex-direction: column; gap: 14px; text-align: center; }
       #section-counter { display: none; }
+      .text-image-inner,
+      .question-image-inner { grid-template-columns: 1fr; }
+      .text-image-text { border-right: none; border-bottom: 1px solid var(--rule); }
+      .question-image-question { border-right: none; }
+      .question-image-aside { border-top: 1px solid var(--rule); }
     }
   </style>
 </head>
@@ -897,31 +994,54 @@ function parseCSVLine(line) {
 // BUILD CONTENT STRUCTURE FROM CSV ROWS
 // ─────────────────────────────────────────────
 function buildStructure(rows) {
-  const videoRows = rows.filter(r => r.type === 'video');
-  const quizRows  = rows.filter(r => r.type === 'quiz');
-
   const allSlots = [...new Set(rows.map(r => parseInt(r.slot, 10)))].sort((a,b)=>a-b);
 
   const structure = allSlots.map(slot => {
-    const videoRow = videoRows.find(r => parseInt(r.slot, 10) === slot);
-    if (videoRow) {
-      return { type: 'video', slot, youtubeId: videoRow.youtube_id };
-    }
-    const qRows = quizRows.filter(r => parseInt(r.slot, 10) === slot)
-      .sort((a, b) => parseInt(a.question_num,10) - parseInt(b.question_num,10));
+    const slotRows = rows.filter(r => parseInt(r.slot, 10) === slot);
+    const type  = slotRows[0]?.type;
+    const first = slotRows[0];
 
+    if (type === 'video') {
+      return { type: 'video', slot, youtubeId: first.youtube_id };
+    }
+
+    if (type === 'text') {
+      return { type: 'text', slot, header: first.header, body: first.body };
+    }
+
+    if (type === 'text_image') {
+      return { type: 'text_image', slot, header: first.header, body: first.body, imageUrl: first.image_url };
+    }
+
+    if (type === 'question_image') {
+      const distractors = [first.distractor_1, first.distractor_2, first.distractor_3, first.distractor_4]
+        .filter(d => d && d.trim());
+      return {
+        type: 'question_image',
+        slot,
+        stem:       first.stem,
+        correct:    first.correct,
+        distractors,
+        feedback:   first.feedback,
+        showIdk:    first.show_idk?.toLowerCase() === 'yes',
+        imageUrl:   first.image_url
+      };
+    }
+
+    // Default: quiz (multiple questions per slot)
+    const qRows = slotRows.sort((a, b) => parseInt(a.question_num,10) - parseInt(b.question_num,10));
     const quizNum = qRows[0]?.quiz_num || slot;
     const questions = qRows.map(r => {
       const distractors = [r.distractor_1, r.distractor_2, r.distractor_3, r.distractor_4]
         .filter(d => d && d.trim());
       return {
-        quizNum:    r.quiz_num,
+        quizNum:     r.quiz_num,
         questionNum: r.question_num,
-        stem:       r.stem,
-        correct:    r.correct,
+        stem:        r.stem,
+        correct:     r.correct,
         distractors,
-        feedback:   r.feedback,
-        showIdk:    r.show_idk?.toLowerCase() === 'yes'
+        feedback:    r.feedback,
+        showIdk:     r.show_idk?.toLowerCase() === 'yes'
       };
     });
 
@@ -989,6 +1109,101 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
     doneBtn.style.background = '#2d7a4f';
     onComplete();
   });
+
+  return block;
+}
+
+// ─────────────────────────────────────────────
+// RENDER TEXT BLOCK  (header + body)
+// ─────────────────────────────────────────────
+function renderTextBlock(item, sectionIndex, onComplete) {
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Reading</span>
+    </div>
+    <div class="text-card">
+      <h2 class="content-header">${item.header}</h2>
+      <div class="content-body">${item.body}</div>
+    </div>
+    <div class="continue-row show" id="continue-row-${sectionIndex}">
+      <button class="action-btn" id="continue-btn-${sectionIndex}">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) {
+      logEvent('text_visible', { slot: item.slot, sectionIndex });
+      observer.disconnect();
+    }
+  }, { threshold: 0.3 });
+  observer.observe(block);
+
+  block.querySelector(`#continue-btn-${sectionIndex}`).addEventListener('click', () => {
+    logEvent('text_continued', { slot: item.slot, sectionIndex });
+    onComplete();
+  }, { once: true });
+
+  return block;
+}
+
+// ─────────────────────────────────────────────
+// RENDER TEXT + IMAGE BLOCK  (header + body left, image right)
+// ─────────────────────────────────────────────
+function renderTextImageBlock(item, sectionIndex, onComplete) {
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Reading</span>
+    </div>
+    <div class="text-image-card">
+      <div class="text-image-inner">
+        <div class="text-image-text">
+          <h2 class="content-header">${item.header}</h2>
+          <div class="content-body">${item.body}</div>
+        </div>
+        <div class="text-image-img">
+          <img src="${item.imageUrl}" alt="" />
+        </div>
+      </div>
+    </div>
+    <div class="continue-row show" id="continue-row-${sectionIndex}">
+      <button class="action-btn" id="continue-btn-${sectionIndex}">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) {
+      logEvent('text_image_visible', { slot: item.slot, sectionIndex });
+      observer.disconnect();
+    }
+  }, { threshold: 0.3 });
+  observer.observe(block);
+
+  block.querySelector(`#continue-btn-${sectionIndex}`).addEventListener('click', () => {
+    logEvent('text_image_continued', { slot: item.slot, sectionIndex });
+    onComplete();
+  }, { once: true });
 
   return block;
 }
@@ -1269,6 +1484,190 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
   return block;
 }
 
+// ─────────────────────────────────────────────
+// RENDER QUESTION + IMAGE BLOCK  (question left, image right)
+// ─────────────────────────────────────────────
+function renderQuestionImageBlock(item, sectionIndex, onComplete) {
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+
+  const letters = ['A','B','C','D','E'];
+
+  const sectionState = quizStates[sectionIndex] || {
+    answered: false, selectedText: null, isCorrect: false, isIdk: false, optionOrder: null
+  };
+  quizStates[sectionIndex] = sectionState;
+
+  if (!sectionState.optionOrder) {
+    const shuffled = shuffleArray(item.distractors);
+    const pos = Math.floor(Math.random() * (shuffled.length + 1));
+    shuffled.splice(pos, 0, item.correct);
+    sectionState.optionOrder = shuffled;
+  }
+
+  const allOptions = sectionState.optionOrder;
+
+  let optionsHTML = allOptions.map((opt, oi) => `
+    <li>
+      <button class="option-btn"
+        data-oi="${oi}"
+        data-is-correct="${opt === item.correct ? 'true' : 'false'}"
+        data-is-idk="false">
+        <span class="option-letter">${letters[oi]}</span>
+        <span class="option-text">${opt}</span>
+      </button>
+    </li>
+  `).join('');
+
+  if (item.showIdk) {
+    optionsHTML += `
+      <li>
+        <button class="option-btn idk-option"
+          data-oi="${allOptions.length}"
+          data-is-correct="false"
+          data-is-idk="true">
+          <span class="option-letter">?</span>
+          <span class="option-text">I don't know</span>
+        </button>
+      </li>
+    `;
+  }
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Knowledge Check</span>
+    </div>
+    <div class="question-image-card">
+      <div class="question-image-inner">
+        <div class="question-image-question">
+          <p class="question-stem">${item.stem}</p>
+          <ul class="options-list">${optionsHTML}</ul>
+          <div class="feedback-box" id="fb-${sectionIndex}-0">
+            <span class="feedback-label" id="fb-label-${sectionIndex}-0"></span>
+            <span id="fb-text-${sectionIndex}-0"></span>
+          </div>
+        </div>
+        <div class="question-image-aside">
+          <img src="${item.imageUrl}" alt="" />
+        </div>
+      </div>
+    </div>
+    <div class="continue-row" id="continue-row-${sectionIndex}">
+      <button class="action-btn" id="continue-btn-${sectionIndex}">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  let questionStartTime = null;
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && !questionStartTime) {
+      questionStartTime = Date.now();
+      logEvent('question_image_visible', { slot: item.slot, sectionIndex });
+    }
+  }, { threshold: 0.2 });
+  observer.observe(block);
+
+  function showFeedback(isCorrect, isIdk) {
+    const fbBox   = $(`fb-${sectionIndex}-0`);
+    const fbLabel = $(`fb-label-${sectionIndex}-0`);
+    const fbText  = $(`fb-text-${sectionIndex}-0`);
+    if (isCorrect && !isIdk) {
+      fbBox.className     = 'feedback-box show correct-fb';
+      fbLabel.textContent = '✓ Correct';
+      fbText.textContent  = item.feedback || 'Well done!';
+    } else {
+      fbBox.className     = 'feedback-box show incorrect-fb';
+      fbLabel.textContent = isIdk ? "Here's the explanation:" : '✗ Not quite';
+      fbText.textContent  = item.feedback || `The correct answer is: ${item.correct}`;
+    }
+  }
+
+  function showContinue() {
+    const continueRow = $(`continue-row-${sectionIndex}`);
+    continueRow.classList.add('show');
+    $(`continue-btn-${sectionIndex}`).addEventListener('click', () => {
+      logEvent('continue_clicked', { slot: item.slot, sectionIndex });
+      onComplete();
+    }, { once: true });
+    scrollToEl(continueRow, 100);
+  }
+
+  block.addEventListener('click', e => {
+    const btn = e.target.closest('.option-btn');
+    if (!btn || btn.disabled) return;
+
+    const isCorrect = btn.dataset.isCorrect === 'true';
+    const isIdk     = btn.dataset.isIdk === 'true';
+    const answerMs  = questionStartTime ? Date.now() - questionStartTime : null;
+
+    if (!sectionState.answered) {
+      totalQuestions++;
+      if (isCorrect && !isIdk) correctFirst++;
+    }
+
+    sectionState.answered     = true;
+    sectionState.selectedText = isIdk ? "I don't know" : btn.querySelector('.option-text').textContent;
+    sectionState.isCorrect    = isCorrect && !isIdk;
+    sectionState.isIdk        = isIdk;
+    saveProgress();
+
+    logEvent('question_answered', {
+      slot: item.slot, sectionIndex,
+      stem:     item.stem,
+      selected: sectionState.selectedText,
+      correct:  item.correct,
+      is_correct:       sectionState.isCorrect,
+      is_idk:           isIdk,
+      is_first_attempt: true,
+      answer_duration_ms: answerMs
+    });
+
+    block.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      if (b === btn) {
+        b.classList.add(isCorrect && !isIdk ? 'correct' : 'incorrect');
+      } else if (b.dataset.isCorrect === 'true') {
+        b.classList.add(!isCorrect || isIdk ? 'correct' : 'dimmed');
+      } else {
+        b.classList.add('dimmed');
+      }
+    });
+
+    showFeedback(isCorrect, isIdk);
+    showContinue();
+  });
+
+  // Restore previously answered state
+  if (sectionState.answered) {
+    block.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      const text       = b.querySelector('.option-text')?.textContent;
+      const isSelected = sectionState.isIdk
+        ? b.dataset.isIdk === 'true'
+        : text === sectionState.selectedText;
+      const isCorrect  = b.dataset.isCorrect === 'true';
+      if (isSelected) {
+        b.classList.add(sectionState.isCorrect ? 'correct' : 'incorrect');
+      } else if (isCorrect) {
+        b.classList.add(sectionState.isCorrect ? 'dimmed' : 'correct');
+      } else {
+        b.classList.add('dimmed');
+      }
+    });
+    showFeedback(sectionState.isCorrect, sectionState.isIdk);
+    showContinue();
+  }
+
+  return block;
+}
+
 // Warn before leaving while training is active
 window.addEventListener('beforeunload', e => {
   if (participantCode && !hasSuccessfulSubmission) {
@@ -1318,6 +1717,12 @@ function renderTraining(structure, savedState = null) {
     let block;
     if (item.type === 'video') {
       block = renderVideoBlock(item, idx, onComplete);
+    } else if (item.type === 'text') {
+      block = renderTextBlock(item, idx, onComplete);
+    } else if (item.type === 'text_image') {
+      block = renderTextImageBlock(item, idx, onComplete);
+    } else if (item.type === 'question_image') {
+      block = renderQuestionImageBlock(item, idx, onComplete);
     } else {
       block = renderQuizBlock(item, idx, onComplete);
     }
