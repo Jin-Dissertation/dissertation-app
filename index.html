@@ -2295,8 +2295,14 @@ After that list, give me the current time.`
         })
       });
 
-      const data = await response.json();
-      return { response, data };
+      const rawText = await response.text();
+      let data = null;
+      try {
+        data = rawText ? JSON.parse(rawText) : null;
+      } catch (_) {
+        data = null;
+      }
+      return { response, data, rawText };
     }
 
     // -----------------------------
