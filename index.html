@@ -888,40 +888,7 @@
     // Config
     // -----------------------------
 
-    // Access code allowlist (your current codes; access code = participant identifier)
-    const ACCESS_CODES = {
-      "zzz": {},
-      "blue-sky": {},
-      "green-grass": {},
-      "bright-light": {},
-      "calm-water": {},
-      "morning-sun": {},
-      "quiet-night": {},
-      "tall-tree": {},
-      "warm-breeze": {},
-      "clear-path": {},
-      "soft-cloud": {},
-      "deep-ocean": {},
-      "fresh-air": {},
-      "open-field": {},
-      "gentle-rain": {},
-      "golden-hour": {},
-      "rising-tide": {},
-      "distant-hill": {},
-      "summer-wind": {},
-      "early-dawn": {},
-      "cool-shade": {},
-      "wide-river": {},
-      "bright-star": {},
-      "falling-leaf": {},
-      "white-sand": {},
-      "silver-moon": {},
-      "calm-harbor": {},
-      "quiet-forest": {},
-      "warm-sunlight": {},
-      "soft-snow": {},
-      "open-horizon": {}
-    };
+    const ACCESS_VERIFY_URL = "https://script.google.com/macros/s/AKfycbzlp6l70YV51i-jlnZr6_N1DVV_efWD3nf9n2aqvUPN7u92e5R2ZQ0zZbeCosSx2CZ78g/exec";
 
     const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbwJQ3QfQ9AdniKd46SYoesy6GMx2GvP52-HWiqlPRTZ8zJuGoyzi7BiHN6sio7dJiLb/exec";
 
@@ -1084,6 +1051,7 @@ Provide the results in a table with the following columns:
     const KEYS = {
       accessVerified: "dissertation.accessVerified",
       accessCode: "dissertation.accessCode",
+      participantId: "dissertation.participantId",
       sessionId: "dissertation.sessionId",
       sessionStartTime: "dissertation.sessionStartTime",
       modelUsed: "dissertation.modelUsed",
@@ -2128,18 +2096,53 @@ After that list, give me the current time.`
     // -----------------------------
     // Access verification
     // -----------------------------
-    function verifyAccessCode() {
-      const code = normalizeCode($("accessCodeInput").value);
-      const isValidCode = Object.hasOwn(ACCESS_CODES, code);
+    async function verifyAccessCode() {
+      const verifyBtn = $("btnVerifyAccess");
+      if (verifyBtn?.dataset.verifying === "true") return false;
 
+      const code = normalizeCode($("accessCodeInput").value);
+      if (!code) {
+        setLockedState(true, "Please enter your access code.");
+        return false;
+      }
+
+      const originalBtnText = verifyBtn?.textContent || "Continue";
+      if (verifyBtn) {
+        verifyBtn.dataset.verifying = "true";
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = "Verifying...";
+      }
+
+      let validationResult;
+      try {
+        validationResult = await validateAccessCodeWithBackend(code);
+      } catch (err) {
+        setLockedState(true, "Could not verify access code right now. Please try again.");
+        logEvent("access_verification_error", { code_entered: code, error: String(err && err.message ? err.message : err) });
+        if (verifyBtn) {
+          verifyBtn.dataset.verifying = "false";
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = originalBtnText;
+        }
+        return false;
+      }
+
+      const { response, data } = validationResult;
+      const isValidCode = response.ok && data && data.ok === true && data.valid === true;
       if (!isValidCode) {
         setLockedState(true, "Access code not recognized. Please contact the study team.");
         logEvent("access_denied", { code_entered: code });
+        if (verifyBtn) {
+          verifyBtn.dataset.verifying = "false";
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = originalBtnText;
+        }
         return false;
       }
 
       localStorage.setItem(KEYS.accessVerified, "true");
       localStorage.setItem(KEYS.accessCode, code);
+      localStorage.setItem(KEYS.participantId, data.participantId || "");
 
       // Start timestamp is the first step at sign-in (your request)
       if (!localStorage.getItem(KEYS.sessionStartTime)) {
@@ -2169,6 +2172,11 @@ After that list, give me the current time.`
       toast("Access verified ✅");
 
       applyStageUI();
+      if (verifyBtn) {
+        verifyBtn.dataset.verifying = "false";
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = originalBtnText;
+      }
       return true;
     }
 
@@ -2180,7 +2188,7 @@ After that list, give me the current time.`
       const timerState = getCurrentTimerState();
       return {
         source: 'dissertation',
-        participant_code: localStorage.getItem(KEYS.accessCode) || "",
+        participant_code: localStorage.getItem(KEYS.participantId) || "",
         session_id: localStorage.getItem(KEYS.sessionId) || "",
         session_started_at: localStorage.getItem(KEYS.sessionStartTime) || "",
         product_used: localStorage.getItem(KEYS.modelUsed) || "",
@@ -2275,6 +2283,22 @@ After that list, give me the current time.`
       return data;
     }
 
+    async function validateAccessCodeWithBackend(code) {
+      const response = await fetch(ACCESS_VERIFY_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          action: "validateCode",
+          code
+        })
+      });
+
+      const data = await response.json();
+      return { response, data };
+    }
+
     // -----------------------------
     // Init
     // -----------------------------
@@ -2300,9 +2324,9 @@ After that list, give me the current time.`
         }
       });
 
-      $("accessForm").addEventListener("submit", (e) => {
+      $("accessForm").addEventListener("submit", async (e) => {
         e.preventDefault();
-        verifyAccessCode();
+        await verifyAccessCode();
       });
       if ($("timerNoticeClose")) {
         $("timerNoticeClose").addEventListener("click", () => {
