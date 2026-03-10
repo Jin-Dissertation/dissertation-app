@@ -849,8 +849,8 @@
 
     const ACCESS_VERIFY_URL = "https://script.google.com/macros/s/AKfycbzlp6l70YV51i-jlnZr6_N1DVV_efWD3nf9n2aqvUPN7u92e5R2ZQ0zZbeCosSx2CZ78g/exec";
 
-    // Paste your autosave Apps Script web app URL here.
-    const AUTOSAVE_URL = "PASTE_URL_HERE";
+    // Apps Script endpoint for background autosave events.
+    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbxL2vkcsWNQVRDug2rnZU01eQesd4S7QXY-3Qtm7ZeWgzTNw7jjvdYxT-DzMjD9gMTj/exec";
 
     // Paste your webhook URL into LLM_MISMATCH_ALERT_WEBHOOK to receive immediate mismatch alerts.
     const LLM_MISMATCH_ALERT_WEBHOOK = "";
@@ -1041,7 +1041,8 @@ Provide the results in a table with the following columns:
       submissionCompletedAt: "dissertation.submissionCompletedAt",
       submissionError: "dissertation.submissionError",
       appsScriptResponseFileName: "dissertation.appsScriptResponseFileName",
-      appsScriptResponseFileId: "dissertation.appsScriptResponseFileId"
+      appsScriptResponseFileId: "dissertation.appsScriptResponseFileId",
+      autosaveEventIndex: "dissertation.autosaveEventIndex"
     };
 
     // -----------------------------
@@ -1116,38 +1117,47 @@ Provide the results in a table with the following columns:
     }
     function saveJSON(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
-    function getMode() {
-      const modeParam = new URLSearchParams(window.location.search).get("mode");
-      return modeParam === "training" ? "training" : "standard";
-    }
+    function buildAutosave(eventType, extra = {}) {
+      const sessionId = localStorage.getItem(KEYS.sessionId) || "";
+      if (!sessionId) return null;
 
-    function buildAutosavePayload(eventType, details = {}) {
+      // Tracks event order within a session.
+      const nextEventIndex = (Number(localStorage.getItem(KEYS.autosaveEventIndex) || "0") || 0) + 1;
+      localStorage.setItem(KEYS.autosaveEventIndex, String(nextEventIndex));
+
+      const modeParam = new URLSearchParams(window.location.search).get("mode");
       const ctx = getContext();
+      const details = extra.details && typeof extra.details === "object" ? extra.details : {};
+
       return {
-        timestamp: new Date().toISOString(),
-        sessionId: localStorage.getItem(KEYS.sessionId) || "",
-        mode: getMode(),
-        eventType,
+        sessionId,
+        mode: modeParam || "standard",
         accessCode: localStorage.getItem(KEYS.accessCode) || "",
-        selectedProduct: localStorage.getItem(KEYS.llmProduct) || "",
-        selectedModelText: localStorage.getItem(KEYS.modelUsed) || "",
-        desiredQuestionCount: ctx.questionCount || "",
+        eventIndex: nextEventIndex,
+        eventType,
+        promptName: extra.promptName || "",
+        product: localStorage.getItem(KEYS.llmProduct) || localStorage.getItem(KEYS.modelUsed) || "",
+        version: localStorage.getItem(KEYS.llmExpectedChoice) || "",
+        desiredQuestions: ctx.questionCount || "",
+        courseContext: ctx.course || "",
+        questionContext: ctx.area || "",
         currentStage: getStage(),
-        unlockedSection: getStage(),
-        details
+        finalLlmResponse: ($("llmResponse")?.value || "").trim(),
+        sessionNotes: ($("sessionNotes")?.value || "").trim(),
+        details,
+        appVersion: "v1"
       };
     }
 
-    // Fire-and-forget autosave: we do not block normal UI actions on this network call.
+    // Background autosave only: do not block UI actions on this network call.
     function sendAutosave(payload) {
-      if (!AUTOSAVE_URL || AUTOSAVE_URL === "PASTE_URL_HERE") return;
+      if (!payload) return;
       fetch(AUTOSAVE_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      }).catch((err) => {
-        console.error("autosave failed", err);
-      });
+        body: new URLSearchParams({
+          payload: JSON.stringify(payload)
+        })
+      }).catch(err => console.error("Autosave failed:", err));
     }
 
     function logEvent(type, data = {}) {
@@ -2221,20 +2231,6 @@ After that list, give me the current time.`
       return { response, data };
     }
 
-    async function validateAccessCodeWithBackend(code) {
-      const response = await fetch(ACCESS_VERIFY_URL, {
-        method: "POST",
-        body: new URLSearchParams({
-          action: "validateCode",
-          code,
-          client_key: getOrCreateClientKey()
-        })
-      });
-
-      const data = await response.json();
-      return { response, data };
-    }
-
     // -----------------------------
     // Init
     // -----------------------------
@@ -2543,7 +2539,8 @@ After that list, give me the current time.`
         starterBtn.blur();
         if (ok) {
           logEvent("starter_copied", {});
-          sendAutosave(buildAutosavePayload("starter_prompt_copied"));
+          const autosavePayload = buildAutosave("starter_prompt_copied", { promptName: "starter" });
+          if (autosavePayload) sendAutosave(autosavePayload);
           localStorage.setItem(KEYS.starterCopied, "true");
           $("setupMsg").textContent = "Starter prompt copied. Paste it into your selected LLM, then click Proceed to 2) Making questions.";
           $("setupMsg").style.display = "block";
