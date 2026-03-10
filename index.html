@@ -2286,23 +2286,14 @@ After that list, give me the current time.`
     async function validateAccessCodeWithBackend(code) {
       const response = await fetch(ACCESS_VERIFY_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
+        body: new URLSearchParams({
           action: "validateCode",
           code
         })
       });
 
-      const rawText = await response.text();
-      let data = null;
-      try {
-        data = rawText ? JSON.parse(rawText) : null;
-      } catch (_) {
-        data = null;
-      }
-      return { response, data, rawText };
+      const data = await response.json();
+      return { response, data };
     }
 
     // -----------------------------
