@@ -1052,6 +1052,7 @@ Provide the results in a table with the following columns:
       accessVerified: "dissertation.accessVerified",
       accessCode: "dissertation.accessCode",
       participantId: "dissertation.participantId",
+      clientKey: "dissertation.clientKey",
       sessionId: "dissertation.sessionId",
       sessionStartTime: "dissertation.sessionStartTime",
       modelUsed: "dissertation.modelUsed",
@@ -1139,6 +1140,14 @@ Provide the results in a table with the following columns:
 
     function normalizeCode(s) {
       return (s || "").trim().toLowerCase();
+    }
+
+    function getOrCreateClientKey() {
+      const existing = localStorage.getItem(KEYS.clientKey);
+      if (existing) return existing;
+      const generated = "ck_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem(KEYS.clientKey, generated);
+      return generated;
     }
 
     function loadJSON(key, fallback) {
@@ -2128,6 +2137,23 @@ After that list, give me the current time.`
       }
 
       const { response, data } = validationResult;
+      if (response.ok && data && data.ok === true && data.valid === false && data.locked === true) {
+        const retryAfterSeconds = Number(data.retryAfterSeconds) || 0;
+        const waitMessage = retryAfterSeconds > 0
+          ? (retryAfterSeconds >= 60
+              ? `Too many failed attempts. Please wait ${Math.ceil(retryAfterSeconds / 60)} minute${Math.ceil(retryAfterSeconds / 60) === 1 ? "" : "s"} and try again.`
+              : `Too many failed attempts. Please wait ${retryAfterSeconds} seconds and try again.`)
+          : "Too many failed attempts. Please wait and try again.";
+        setLockedState(true, waitMessage);
+        logEvent("access_locked_out", { code_entered: code, retryAfterSeconds });
+        if (verifyBtn) {
+          verifyBtn.dataset.verifying = "false";
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = originalBtnText;
+        }
+        return false;
+      }
+
       const isValidCode = response.ok && data && data.ok === true && data.valid === true;
       if (!isValidCode) {
         setLockedState(true, "Access code not recognized. Please contact the study team.");
@@ -2288,7 +2314,8 @@ After that list, give me the current time.`
         method: "POST",
         body: new URLSearchParams({
           action: "validateCode",
-          code
+          code,
+          client_key: getOrCreateClientKey()
         })
       });
 
