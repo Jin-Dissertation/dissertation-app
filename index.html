@@ -2652,17 +2652,15 @@ After that list, give me the current time.`
       const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
 
       $("btnResetSession").addEventListener("click", () => {
-        logEvent("reset_opened");
+        try { logEvent("reset_opened"); } catch (err) { console.warn("Reset log failed", err); }
         openModal("modalReset");
       });
       $("btnResetCancel").addEventListener("click", () => {
-        logEvent("reset_cancelled");
+        try { logEvent("reset_cancelled"); } catch (err) { console.warn("Reset log failed", err); }
         closeModal("modalReset");
       });
       $("btnResetConfirm").addEventListener("click", () => {
-        logEvent("reset_confirmed");
-        // Send reset autosave before clearing local/session data.
-        sendAutosave(buildAutosavePayload("reset_confirmed"));
+        try { logEvent("reset_confirmed"); } catch (err) { console.warn("Reset log failed", err); }
         clearSessionData();
         closeModal("modalReset");
         location.reload();
