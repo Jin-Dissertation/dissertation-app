@@ -824,7 +824,7 @@
     </div>
   </div>
 
-  <footer class="small muted" style="padding: 8px 24px 20px;" id="buildInfo"></footer>
+  <footer class="small muted" style="padding: 8px 24px 20px;" id="buildInfo"><span id="lastUpdated"></span></footer>
   <div id="helpLinkRow" class="small" style="padding: 0 24px 24px;">
     <a
       href="https://jin-dissertation.github.io/dissertation-app/help.html"
@@ -1117,6 +1117,12 @@ Provide the results in a table with the following columns:
     }
     function saveJSON(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
+    function getAppVersion() {
+      // appVersion comes from the visible Last updated text in the footer.
+      const el = document.getElementById("lastUpdated");
+      return el ? el.textContent.trim() : "";
+    }
+
     function buildAutosave(eventType, extra = {}) {
       const sessionId = localStorage.getItem(KEYS.sessionId) || "";
       if (!sessionId) return null;
@@ -1145,7 +1151,7 @@ Provide the results in a table with the following columns:
         finalLlmResponse: ($("llmResponse")?.value || "").trim(),
         sessionNotes: ($("sessionNotes")?.value || "").trim(),
         details,
-        appVersion: "v1"
+        appVersion: getAppVersion()
       };
     }
 
@@ -1662,7 +1668,9 @@ Provide the results in a table with the following columns:
       const startIso = localStorage.getItem(KEYS.sessionStartTime);
       const started = startIso ? new Date(startIso).toLocaleString() : "—";
       const last = document.lastModified || "—";
-      $("buildInfo").textContent = `Participant: ${code} • Started: ${started} • Last updated: ${last}`;
+      const footer = $("buildInfo");
+      if (!footer) return;
+      footer.innerHTML = `Participant: ${code} • Started: ${started} • <span id="lastUpdated">Last updated: ${last}</span>`;
     }
 
     // -----------------------------
