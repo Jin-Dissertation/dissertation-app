@@ -778,12 +778,6 @@
                 </div>
 
                 <div style="margin-top:12px;">
-                  <div class="row" style="margin-top:10px;">
-                    <button class="btn" id="btnDownload">Download backup file (.json)</button>
-                  </div>
-
-                  <div class="hr"></div>
-
                   <div class="muted small">
                     <p style="margin:0 0 8px;"><strong>Recorded reflection prompts:</strong></p>
                     <ol style="margin:0 0 8px; padding-left:18px;">
@@ -863,6 +857,11 @@
         <button class="btn danger" id="btnEndConfirm" type="button">I saved it — end session</button>
       </div>
     </div>
+  </div>
+
+  <div id="trainingEndFallback" class="card training-tip" style="display:none; margin: 8px 24px 12px;">
+    <span class="training-tip-label">Training tip</span>
+    Training activity complete. You can now close this window and return to the training.
   </div>
 
   <footer class="small muted" style="padding: 8px 24px 20px;" id="buildInfo"><span id="lastUpdated"></span></footer>
@@ -1357,7 +1356,7 @@ Provide the results in a table with the following columns:
 
 
     function configureTrainingTipsUI() {
-      const tipIds = ["trainingTopNote", "trainingTipCourseContext", "trainingTipMismatch", "trainingTipEndSession"];
+      const tipIds = ["trainingTopNote", "trainingTipCourseContext", "trainingTipMismatch"];
       tipIds.forEach((id) => {
         const el = $(id);
         if (!el) return;
@@ -1704,6 +1703,7 @@ Provide the results in a table with the following columns:
       const notice = $("finalizeCopyNotice");
       const lockedArea = $("finalizeLockedArea");
       const endRow = $("endSessionRow");
+      const endTip = $("trainingTipEndSession");
       const llm = $("llmResponse");
 
       if (notice) {
@@ -1731,6 +1731,8 @@ Provide the results in a table with the following columns:
       }
       if (llm) llm.disabled = !copied;
       if (endRow) endRow.style.display = copied ? "flex" : "none";
+      // End Session training tip is shown only when the End Session section is visible.
+      if (endTip) endTip.style.display = isTrainingMode && copied ? "block" : "none";
     }
 
     function clearSessionData() {
@@ -2706,27 +2708,6 @@ After that list, give me the current time.`
         updateFinalizeContentUI();
       });
 
-      // Download backup json
-      $("btnDownload").addEventListener("click", () => {
-        logEvent("backup_download_clicked");
-        const record = {
-          ...buildSessionRecord(),
-          llm_response: $("llmResponse").value || "",
-          exported_at: nowIso()
-        };
-
-        const blob = new Blob([JSON.stringify(record, null, 2)], { type: "application/json" });
-        const a = document.createElement("a");
-        const fname = buildSessionFilename(record);
-        a.href = URL.createObjectURL(blob);
-        a.download = fname;
-        a.click();
-        URL.revokeObjectURL(a.href);
-
-        logEvent("backup_exported", { filename: fname });
-        toast("Downloaded ✅");
-      });
-
       // Reset session (header)
       const openModal = (id) => { const m = $(id); if (m) m.style.display = "flex"; };
       const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
@@ -2764,6 +2745,27 @@ After that list, give me the current time.`
         });
         console.log("Final autosave payload:", autosavePayload);
 
+        const finishEndSession = () => {
+          clearSessionData();
+          sessionStorage.setItem("dissertation.ended", "true");
+          closeModal("modalEnd");
+
+          if (!isTrainingMode) {
+            location.reload();
+            return;
+          }
+
+          // window.close() in training mode may fail if the page was not opened by script.
+          window.close();
+          setTimeout(() => {
+            if (!window.closed) {
+              // Show fallback message if close does not succeed.
+              const fallback = $("trainingEndFallback");
+              if (fallback) fallback.style.display = "block";
+            }
+          }, 150);
+        };
+
         if (autosavePayload) {
           fetch(AUTOSAVE_URL, {
             method: "POST",
@@ -2779,16 +2781,10 @@ After that list, give me the current time.`
               console.error("Final autosave failed:", err);
             })
             .finally(() => {
-              clearSessionData();
-              sessionStorage.setItem("dissertation.ended", "true");
-              closeModal("modalEnd");
-              location.reload();
+              finishEndSession();
             });
         } else {
-          clearSessionData();
-          sessionStorage.setItem("dissertation.ended", "true");
-          closeModal("modalEnd");
-          location.reload();
+          finishEndSession();
         }
       });
 
