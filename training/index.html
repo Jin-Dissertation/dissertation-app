@@ -288,6 +288,7 @@
     /* ── SECTION BLOCK ── */
     .section-block {
       margin-top: 48px;
+      display: none;
       opacity: 0;
       transform: translateY(20px);
       transition: opacity 0.5s ease, transform 0.5s ease;
@@ -295,6 +296,7 @@
     }
 
     .section-block.revealed {
+      display: block;
       opacity: 1;
       transform: translateY(0);
       pointer-events: auto;
@@ -1021,6 +1023,7 @@ let completionReached = false;
 let hasSuccessfulSubmission = false;
 let quizStates = {};
 let currentSectionIndex = 0;
+let progressionSectionIndex = 0;
 let allSections = [];
 
 // ─────────────────────────────────────────────
@@ -1071,7 +1074,7 @@ function updateProgress() {
 
   const completedSections = allSections.filter(sec => sec.completed).length;
   $('overall-total').textContent = `Sections: ${allSections.length}`;
-  $('overall-current').textContent = `Current: ${Math.min(currentSectionIndex + 1, allSections.length)} / ${allSections.length}`;
+  $('overall-current').textContent = `Current: ${Math.min(progressionSectionIndex + 1, allSections.length)} / ${allSections.length}`;
   $('overall-completed').textContent = `Completed: ${completedSections}`;
 }
 
@@ -1888,12 +1891,17 @@ function renderTraining(structure, savedState = null) {
     allSections[idx].unlocked = st.unlocked;
   }
 
-  function collapseAllExcept(idx) {
+  // SECTION PROGRESSION TRACKING: progressionSectionIndex is the learner's true position.
+  // Manual review can open completed sections without changing this index.
+  function collapseAllExcept(idx, updateProgressPointer = true) {
     sectionState.forEach((st, i) => { st.expanded = i === idx; updateSectionUI(i); });
     currentSectionIndex = idx;
+    if (updateProgressPointer) progressionSectionIndex = idx;
     updateProgress();
   }
 
+  // NEXT CARD REVEAL: only reveal completed-through cards; hidden cards stay display:none
+  // so they do not reserve blank layout space.
   function revealCard(sectionIdx, cardIdx) {
     const el = sectionState[sectionIdx].cardEls[cardIdx];
     if (el) el.classList.add('revealed');
@@ -1918,7 +1926,8 @@ function renderTraining(structure, savedState = null) {
 
     accordion.querySelector('.section-toggle').addEventListener('click', () => {
       if (!sectionState[sectionIdx].unlocked) return;
-      collapseAllExcept(sectionIdx);
+      const isCompletedSection = sectionState[sectionIdx].completedCards >= allSections[sectionIdx].cards.length;
+      collapseAllExcept(sectionIdx, !isCompletedSection);
     });
 
     const content = accordion.querySelector('.section-content');
@@ -1936,12 +1945,12 @@ function renderTraining(structure, savedState = null) {
           revealCard(sectionIdx, localCardIdx + 1);
           scrollToEl(sectionState[sectionIdx].cardEls[localCardIdx + 1], 80);
         } else {
-          // SECTION COMPLETION: when all cards in a section are done, mark complete and unlock next.
+          // SECTION COMPLETION -> collapse current and expand next unlocked section.
           const nextSection = sectionIdx + 1;
           if (nextSection < allSections.length) {
             sectionState[nextSection].unlocked = true;
             revealCard(nextSection, 0);
-            collapseAllExcept(nextSection);
+            collapseAllExcept(nextSection, true);
             scrollToEl(container.querySelector(`[data-section-idx="${nextSection}"]`), 80);
           } else {
             completionReached = true;
@@ -1989,11 +1998,18 @@ function renderTraining(structure, savedState = null) {
 
   sectionState.forEach((st, idx) => {
     if (st.visibleCards > 0 || st.completedCards > 0) st.unlocked = true;
+    const isComplete = st.completedCards >= allSections[idx].cards.length;
+    if (isComplete) {
+      st.visibleCards = allSections[idx].cards.length;
+      st.cardEls.forEach(el => el.classList.add('revealed'));
+    }
     updateSectionUI(idx);
   });
 
   const firstIncomplete = sectionState.findIndex((st, idx) => st.completedCards < allSections[idx].cards.length && st.unlocked);
-  collapseAllExcept(firstIncomplete >= 0 ? firstIncomplete : 0);
+  const initialSection = firstIncomplete >= 0 ? firstIncomplete : 0;
+  progressionSectionIndex = initialSection;
+  collapseAllExcept(initialSection, false);
 
   revealedSlots = Math.max(preRevealCount, completedSlots.size);
   if (completionReached) showCompletion();
