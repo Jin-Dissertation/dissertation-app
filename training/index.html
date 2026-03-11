@@ -237,6 +237,54 @@
       border: 1px solid var(--rule);
     }
 
+
+    .overall-progress {
+      margin-top: 16px;
+      display: inline-flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 0.74rem;
+      color: var(--muted);
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      padding: 5px 12px;
+    }
+
+    .section-accordion {
+      margin-top: 18px;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--white);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .section-accordion.locked { opacity: 0.7; }
+
+    .section-toggle {
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: var(--cream-dark);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .section-toggle:disabled { cursor: not-allowed; }
+
+    .section-title-wrap { display: flex; align-items: center; gap: 10px; }
+    .section-status { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+    .section-chevron { font-size: 0.9rem; color: var(--muted); }
+
+    .section-accordion.collapsed .section-content { display: none; }
+    .section-accordion.collapsed .section-chevron { transform: rotate(-90deg); }
+    .section-content { padding: 0 16px 18px; }
+
     /* ── SECTION BLOCK ── */
     .section-block {
       margin-top: 48px;
@@ -906,6 +954,11 @@
       <p class="module-label">Professional Development Module</p>
       <h1 class="module-title">AI-Assisted MCQ Development<br>for Nursing Education</h1>
       <span class="module-participant" id="participant-badge"></span>
+      <div class="overall-progress" id="overall-progress">
+        <span id="overall-total">Sections: 0</span>
+        <span id="overall-current">Current: —</span>
+        <span id="overall-completed">Completed: 0</span>
+      </div>
     </header>
     <div id="sections-container"></div>
     <div id="completion">
@@ -967,6 +1020,8 @@ let trainingActive  = false;
 let completionReached = false;
 let hasSuccessfulSubmission = false;
 let quizStates = {};
+let currentSectionIndex = 0;
+let allSections = [];
 
 // ─────────────────────────────────────────────
 // UTILITIES
@@ -1008,12 +1063,18 @@ function scrollToEl(el, offset = 80) {
 }
 
 function updateProgress() {
-  const pct = totalSlots > 0 ? Math.round((revealedSlots / totalSlots) * 100) : 0;
+  const pct = totalSlots > 0 ? Math.round((completedSlots.size / totalSlots) * 100) : 0;
   $('progress-fill').style.width = pct + '%';
   const counter = $('section-counter');
-  counter.textContent = `${revealedSlots} / ${totalSlots}`;
-  counter.style.opacity = revealedSlots > 0 ? '1' : '0';
+  counter.textContent = `${completedSlots.size} / ${totalSlots}`;
+  counter.style.opacity = totalSlots > 0 ? '1' : '0';
+
+  const completedSections = allSections.filter(sec => sec.completed).length;
+  $('overall-total').textContent = `Sections: ${allSections.length}`;
+  $('overall-current').textContent = `Current: ${Math.min(currentSectionIndex + 1, allSections.length)} / ${allSections.length}`;
+  $('overall-completed').textContent = `Completed: ${completedSections}`;
 }
+
 
 // ─────────────────────────────────────────────
 // PROGRESS PERSISTENCE
@@ -1088,63 +1149,70 @@ function parseCSVLine(line) {
 // ─────────────────────────────────────────────
 // BUILD CONTENT STRUCTURE FROM CSV ROWS
 // ─────────────────────────────────────────────
+// SECTION GROUPING: CSV rows are grouped by section first, then by slot inside each section.
 function buildStructure(rows) {
-  const allSlots = [...new Set(rows.map(r => parseInt(r.slot, 10)))].sort((a,b)=>a-b);
+  const normalized = rows.map((r, idx) => ({
+    ...r,
+    section_id: (r.section_id || 'training').trim() || 'training',
+    section_title: (r.section_title || 'Training').trim() || 'Training',
+    section_order: Number.parseInt(r.section_order, 10) || 1,
+    _rowIndex: idx
+  }));
 
-  const structure = allSlots.map(slot => {
+  const sectionMap = new Map();
+  normalized.forEach(row => {
+    const key = `${row.section_order}__${row.section_id}`;
+    if (!sectionMap.has(key)) {
+      sectionMap.set(key, {
+        id: row.section_id,
+        title: row.section_title,
+        order: row.section_order,
+        rows: []
+      });
+    }
+    sectionMap.get(key).rows.push(row);
+  });
+
+  const sections = [...sectionMap.values()]
+    .sort((a,b) => a.order - b.order || a.id.localeCompare(b.id))
+    .map(section => ({
+      ...section,
+      cards: buildCardsForSection(section.rows)
+    }));
+
+  return sections;
+}
+
+function buildCardsForSection(rows) {
+  const allSlots = [...new Set(rows.map(r => parseInt(r.slot, 10)).filter(n => !Number.isNaN(n)))].sort((a,b)=>a-b);
+  return allSlots.map(slot => {
     const slotRows = rows.filter(r => parseInt(r.slot, 10) === slot);
     const type  = slotRows[0]?.type;
     const first = slotRows[0];
 
-    if (type === 'video') {
-      return { type: 'video', slot, youtubeId: first.youtube_id };
-    }
-
-    if (type === 'text') {
-      return { type: 'text', slot, header: first.header, body: first.body };
-    }
-
-    if (type === 'text_image') {
-      return { type: 'text_image', slot, header: first.header, body: first.body, imageUrl: first.image_url };
-    }
-
+    if (type === 'video') return { type: 'video', slot, youtubeId: first.youtube_id };
+    if (type === 'text') return { type: 'text', slot, header: first.header, body: first.body };
+    if (type === 'text_image') return { type: 'text_image', slot, header: first.header, body: first.body, imageUrl: first.image_url };
     if (type === 'question_image') {
-      const distractors = [first.distractor_1, first.distractor_2, first.distractor_3, first.distractor_4]
-        .filter(d => d && d.trim());
-      return {
-        type: 'question_image',
-        slot,
-        stem:       first.stem,
-        correct:    first.correct,
-        distractors,
-        feedback:   first.feedback,
-        showIdk:    first.show_idk?.toLowerCase() === 'yes',
-        imageUrl:   first.image_url
-      };
+      const distractors = [first.distractor_1, first.distractor_2, first.distractor_3, first.distractor_4].filter(d => d && d.trim());
+      return { type: 'question_image', slot, stem: first.stem, correct: first.correct, distractors, feedback: first.feedback, showIdk: first.show_idk?.toLowerCase() === 'yes', imageUrl: first.image_url };
     }
 
-    // Default: quiz (multiple questions per slot)
     const qRows = slotRows.sort((a, b) => parseInt(a.question_num,10) - parseInt(b.question_num,10));
     const quizNum = qRows[0]?.quiz_num || slot;
-    const questions = qRows.map(r => {
-      const distractors = [r.distractor_1, r.distractor_2, r.distractor_3, r.distractor_4]
-        .filter(d => d && d.trim());
-      return {
-        quizNum:     r.quiz_num,
-        questionNum: r.question_num,
-        stem:        r.stem,
-        correct:     r.correct,
-        distractors,
-        feedback:    r.feedback,
-        showIdk:     r.show_idk?.toLowerCase() === 'yes'
-      };
-    });
-
+    const questions = qRows.map(r => ({
+      quizNum: r.quiz_num,
+      questionNum: r.question_num,
+      stem: r.stem,
+      correct: r.correct,
+      distractors: [r.distractor_1, r.distractor_2, r.distractor_3, r.distractor_4].filter(d => d && d.trim()),
+      feedback: r.feedback,
+      showIdk: r.show_idk?.toLowerCase() === 'yes'
+    }));
     return { type: 'quiz', slot, quizNum, questions };
   });
-
-  return structure;
 }
+
 
 // ─────────────────────────────────────────────
 // RENDER VIDEO BLOCK
@@ -1777,93 +1845,162 @@ window.addEventListener('beforeunload', e => {
 function renderTraining(structure, savedState = null) {
   const container = $('sections-container');
   container.innerHTML = '';
-  totalSlots    = structure.length;
-  revealedSlots = 0;
+  allSections = structure.map(section => ({ ...section, completed: false, unlocked: false }));
+  totalSlots = allSections.reduce((sum, section) => sum + section.cards.length, 0);
   completedSlots = new Set();
   trainingActive = true;
   completionReached = !!savedState?.completionReached;
 
-  const preRevealCount  = savedState ? Math.min(savedState.revealedSlots, structure.length) : 1;
-  const preCompletedSet = savedState ? new Set(savedState.completedSlotIndices) : new Set();
+  const preRevealCount  = savedState ? Math.min(savedState.revealedSlots || 1, totalSlots) : 1;
+  const preCompletedSet = savedState ? new Set(savedState.completedSlotIndices || []) : new Set();
 
-  const blocks = [];
+  let globalCardIndex = 0;
+  const cardLookup = [];
 
-  structure.forEach((item, idx) => {
-    const onComplete = () => {
-      completedSlots.add(idx);
-      saveProgress();
-      if (idx + 1 < blocks.length) {
-        revealedSlots++;
-        updateProgress();
+  // DESKTOP BLOCKING: future sections remain locked/collapsed until progression unlocks them.
+  const sectionState = allSections.map((section, sectionIdx) => ({
+    visibleCards: sectionIdx === 0 ? 1 : 0,
+    completedCards: 0,
+    expanded: sectionIdx === 0,
+    unlocked: sectionIdx === 0,
+    cardEls: []
+  }));
+
+
+  function sectionCompletionState(idx) {
+    const st = sectionState[idx];
+    const total = allSections[idx].cards.length;
+    if (st.completedCards === 0) return 'Not started';
+    if (st.completedCards >= total) return 'Completed';
+    return 'In progress';
+  }
+
+  function updateSectionUI(idx) {
+    const wrap = container.querySelector(`[data-section-idx="${idx}"]`);
+    if (!wrap) return;
+    const st = sectionState[idx];
+    const statusEl = wrap.querySelector('.section-status');
+    statusEl.textContent = sectionCompletionState(idx);
+    wrap.classList.toggle('collapsed', !st.expanded);
+    wrap.classList.toggle('locked', !st.unlocked);
+    wrap.querySelector('.section-toggle').disabled = !st.unlocked;
+    allSections[idx].completed = st.completedCards >= allSections[idx].cards.length;
+    allSections[idx].unlocked = st.unlocked;
+  }
+
+  function collapseAllExcept(idx) {
+    sectionState.forEach((st, i) => { st.expanded = i === idx; updateSectionUI(i); });
+    currentSectionIndex = idx;
+    updateProgress();
+  }
+
+  function revealCard(sectionIdx, cardIdx) {
+    const el = sectionState[sectionIdx].cardEls[cardIdx];
+    if (el) el.classList.add('revealed');
+    sectionState[sectionIdx].visibleCards = Math.max(sectionState[sectionIdx].visibleCards, cardIdx + 1);
+    revealedSlots = Math.max(revealedSlots, completedSlots.size + 1);
+  }
+
+  allSections.forEach((section, sectionIdx) => {
+    const accordion = document.createElement('section');
+    accordion.className = 'section-accordion';
+    accordion.dataset.sectionIdx = sectionIdx;
+    accordion.innerHTML = `
+      <button class="section-toggle" type="button">
+        <span class="section-title-wrap">
+          <strong>Section ${sectionIdx + 1}: ${section.title}</strong>
+          <span class="section-status">Not started</span>
+        </span>
+        <span class="section-chevron">▾</span>
+      </button>
+      <div class="section-content"></div>
+    `;
+
+    accordion.querySelector('.section-toggle').addEventListener('click', () => {
+      if (!sectionState[sectionIdx].unlocked) return;
+      collapseAllExcept(sectionIdx);
+    });
+
+    const content = accordion.querySelector('.section-content');
+    section.cards.forEach((item, localCardIdx) => {
+      const cardIndex = globalCardIndex++;
+      cardLookup[cardIndex] = { sectionIdx, cardIdx: localCardIdx };
+
+      const onComplete = () => {
+        if (completedSlots.has(cardIndex)) return;
+        completedSlots.add(cardIndex);
+        sectionState[sectionIdx].completedCards += 1;
+
+        const hasNextCard = localCardIdx + 1 < section.cards.length;
+        if (hasNextCard) {
+          revealCard(sectionIdx, localCardIdx + 1);
+          scrollToEl(sectionState[sectionIdx].cardEls[localCardIdx + 1], 80);
+        } else {
+          // SECTION COMPLETION: when all cards in a section are done, mark complete and unlock next.
+          const nextSection = sectionIdx + 1;
+          if (nextSection < allSections.length) {
+            sectionState[nextSection].unlocked = true;
+            revealCard(nextSection, 0);
+            collapseAllExcept(nextSection);
+            scrollToEl(container.querySelector(`[data-section-idx="${nextSection}"]`), 80);
+          } else {
+            completionReached = true;
+            showCompletion();
+          }
+        }
+
+        updateSectionUI(sectionIdx);
+        if (sectionIdx + 1 < allSections.length) updateSectionUI(sectionIdx + 1);
         saveProgress();
-        const nextBlock = blocks[idx + 1];
-        nextBlock.classList.add('revealed');
-        scrollToEl(nextBlock, 80);
-        logEvent('section_revealed', { slot: structure[idx + 1].slot, sectionIndex: idx + 1 });
-      } else {
-        revealedSlots = totalSlots;
-        completionReached = true;
         updateProgress();
-        saveProgress();
-        showCompletion();
-      }
-    };
+      };
 
-    let block;
-    if (item.type === 'video') {
-      block = renderVideoBlock(item, idx, onComplete);
-    } else if (item.type === 'text') {
-      block = renderTextBlock(item, idx, onComplete);
-    } else if (item.type === 'text_image') {
-      block = renderTextImageBlock(item, idx, onComplete);
-    } else if (item.type === 'question_image') {
-      block = renderQuestionImageBlock(item, idx, onComplete);
-    } else {
-      block = renderQuizBlock(item, idx, onComplete);
-    }
+      let block;
+      if (item.type === 'video') block = renderVideoBlock(item, cardIndex, onComplete);
+      else if (item.type === 'text') block = renderTextBlock(item, cardIndex, onComplete);
+      else if (item.type === 'text_image') block = renderTextImageBlock(item, cardIndex, onComplete);
+      else if (item.type === 'question_image') block = renderQuestionImageBlock(item, cardIndex, onComplete);
+      else block = renderQuizBlock(item, cardIndex, onComplete);
 
-    container.appendChild(block);
-    blocks.push(block);
+      if (localCardIdx >= sectionState[sectionIdx].visibleCards) block.classList.remove('revealed');
+      else block.classList.add('revealed');
+
+      sectionState[sectionIdx].cardEls.push(block);
+      content.appendChild(block);
+    });
+
+    container.appendChild(accordion);
   });
 
-  // Reveal blocks up to the saved point
-  revealedSlots = preRevealCount;
   for (let i = 0; i < preRevealCount; i++) {
-    blocks[i].classList.add('revealed');
+    const found = cardLookup[i];
+    if (!found) continue;
+    sectionState[found.sectionIdx].visibleCards = Math.max(sectionState[found.sectionIdx].visibleCards, found.cardIdx + 1);
+    sectionState[found.sectionIdx].cardEls.slice(0, found.cardIdx + 1).forEach(el => el.classList.add('revealed'));
   }
 
-  // Mark pre-completed sections' UI as done
+
   preCompletedSet.forEach(idx => {
-    if (idx >= blocks.length) return;
+    const found = cardLookup[idx];
+    if (!found) return;
     completedSlots.add(idx);
-    const block = blocks[idx];
-    if (structure[idx].type === 'video') {
-      const doneBtn = block.querySelector(`#video-done-${idx}`);
-      if (doneBtn) {
-        doneBtn.disabled = true;
-        doneBtn.textContent = '✓ Watched';
-        doneBtn.style.background = '#2d7a4f';
-      }
-    } else {
-      const qc = $(`quiz-complete-${idx}`);
-      if (qc) qc.classList.add('show');
-      const cr = $(`continue-row-${idx}`);
-      if (cr) cr.classList.add('show');
-    }
+    sectionState[found.sectionIdx].completedCards += 1;
   });
 
+  sectionState.forEach((st, idx) => {
+    if (st.visibleCards > 0 || st.completedCards > 0) st.unlocked = true;
+    updateSectionUI(idx);
+  });
+
+  const firstIncomplete = sectionState.findIndex((st, idx) => st.completedCards < allSections[idx].cards.length && st.unlocked);
+  collapseAllExcept(firstIncomplete >= 0 ? firstIncomplete : 0);
+
+  revealedSlots = Math.max(preRevealCount, completedSlots.size);
+  if (completionReached) showCompletion();
+  saveProgress();
   updateProgress();
-
-  if (completionReached) {
-    showCompletion();
-  }
-
-  if (savedState) {
-    logEvent('training_resumed', { from_revealedSlots: savedState.revealedSlots, totalSlots: structure.length });
-  } else {
-    logEvent('training_started', { totalSlots: structure.length });
-  }
 }
+
 
 // ─────────────────────────────────────────────
 // COMPLETION + SUBMIT
@@ -2097,7 +2234,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       renderTraining(structure, resuming ? saved : null);
 
-      logEvent('content_loaded', { slots: structure.length, resumed: resuming });
+      logEvent('content_loaded', { sections: structure.length, cards: structure.reduce((n, sec) => n + sec.cards.length, 0), resumed: resuming });
 
     } catch (err) {
       $('loading').style.display = 'none';
