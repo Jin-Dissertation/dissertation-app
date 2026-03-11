@@ -2690,11 +2690,41 @@ After that list, give me the current time.`
         closeModal("modalEnd");
       });
       $("btnEndConfirm").addEventListener("click", () => {
+        console.log("End session confirm clicked");
         logEvent("end_session_confirmed");
-        clearSessionData();
-        sessionStorage.setItem("dissertation.ended", "true");
-        closeModal("modalEnd");
-        location.reload();
+        const autosavePayload = buildAutosave("session_ended", {
+          details: {
+            source: "end_confirm"
+          }
+        });
+        console.log("Final autosave payload:", autosavePayload);
+
+        if (autosavePayload) {
+          fetch(AUTOSAVE_URL, {
+            method: "POST",
+            body: new URLSearchParams({
+              payload: JSON.stringify(autosavePayload)
+            })
+          })
+            .then(r => r.text())
+            .then(text => {
+              console.log("Final autosave response:", text);
+            })
+            .catch(err => {
+              console.error("Final autosave failed:", err);
+            })
+            .finally(() => {
+              clearSessionData();
+              sessionStorage.setItem("dissertation.ended", "true");
+              closeModal("modalEnd");
+              location.reload();
+            });
+        } else {
+          clearSessionData();
+          sessionStorage.setItem("dissertation.ended", "true");
+          closeModal("modalEnd");
+          location.reload();
+        }
       });
 
       // Always show footer status immediately (even before access is verified)
