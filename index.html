@@ -1144,8 +1144,8 @@ Provide the results in a table with the following columns:
       const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
       const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
       const otherDescription = (localStorage.getItem(KEYS.llmOtherDescription) || "").trim();
-      const explicitVersionValue = expectedChoice && expectedChoice !== "different" ? expectedChoice : "";
-      const versionValue = explicitVersionValue || mismatchDescription || otherDescription || "";
+      const explicitVersionValue = expectedChoice && expectedChoice !== "auto_menu" ? expectedChoice : "";
+      const versionValue = explicitVersionValue || mismatchDescription || otherDescription || expectedChoice || "";
 
       const payload = {
         sessionId,
@@ -2633,7 +2633,7 @@ After that list, give me the current time.`
         if (!ok) return;
         localStorage.setItem(KEYS.finalPromptCopied, "true");
         logEvent("final_prompt_copied", {});
-        sendAutosave(buildAutosave("final_prompt_copied"));
+        sendAutosave(buildAutosave("final_prompt_copied", { promptName: "final_prompt" }));
         updateFinalizeContentUI();
       });
 
