@@ -1040,6 +1040,7 @@ Provide the results in a table with the following columns:
       timerPaused: "dissertation.timerPaused",
       timerWarned35: "dissertation.timerWarned35",
       timerWarned40: "dissertation.timerWarned40",
+      trainingTenMinuteNoticeShown: "dissertation.trainingTenMinuteNoticeShown",
       submissionAttempted: "dissertation.submissionAttempted",
       submissionStatus: "dissertation.submissionStatus",
       submissionCompletedAt: "dissertation.submissionCompletedAt",
@@ -1054,6 +1055,7 @@ Provide the results in a table with the following columns:
     // -----------------------------
     const $ = (id) => document.getElementById(id);
     const nowIso = () => new Date().toISOString();
+    const isTrainingMode = new URLSearchParams(location.search).get("mode") === "training";
 
     // Most recently copied state (desktop sidebar)
     let lastCopiedText = "";
@@ -1210,8 +1212,7 @@ Provide the results in a table with the following columns:
       saveJSON(KEYS.events, events);
     }
 
-    const TIMER_35_MIN_MS = 35 * 60 * 1000;
-    const TIMER_40_MIN_MS = 40 * 60 * 1000;
+    const TIMER_TRAINING_NOTICE_10_MIN_MS = 10 * 60 * 1000;
 
     function formatElapsed(ms) {
       const totalSeconds = Math.max(0, Math.floor((ms || 0) / 1000));
@@ -1247,14 +1248,14 @@ Provide the results in a table with the following columns:
     }
 
     function initializeSessionTimerIfNeeded() {
+      if (!isTrainingMode) return;
       const startedAt = localStorage.getItem(KEYS.timerStartedAt);
       const elapsed = localStorage.getItem(KEYS.timerElapsedBeforePause);
       const paused = localStorage.getItem(KEYS.timerPaused);
 
       if (!elapsed) localStorage.setItem(KEYS.timerElapsedBeforePause, "0");
       if (!paused) localStorage.setItem(KEYS.timerPaused, "false");
-      if (!localStorage.getItem(KEYS.timerWarned35)) localStorage.setItem(KEYS.timerWarned35, "false");
-      if (!localStorage.getItem(KEYS.timerWarned40)) localStorage.setItem(KEYS.timerWarned40, "false");
+      if (!localStorage.getItem(KEYS.trainingTenMinuteNoticeShown)) localStorage.setItem(KEYS.trainingTenMinuteNoticeShown, "false");
 
       const isPaused = localStorage.getItem(KEYS.timerPaused) === "true";
       if (!startedAt && !isPaused) {
@@ -1273,33 +1274,29 @@ Provide the results in a table with the following columns:
       const elapsed = getTimerElapsedMs();
       display.textContent = formatElapsed(elapsed);
 
-      if (elapsed >= TIMER_35_MIN_MS && localStorage.getItem(KEYS.timerWarned35) !== "true") {
-        localStorage.setItem(KEYS.timerWarned35, "true");
-        showTimerNotice("5 minutes remaining in the task window. If your question set is close to 10 questions, you may want to finish your current item and run any final audits.");
-        logEvent("timer_35min_warning");
+      if (!isTrainingMode) {
+        restoreTimerButtonState();
+        return;
       }
 
-      if (elapsed >= TIMER_40_MIN_MS) {
-        card.classList.add("timerComplete");
-        if (localStorage.getItem(KEYS.timerWarned40) !== "true") {
-          localStorage.setItem(KEYS.timerWarned40, "true");
-          showTimerNotice("You have reached 40 minutes. If your question set is complete (about 10 usable questions), you may stop. You may also continue working if needed.");
-          logEvent("timer_40min_notice");
-        }
-      } else {
-        card.classList.remove("timerComplete");
+      if (elapsed >= TIMER_TRAINING_NOTICE_10_MIN_MS && localStorage.getItem(KEYS.trainingTenMinuteNoticeShown) !== "true") {
+        localStorage.setItem(KEYS.trainingTenMinuteNoticeShown, "true");
+        showTimerNotice("By this point, you have probably spent enough time practicing to understand how the app works. If you’d like to keep working on your questions, that’s perfectly fine, but feel free to finish the activity now, even if you don't have all 5 questions fully refined.");
+        console.log("10-minute training notice shown");
       }
 
       restoreTimerButtonState();
     }
 
     function startSessionTimerLoop() {
+      if (!isTrainingMode) return;
       if (sessionTimerIntervalId) clearInterval(sessionTimerIntervalId);
       sessionTimerIntervalId = setInterval(updateSessionTimer, 1000);
       updateSessionTimer();
     }
 
     function handlePauseResumeTimer() {
+      if (!isTrainingMode) return;
       const paused = localStorage.getItem(KEYS.timerPaused) === "true";
       if (paused) {
         localStorage.setItem(KEYS.timerStartedAt, String(Date.now()));
@@ -1314,6 +1311,20 @@ Provide the results in a table with the following columns:
         sendAutosave(buildAutosave("timer_paused"));
       }
       updateSessionTimer();
+    }
+
+
+    function configureTimerModeUI() {
+      const timerCard = $("sessionTimerCard");
+      const timerNotice = $("timerNotice");
+      if (!isTrainingMode) {
+        if (timerCard) timerCard.style.display = "none";
+        if (timerNotice) timerNotice.style.display = "none";
+        hideTimerNotice();
+        return;
+      }
+      if (timerCard) timerCard.style.display = "";
+      console.log("Training mode timer enabled");
     }
 
     function makeSessionId(participantCode) {
@@ -2261,6 +2272,7 @@ After that list, give me the current time.`
     // Init
     // -----------------------------
     function init() {
+      configureTimerModeUI();
       // Gate
       const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
 
@@ -2478,7 +2490,7 @@ After that list, give me the current time.`
 
       renderMostRecentCopied();
       if (!localStorage.getItem(KEYS.finalPromptCopied)) localStorage.setItem(KEYS.finalPromptCopied, "false");
-      if ($("btnPauseTimer")) {
+      if (isTrainingMode && $("btnPauseTimer")) {
         $("btnPauseTimer").addEventListener("click", handlePauseResumeTimer);
       }
       startSessionTimerLoop();
