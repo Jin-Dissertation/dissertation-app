@@ -502,6 +502,27 @@
       min-width: 0;
       overflow-wrap: anywhere;
     }
+
+    .training-tip {
+      display: none;
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-left: 3px solid #5b8def;
+      background: #eef4ff;
+      border-radius: 8px;
+      color: #2d3f62;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .training-tip-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #375b9c;
+      letter-spacing: 0.02em;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
     @media (max-width: 960px) {
       .promptCard { padding: 6px; }
       .promptDesc { font-size: 12px; }
@@ -514,6 +535,10 @@
 <body>
   <div class="pageShell">
     <h1>Dissertation Prompt App</h1>
+    <div id="trainingTopNote" class="training-tip">
+      <span class="training-tip-label">Training tip</span>
+      Training mode: The “Training tip” boxes on this page provide guidance for this tutorial and are not part of the normal app interface.
+    </div>
     <!-- Access gate -->
     <div class="card accessCard" id="accessGate">
       <p class="muted small" style="margin:0 0 10px;">Enter your participant code to begin this session.</p>
@@ -588,6 +613,11 @@
                   <label for="llmMismatchDescription">Please briefly describe the options you see in the menu.</label>
                   <textarea id="llmMismatchDescription" placeholder="Example: Auto, Instant 5.5, Thinking 5.6"></textarea>
                 </div>
+                <div id="trainingTipMismatch" class="training-tip">
+                  <span class="training-tip-label">Training tip</span>
+                  If the model name you see in your AI interface does not match the options listed here, choose “I see something different” and briefly describe what you see.<br><br>
+                  This helps us record which AI system and model you used.
+                </div>
               </div>
 
               <div id="llmOtherWrap" style="display:none; margin-top:8px;">
@@ -614,6 +644,12 @@
               <div style="flex:1; min-width: 240px;">
                 <label>Course / class context</label>
                 <input id="ctxCourse" placeholder="e.g., Health Assessment (first semester)" />
+                <div id="trainingTipCourseContext" class="training-tip">
+                  <span class="training-tip-label">Training tip</span>
+                  Describe the course context in one or two sentences. This should be enough information for the AI to understand the topic, but it does not need to be detailed.<br><br>
+                  Example: Undergraduate pediatric nursing course covering insulin administration and medication safety.<br><br>
+                  Avoid writing a full assignment description or copying a syllabus.
+                </div>
               </div>
               <div style="flex:1; min-width: 240px;">
                 <label>Content area</label>
@@ -764,6 +800,11 @@
 
               <p class="muted small" id="finalizeMsg" style="margin:10px 0 0;"></p>
 
+              <div id="trainingTipEndSession" class="training-tip" style="margin-top:10px;">
+                <span class="training-tip-label">Training tip</span>
+                Click End Session when you are finished practicing.<br><br>
+                You do not need to produce perfect questions — the goal of this activity is simply to practice using the app. Your responses will be saved when you end the session.
+              </div>
               <div class="row" id="endSessionRow" style="margin-top:10px; display:none;">
                 <button class="btn danger finalActionBtn" id="btnEndSession" type="button">End session</button>
               </div>
@@ -1314,6 +1355,15 @@ Provide the results in a table with the following columns:
       updateSessionTimer();
     }
 
+
+    function configureTrainingTipsUI() {
+      const tipIds = ["trainingTopNote", "trainingTipCourseContext", "trainingTipMismatch", "trainingTipEndSession"];
+      tipIds.forEach((id) => {
+        const el = $(id);
+        if (!el) return;
+        el.style.display = isTrainingMode ? "block" : "none";
+      });
+    }
 
     function configureTimerModeUI() {
       const timerCard = $("sessionTimerCard");
@@ -2273,6 +2323,7 @@ After that list, give me the current time.`
     // Init
     // -----------------------------
     function init() {
+      configureTrainingTipsUI();
       configureTimerModeUI();
       // Gate
       const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
