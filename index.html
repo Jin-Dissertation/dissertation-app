@@ -1125,7 +1125,10 @@ Provide the results in a table with the following columns:
 
     function buildAutosave(eventType, extra = {}) {
       const sessionId = localStorage.getItem(KEYS.sessionId) || "";
-      if (!sessionId) return null;
+      if (!sessionId) {
+        console.warn("Autosave skipped: no sessionId");
+        return null;
+      }
 
       // Tracks event order within a session.
       const nextEventIndex = (Number(localStorage.getItem(KEYS.autosaveEventIndex) || "0") || 0) + 1;
@@ -1135,7 +1138,7 @@ Provide the results in a table with the following columns:
       const ctx = getContext();
       const details = extra.details && typeof extra.details === "object" ? extra.details : {};
 
-      return {
+      const payload = {
         sessionId,
         mode: modeParam || "standard",
         accessCode: localStorage.getItem(KEYS.accessCode) || "",
@@ -1153,17 +1156,23 @@ Provide the results in a table with the following columns:
         details,
         appVersion: getAppVersion()
       };
+      console.log("Autosave payload built", payload);
+      return payload;
     }
 
     // Background autosave only: do not block UI actions on this network call.
     function sendAutosave(payload) {
       if (!payload) return;
+      console.log("Sending autosave", payload);
       fetch(AUTOSAVE_URL, {
         method: "POST",
         body: new URLSearchParams({
           payload: JSON.stringify(payload)
         })
-      }).catch(err => console.error("Autosave failed:", err));
+      })
+        .then(r => r.text())
+        .then(text => console.log("Autosave response", text))
+        .catch(err => console.error("Autosave failed", err));
     }
 
     function logEvent(type, data = {}) {
