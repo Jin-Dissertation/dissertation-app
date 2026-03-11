@@ -2754,8 +2754,8 @@ After that list, give me the current time.`
 
       $("btnEndSession").addEventListener("click", () => {
         if (!canEndSession()) {
-          updateEndSessionState();
           toast("Please paste the AI-generated response into the final response box before ending the session.");
+          updateEndSessionState();
           return;
         }
         logEvent("end_session_opened");
