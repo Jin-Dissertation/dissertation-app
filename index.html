@@ -1141,6 +1141,11 @@ Provide the results in a table with the following columns:
       const modeParam = new URLSearchParams(window.location.search).get("mode");
       const ctx = getContext();
       const details = extra.details && typeof extra.details === "object" ? extra.details : {};
+      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
+      const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
+      const otherDescription = (localStorage.getItem(KEYS.llmOtherDescription) || "").trim();
+      const explicitVersionValue = expectedChoice && expectedChoice !== "different" ? expectedChoice : "";
+      const versionValue = explicitVersionValue || mismatchDescription || otherDescription || "";
 
       const payload = {
         sessionId,
@@ -1150,7 +1155,7 @@ Provide the results in a table with the following columns:
         eventType,
         promptName: extra.promptName || "",
         product: localStorage.getItem(KEYS.llmProduct) || localStorage.getItem(KEYS.modelUsed) || "",
-        version: localStorage.getItem(KEYS.llmExpectedChoice) || "",
+        version: versionValue,
         desiredQuestions: ctx.questionCount || "",
         courseContext: ctx.course || "",
         questionContext: ctx.area || "",
@@ -2054,7 +2059,7 @@ After that list, give me the current time.`
         const ok = await copyToClipboard(promptText, prompt.title);
         if (ok) {
           logEvent("prompt_copied", { promptId: id });
-          sendAutosave(buildAutosave("prompt_copied", { details: { promptId: id, promptTitle: prompt.title } }));
+          sendAutosave(buildAutosave("prompt_copied", { promptName: id, details: { promptId: id, promptTitle: prompt.title } }));
           btn.classList.add("isActive");
           if (btn._activeTimer) clearTimeout(btn._activeTimer);
           btn._activeTimer = setTimeout(() => {
@@ -2593,13 +2598,13 @@ After that list, give me the current time.`
       // Prompts controls
       $("btnEditContext").addEventListener("click", () => {
         logEvent("edit_context_clicked");
-        sendAutosave(buildAutosave("edit_context_clicked"));
+        sendAutosave(buildAutosave("edit_context_clicked", { details: { toStage: "setup" } }));
         setStage("setup");
       });
 
       $("btnReadyFinal").addEventListener("click", () => {
         logEvent("done_making_questions_clicked");
-        sendAutosave(buildAutosave("question_making_completed"));
+        sendAutosave(buildAutosave("question_making_completed", { details: { toStage: "finalize" } }));
         const fp = buildFinalPrompt();
         localStorage.setItem(KEYS.finalPrompt, fp);
         localStorage.setItem(KEYS.finalPromptCopied, "false");
@@ -2610,7 +2615,7 @@ After that list, give me the current time.`
       // Finalize controls
       $("btnBackToPrompts").addEventListener("click", () => {
         logEvent("back_to_making_questions_clicked");
-        sendAutosave(buildAutosave("back_to_question_making_clicked"));
+        sendAutosave(buildAutosave("back_to_question_making_clicked", { details: { toStage: "prompts" } }));
         logEvent("returned_from_finalize_to_prompts");
         setStage("prompts");
       });
