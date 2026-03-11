@@ -1752,6 +1752,7 @@ Provide the results in a table with the following columns:
     function updateEndSessionState() {
       const btn = $("btnEndSession");
       if (!btn) return;
+      btn.disabled = false;
       btn.classList.toggle("pseudo-disabled", !canEndSession());
     }
 
@@ -2753,6 +2754,7 @@ After that list, give me the current time.`
       });
 
       $("btnEndSession").addEventListener("click", () => {
+        console.log("End Session clicked. canEndSession =", canEndSession());
         if (!canEndSession()) {
           toast("Please paste the AI-generated response into the final response box before ending the session.");
           updateEndSessionState();
