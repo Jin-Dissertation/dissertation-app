@@ -800,7 +800,7 @@
                 You do not need to produce perfect questions — the goal of this activity is simply to practice using the app. Your responses will be saved when you end the session.
               </div>
               <div class="row" id="endSessionRow" style="margin-top:10px; display:none;">
-                <button class="btn danger finalActionBtn" id="btnEndSession" type="button">End session</button>
+                <button class="btn danger finalActionBtn" id="btnEndSession" type="button" disabled>End session</button>
               </div>
             </div>
           </div>
@@ -1731,8 +1731,17 @@ Provide the results in a table with the following columns:
       }
       if (llm) llm.disabled = !copied;
       if (endRow) endRow.style.display = copied ? "flex" : "none";
+      updateEndSessionState();
       // End Session training tip is shown only when the End Session section is visible.
       if (endTip) endTip.style.display = isTrainingMode && copied ? "block" : "none";
+    }
+
+
+    function updateEndSessionState() {
+      const text = ($("llmResponse")?.value || "").trim();
+      const btn = $("btnEndSession");
+      if (!btn) return;
+      btn.disabled = text.length === 0;
     }
 
     function clearSessionData() {
@@ -2549,6 +2558,7 @@ After that list, give me the current time.`
       }
       startSessionTimerLoop();
       updateFinalizeContentUI();
+      updateEndSessionState();
 
       $("btnCopyAgain").addEventListener("click", async (e) => {
         e.preventDefault();
@@ -2707,6 +2717,9 @@ After that list, give me the current time.`
       $("llmResponse").addEventListener("input", () => {
         updateFinalizeContentUI();
       });
+      $("llmResponse").addEventListener("change", () => {
+        updateEndSessionState();
+      });
 
       // Reset session (header)
       const openModal = (id) => { const m = $(id); if (m) m.style.display = "flex"; };
@@ -2728,6 +2741,10 @@ After that list, give me the current time.`
       });
 
       $("btnEndSession").addEventListener("click", () => {
+        if (!(($("llmResponse")?.value || "").trim())) {
+          updateEndSessionState();
+          return;
+        }
         logEvent("end_session_opened");
         openModal("modalEnd");
       });
