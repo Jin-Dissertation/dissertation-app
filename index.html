@@ -455,8 +455,16 @@
       opacity: 0.88;
       font-weight: 550;
     }
+    #btnEndSession.finalActionBtn.pseudo-disabled {
+      opacity: 0.45;
+      filter: grayscale(20%);
+      cursor: not-allowed;
+    }
     #btnEndSession.finalActionBtn:hover {
       opacity: 1;
+    }
+    #btnEndSession.finalActionBtn.pseudo-disabled:hover {
+      opacity: 0.45;
     }
 
 
@@ -1737,11 +1745,14 @@ Provide the results in a table with the following columns:
     }
 
 
+    function canEndSession() {
+      return !!(($("llmResponse")?.value || "").trim());
+    }
+
     function updateEndSessionState() {
-      const text = ($("llmResponse")?.value || "").trim();
       const btn = $("btnEndSession");
       if (!btn) return;
-      btn.disabled = text.length === 0;
+      btn.classList.toggle("pseudo-disabled", !canEndSession());
     }
 
     function clearSessionData() {
@@ -2716,6 +2727,7 @@ After that list, give me the current time.`
 
       $("llmResponse").addEventListener("input", () => {
         updateFinalizeContentUI();
+        updateEndSessionState();
       });
       $("llmResponse").addEventListener("change", () => {
         updateEndSessionState();
@@ -2741,8 +2753,9 @@ After that list, give me the current time.`
       });
 
       $("btnEndSession").addEventListener("click", () => {
-        if (!(($("llmResponse")?.value || "").trim())) {
+        if (!canEndSession()) {
           updateEndSessionState();
+          toast("Please paste the AI-generated response into the final response box before ending the session.");
           return;
         }
         logEvent("end_session_opened");
