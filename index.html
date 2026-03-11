@@ -843,6 +843,10 @@
   </div>
 
   <script>
+    window.addEventListener("error", (e) => {
+      console.error("Global script error:", e.message, "at", e.filename, "line", e.lineno);
+    });
+
     // -----------------------------
     // Config
     // -----------------------------
@@ -2434,11 +2438,16 @@ After that list, give me the current time.`
 
       if (confirmProductVersionBtn) {
         confirmProductVersionBtn.addEventListener("click", () => {
-          if (!isSetupVersionConfirmedForContext()) return;
+          console.log("Confirm product/version clicked");
+          if (!isSetupVersionConfirmedForContext()) {
+            console.log("Confirm product/version blocked: setup version requirements not met");
+            return;
+          }
           setProductVersionConfirmedState(true);
           logEvent("product_version_confirm_clicked");
           sendAutosave(buildAutosavePayload("product_version_confirmed"));
           updateSetupSubbandVisibility();
+          console.log("Confirm product/version completed");
         });
       }
 
