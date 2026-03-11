@@ -1161,6 +1161,7 @@ Provide the results in a table with the following columns:
         desiredQuestions: ctx.questionCount || "",
         courseContext: ctx.course || "",
         questionContext: ctx.area || "",
+        extraInstructions: ($("ctxNotes")?.value || "").trim(),
         currentStage: getStage(),
         finalLlmResponse: ($("llmResponse")?.value || "").trim(),
         sessionNotes: ($("sessionNotes")?.value || "").trim(),
@@ -2584,6 +2585,7 @@ After that list, give me the current time.`
         if (ok) {
           logEvent("starter_copied", {});
           const autosavePayload = buildAutosave("starter_prompt_copied", { promptName: "starter" });
+          console.log("Starter prompt autosave extraInstructions:", autosavePayload?.extraInstructions);
           if (autosavePayload) sendAutosave(autosavePayload);
           localStorage.setItem(KEYS.starterCopied, "true");
           $("setupMsg").textContent = "Starter prompt copied. Paste it into your selected LLM, then click Proceed to 2) Making questions.";
