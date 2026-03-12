@@ -1028,7 +1028,7 @@ const PROMPTS = {
      ========================================== */
   starter: {
     /* MODEL: CHATGPT */
-    chatgpt: `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
+    chatgpt: `***I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
 
 1. Class Context (e.g., subject, course objectives, level, etc.): {{COURSE}}
 2. Content Area (specific topic or unit): {{AREA}}
@@ -1048,7 +1048,7 @@ You will create 1 question at a time. Pause after each one so I can give feedbac
 
 For now, give me the current time, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`,
     /* MODEL: CLAUDE */
-    claude: `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
+    claude: `******I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
 
 1. Class Context (e.g., subject, course objectives, level, etc.): {{COURSE}}
 2. Content Area (specific topic or unit): {{AREA}}
@@ -1068,7 +1068,7 @@ You will create 1 question at a time. Pause after each one so I can give feedbac
 
 For now, give me the current time, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`,
     /* MODEL: GEMINI */
-    gemini: `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
+    gemini: `*********I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
 
 1. Class Context (e.g., subject, course objectives, level, etc.): {{COURSE}}
 2. Content Area (specific topic or unit): {{AREA}}
@@ -1088,7 +1088,7 @@ You will create 1 question at a time. Pause after each one so I can give feedbac
 
 For now, give me the current time, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`,
     /* MODEL: COPILOT */
-    copilot: `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
+    copilot: `************I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
 
 1. Class Context (e.g., subject, course objectives, level, etc.): {{COURSE}}
 2. Content Area (specific topic or unit): {{AREA}}
@@ -1108,7 +1108,7 @@ You will create 1 question at a time. Pause after each one so I can give feedbac
 
 For now, give me the current time, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`,
     /* MODEL: OTHER */
-    other: `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
+    other: `***************I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
 
 1. Class Context (e.g., subject, course objectives, level, etc.): {{COURSE}}
 2. Content Area (specific topic or unit): {{AREA}}
@@ -1134,15 +1134,15 @@ For now, give me the current time, present a tentative plan for all of the quest
      ========================================== */
   next_question: {
     /* MODEL: CHATGPT */
-    chatgpt: `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`,
+    chatgpt: `***This question is acceptable. Please add it to the working list of questions and proceed to the next one.`,
     /* MODEL: CLAUDE */
-    claude: `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`,
+    claude: `******This question is acceptable. Please add it to the working list of questions and proceed to the next one.`,
     /* MODEL: GEMINI */
-    gemini: `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`,
+    gemini: `*********This question is acceptable. Please add it to the working list of questions and proceed to the next one.`,
     /* MODEL: COPILOT */
-    copilot: `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`,
+    copilot: `************This question is acceptable. Please add it to the working list of questions and proceed to the next one.`,
     /* MODEL: OTHER */
-    other: `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
+    other: `******************This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
   },
 
   /* ==========================================
@@ -1150,15 +1150,15 @@ For now, give me the current time, present a tentative plan for all of the quest
      ========================================== */
   replace_question: {
     /* MODEL: CHATGPT */
-    chatgpt: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`,
+    chatgpt: `***Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`,
     /* MODEL: CLAUDE */
-    claude: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`,
+    claude: `******Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`,
     /* MODEL: GEMINI */
-    gemini: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`,
+    gemini: `*********Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`,
     /* MODEL: COPILOT */
-    copilot: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`,
+    copilot: `************Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`,
     /* MODEL: OTHER */
-    other: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
+    other: `******************Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
   },
 
   /* ==========================================
