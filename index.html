@@ -474,24 +474,58 @@
       border-radius: 10px;
       background: #f8fbff;
     }
-    .audioFeedbackControls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 8px;
+    .audioRecorderTop .audioHeading {
+      margin: 0 0 4px;
+      font-size: 14px;
+      font-weight: 700;
     }
-    .audioFeedbackControls .btn {
-      padding: 6px 10px;
-      font-size: 12px;
-    }
-    .audioStatusLine {
-      margin-top: 8px;
+    .audioRecorderTop .audioHelp {
+      margin: 0;
       font-size: 12px;
       color: var(--muted);
     }
-    .audioPlayerWrap {
+    .audioMicRow {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .audioStatusLine {
+      margin-top: 10px;
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+      background: #fff;
+    }
+    .audioControlRow {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .audioControlRow .btn {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+    .audioControlRow .btn.primary {
+      min-width: 122px;
+    }
+    .audioPlaybackRow {
       margin-top: 10px;
       display: none;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .audioPlaybackRow audio {
+      max-width: 100%;
+      min-width: 260px;
     }
 
     details summary {
@@ -804,28 +838,30 @@
                   ></textarea>
                 </div>
 
-                <div class="audioFeedbackSection">
-                  <p class="muted small" style="margin:0 0 6px;"><strong>Optional audio feedback</strong></p>
-                  <p class="muted small" style="margin:0;">Prefer to speak instead of type? You may record audio feedback instead of, or in addition to, written feedback.</p>
+                <div class="audioFeedbackSection" id="audioRecorderPanel">
+                  <div class="audioRecorderTop">
+                    <p class="audioHeading">Optional audio feedback</p>
+                    <p class="audioHelp">Prefer to speak instead of type? You may record audio feedback instead of, or in addition to, written feedback.</p>
+                  </div>
 
-                  <div class="row" style="margin-top:8px; align-items:center; gap:8px;">
+                  <div class="audioMicRow">
                     <label class="small" for="micSelect" style="min-width:auto;">Microphone</label>
                     <select id="micSelect" class="llmCompactSelect" style="max-width:320px;"></select>
                   </div>
 
-                  <div class="audioFeedbackControls">
-                    <button class="btn" id="btnAudioRecord" type="button">Record</button>
-                    <button class="btn" id="btnAudioPause" type="button" disabled>Pause</button>
-                    <button class="btn" id="btnAudioResume" type="button" disabled>Resume</button>
-                    <button class="btn" id="btnAudioStop" type="button" disabled>Stop</button>
-                    <button class="btn" id="btnAudioSubmit" type="button" disabled>Submit audio</button>
-                    <button class="btn" id="btnAudioRecordAgain" type="button" disabled>Record again</button>
-                  </div>
-
                   <div class="audioStatusLine" id="audioStatusLine">Not recording</div>
 
-                  <div class="audioPlayerWrap" id="audioPlayerWrap">
+                  <div class="audioControlRow" id="audioPrimaryControls">
+                    <button class="btn primary" id="btnAudioStart" type="button">Start recording</button>
+                    <button class="btn" id="btnAudioPause" type="button">Pause</button>
+                    <button class="btn" id="btnAudioResume" type="button">Resume</button>
+                    <button class="btn" id="btnAudioStop" type="button">Stop</button>
+                  </div>
+
+                  <div class="audioPlaybackRow" id="audioPlaybackRow">
                     <audio id="audioFeedbackPlayer" controls preload="metadata"></audio>
+                    <button class="btn primary" id="btnAudioSubmit" type="button">Submit audio</button>
+                    <button class="btn" id="btnAudioRecordAgain" type="button">Record again</button>
                   </div>
                 </div>
 
@@ -1504,15 +1540,17 @@ After that list, give me the current time.`
     let llmMismatchReported = false;
     let llmMismatchAlertAttempted = false;
 
-    // Optional audio feedback recording state.
-    let audioFeedbackStream = null;
-    let audioFeedbackRecorder = null;
-    let audioFeedbackChunks = [];
-    let audioFeedbackBlob = null;
-    let audioFeedbackUrl = "";
-    let audioFeedbackSubmitted = false;
-    let audioFeedbackStartedAt = null;
-    let audioFeedbackDurationMs = 0;
+    // Optional audio feedback recorder state (kept centralized for easy end-session integration later).
+    let currentAudioStream = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioBlob = null;
+    let audioUrl = "";
+    let audioSubmitted = false;
+    let audioDuration = 0;
+    let selectedMicId = "";
+    let uploadedAudioInfo = null;
+    let audioStartedAt = null;
 
     function hideToast() {
       const t = $("toast");
@@ -2210,74 +2248,107 @@ After that list, give me the current time.`
     }
 
 
+    // Audio recorder status text renderer.
     function setAudioFeedbackStatus(message) {
       const el = $("audioStatusLine");
       if (el) el.textContent = message;
     }
 
+    // Release object URL whenever a recording is replaced.
     function releaseAudioFeedbackUrl() {
-      if (!audioFeedbackUrl) return;
-      URL.revokeObjectURL(audioFeedbackUrl);
-      audioFeedbackUrl = "";
+      if (!audioUrl) return;
+      URL.revokeObjectURL(audioUrl);
+      audioUrl = "";
     }
 
+    // Stop current microphone stream tracks.
     function stopAudioFeedbackStream() {
-      if (!audioFeedbackStream) return;
-      audioFeedbackStream.getTracks().forEach((track) => track.stop());
-      audioFeedbackStream = null;
+      if (!currentAudioStream) return;
+      currentAudioStream.getTracks().forEach((track) => track.stop());
+      currentAudioStream = null;
     }
 
-    function updateAudioFeedbackControls() {
-      const recorderState = audioFeedbackRecorder?.state || "inactive";
-      const hasRecording = !!audioFeedbackBlob;
-      const submitted = audioFeedbackSubmitted;
+    // Keep recorder UI updates in one place for maintainability.
+    function updateAudioRecorderUI() {
+      const recorderState = mediaRecorder?.state || "inactive";
+      const hasRecording = !!audioBlob;
+      const playerRow = $("audioPlaybackRow");
+      const startBtn = $("btnAudioStart");
+      const pauseBtn = $("btnAudioPause");
+      const resumeBtn = $("btnAudioResume");
+      const stopBtn = $("btnAudioStop");
+      const submitBtn = $("btnAudioSubmit");
+      const recordAgainBtn = $("btnAudioRecordAgain");
+      const micSelectEl = $("micSelect");
 
-      if ($("btnAudioRecord")) $("btnAudioRecord").disabled = recorderState !== "inactive";
-      if ($("btnAudioPause")) $("btnAudioPause").disabled = recorderState !== "recording";
-      if ($("btnAudioResume")) $("btnAudioResume").disabled = recorderState !== "paused";
-      if ($("btnAudioStop")) $("btnAudioStop").disabled = recorderState === "inactive";
-      if ($("btnAudioSubmit")) $("btnAudioSubmit").disabled = !hasRecording || submitted;
-      if ($("btnAudioRecordAgain")) $("btnAudioRecordAgain").disabled = !hasRecording && recorderState === "inactive";
-      if ($("micSelect")) $("micSelect").disabled = recorderState !== "inactive";
-      if ($("audioPlayerWrap")) $("audioPlayerWrap").style.display = hasRecording ? "block" : "none";
+      if (startBtn) {
+        startBtn.style.display = recorderState === "inactive" && !hasRecording ? "inline-flex" : "none";
+        startBtn.disabled = recorderState !== "inactive";
+      }
+      if (pauseBtn) {
+        pauseBtn.style.display = recorderState === "recording" ? "inline-flex" : "none";
+        pauseBtn.disabled = recorderState !== "recording";
+      }
+      if (resumeBtn) {
+        resumeBtn.style.display = recorderState === "paused" ? "inline-flex" : "none";
+        resumeBtn.disabled = recorderState !== "paused";
+      }
+      if (stopBtn) {
+        stopBtn.style.display = (recorderState === "recording" || recorderState === "paused") ? "inline-flex" : "none";
+        stopBtn.disabled = recorderState === "inactive";
+      }
+      if (playerRow) playerRow.style.display = hasRecording ? "flex" : "none";
+      if (submitBtn) submitBtn.disabled = !hasRecording || audioSubmitted;
+      if (recordAgainBtn) recordAgainBtn.disabled = !hasRecording && recorderState === "inactive";
+      if (micSelectEl) micSelectEl.disabled = recorderState !== "inactive";
     }
 
+    // Microphone handling.
     async function loadAudioInputDevices() {
       const select = $("micSelect");
       if (!select || !navigator.mediaDevices?.enumerateDevices) return;
       try {
+        const previous = select.value || selectedMicId;
         const devices = await navigator.mediaDevices.enumerateDevices();
         const inputDevices = devices.filter((d) => d.kind === "audioinput");
         select.innerHTML = "";
+
         inputDevices.forEach((device, idx) => {
           const opt = document.createElement("option");
           opt.value = device.deviceId;
           opt.textContent = device.label || `Microphone ${idx + 1}`;
           select.appendChild(opt);
         });
+
         if (!select.options.length) {
           const opt = document.createElement("option");
           opt.value = "";
           opt.textContent = "Default microphone";
           select.appendChild(opt);
         }
+
+        if (previous && [...select.options].some((o) => o.value === previous)) {
+          select.value = previous;
+        }
+        selectedMicId = select.value || "";
       } catch (err) {
         console.warn("Could not load microphones", err);
       }
     }
 
-    function resetAudioRecordingState({ keepSubmitted = false } = {}) {
-      if (audioFeedbackRecorder && audioFeedbackRecorder.state !== "inactive") {
-        audioFeedbackRecorder.stop();
+    function clearAudioRecorderState({ keepSubmitted = false } = {}) {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
       }
-      audioFeedbackRecorder = null;
+      mediaRecorder = null;
       stopAudioFeedbackStream();
       releaseAudioFeedbackUrl();
-      audioFeedbackChunks = [];
-      audioFeedbackBlob = null;
-      audioFeedbackStartedAt = null;
-      audioFeedbackDurationMs = 0;
-      if (!keepSubmitted) audioFeedbackSubmitted = false;
+      audioChunks = [];
+      audioBlob = null;
+      audioDuration = 0;
+      audioStartedAt = null;
+      uploadedAudioInfo = null;
+      if (!keepSubmitted) audioSubmitted = false;
 
       const player = $("audioFeedbackPlayer");
       if (player) {
@@ -2285,8 +2356,6 @@ After that list, give me the current time.`
         player.removeAttribute("src");
         player.load();
       }
-      setAudioFeedbackStatus("Not recording");
-      updateAudioFeedbackControls();
     }
 
     async function startAudioRecording() {
@@ -2295,102 +2364,168 @@ After that list, give me the current time.`
         return;
       }
       try {
-        resetAudioRecordingState();
-        const selectedDeviceId = $("micSelect")?.value || "";
-        const constraints = selectedDeviceId
-          ? { audio: { deviceId: { exact: selectedDeviceId } } }
+        clearAudioRecorderState();
+        selectedMicId = $("micSelect")?.value || "";
+        const constraints = selectedMicId
+          ? { audio: { deviceId: { exact: selectedMicId } } }
           : { audio: true };
 
-        audioFeedbackStream = await navigator.mediaDevices.getUserMedia(constraints);
-        audioFeedbackChunks = [];
-        audioFeedbackRecorder = new MediaRecorder(audioFeedbackStream);
+        currentAudioStream = await navigator.mediaDevices.getUserMedia(constraints);
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(currentAudioStream);
 
-        audioFeedbackRecorder.ondataavailable = (event) => {
-          if (event.data && event.data.size > 0) audioFeedbackChunks.push(event.data);
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) audioChunks.push(event.data);
         };
 
-        audioFeedbackRecorder.onstop = () => {
-          audioFeedbackBlob = new Blob(audioFeedbackChunks, { type: audioFeedbackRecorder.mimeType || "audio/webm" });
-          audioFeedbackDurationMs = audioFeedbackStartedAt ? Math.max(0, Date.now() - audioFeedbackStartedAt) : 0;
+        mediaRecorder.onstop = () => {
+          audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+          audioDuration = audioStartedAt ? Math.max(0, Date.now() - audioStartedAt) : 0;
           releaseAudioFeedbackUrl();
-          audioFeedbackUrl = URL.createObjectURL(audioFeedbackBlob);
+          audioUrl = URL.createObjectURL(audioBlob);
           const player = $("audioFeedbackPlayer");
           if (player) {
-            player.src = audioFeedbackUrl;
+            player.src = audioUrl;
             player.load();
           }
           stopAudioFeedbackStream();
           setAudioFeedbackStatus("Recording ready to submit");
-          updateAudioFeedbackControls();
+          updateAudioRecorderUI();
         };
 
-        audioFeedbackStartedAt = Date.now();
-        audioFeedbackSubmitted = false;
-        audioFeedbackRecorder.start();
+        audioStartedAt = Date.now();
+        audioSubmitted = false;
+        uploadedAudioInfo = null;
+        mediaRecorder.start();
         setAudioFeedbackStatus("Recording...");
-        updateAudioFeedbackControls();
+        updateAudioRecorderUI();
         await loadAudioInputDevices();
       } catch (err) {
         console.error("Audio recording start failed", err);
         toast("Microphone permission or recording start failed.");
-        resetAudioRecordingState();
+        clearAudioRecorderState();
+        setAudioFeedbackStatus("Not recording");
+        updateAudioRecorderUI();
       }
     }
 
     function pauseAudioRecording() {
-      if (audioFeedbackRecorder?.state !== "recording") return;
-      audioFeedbackRecorder.pause();
+      if (mediaRecorder?.state !== "recording") return;
+      mediaRecorder.pause();
       setAudioFeedbackStatus("Paused");
-      updateAudioFeedbackControls();
+      updateAudioRecorderUI();
     }
 
     function resumeAudioRecording() {
-      if (audioFeedbackRecorder?.state !== "paused") return;
-      audioFeedbackRecorder.resume();
+      if (mediaRecorder?.state !== "paused") return;
+      mediaRecorder.resume();
       setAudioFeedbackStatus("Recording...");
-      updateAudioFeedbackControls();
+      updateAudioRecorderUI();
     }
 
     function stopAudioRecording() {
-      if (!audioFeedbackRecorder || audioFeedbackRecorder.state === "inactive") return;
-      audioFeedbackRecorder.stop();
+      if (!mediaRecorder || mediaRecorder.state === "inactive") return;
+      mediaRecorder.stop();
     }
 
+    function sanitizeFilenamePart(value) {
+      return (value || "")
+        .toString()
+        .trim()
+        .replace(/[^a-zA-Z0-9_-]+/g, "_")
+        .replace(/^_+|_+$/g, "") || "user";
+    }
+
+    function getYYMMDD(date = new Date()) {
+      const yy = String(date.getFullYear()).slice(-2);
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
+      return `${yy}${mm}${dd}`;
+    }
+
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const raw = String(reader.result || "");
+          const base64 = raw.includes(",") ? raw.split(",")[1] : raw;
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    // Upload flow (Apps Script action=uploadAudio).
     async function submitAudioRecording() {
-      if (!audioFeedbackBlob) return;
-      const payloadPreview = {
-        sessionId: localStorage.getItem(KEYS.sessionId) || "",
-        accessCode: localStorage.getItem(KEYS.accessCode) || "",
-        mimeType: audioFeedbackBlob.type || "audio/webm",
-        sizeBytes: audioFeedbackBlob.size,
-        durationMs: audioFeedbackDurationMs
-      };
-      console.log("submitAudioRecording stub payload:", payloadPreview);
-      audioFeedbackSubmitted = true;
-      setAudioFeedbackStatus("Audio submitted");
-      updateAudioFeedbackControls();
-      toast("Audio upload is not connected yet.");
+      if (!audioBlob) return;
+
+      const accessCode = localStorage.getItem(KEYS.accessCode) || "participant";
+      const sessionId = localStorage.getItem(KEYS.sessionId) || "session";
+      const safeUser = sanitizeFilenamePart(accessCode);
+      const safeSession = sanitizeFilenamePart(sessionId);
+      // filename format: username_YYMMDD_sessionID.ext
+      const ext = (audioBlob.type || "").includes("ogg") ? "ogg" : "webm";
+      const filename = `${safeUser}_${getYYMMDD()}_${safeSession}.${ext}`;
+
+      try {
+        const audioBase64 = await blobToBase64(audioBlob);
+        const body = new URLSearchParams({
+          action: "uploadAudio",
+          filename,
+          mimeType: audioBlob.type || `audio/${ext}`,
+          audioBase64
+        });
+
+        const response = await fetch(AUTOSAVE_URL, {
+          method: "POST",
+          body
+        });
+        const text = await response.text();
+        let data = {};
+        try { data = JSON.parse(text); } catch { data = { raw: text }; }
+
+        if (!response.ok || data.ok === false) {
+          throw new Error(data.error || `Upload failed (${response.status})`);
+        }
+
+        uploadedAudioInfo = {
+          audioFilename: data.filename || filename,
+          audioFileId: data.fileId || data.audioFileId || "",
+          audioFileUrl: data.fileUrl || data.audioFileUrl || "",
+          audioMimeType: audioBlob.type || `audio/${ext}`,
+          audioDuration: audioDuration
+        };
+
+        audioSubmitted = true;
+        setAudioFeedbackStatus("Audio submitted");
+        updateAudioRecorderUI();
+        toast("Audio submitted ✅");
+      } catch (err) {
+        console.error("Audio upload failed", err);
+        toast("Audio upload failed. Please try again.");
+      }
     }
 
     async function initializeAudioFeedbackUI() {
-      if (!$("btnAudioRecord")) return;
+      if (!$("btnAudioStart")) return;
       await loadAudioInputDevices();
       setAudioFeedbackStatus("Not recording");
-      updateAudioFeedbackControls();
+      updateAudioRecorderUI();
 
-      $("btnAudioRecord").addEventListener("click", () => { startAudioRecording(); });
+      $("btnAudioStart").addEventListener("click", () => { startAudioRecording(); });
       $("btnAudioPause").addEventListener("click", pauseAudioRecording);
       $("btnAudioResume").addEventListener("click", resumeAudioRecording);
       $("btnAudioStop").addEventListener("click", stopAudioRecording);
       $("btnAudioSubmit").addEventListener("click", () => { submitAudioRecording(); });
       $("btnAudioRecordAgain").addEventListener("click", () => {
-        resetAudioRecordingState();
+        clearAudioRecorderState();
         setAudioFeedbackStatus("Not recording");
+        updateAudioRecorderUI();
       });
 
       $("micSelect")?.addEventListener("change", () => {
-        if (audioFeedbackRecorder?.state !== "inactive") return;
-        setAudioFeedbackStatus("Not recording");
+        selectedMicId = $("micSelect")?.value || "";
       });
     }
 
