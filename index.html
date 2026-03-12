@@ -467,6 +467,14 @@
       opacity: 0.45;
     }
 
+    .optionalFeedbackBox {
+      margin-top: 12px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+
     .audioFeedbackSection {
       margin-top: 6px;
       padding: 0;
@@ -808,9 +816,9 @@
                   <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
                 </div>
 
-                <div style="margin-top:12px;" id="finalFeedbackSection">
-                  <h4 class="subBandTitle" style="margin:0 0 6px;">4) Optional feedback</h4>
-                  <p class="muted small" style="margin:0 0 10px;">You may provide feedback in writing, as an audio recording, or both.</p>
+                <div class="optionalFeedbackBox" id="finalFeedbackSection">
+                  <p style="margin:0 0 6px; font-weight:600;">Optional feedback</p>
+                  <p class="muted small" style="margin:0 0 10px;">I would appreciate any feedback you have for me, which you may provide in writing and/or as an audio recording. This is completely optional.</p>
 
                   <textarea
                     id="sessionNotes"
@@ -818,8 +826,6 @@
                   ></textarea>
 
                   <div class="audioFeedbackSection" id="audioRecorderPanel" style="margin-top:8px;">
-                    <p class="audioHelp muted small">You may record audio feedback instead of, or in addition to, written feedback.</p>
-
                     <div class="audioControlRow" id="audioPrimaryControls">
                       <button class="btn primary" id="btnAudioStart" type="button">Start recording</button>
                       <button class="btn audioStateStatus" id="btnAudioState" type="button" disabled>Recording</button>
