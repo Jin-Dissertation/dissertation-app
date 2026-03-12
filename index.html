@@ -467,6 +467,32 @@
       opacity: 0.45;
     }
 
+    .audioFeedbackSection {
+      margin-top: 12px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #f8fbff;
+    }
+    .audioFeedbackControls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .audioFeedbackControls .btn {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+    .audioStatusLine {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .audioPlayerWrap {
+      margin-top: 10px;
+      display: none;
+    }
 
     details summary {
       list-style: none;
@@ -778,16 +804,28 @@
                   ></textarea>
                 </div>
 
-                <div style="margin-top:12px;">
-                  <div class="muted small">
-                    <p style="margin:0 0 8px;"><strong>Recorded reflection prompts:</strong></p>
-                    <ol style="margin:0 0 8px; padding-left:18px;">
-                      <li>In your own words, how do you understand the purpose of this activity and what it is intended to help educators accomplish?</li>
-                      <li>To what extent do you see yourself or other educators being willing to use an approach like this when creating exam questions?</li>
-                      <li>Thinking about your own teaching context, how practical would it be to incorporate a process like this into your workflow?</li>
-                      <li>After completing today's session, how do you evaluate the usefulness of this approach for generating multiple-choice questions?</li>
-                    </ol>
-                    <p style="margin:0;">A single, unscripted take is preferred. Please do not feel the need to prepare, re-record, or edit your response.</p>
+                <div class="audioFeedbackSection">
+                  <p class="muted small" style="margin:0 0 6px;"><strong>Optional audio feedback</strong></p>
+                  <p class="muted small" style="margin:0;">Prefer to speak instead of type? You may record audio feedback instead of, or in addition to, written feedback.</p>
+
+                  <div class="row" style="margin-top:8px; align-items:center; gap:8px;">
+                    <label class="small" for="micSelect" style="min-width:auto;">Microphone</label>
+                    <select id="micSelect" class="llmCompactSelect" style="max-width:320px;"></select>
+                  </div>
+
+                  <div class="audioFeedbackControls">
+                    <button class="btn" id="btnAudioRecord" type="button">Record</button>
+                    <button class="btn" id="btnAudioPause" type="button" disabled>Pause</button>
+                    <button class="btn" id="btnAudioResume" type="button" disabled>Resume</button>
+                    <button class="btn" id="btnAudioStop" type="button" disabled>Stop</button>
+                    <button class="btn" id="btnAudioSubmit" type="button" disabled>Submit audio</button>
+                    <button class="btn" id="btnAudioRecordAgain" type="button" disabled>Record again</button>
+                  </div>
+
+                  <div class="audioStatusLine" id="audioStatusLine">Not recording</div>
+
+                  <div class="audioPlayerWrap" id="audioPlayerWrap">
+                    <audio id="audioFeedbackPlayer" controls preload="metadata"></audio>
                   </div>
                 </div>
 
@@ -1465,6 +1503,16 @@ After that list, give me the current time.`
     let sessionTimerIntervalId = null;
     let llmMismatchReported = false;
     let llmMismatchAlertAttempted = false;
+
+    // Optional audio feedback recording state.
+    let audioFeedbackStream = null;
+    let audioFeedbackRecorder = null;
+    let audioFeedbackChunks = [];
+    let audioFeedbackBlob = null;
+    let audioFeedbackUrl = "";
+    let audioFeedbackSubmitted = false;
+    let audioFeedbackStartedAt = null;
+    let audioFeedbackDurationMs = 0;
 
     function hideToast() {
       const t = $("toast");
@@ -2161,6 +2209,190 @@ After that list, give me the current time.`
         .replaceAll("{{NOTES_LINE}}", notesLine);
     }
 
+
+    function setAudioFeedbackStatus(message) {
+      const el = $("audioStatusLine");
+      if (el) el.textContent = message;
+    }
+
+    function releaseAudioFeedbackUrl() {
+      if (!audioFeedbackUrl) return;
+      URL.revokeObjectURL(audioFeedbackUrl);
+      audioFeedbackUrl = "";
+    }
+
+    function stopAudioFeedbackStream() {
+      if (!audioFeedbackStream) return;
+      audioFeedbackStream.getTracks().forEach((track) => track.stop());
+      audioFeedbackStream = null;
+    }
+
+    function updateAudioFeedbackControls() {
+      const recorderState = audioFeedbackRecorder?.state || "inactive";
+      const hasRecording = !!audioFeedbackBlob;
+      const submitted = audioFeedbackSubmitted;
+
+      if ($("btnAudioRecord")) $("btnAudioRecord").disabled = recorderState !== "inactive";
+      if ($("btnAudioPause")) $("btnAudioPause").disabled = recorderState !== "recording";
+      if ($("btnAudioResume")) $("btnAudioResume").disabled = recorderState !== "paused";
+      if ($("btnAudioStop")) $("btnAudioStop").disabled = recorderState === "inactive";
+      if ($("btnAudioSubmit")) $("btnAudioSubmit").disabled = !hasRecording || submitted;
+      if ($("btnAudioRecordAgain")) $("btnAudioRecordAgain").disabled = !hasRecording && recorderState === "inactive";
+      if ($("micSelect")) $("micSelect").disabled = recorderState !== "inactive";
+      if ($("audioPlayerWrap")) $("audioPlayerWrap").style.display = hasRecording ? "block" : "none";
+    }
+
+    async function loadAudioInputDevices() {
+      const select = $("micSelect");
+      if (!select || !navigator.mediaDevices?.enumerateDevices) return;
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const inputDevices = devices.filter((d) => d.kind === "audioinput");
+        select.innerHTML = "";
+        inputDevices.forEach((device, idx) => {
+          const opt = document.createElement("option");
+          opt.value = device.deviceId;
+          opt.textContent = device.label || `Microphone ${idx + 1}`;
+          select.appendChild(opt);
+        });
+        if (!select.options.length) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "Default microphone";
+          select.appendChild(opt);
+        }
+      } catch (err) {
+        console.warn("Could not load microphones", err);
+      }
+    }
+
+    function resetAudioRecordingState({ keepSubmitted = false } = {}) {
+      if (audioFeedbackRecorder && audioFeedbackRecorder.state !== "inactive") {
+        audioFeedbackRecorder.stop();
+      }
+      audioFeedbackRecorder = null;
+      stopAudioFeedbackStream();
+      releaseAudioFeedbackUrl();
+      audioFeedbackChunks = [];
+      audioFeedbackBlob = null;
+      audioFeedbackStartedAt = null;
+      audioFeedbackDurationMs = 0;
+      if (!keepSubmitted) audioFeedbackSubmitted = false;
+
+      const player = $("audioFeedbackPlayer");
+      if (player) {
+        player.pause();
+        player.removeAttribute("src");
+        player.load();
+      }
+      setAudioFeedbackStatus("Not recording");
+      updateAudioFeedbackControls();
+    }
+
+    async function startAudioRecording() {
+      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+        toast("Audio recording is not supported in this browser.");
+        return;
+      }
+      try {
+        resetAudioRecordingState();
+        const selectedDeviceId = $("micSelect")?.value || "";
+        const constraints = selectedDeviceId
+          ? { audio: { deviceId: { exact: selectedDeviceId } } }
+          : { audio: true };
+
+        audioFeedbackStream = await navigator.mediaDevices.getUserMedia(constraints);
+        audioFeedbackChunks = [];
+        audioFeedbackRecorder = new MediaRecorder(audioFeedbackStream);
+
+        audioFeedbackRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) audioFeedbackChunks.push(event.data);
+        };
+
+        audioFeedbackRecorder.onstop = () => {
+          audioFeedbackBlob = new Blob(audioFeedbackChunks, { type: audioFeedbackRecorder.mimeType || "audio/webm" });
+          audioFeedbackDurationMs = audioFeedbackStartedAt ? Math.max(0, Date.now() - audioFeedbackStartedAt) : 0;
+          releaseAudioFeedbackUrl();
+          audioFeedbackUrl = URL.createObjectURL(audioFeedbackBlob);
+          const player = $("audioFeedbackPlayer");
+          if (player) {
+            player.src = audioFeedbackUrl;
+            player.load();
+          }
+          stopAudioFeedbackStream();
+          setAudioFeedbackStatus("Recording ready to submit");
+          updateAudioFeedbackControls();
+        };
+
+        audioFeedbackStartedAt = Date.now();
+        audioFeedbackSubmitted = false;
+        audioFeedbackRecorder.start();
+        setAudioFeedbackStatus("Recording...");
+        updateAudioFeedbackControls();
+        await loadAudioInputDevices();
+      } catch (err) {
+        console.error("Audio recording start failed", err);
+        toast("Microphone permission or recording start failed.");
+        resetAudioRecordingState();
+      }
+    }
+
+    function pauseAudioRecording() {
+      if (audioFeedbackRecorder?.state !== "recording") return;
+      audioFeedbackRecorder.pause();
+      setAudioFeedbackStatus("Paused");
+      updateAudioFeedbackControls();
+    }
+
+    function resumeAudioRecording() {
+      if (audioFeedbackRecorder?.state !== "paused") return;
+      audioFeedbackRecorder.resume();
+      setAudioFeedbackStatus("Recording...");
+      updateAudioFeedbackControls();
+    }
+
+    function stopAudioRecording() {
+      if (!audioFeedbackRecorder || audioFeedbackRecorder.state === "inactive") return;
+      audioFeedbackRecorder.stop();
+    }
+
+    async function submitAudioRecording() {
+      if (!audioFeedbackBlob) return;
+      const payloadPreview = {
+        sessionId: localStorage.getItem(KEYS.sessionId) || "",
+        accessCode: localStorage.getItem(KEYS.accessCode) || "",
+        mimeType: audioFeedbackBlob.type || "audio/webm",
+        sizeBytes: audioFeedbackBlob.size,
+        durationMs: audioFeedbackDurationMs
+      };
+      console.log("submitAudioRecording stub payload:", payloadPreview);
+      audioFeedbackSubmitted = true;
+      setAudioFeedbackStatus("Audio submitted");
+      updateAudioFeedbackControls();
+      toast("Audio upload is not connected yet.");
+    }
+
+    async function initializeAudioFeedbackUI() {
+      if (!$("btnAudioRecord")) return;
+      await loadAudioInputDevices();
+      setAudioFeedbackStatus("Not recording");
+      updateAudioFeedbackControls();
+
+      $("btnAudioRecord").addEventListener("click", () => { startAudioRecording(); });
+      $("btnAudioPause").addEventListener("click", pauseAudioRecording);
+      $("btnAudioResume").addEventListener("click", resumeAudioRecording);
+      $("btnAudioStop").addEventListener("click", stopAudioRecording);
+      $("btnAudioSubmit").addEventListener("click", () => { submitAudioRecording(); });
+      $("btnAudioRecordAgain").addEventListener("click", () => {
+        resetAudioRecordingState();
+        setAudioFeedbackStatus("Not recording");
+      });
+
+      $("micSelect")?.addEventListener("change", () => {
+        if (audioFeedbackRecorder?.state !== "inactive") return;
+        setAudioFeedbackStatus("Not recording");
+      });
+    }
 
     function makeCopyIconButton({ id = "", label = "Copy prompt", title = "Copy prompt", className = "copyIconBtn" } = {}) {
       const btn = document.createElement("button");
@@ -2891,6 +3123,7 @@ After that list, give me the current time.`
       startSessionTimerLoop();
       updateFinalizeContentUI();
       updateEndSessionState();
+      initializeAudioFeedbackUI();
 
       $("btnCopyAgain").addEventListener("click", async (e) => {
         e.preventDefault();
