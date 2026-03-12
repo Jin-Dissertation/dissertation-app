@@ -477,10 +477,6 @@
     .audioRecorderTop .audioHelp {
       margin: 0;
     }
-    .audioFeedbackLabel {
-      margin-top: 8px;
-      margin-bottom: 2px;
-    }
     .audioControlRow,
     .audioPlaybackRow {
       margin-top: 6px;
@@ -812,21 +808,17 @@
                   <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
                 </div>
 
-                <div style="margin-top:12px;">
+                <div style="margin-top:12px;" id="finalFeedbackSection">
                   <h4 class="subBandTitle" style="margin:0 0 6px;">4) Optional feedback</h4>
                   <p class="muted small" style="margin:0 0 10px;">You may provide feedback in writing, as an audio recording, or both.</p>
 
-                  <label for="sessionNotes">Written feedback (optional)</label>
                   <textarea
                     id="sessionNotes"
-                    placeholder="I would appreciate any thoughts about your experience using this tool."
+                    placeholder="Provide written feedback here"
                   ></textarea>
 
-                  <div class="audioFeedbackSection" id="audioRecorderPanel">
-                    <div class="audioRecorderTop">
-                      <label class="audioFeedbackLabel" for="btnAudioStart">Audio feedback (optional)</label>
-                      <p class="audioHelp muted small">You may record audio feedback instead of, or in addition to, written feedback.</p>
-                    </div>
+                  <div class="audioFeedbackSection" id="audioRecorderPanel" style="margin-top:8px;">
+                    <p class="audioHelp muted small">You may record audio feedback instead of, or in addition to, written feedback.</p>
 
                     <div class="audioControlRow" id="audioPrimaryControls">
                       <button class="btn primary" id="btnAudioStart" type="button">Start recording</button>
