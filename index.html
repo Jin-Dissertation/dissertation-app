@@ -468,27 +468,18 @@
     }
 
     .audioFeedbackSection {
-      margin-top: 10px;
-      padding: 10px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: #f8fbff;
-    }
-    .audioRecorderTop .audioHeading {
-      margin: 0 0 4px;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
+      margin-top: 8px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
     }
     .audioRecorderTop .audioHelp {
       margin: 0;
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.35;
     }
     .audioControlRow,
     .audioPlaybackRow {
-      margin-top: 10px;
+      margin-top: 8px;
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -499,9 +490,7 @@
     }
     .audioControlRow .btn,
     .audioPlaybackRow .btn {
-      min-width: 122px;
-      padding: 6px 10px;
-      font-size: 12px;
+      min-width: 112px;
       justify-content: center;
     }
     .audioControlRow .audioStateStatus {
@@ -831,8 +820,7 @@
 
                   <div class="audioFeedbackSection" id="audioRecorderPanel">
                     <div class="audioRecorderTop">
-                      <p class="audioHeading">Optional audio feedback</p>
-                      <p class="audioHelp">Prefer to speak instead of type? You may record audio feedback instead of, or in addition to, written feedback.</p>
+                      <p class="audioHelp muted small">Prefer to speak instead of type? Record audio feedback instead of, or in addition to, written feedback.</p>
                     </div>
 
                     <div class="audioControlRow" id="audioPrimaryControls">
