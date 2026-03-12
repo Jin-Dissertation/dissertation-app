@@ -470,6 +470,17 @@
       opacity: 0.45;
     }
 
+    .finalActionRow{
+      border-top:1px solid #e5e9f2;
+      margin-top:22px;
+      padding-top:16px;
+      text-align:center;
+    }
+
+    .finalActionRow .btn{
+      min-width:170px;
+    }
+
     .optionalFeedbackBox{
       font-size:0.94em;
       border-top:1px solid #e4e8f0;
@@ -857,8 +868,10 @@
                 Click End Session when you are finished practicing.<br><br>
                 You do not need to produce perfect questions — the goal of this activity is simply to practice using the app. Your responses will be saved when you end the session.
               </div>
-              <div class="row" id="endSessionRow" style="margin-top:20px; display:none;">
-                <button class="btn danger finalActionBtn" id="btnEndSession" type="button">End session</button>
+              <div class="finalActionRow" id="endSessionRow" style="display:none;">
+                <button id="btnEndSession" class="btn danger primary finalActionBtn" type="button">
+                  End session
+                </button>
               </div>
             </div>
           </div>
