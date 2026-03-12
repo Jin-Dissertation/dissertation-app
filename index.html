@@ -2415,17 +2415,18 @@ After that list, give me the current time.`
 
       try {
         const audioBase64 = await blobToBase64(audioBlob);
-        const body = new URLSearchParams({
-          action: "uploadAudio",
-          filename,
-          mimeType: audioBlob.type || `audio/${ext}`,
-          audioBase64
-        });
-
         const response = await fetch(AUTOSAVE_URL, {
-          method: "POST",
-          body
-        });
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    action: "uploadAudio",
+    filename,
+    mimeType: audioBlob.type || `audio/${ext}`,
+    audioBase64
+  })
+});
         const text = await response.text();
         let data = {};
         try { data = JSON.parse(text); } catch { data = { raw: text }; }
