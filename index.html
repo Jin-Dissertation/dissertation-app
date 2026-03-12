@@ -2499,6 +2499,13 @@ After that list, give me the current time.`
         const audioBase64 = await blobToBase64(audioBlob);
         setAudioUploadButtonState("uploading", "Uploading… 0%");
 
+        console.log("Submitting audio...");
+        console.log("audioBlob exists:", !!audioBlob);
+        console.log("audioBlob size:", audioBlob ? audioBlob.size : null);
+        console.log("audioBlob type:", audioBlob ? audioBlob.type : null);
+        console.log("filename:", filename);
+        console.log("base64 length:", audioBase64 ? audioBase64.length : null);
+
         const response = await uploadAudioWithProgress({
           action: "uploadAudio",
           filename,
