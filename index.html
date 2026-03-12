@@ -468,7 +468,7 @@
     }
 
     .audioFeedbackSection {
-      margin-top: 8px;
+      margin-top: 6px;
       padding: 0;
       border: 0;
       border-radius: 0;
@@ -477,9 +477,13 @@
     .audioRecorderTop .audioHelp {
       margin: 0;
     }
+    .audioFeedbackLabel {
+      margin-top: 8px;
+      margin-bottom: 2px;
+    }
     .audioControlRow,
     .audioPlaybackRow {
-      margin-top: 8px;
+      margin-top: 6px;
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -812,7 +816,7 @@
                   <h4 class="subBandTitle" style="margin:0 0 6px;">4) Optional feedback</h4>
                   <p class="muted small" style="margin:0 0 10px;">You may provide feedback in writing, as an audio recording, or both.</p>
 
-                  <label for="sessionNotes">Anything unusual about your session? (optional)</label>
+                  <label for="sessionNotes">Written feedback (optional)</label>
                   <textarea
                     id="sessionNotes"
                     placeholder="I would appreciate any thoughts about your experience using this tool."
@@ -820,7 +824,8 @@
 
                   <div class="audioFeedbackSection" id="audioRecorderPanel">
                     <div class="audioRecorderTop">
-                      <p class="audioHelp muted small">Prefer to speak instead of type? Record audio feedback instead of, or in addition to, written feedback.</p>
+                      <label class="audioFeedbackLabel" for="btnAudioStart">Audio feedback (optional)</label>
+                      <p class="audioHelp muted small">You may record audio feedback instead of, or in addition to, written feedback.</p>
                     </div>
 
                     <div class="audioControlRow" id="audioPrimaryControls">
