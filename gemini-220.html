@@ -35,6 +35,9 @@
     h2, h3 { margin:0 0 5px; font-size:16px; line-height:1.25; }
     p { margin:0 0 6px; font-size:13px; line-height:1.32; }
     ul, ol { margin:0 0 7px 18px; font-size:13px; line-height:1.32; }
+    .prepList { margin: 0 0 6px 0; padding-left: 16px; }
+    .prepList li { margin-bottom: 7px; }
+    .screenshotPlaceholder { border: 1px dashed #9bb4de; background:#f1f6ff; color:#3f5f97; border-radius:8px; padding:10px; font-size:12px; margin-top:6px; width: min(100%, 460px); }
 
     .sectionCard { border:1px solid var(--border); border-radius:12px; background:#f8fbff; padding:12px 13px; margin-top:8px; }
     .ackItem { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-top:1px solid #d8e4f6; padding-top:8px; margin-top:8px; }
@@ -61,25 +64,14 @@
       margin-bottom:7px;
     }
 
-    .promptCards { display:grid; grid-template-columns:1fr; gap:8px; }
+    .promptCards { display:grid; grid-template-columns:1fr; gap:8px; margin-top: 12px; }
     .promptCard { border:1px solid var(--border); border-radius:12px; background:#f8fbff; padding:14px 15px; }
     .promptTitle { font-weight:700; font-size:15px; margin:0 0 5px; line-height:1.2; }
     .promptDesc { color:var(--muted); margin:0 0 7px; line-height:1.28; font-size:12.5px; }
     .promptDesc a { color:#1f4ca4; }
 
-    .reviewIntro p { margin-bottom: 6px; }
-    .reviewIntro .introNote {
-      margin-top: 6px;
-      margin-bottom: 0;
-      font-size: 12px;
-      font-weight: 600;
-      color: #1f4ca4;
-      background: #edf4ff;
-      border: 1px solid #d7e5fb;
-      display: inline-block;
-      padding: 3px 7px;
-      border-radius: 999px;
-    }
+    .reviewIntro p { margin-bottom: 8px; }
+    .reviewIntro .screenshotPlaceholder { margin-top: 4px; }
 
     .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     .copyIconBtn {
@@ -93,6 +85,7 @@
       background:rgba(16,33,61,.95); border:1px solid #2f6edc; padding:10px 12px;
       border-radius:10px; color:#fff; display:none; z-index:9999;
     }
+    .copyIconImage { width:18px; height:18px; object-fit:contain; display:block; }
 
     @media (max-width: 960px) {
       .layoutGrid { grid-template-columns:1fr; }
@@ -115,11 +108,8 @@
           <div class="bandBody">
             <div class="sectionCard">
               <h3>Introduction</h3>
-              <p>According to APU AI Policy, students may only use AI tools for assignments when the instructor gives explicit permission and specifies how the tool may be used.</p>
-              <p>This page explains the conditions under which Gemini may be used for Health History Assignment Part 2.</p>
-              <p>The prompts on this page are designed to help students review and improve their own writing, not generate new content.</p>
-              <p>Gemini should function only as an editor, not a co-author.</p>
-              <p>Students remain responsible for verifying Gemini’s feedback and for the final version of their submission.</p>
+              <p>According to APU AI Policy, students may only use AI tools for assignments when the instructor gives explicit permission and specifies how the tool may be used. This page explains the conditions under which Gemini may be used for Health History Assignment Part 2.</p>
+              <p>The prompts on this page are designed to help students review and improve their own writing, not generate new content, by having Gemini function only as an editor, not a co-author. Students remain responsible for verifying Gemini’s feedback and for the final version of their submission.</p>
               <p><strong>Before continuing, please acknowledge the following:</strong></p>
             </div>
 
@@ -130,19 +120,20 @@
 
             <div class="sectionCard" id="prepSection" style="display:none;">
               <h3>To prepare Gemini for use in this assignment:</h3>
-              <ol>
-                <li>Log into Gemini using your APU account and confirm the Azusa Pacific University logo appears in the profile menu.</li>
-                <li>Start a new Gemini conversation.</li>
+              <ol class="prepList">
+                <li>
+                  Log into Gemini using your APU account and confirm the Azusa Pacific University logo appears in the profile menu.
+                  <div class="screenshotPlaceholder">Screenshot placeholder for Step 1</div>
+                </li>
+                <li>
+                  Start a new Gemini conversation.
+                  <div class="screenshotPlaceholder">Screenshot placeholder for Step 2</div>
+                </li>
                 <li>Copy the Opening Prompt below and paste it into Gemini as your first message.</li>
               </ol>
-            </div>
-
-            <div class="sectionCard" id="openingSection" style="display:none;">
-              <h3>Opening Prompt</h3>
-              <p>Use the Copy Opening Prompt button below to copy the prompt.</p>
               <div id="openingPromptText" class="openingPromptBox"></div>
               <button class="btn primary large" id="btnCopyOpening" type="button">Copy Opening Prompt</button>
-              <div style="margin-top:12px;">
+              <div style="margin-top:10px;">
                 <button class="btn large" id="btnAfterOpening" type="button" style="display:none;">Click here after sending the Opening Prompt to Gemini</button>
               </div>
             </div>
@@ -161,9 +152,8 @@
 
             <div id="reviewInner" style="display:none;">
               <div class="sectionCard reviewIntro">
-                <h3>2) Review Your Draft Using Gemini</h3>
-                <p>You have now started the Gemini conversation using the Opening Prompt. Use the review tools below to evaluate your draft, and provide your draft file to Gemini each time you use one of these prompts.</p>
-                <p>You may use more than one review tool as you revise your paper. <span class="introNote">Attach files rather than pasting text into Gemini.</span></p>
+                <p>You may now use any of the review prompts below to have Gemini evaluate your writing. You will need to attach your draft to the prompt.</p>
+                <div class="screenshotPlaceholder">Screenshot placeholder for attaching your draft in Gemini</div>
               </div>
 
               <div class="promptCards" id="promptCards"></div>
@@ -195,11 +185,9 @@
 Restrict your responses to identifying issues, explaining why they are problematic, and describing the type of revision needed. Present your findings in a table format whenever possible to ensure clarity. If you begin to generate new content or rewrite my text, stop and return to identifying concerns only.`;
 
     const ACKS = [
+      "I will use Gemini through my APU account while completing this assignment.",
       "I will only use the prompts provided on this page during my Gemini session and will not enter my own instructions or prompts.",
-      "I understand that Gemini may only function as an editor for this assignment and may not generate new content for my paper.",
-      "I understand that AI responses may contain errors and that I must verify any feedback before using it.",
-      "I understand that I remain responsible for the accuracy and integrity of my final submission.",
-      "I will use Gemini through my APU account while completing this assignment."
+      "I understand that AI responses may contain errors and that I must verify any feedback before using it. I remain responsible for the accuracy and integrity of my final submission."
     ];
 
     const REVIEW_PROMPTS = [
@@ -245,7 +233,14 @@ Restrict your responses to identifying issues, explaining why they are problemat
     let lastCopiedAt = null;
 
     function getAckState() {
-      return JSON.parse(localStorage.getItem(KEYS.ackState) || "[false,false,false,false,false]");
+      const fallback = Array(ACKS.length).fill(false);
+      try {
+        const parsed = JSON.parse(localStorage.getItem(KEYS.ackState) || "null");
+        if (!Array.isArray(parsed)) return fallback;
+        return ACKS.map((_, idx) => parsed[idx] === true);
+      } catch {
+        return fallback;
+      }
     }
     function setAckState(state) { localStorage.setItem(KEYS.ackState, JSON.stringify(state)); }
     function getOpeningCopied() { return localStorage.getItem(KEYS.openingCopied) === "true"; }
@@ -368,7 +363,6 @@ Restrict your responses to identifying issues, explaining why they are problemat
       const stage = getStage();
 
       $("prepSection").style.display = completedAcks ? "block" : "none";
-      $("openingSection").style.display = completedAcks ? "block" : "none";
       $("btnAfterOpening").style.display = openingCopied ? "inline-flex" : "none";
 
       const reviewUnlocked = stage === "review" && completedAcks && openingCopied;
