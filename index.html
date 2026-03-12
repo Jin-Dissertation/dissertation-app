@@ -488,18 +488,6 @@
     .helpToggle[open] .whereToggleIcon {
       transform: rotate(90deg);
     }
-    #llmConfirmPanel {
-      padding: 14px;
-    }
-    #llmConfirmPanel > :first-child {
-      margin-top: 0;
-    }
-    #llmConfirmPanel > :last-child {
-      margin-bottom: 0;
-    }
-    #llmConfirmPanel select {
-      margin-bottom: 0;
-    }
 
     .promptTitle { font-weight:600; font-size:14px; margin:0 0 4px; line-height:1.2; min-width: 0; overflow-wrap: anywhere; color: var(--text); }
     .promptDesc {
@@ -598,7 +586,7 @@
               <h4 class="subBandTitle" id="productVersionTitle">Confirm product version</h4>
               <p class="muted small llmConfirmIntro" id="llmConfirmIntro"></p>
 
-              <div id="llmConfirmPanel" class="subBand" style="display:none; margin-top:8px;">
+              <div id="llmConfirmPanel" style="display:none; margin-top:8px;">
                 <p id="llmInstructionText" class="muted small" style="margin:0 0 6px;"></p>
                 <p id="llmWhereText" class="muted small" style="margin:0;"></p>
 
