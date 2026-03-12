@@ -3,690 +3,241 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Dissertation Prompt App</title>
+  <title>Gemini Prompt Tool - Health History Assignment Part 2</title>
   <style>
-    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap");
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
     :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; }
-    body { margin:0; font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); letter-spacing: .01em; }
-    .pageShell { max-width: 1240px; margin: 0 auto; padding: 24px; }
-    h1 { font-family: inherit; font-size: 30px; font-weight:700; margin: 0 0 18px; letter-spacing: .01em; }
-    .sub { color: var(--muted); margin: 0 0 18px; }
-    .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
-    @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
-    .card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(16,33,61,0.05); }
-    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    label { font-size: 12px; color: var(--muted); display:block; margin-bottom:4px; }
-    input, select, textarea {
-      width:100%; background:#f8fbff; border:1px solid var(--border); color:var(--text);
-      border-radius: 10px; padding: 10px; box-sizing:border-box;
-    }
-    textarea { min-height: 140px; resize: vertical; line-height: 1.4; }
-        .btn {
-      background: #f1f7ff; border:1px solid var(--border); color:var(--text);
-      padding:10px 12px; border-radius: 10px; cursor:pointer;
-    }
-    .btn.primary { background: var(--accent); border-color: var(--accent); color:#fff; font-weight: 650; }
-    .btn.warn { border-color: var(--warn); color: #9a5800; background: #fff7e8; }
-    .btn.danger { border-color:#dc2626; color:#991b1b; background:#fef2f2; }
-    .pill { font-size: 12px; padding: 6px 10px; border:1px solid var(--border); border-radius: 999px; color: var(--muted); }
-    .muted { color: var(--muted); }
-    .small { font-size: 12px; }
-    .hr { height:1px; background: var(--border); margin: 10px 0; }
-    .promptCard { border:1px solid var(--border); border-radius: 12px; padding: 12px; background:#f8fbff; }
-    .promptTitle { font-weight: 700; margin:0 0 6px; }
-    .promptDesc { margin:0 0 10px; color: var(--muted); font-size: 13px; }
+    body { margin:0; font-family:"Inter","Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); letter-spacing:.01em; }
+    .pageShell { max-width:1180px; margin:0 auto; padding:18px 22px; }
+    h1 { font-size:27px; font-weight:700; margin:0 0 14px; }
+    .layoutGrid { display:grid; grid-template-columns:minmax(0, 900px) 248px; gap:14px; align-items:start; }
+    .main { min-width:0; }
+    .sidebar { width:248px; position:sticky; top:16px; align-self:start; max-height:calc(100vh - 32px); }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; box-shadow:0 4px 10px rgba(16,33,61,0.05); }
+    .stickySidebar.recentCard { display:flex; flex-direction:column; max-height:calc(100vh - 32px); overflow:hidden; }
+    .copyMeta { margin:0 0 8px; color:var(--muted); font-size:12px; }
+    .copiedText.recentTextarea { width:100%; flex:1 1 auto; min-height:360px; overflow:auto; white-space:pre-wrap; word-break:break-word; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
 
-    .promptGroups{
-  display:grid;
-  grid-template-columns: 1fr;
-  gap:14px;
-}
-@media (min-width: 900px){
-  .promptGroups{ grid-template-columns: 1fr 1fr; }
-}
-
-    .groupCard {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px;
-}
-.groupTitle { font-weight: 800; margin: 0 0 8px; }
-.groupSub { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
-
-    .toast {
-      position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
-      background: rgba(16,33,61,.95); border:1px solid #2f6edc; padding: 10px 12px;
-      border-radius: 10px; color: #fff; display:none;
-      z-index: 9999;
-    }
-
-    /* Accordion */
-    details.band { margin-top: 18px; }
-    details.band:first-of-type { margin-top: 0; }
+    details.band { margin-top:12px; }
+    details.band:first-of-type { margin-top:0; }
     details.band > summary {
-      list-style: none;
-      cursor: pointer;
-      user-select: none;
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: #f3f8ff;
+      list-style:none; cursor:pointer; user-select:none; display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:8px 11px; border-radius:10px; border:1px solid var(--border); background:#f3f8ff;
     }
     details.band > summary::-webkit-details-marker { display:none; }
     .summaryLeft { display:flex; align-items:center; gap:10px; }
-    .tag {
-      font-size: 12px;
-      padding: 3px 8px;
+    .tag { font-size:12px; padding:3px 8px; border:1px solid var(--border); border-radius:999px; color:var(--muted); }
+    .tag.ok { border-color:rgba(47,110,220,.45); color:#1f4ca4; background:var(--accent-soft); }
+    .tag.lock { border-color:rgba(245,158,11,.5); color:#9a5800; background:#fff7e8; }
+    .bandBody { padding:10px 4px 4px; }
+    .lockMsg { border:1px dashed var(--border); border-radius:10px; padding:8px 10px; color:var(--muted); background:#f7faff; font-size:13px; }
+
+    h2, h3 { margin:0 0 6px; }
+    p { margin:0 0 7px; line-height:1.35; }
+    ul, ol { margin:0 0 8px 20px; line-height:1.35; }
+
+    .sectionCard { border:1px solid var(--border); border-radius:12px; background:#f8fbff; padding:13px 14px; margin-top:9px; }
+    .ackItem { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-top:1px solid #d8e4f6; padding-top:9px; margin-top:9px; }
+    .ackItem:first-child { border-top:none; padding-top:0; margin-top:0; }
+
+    .btn {
+      background:#f1f7ff; border:1px solid var(--border); color:var(--text);
+      padding:8px 11px; border-radius:9px; cursor:pointer; font-weight:600; font-size:13px;
+    }
+    .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .btn:disabled { opacity:.6; cursor:not-allowed; }
+    .btn.large { width:auto; min-width:248px; max-width:320px; padding:9px 13px; font-size:13px; }
+    .btn.complete { background:#e8f8ef; border-color:#84cc9e; color:#166534; }
+
+    .openingPromptBox {
       border:1px solid var(--border);
-      border-radius: 999px;
-      color: var(--muted);
-    }
-    .tag.ok { border-color: rgba(47,110,220,.45); color: #1f4ca4; background: var(--accent-soft); }
-    .tag.lock { border-color: rgba(245,158,11,.5); color: #9a5800; background:#fff7e8; }
-    .bandBody { padding: 16px 6px 6px; min-width: 0; }
-    #promptsInner { min-width: 0; overflow-x: hidden; }
-    .lockMsg { border:1px dashed var(--border); border-radius: 10px; padding:10px; color: var(--muted); background: #f7faff; }
-    .hidden { display:none; }
-    .modelGrid, .product-grid { display:grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap:14px; }
-    .modelOption, .product-card { border:1px solid var(--border); border-radius: 10px; padding:8px 6px; min-height:78px; background:#f8fbff; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; }
-    .modelOption:hover, .product-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.08); border-color: var(--accent); }
-    .modelOption:active, .product-card:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
-    .modelOption.active, .modelOption.selected, .product-card.selected { border:2px solid var(--accent); background: var(--accent-soft); transform: translateY(-1px); }
-    .logoDot { width:30px; height:30px; border-radius:999px; display:grid; place-items:center; font-size:10px; font-weight:700; color:#fff; }
-    .productIconCircle {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: #f1f5f9;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .productIconImage {
-      max-width: 70%;
-      max-height: 70%;
-      object-fit: contain;
-      display: block;
-    }
-    .productButton.selected .productIconCircle,
-    .product-card.selected .productIconCircle {
-      background: #e8f0ff;
-    }
-    .logo-openai{ background:#111827; }
-    .logo-gemini{ background:#6d5ef6; }
-    .logo-copilot{ background:#0ea5e9; }
-    .logo-claude{ background:#d97706; }
-    .logo-other{ background:#64748b; }
-    .disabledBtn { opacity:.55; cursor:not-allowed; }
-    .accessPrompt { font-size: 18px; font-weight: 700; color: var(--text); margin:0 0 10px; line-height:1.3; }
-    .accessCard { max-width: 520px; margin: 28px 0; padding: 16px 18px; }
-    .accessCard p { margin-bottom: 10px; }
-    .accessRow { display:flex; gap:10px; align-items:center; flex-wrap:nowrap; }
-    .accessInput {
-      width: 180px;
-      font-size: 20px;
-      font-weight:700;
-      letter-spacing:.3px;
-      text-align:center;
-      padding: 12px 10px;
-      flex: 0 0 auto;
-    }
-    .accessBtn {
-      margin-top:0 !important;
-      font-size: 17px;
-      font-weight: 700;
-      padding: 12px 20px;
-      align-self: stretch;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      white-space: nowrap;
-    }
-    #accessMsg { font-size: 16px; }
-    .accessError { color:#b91c1c; font-size:0.9rem; margin-top:8px; }
-
-    @media (max-width: 560px) {
-      .accessRow { flex-wrap: wrap; }
-      .accessInput, .accessBtn { width: 100%; }
-    }
-    @media (max-width: 680px) {
-      .modelGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    }
-    .subBand { border:1px solid var(--border); border-radius: 10px; background:rgba(16,33,61,0.02); padding:16px 18px; margin-top:14px; }
-    .llmConfirmIntro { margin:10px 0 8px; }
-    .llmImageRow {
-      margin-top: 8px;
-    }
-    .helpExampleItem {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      margin-top: 14px;
-    }
-    .helpExampleImage {
-      width: 420px;
-      height: 236px;
-      object-fit: contain;
-      border-radius: 10px;
-      border: 1px solid #d1d5db;
-    }
-    .helpExampleText {
-      max-width: 260px;
-      font-size: 14px;
-      line-height: 1.4;
-      color: #4b5563;
-    }
-    @media (max-width: 900px) {
-      .helpExampleItem {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .helpExampleImage {
-        width: 100%;
-        max-width: 420px;
-        height: auto;
-        aspect-ratio: 16 / 9;
-      }
-    }
-    .llmCompactSelect { width: 100%; max-width: 100%; min-width: 0; }
-    .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:600; }
-
-    .productVersionSummary {
-      cursor: pointer;
-      padding: 12px 14px;
-    }
-    .productVersionSummary .title {
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
-    @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
-    .centerCard { max-width:420px; margin: 0 auto; }
-    .appHeaderBar { display:flex; justify-content:flex-start; align-items:center; margin-bottom:10px; padding:6px 2px; }
-    #btnPauseTimer {
-      flex: 0 0 auto;
-    }
-    .btn.ghost { background:#f1f7ff; border:1px solid var(--border); color:var(--text); padding:6px 10px; }
-        .modalBackdrop { position:fixed; inset:0; background:rgba(16,33,61,.35); display:none; align-items:center; justify-content:center; z-index:10000; }
-    .modalCard { width:min(460px, calc(100vw - 24px)); background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; }
-    .layoutGrid {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 248px;
-      gap: 16px;
-      align-items: start;
-    }
-    .main { min-width: 0; }
-    .sidebar {
-      width: 248px;
-      position: sticky;
-      top: 16px;
-      align-self: start;
-      max-height: calc(100vh - 32px);
-    }
-    .stickySidebar.recentCard {
-      display: flex;
-      flex-direction: column;
-      max-height: calc(100vh - 32px);
-      overflow: hidden;
-    }
-    .copyMeta { margin:0 0 8px; color: var(--muted); font-size:12px; }
-
-    .copyHelpExample {
-      margin-top: 10px;
-      max-width: 260px;
-    }
-    .copyHelpImage {
-      width: 220px;
-      height: 220px;
-      object-fit: contain;
-      border-radius: 12px;
-      display: block;
-    }
-    .copyHelpCaption {
-      margin-top: 6px;
-      font-size: 13px;
-      color: #4b5563;
-      line-height: 1.3;
-    }
-    .copiedText.recentTextarea {
-      width: 100%;
-      flex: 1 1 auto;
-      min-height: 360px;
-      overflow: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-    }
-    .promptSections { display:grid; gap:6px; min-width: 0; }
-    .promptSection {
-      border:1px solid var(--border);
-      border-radius:10px;
-      background:#f8fbff;
-      padding:5px;
-      min-width: 0;
-    }
-    .promptSectionTitle { margin:0 0 4px; font-size:13px; font-weight:700; }
-    .promptListCompact { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:8px; min-width: 0; }
-    .promptListSingle { display:block; min-width: 0; width: 100%; max-width: 100%; overflow-x: hidden; }
-    .promptListSingle .promptCard { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
-    .promptReviewBlock { min-width: 0; width: 100%; max-width: 100%; overflow-x: hidden; box-sizing: border-box; margin: 0; padding: 0; }
-    .promptCard {
-      border:1px solid var(--border);
-      border-radius:8px;
+      border-radius:12px;
+      padding:11px 12px;
       background:#fff;
-      padding:6px;
-      min-height: 40px;
-      min-width: 0;
-      box-sizing: border-box;
-    }
-    .promptHeader { display:flex; justify-content:space-between; align-items:center; gap:8px; min-width: 0; box-sizing: border-box; }
-    .promptActions { display:flex; align-items:center; gap:6px; min-width: 0; }
-    .copyIconBtn {
-      width: 30px;
-      height: 30px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: transparent;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text);
-      cursor: pointer;
-      padding: 0;
-      line-height: 1;
-      flex: 0 0 30px;
-    }
-    .copyIconBtn svg { width: 14px; height: 14px; }
-    .copyIconImage {
-      width: 18px;
-      height: 18px;
-      object-fit: contain;
-      display: block;
-    }
-    .tooltipWrapper { position: relative; }
-    .tooltipBubble {
-      position: absolute;
-      bottom: 130%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #1f2937;
-      color: #ffffff;
-      font-size: 12px;
-      line-height: 1;
-      padding: 6px 8px;
-      border-radius: 8px;
-      white-space: nowrap;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.15s ease;
-      z-index: 20;
-    }
-    .tooltipBubble::after {
-      content: "";
-      position: absolute;
-      top: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      border-width: 5px;
-      border-style: solid;
-      border-color: #1f2937 transparent transparent transparent;
-    }
-    .tooltipWrapper:hover .tooltipBubble,
-    .copyIconBtn.copiedState .tooltipBubble {
-      opacity: 1;
-    }
-    .copyIconBtn.isActive { background: var(--accent-soft); border-color: var(--accent); color: #1f4ca4; }
-    .starterCopyControl { display:flex; align-items:center; gap:8px; }
-    .copyPromptRow { display:flex; align-items:center; gap:10px; }
-    .copyPromptLabel {
-      font-weight: 600;
-      font-size: 15px;
-      color: var(--text);
-      line-height: 1.2;
-    }
-    .copyPromptLabel::before {
-      content: "↳ ";
-      opacity: 0.6;
-    }
-    .copyPromptRow:hover .copyPromptLabel {
-      color: var(--accent);
-    }
-    .promptArea { min-width: 0; overflow-x: hidden; }
-    .finalizeNotice { margin:10px 0 0; display:none; }
-    .finalizeLockedContent { opacity:.6; pointer-events:none; user-select:none; }
-    .finalActionBtn {
-      min-height: 44px;
-      padding: 0 16px;
-      font-size: 14px;
-      font-weight: 600;
-      line-height: 1;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      box-sizing: border-box;
-      border-radius: 10px;
-    }
-      .finalActionBtn.btn.warn { font-weight: 600; }
-    .warningButton {
-      white-space: nowrap;
-      font-weight: 600;
-    }
-    @media (max-width: 640px) {
-      .warningButton {
-        white-space: normal;
-        max-width: 420px;
-      }
-    }
-    #formFailedDetails > summary.finalActionBtn {
-      min-height: 44px;
-      padding: 0 16px;
-      display: inline-flex;
-      align-items: center;
-    }
-    #formFailedDetails > summary.finalActionBtn,
-    #btnEndSession.finalActionBtn {
-      opacity: 0.88;
-      font-weight: 550;
-    }
-    #formFailedDetails > summary.finalActionBtn:hover,
-    #btnEndSession.finalActionBtn:hover {
-      opacity: 1;
+      white-space:pre-wrap;
+      line-height:1.35;
+      margin-bottom:8px;
     }
 
+    .promptCards { display:grid; grid-template-columns:1fr; gap:10px; }
+    .promptCard { border:1px solid var(--border); border-radius:12px; background:#f8fbff; padding:16px 17px; }
+    .promptTitle { font-weight:750; font-size:16px; margin:0 0 6px; line-height:1.2; }
+    .promptDesc { color:var(--muted); margin:0 0 9px; line-height:1.32; font-size:13px; }
+    .promptDesc a { color:#1f4ca4; }
 
-    details summary {
-      list-style: none;
-    }
-    details summary::-webkit-details-marker {
-      display: none;
-    }
-    .whereToggleSummary {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-    }
-    .helpToggle .whereToggleIcon {
+    .reviewIntro p { margin-bottom: 5px; }
+    .reviewIntro .introNote {
+      margin-top: 6px;
+      margin-bottom: 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1f4ca4;
+      background: #edf4ff;
+      border: 1px solid #d7e5fb;
       display: inline-block;
-      transition: transform 0.2s ease;
-      transform-origin: center;
-    }
-    .helpToggle[open] .whereToggleIcon {
-      transform: rotate(90deg);
-    }
-    #llmConfirmPanel {
-      padding: 14px;
-    }
-    #llmConfirmPanel > :first-child {
-      margin-top: 0;
-    }
-    #llmConfirmPanel > :last-child {
-      margin-bottom: 0;
-    }
-    #llmConfirmPanel select {
-      margin-bottom: 0;
+      padding: 4px 8px;
+      border-radius: 999px;
     }
 
-    .promptTitle { font-weight:600; font-size:14px; margin:0 0 4px; line-height:1.2; min-width: 0; overflow-wrap: anywhere; color: var(--text); }
-    .promptDesc {
-      margin:2px 0 0;
-      font-size:12px;
-      color:#6b7280;
-      line-height:1.25;
-      min-width: 0;
-      overflow-wrap: anywhere;
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .copyIconBtn {
+      width:30px; height:30px; border:1px solid var(--border); border-radius:6px; background:transparent; display:inline-flex;
+      align-items:center; justify-content:center; color:var(--text); cursor:pointer; padding:0; line-height:1;
     }
+    .copyIconImage { width:18px; height:18px; object-fit:contain; display:block; }
+
+    .toast {
+      position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+      background:rgba(16,33,61,.95); border:1px solid #2f6edc; padding:10px 12px;
+      border-radius:10px; color:#fff; display:none; z-index:9999;
+    }
+
     @media (max-width: 960px) {
-      .promptCard { padding: 6px; }
-      .promptDesc { font-size: 12px; }
-      .btn { padding: 6px 8px; }
-      .promptArea { max-height: calc(100vh - 260px); overflow:auto; padding-right:4px; min-width: 0; overflow-x: hidden; }
+      .layoutGrid { grid-template-columns:1fr; }
+      .sidebar { width:100%; position:static; max-height:none; }
     }
-
   </style>
 </head>
 <body>
   <div class="pageShell">
-    <h1>Dissertation Prompt App</h1>
-    <div id="appShell">
-      <div class="appHeaderBar">
-        <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
-      </div>
-      <div class="layoutGrid">
-        <div class="main">
-          <details class="band" id="bandSetup" open>
-            <summary id="sumSetup">
-              <div class="summaryLeft">
-                <strong>1) Set up</strong>
-                <span class="tag" id="tagSetup">In progress</span>
-              </div>
-            </summary>
-            <div class="bandBody">
-              <div class="card">
-                <div class="subBand" style="margin-top:0;">
-                  <h4 class="subBandTitle">Question context</h4>
-                  <div class="row" style="margin-top:10px;">
-                    <div style="flex:1; min-width: 240px;">
-                      <label>Course / class context</label>
-                      <input id="ctxCourse" placeholder="e.g., Health Assessment (first semester)" />
-                    </div>
-                    <div style="flex:1; min-width: 240px;">
-                      <label>Content area</label>
-                      <input id="ctxArea" placeholder="e.g., Respiratory assessment" />
-                    </div>
-                  </div>
-
-                  <div class="row" style="margin-top:10px;">
-                    <div style="flex:1; min-width: 240px;">
-                      <label>Desired number of questions</label>
-                      <input id="ctxQuestionCount" type="number" min="1" value="10" />
-                    </div>
-                    <div style="flex:1; min-width: 240px;">
-                      <label>Any additional desired instructions or parameters (optional)</label>
-                      <input id="ctxNotes" placeholder="Optional guidance (e.g., difficulty level, tone, formatting preferences)" />
-                    </div>
-                  </div>
-
-                  <p class="muted small" style="margin:10px 0 0;">Click the icon to copy the starter prompt, then proceed to prompt controls.</p>
-                  <div class="row" style="margin-top:12px;">
-                    <div class="starterCopyControl copyPromptRow">
-                      <span class="small copyPromptLabel">Copy starter prompt</span>
-                      <button class="copyIconBtn" id="btnCopyStarter" aria-label="Copy starter prompt" type="button"></button>
-                    </div>
-                  </div>
-
-                  <div class="row" style="margin-top:8px;">
-                    <button class="btn" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
-                  </div>
-                </div>
-              </div>
+    <h1>Gemini Prompt Tool: Health History Assignment Part 2</h1>
+    <div class="layoutGrid">
+      <div class="main">
+        <details class="band" id="bandSetup" open>
+          <summary>
+            <div class="summaryLeft">
+              <strong>1) Set Up Gemini for This Assignment</strong>
+              <span class="tag" id="tagSetup">In progress</span>
             </div>
-          </details>
-
-          <details class="band" id="bandPrompts">
-            <summary id="sumPrompts">
-              <div class="summaryLeft">
-                <strong>2) Making questions</strong>
-                <span class="tag lock" id="tagPrompts">Locked</span>
-              </div>
-            </summary>
-            <div class="bandBody">
-              <div class="lockMsg" id="lockPrompts">Complete setup, copy the starter prompt, and click Continue to unlock prompts.</div>
-
-              <div id="promptsInner" style="display:none;">
-                <div class="card">
-                  <div class="row" style="justify-content: space-between;">
-                    <button class="btn" id="btnEditContext">Go back and edit context</button>
-                  </div>
-
-                  <div class="promptArea" style="margin-top:8px;">
-                    <div class="promptSections">
-                      <div class="promptSection">
-                        <h4 class="promptSectionTitle">Accept or Replace Question</h4>
-                        <div id="promptGroupAcceptReplace" class="promptListCompact"></div>
-                      </div>
-
-                      <div class="promptSection">
-                        <h4 class="promptSectionTitle">Refine Options</h4>
-                        <div id="promptGroupRefine" class="promptListCompact"></div>
-                      </div>
-
-                      <div class="promptReviewBlock">
-                        <div id="promptGroupReview" class="promptListSingle"></div>
-                      </div>
-
-                      <div class="promptSection">
-                        <h4 class="promptSectionTitle">Audit Options</h4>
-                        <div id="promptGroupAudit" class="promptListCompact"></div>
-                      </div>
-                    </div>
-
-                    <div class="row" style="justify-content: flex-end; margin-top:12px;">
-                      <div class="starterCopyControl copyPromptRow"><span class="small copyPromptLabel">Copy final prompt</span><button class="copyIconBtn" id="btnCopyFinal" aria-label="Copy final prompt" type="button"></button></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          </summary>
+          <div class="bandBody">
+            <div class="sectionCard">
+              <h3>Introduction</h3>
+              <p>According to APU AI Policy, students may only use AI tools for assignments when the instructor gives explicit permission and specifies how the tool may be used.</p>
+              <p>This page explains the conditions under which Gemini may be used for Health History Assignment Part 2.</p>
+              <p>The prompts on this page are designed to help students review and improve their own writing, not generate new content.</p>
+              <p>Gemini should function only as an editor, not a co-author.</p>
+              <p>Students remain responsible for verifying Gemini’s feedback and for the final version of their submission.</p>
+              <p><strong>Before continuing, please acknowledge the following:</strong></p>
             </div>
-          </details>
-        </div>
 
-        <aside class="sidebar">
-          <div class="card stickySidebar recentCard">
-            <h3 style="margin:0 0 6px; font-size:16px;">Most Recently Copied</h3>
-            <p class="copyMeta" id="recentCopiedMeta">Nothing copied yet. Click any Copy button to see it here.</p>
-            <textarea id="recentCopiedText" class="copiedText recentTextarea" readonly placeholder="Nothing copied yet. Click any Copy button to see it here."></textarea>
-            <div class="row" style="margin-top:10px;">
-              <div class="starterCopyControl"><span class="small">Copy</span><button class="copyIconBtn" id="btnCopyAgain" disabled type="button" aria-label="Copy"></button></div>
-              <button class="btn" id="btnClearRecent" disabled>Clear</button>
+            <div class="sectionCard" id="ackSection">
+              <h3>Acknowledgments</h3>
+              <div id="ackList"></div>
+            </div>
+
+            <div class="sectionCard" id="prepSection" style="display:none;">
+              <h3>To prepare Gemini for use in this assignment:</h3>
+              <ol>
+                <li>Log into Gemini using your APU account and confirm the Azusa Pacific University logo appears in the profile menu.</li>
+                <li>Start a new Gemini conversation.</li>
+                <li>Copy the Opening Prompt below and paste it into Gemini as your first message.</li>
+              </ol>
+            </div>
+
+            <div class="sectionCard" id="openingSection" style="display:none;">
+              <h3>Opening Prompt</h3>
+              <p>Use the Copy Opening Prompt button below to copy the prompt.</p>
+              <div id="openingPromptText" class="openingPromptBox"></div>
+              <button class="btn primary large" id="btnCopyOpening" type="button">Copy Opening Prompt</button>
+              <div style="margin-top:12px;">
+                <button class="btn large" id="btnAfterOpening" type="button" style="display:none;">Click here after sending the Opening Prompt to Gemini</button>
+              </div>
             </div>
           </div>
-        </aside>
+        </details>
+
+        <details class="band" id="bandReview">
+          <summary>
+            <div class="summaryLeft">
+              <strong>2) Review Your Draft Using Gemini</strong>
+              <span class="tag lock" id="tagReview">Locked</span>
+            </div>
+          </summary>
+          <div class="bandBody">
+            <div class="lockMsg" id="lockReview">Complete all setup steps in Band 1 to unlock this section.</div>
+
+            <div id="reviewInner" style="display:none;">
+              <div class="sectionCard reviewIntro">
+                <h3>2) Review Your Draft Using Gemini</h3>
+                <p>You have now started the Gemini conversation using the Opening Prompt.</p>
+                <p>Use the review tools below to evaluate your draft.</p>
+                <p>For each prompt, attach your draft file to the Gemini message along with the prompt copied from this page.</p>
+                <p>You may use more than one review tool as you revise your paper.</p>
+                <p class="introNote">Attach files rather than pasting text into Gemini.</p>
+              </div>
+
+              <div class="promptCards" id="promptCards"></div>
+            </div>
+          </div>
+        </details>
       </div>
+
+      <aside class="sidebar">
+        <div class="card stickySidebar recentCard">
+          <h3 style="margin:0 0 6px; font-size:16px;">Most Recently Copied</h3>
+          <p class="copyMeta" id="recentCopiedMeta">Nothing copied yet. Click any Copy button to see it here.</p>
+          <textarea id="recentCopiedText" class="copiedText recentTextarea" readonly placeholder="Nothing copied yet. Click any Copy button to see it here."></textarea>
+          <div class="row" style="margin-top:10px;">
+            <button class="copyIconBtn" id="btnCopyAgain" disabled type="button" aria-label="Copy again">
+              <img src="images/copyicon.png" alt="Copy" class="copyIconImage" />
+            </button>
+            <button class="btn" id="btnClearRecent" disabled>Clear</button>
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
 
-  <div class="modalBackdrop" id="modalReset">
-    <div class="modalCard">
-      <h3 style="margin:0 0 8px;">Reset this device?</h3>
-      <p class="muted" style="margin:0 0 12px;">This clears saved settings and history in this browser only.</p>
-      <div class="row" style="justify-content:flex-end;">
-        <button class="btn" id="btnResetCancel" type="button">Cancel</button>
-        <button class="btn danger" id="btnResetConfirm" type="button">Reset</button>
-      </div>
-    </div>
-  </div>
-
-  <footer class="small muted" style="padding: 8px 24px 20px;" id="buildInfo"></footer>
   <div class="toast" id="toast"></div>
 
   <script>
-const PROMPTS = [
-  // -----------------------------
-  // Question Refinement
-  // -----------------------------
-  {
-    id: "next_question",
-    group: "Question Refinement",
-    title: "Accept & Continue",
-    description: "Accept this question and generate the next one.",
-    prompt:
-`This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
-  },
-  {
-    id: "replace_question",
-    group: "Question Refinement",
-    title: "Generate Alternatives",
-    description: "Generate replacement versions of this question.",
-    prompt:
-`Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
-  },
-  {
-    id: "distractor_options",
-    group: "Question Refinement",
-    title: "Refine Distractors",
-    description: "Generate additional plausible distractor options.",
-    prompt:
-`I want to improve the distractors for this question. Please list the 3 you already provided, then add 10 more plausible distractors that fit the same parameters. Number them 1-13 so I can tell you which ones to keep.`
-  },
-  {
-    id: "correct_answer_options",
-    group: "Question Refinement",
-    title: "Refine Correct Answer",
-    description: "Generate alternate versions of the correct answer.",
-    prompt:
-`Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors.`
-  },
+    const OPENING_PROMPT = `Throughout this conversation, I will be submitting my own original academic writing. You are functioning strictly as an editor, not as a co-author. Your role is to evaluate and identify areas needing revision. You may not generate new content, add new ideas, provide example rewrites, create new sentences, expand sections, or suggest additional content to include. Do not provide example revisions, even brief ones.
+Restrict your responses to identifying issues, explaining why they are problematic, and describing the type of revision needed. Present your findings in a table format whenever possible to ensure clarity. If you begin to generate new content or rewrite my text, stop and return to identifying concerns only.`;
 
-  // -----------------------------
-  // Pause and Audit
-  // -----------------------------
-  {
-    id: "pause_review",
-    group: "Pause and Audit",
-    title: "Review Questions",
-    description: "Show all questions generated so far.",
-    prompt:
-`Pause and show me all of the questions that have been generated so far in this session. Organize them in the same table format as before so I can review them before moving on.`
-  },
-  {
-    id: "rebalance_content",
-    group: "Pause and Audit",
-    title: "Topic Coverage Audit",
-    description: "Identify overrepresented and underrepresented subtopics.",
-    prompt:
-`Pause and audit how the questions are balanced between potential subtopics. Please break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance.`
-  },
-  {
-    id: "core_or_peripheral",
-    group: "Pause and Audit",
-    title: "Breadth Audit",
-    description: "Classify questions as core or peripheral in focus.",
-    prompt:
-`Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
-Core: The most common, obvious, first-line, or 'go-to' fact or intervention.
-Peripheral: A less obvious but still clinically important area.
+    const ACKS = [
+      "I will only use the prompts provided on this page during my Gemini session and will not enter my own instructions or prompts.",
+      "I understand that Gemini may only function as an editor for this assignment and may not generate new content for my paper.",
+      "I understand that AI responses may contain errors and that I must verify any feedback before using it.",
+      "I understand that I remain responsible for the accuracy and integrity of my final submission.",
+      "I will use Gemini through my APU account while completing this assignment."
+    ];
 
-Provide the results in a table with the following columns:
-1. Question Number
-2. Focus: Core or Peripheral
-3. Topic Covered: 2–4 words only
-4. Suggestion: If the question is core, suggest one peripheral angle within the same content area that has not yet been tested.`
-  },
-  {
-    id: "rebalance_question_type",
-    group: "Pause and Audit",
-    title: "Question Type Audit",
-    description: "Analyze the distribution of question types.",
-    prompt:
-`I would like to pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I rebalance the types of questions.`
-  },
-  {
-    id: "difficulty_audit",
-    group: "Pause and Audit",
-    title: "Difficulty Audit",
-    description: "Analyze the distribution of difficulty levels.",
-    prompt:
-`Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix.`
-  },
-  {
-    id: "blooms_taxonomy_audit",
-    group: "Pause and Audit",
-    title: "Bloom’s Level Audit",
-    description: "Analyze the distribution of Bloom’s taxonomy levels.",
-    prompt:
-`Please pause and audit my current MCQ set for Bloom’s taxonomy alignment. For each question, assign the primary level (Remember, Understand, Apply, Analyze, Evaluate, or Create). Show me the counts and percentages in each category. Then, suggest underrepresented levels and give me ideas for how to add or revise questions to cover them.`
-  }
-];
+    const REVIEW_PROMPTS = [
+      {
+        id: "rubric",
+        title: "Rubric Review",
+        description: `Evaluate your draft using the assignment directions and grading rubric.\n\nWhen using this prompt, attach both your draft file and the <a href="health-history-part-2-directions-and-rubric.pdf" target="_blank" rel="noopener">download the assignment directions and rubric</a> so Gemini can compare your work to the assignment requirements.`,
+        buttonText: "Copy Rubric Review Prompt",
+        prompt: `I have attached my current draft along with the assignment directions and rubric. Review my draft with the assignment directions and rubric in mind, and provide your feedback in a table with the following columns:\n1. Rubric Criterion: Name the specific requirement.\n2. Status: Indicate if it is Fully Addressed, Partially Addressed, or Missing.\n3. Diagnostic Feedback: Explain what appears to be missing or underdeveloped.\nProvide your entire response within the table. Do not include introductory remarks, concluding summaries, or any rewritten versions of my text outside of the table cells. Do not include any follow-up questions, suggestions, or offers for further assistance.`
+      },
+      {
+        id: "language",
+        title: "Language Review",
+        description: "Identify grammar, punctuation, sentence structure, and clarity issues in your writing.\\n\\nAttach your draft file when using this prompt so Gemini can review the grammar and clarity of your document.",
+        buttonText: "Copy Language Review Prompt",
+        prompt: `I have attached my current draft. Review it strictly for grammar, punctuation, sentence structure, and clarity. Do not evaluate APA style or content accuracy. Present your review in a table with the following columns:\n1. Original Text: Quote the relevant sentence or phrase.\n2. Issue Identified: Name the error (e.g., run-on sentence, subject-verb agreement, incorrect spelling).\n3. Explanation: Briefly explain the rule or why the clarity needs improvement.\nProvide your entire response within the table. Do not include introductory remarks, concluding summaries, or any rewritten versions of my text outside of the table cells. Do not include any follow-up questions, suggestions, or offers for further assistance.`
+      },
+      {
+        id: "apa",
+        title: "APA Style Review",
+        description: "Evaluate your writing for alignment with APA 7th edition style expectations, including tone, precision, concision, and bias-free language.\\n\\nAttach your draft file when using this prompt so Gemini can review your document for APA writing style concerns.",
+        buttonText: "Copy APA Style Review Prompt",
+        prompt: `I have attached my current draft. Review it for alignment with APA 7th edition style guidelines (excluding citation formatting). Evaluate for aspects such as bias-free language, precision, tone, and conciseness. Present your findings in a table with the following columns:\n1. Original Text: Quote the concerning text.\n2. APA Concern: Explain why this does not align with APA standards.\n3. APA Reference: Note the relevant APA section if possible (e.g., Section 4.4).\nProvide your entire response within the table. Do not include introductory remarks, concluding summaries, or any rewritten versions of my text outside of the table cells. Do not include any follow-up questions, suggestions, or offers for further assistance.`
+      },
+      {
+        id: "citation",
+        title: "Citation Review",
+        description: "Review your citations and references for potential issues such as inappropriate sources, formatting problems, or mismatches between in-text citations and the reference list.\\n\\nAttach your draft file when using this prompt so Gemini can evaluate your citations and references.",
+        buttonText: "Copy Citation Review Prompt",
+        prompt: `I have attached my current draft. Review it specifically for citations and references. Present your findings in a table with the following columns:\n1. Citation/Reference: Quote the specific entry.\n2. Concern: Identify if the source appears inappropriate for academic health writing, if there is a mismatch between the in-text citation and the reference list, or if the formatting deviates from APA 7th edition.\n3. Guidance: Explain what needs to be corrected without providing the corrected example.\nProvide your entire response within the table. Do not include introductory remarks, concluding summaries, or any rewritten versions of my text outside of the table cells. Do not include any follow-up questions, suggestions, or offers for further assistance.`
+      }
+    ];
 
     const KEYS = {
-      context: "dissertation.context",
-      starterCopied: "dissertation.starterCopied",
-      stage: "dissertation.stage",
-      finalPrompt: "dissertation.finalPrompt"
+      ackState: "gemini220.ackState",
+      openingCopied: "gemini220.openingCopied",
+      stage: "gemini220.stage"
     };
 
     const $ = (id) => document.getElementById(id);
@@ -694,279 +245,179 @@ Provide the results in a table with the following columns:
     let lastCopiedLabel = "";
     let lastCopiedAt = null;
 
-    function hideToast() {
-      const t = $("toast");
-      if (!t) return;
-      if (t._hideTimer) clearTimeout(t._hideTimer);
-      t.style.display = "none";
-      t.textContent = "";
+    function getAckState() {
+      return JSON.parse(localStorage.getItem(KEYS.ackState) || "[false,false,false,false,false]");
     }
+    function setAckState(state) { localStorage.setItem(KEYS.ackState, JSON.stringify(state)); }
+    function getOpeningCopied() { return localStorage.getItem(KEYS.openingCopied) === "true"; }
+    function setOpeningCopied(value) { localStorage.setItem(KEYS.openingCopied, value ? "true" : "false"); }
+    function getStage() { return localStorage.getItem(KEYS.stage) === "review" ? "review" : "setup"; }
+    function setStage(stage) { localStorage.setItem(KEYS.stage, stage === "review" ? "review" : "setup"); }
 
-    const toast = (msg, { duration = 1400 } = {}) => {
+    function toast(msg, { duration = 1400 } = {}) {
       const t = $("toast");
-      if (!t) return;
       if (t._hideTimer) clearTimeout(t._hideTimer);
       t.textContent = msg;
       t.style.display = "block";
-      t._hideTimer = setTimeout(() => hideToast(), duration);
-    };
-
-    function getContext() {
-      return JSON.parse(localStorage.getItem(KEYS.context) || "{}");
-    }
-
-    function setContext(ctx) {
-      localStorage.setItem(KEYS.context, JSON.stringify(ctx || {}));
-    }
-
-    function getStage() {
-      const value = localStorage.getItem(KEYS.stage);
-      return value === "prompts" ? "prompts" : "setup";
-    }
-
-    function setStage(stage) {
-      localStorage.setItem(KEYS.stage, stage === "prompts" ? "prompts" : "setup");
-    }
-
-    function buildStarterPrompt() {
-      const ctx = getContext();
-      const notesLine = (ctx.notes || "").trim() ? `Additional instructions/parameters: ${ctx.notes.trim()}` : `Additional instructions/parameters: (none)`;
-      return `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
-
-1. Class Context (e.g., subject, course objectives, level, etc.): ${ctx.course || "(not provided)"}
-2. Content Area (specific topic or unit): ${ctx.area || "(not provided)"}
-3. Desired Number of Questions: ${ctx.questionCount || "10"}
-4. Additional parameters to consider (if blank, ignore): ${notesLine}
-
-I may attach documents (e.g., lecture notes, flashcards, readings) to guide question creation. Use them as a general reference, but do not rely on them exclusively. Try to create a question set that reflects the concepts within the content area that are most relevant to NCLEX and nursing practice.
-
-When outputting the questions, do not use any interactive widgets, quizzes, or UI tools. I want the output strictly in text form and placed in a table format with the following columns:
-1. Question Name: Number of the question, followed by a 4-word descriptive title, followed by four randomly chosen letters.
-2. Question Stem: The question stem.
-3. Correct Answer: The correct answer.
-4. Distractor 1: The first distractor.
-5. Distractor 2: The second distractor.
-6. Distractor 3: The third distractor.
-You will create 1 question at a time. Pause after each one so I can give feedback on the overall format or on individual questions. Once I respond, adjust if requested, or continue with the next question, until I have reached the goal number of questions.
-
-For now, give me the current time, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`;
-    }
-
-    function buildFinalPrompt() {
-      return `Please provide a full table of questions.
-
-Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
-1. Question Number
-2. Difficulty – Classify as Easy, Moderate, or Hard.
-3. Bloom’s Level – Classify as Remember, Understand, Apply, Analyze, Evaluate, or Create.
-4. Question Type – 1–2 words (e.g., Assessment, Prioritization, Delegation, Teaching, Pharmacology).
-5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
-
-After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.
-After that list, give me the current time.`;
-    }
-
-    function fillTemplate(template) {
-      const ctx = getContext();
-      const notesLine = (ctx.notes || "").trim() ? `Additional instructions: ${ctx.notes.trim()}` : `(No additional instructions.)`;
-      return template.replaceAll("{{COURSE}}", ctx.course || "the course").replaceAll("{{AREA}}", ctx.area || "the content area").replaceAll("{{NOTES_LINE}}", notesLine);
-    }
-
-    function showCopiedState(btn) {
-      if (!btn) return;
-      const tooltip = btn.querySelector(".tooltipBubble");
-      btn.classList.add("copiedState");
-      if (tooltip) tooltip.textContent = "Copied!";
-      if (btn._copiedTimer) clearTimeout(btn._copiedTimer);
-      btn._copiedTimer = setTimeout(() => {
-        btn.classList.remove("copiedState");
-        if (tooltip) tooltip.textContent = "Copy";
-      }, 800);
+      t._hideTimer = setTimeout(() => { t.style.display = "none"; }, duration);
     }
 
     async function copyToClipboard(text, label) {
-      let copied = false;
-      try { await navigator.clipboard.writeText(text); copied = true; } catch (_) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (err) {
         const ta = document.createElement("textarea");
         ta.value = text;
-        ta.setAttribute("readonly", "");
         ta.style.position = "fixed";
-        ta.style.top = "-1000px";
+        ta.style.opacity = "0";
         document.body.appendChild(ta);
-        ta.focus(); ta.select();
-        copied = document.execCommand("copy");
-        document.body.removeChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
       }
       lastCopiedText = text;
       lastCopiedLabel = label;
-      lastCopiedAt = new Date();
+      lastCopiedAt = Date.now();
       renderMostRecentCopied();
-      toast(copied ? "Copied ✅" : "Clipboard blocked — text saved in panel");
-      return true;
+      toast(`Copied ${label}.`);
     }
 
-    function isSetupComplete() {
-      const ctx = getContext();
-      return !!(ctx.course || "").trim() && !!(ctx.area || "").trim();
-    }
-
-    function isPromptsUnlocked() {
-      return getStage() === "prompts" && localStorage.getItem(KEYS.starterCopied) === "true" && isSetupComplete();
-    }
-
-    function applyStageUI() {
-      const setupDone = isSetupComplete();
-      const unlocked = isPromptsUnlocked();
-      $("tagSetup").textContent = setupDone ? "Complete" : "In progress";
-      $("tagSetup").className = setupDone ? "tag ok" : "tag";
-
-      $("tagPrompts").textContent = unlocked ? "Open" : "Locked";
-      $("tagPrompts").className = unlocked ? "tag ok" : "tag lock";
-      $("lockPrompts").style.display = unlocked ? "none" : "block";
-      $("promptsInner").style.display = unlocked ? "block" : "none";
-
-      $("btnGoPrompts").disabled = !(setupDone && localStorage.getItem(KEYS.starterCopied) === "true");
-      if (getStage() === "prompts" && unlocked) {
-        $("bandSetup").open = false;
-        $("bandPrompts").open = true;
-      } else {
-        $("bandSetup").open = true;
-        $("bandPrompts").open = false;
-      }
-      $("buildInfo").textContent = `Last updated: ${document.lastModified || "—"}`;
-    }
-
-    function formatCopiedTime(dt) {
-      return dt ? dt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }) : "—";
+    function formatCopiedTime(ts) {
+      if (!ts) return "—";
+      return new Date(ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
     }
 
     function renderMostRecentCopied() {
-      const has = !!lastCopiedText.trim();
-      if (!has) {
+      if (!lastCopiedText.trim()) {
         $("recentCopiedMeta").textContent = "Nothing copied yet. Click any Copy button to see it here.";
         $("recentCopiedText").value = "";
         $("btnCopyAgain").disabled = true;
         $("btnClearRecent").disabled = true;
         return;
       }
-      $("recentCopiedMeta").textContent = `Source: ${lastCopiedLabel || "Unknown"} · Copied: ${formatCopiedTime(lastCopiedAt)}`;
+      $("recentCopiedMeta").textContent = `Source: ${lastCopiedLabel} · Copied: ${formatCopiedTime(lastCopiedAt)}`;
       $("recentCopiedText").value = lastCopiedText;
       $("btnCopyAgain").disabled = false;
       $("btnClearRecent").disabled = false;
     }
 
-    function makeCopyIconButton() {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "copyIconBtn tooltipWrapper";
-      btn.innerHTML = '<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>';
-      return btn;
-    }
-
-    function renderPromptList() {
-      const grouped = {
-        promptGroupAcceptReplace: ["next_question", "replace_question"],
-        promptGroupRefine: ["correct_answer_options", "distractor_options"],
-        promptGroupReview: ["pause_review"],
-        promptGroupAudit: ["rebalance_content", "core_or_peripheral", "rebalance_question_type", "difficulty_audit", "blooms_taxonomy_audit"]
-      };
-      Object.keys(grouped).forEach((key) => { $(key).innerHTML = ""; grouped[key].forEach((id) => {
-        const prompt = PROMPTS.find((p) => p.id === id); if (!prompt) return;
-        const card = document.createElement("div"); card.className = "promptCard";
-        const header = document.createElement("div"); header.className = "promptHeader";
-        const title = document.createElement("div"); title.className = "promptTitle"; title.textContent = prompt.title;
-        const btn = makeCopyIconButton(); btn.dataset.id = id;
-        const actions = document.createElement("div"); actions.className = "promptActions"; actions.appendChild(btn);
-        header.appendChild(title); header.appendChild(actions); card.appendChild(header);
-        const desc = document.createElement("p"); desc.className = "promptDesc"; desc.textContent = prompt.description || ""; card.appendChild(desc);
-        $(key).appendChild(card);
-      }); });
-
-      $("promptsInner").addEventListener("click", async (e) => {
-        const btn = e.target.closest("button.copyIconBtn");
-        if (!btn || !btn.dataset.id) return;
-        const prompt = PROMPTS.find((p) => p.id === btn.dataset.id);
-        if (!prompt) return;
-        showCopiedState(btn);
-        await copyToClipboard(fillTemplate(prompt.prompt), prompt.title);
+    function renderAcknowledgments() {
+      const state = getAckState();
+      const list = $("ackList");
+      list.innerHTML = "";
+      ACKS.forEach((text, idx) => {
+        const row = document.createElement("div");
+        row.className = "ackItem";
+        const p = document.createElement("p");
+        p.textContent = text;
+        p.style.margin = "0";
+        const btn = document.createElement("button");
+        btn.className = `btn ${state[idx] ? "complete" : ""}`;
+        btn.textContent = state[idx] ? "Acknowledged ✓" : "I acknowledge";
+        btn.disabled = state[idx];
+        btn.addEventListener("click", () => {
+          const updated = getAckState();
+          updated[idx] = true;
+          setAckState(updated);
+          renderAcknowledgments();
+          applyUI();
+        });
+        row.appendChild(p);
+        row.appendChild(btn);
+        list.appendChild(row);
       });
     }
 
-    function clearSessionData() {
-      Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
-      lastCopiedText = "";
-      lastCopiedLabel = "";
-      lastCopiedAt = null;
+    function renderReviewCards() {
+      const wrap = $("promptCards");
+      wrap.innerHTML = "";
+      REVIEW_PROMPTS.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "promptCard";
+
+        const title = document.createElement("h4");
+        title.className = "promptTitle";
+        title.textContent = item.title;
+
+        const desc = document.createElement("p");
+        desc.className = "promptDesc";
+        desc.innerHTML = item.description.replaceAll("\\n", "<br>");
+
+        const button = document.createElement("button");
+        button.className = "btn primary large";
+        button.type = "button";
+        button.textContent = item.buttonText;
+        button.addEventListener("click", async () => {
+          await copyToClipboard(item.prompt, item.buttonText.replace("Copy ", ""));
+        });
+
+        card.appendChild(title);
+        card.appendChild(desc);
+        card.appendChild(button);
+        wrap.appendChild(card);
+      });
+    }
+
+    function allAcksComplete() {
+      return getAckState().every(Boolean);
+    }
+
+    function applyUI() {
+      const completedAcks = allAcksComplete();
+      const openingCopied = getOpeningCopied();
+      const stage = getStage();
+
+      $("prepSection").style.display = completedAcks ? "block" : "none";
+      $("openingSection").style.display = completedAcks ? "block" : "none";
+      $("btnAfterOpening").style.display = openingCopied ? "inline-flex" : "none";
+
+      const reviewUnlocked = stage === "review" && completedAcks && openingCopied;
+      $("tagSetup").textContent = reviewUnlocked ? "Complete" : (completedAcks ? "Ready" : "In progress");
+      $("tagSetup").className = `tag ${reviewUnlocked ? "ok" : ""}`;
+      $("tagReview").textContent = reviewUnlocked ? "Unlocked" : "Locked";
+      $("tagReview").className = `tag ${reviewUnlocked ? "ok" : "lock"}`;
+
+      $("lockReview").style.display = reviewUnlocked ? "none" : "block";
+      $("reviewInner").style.display = reviewUnlocked ? "block" : "none";
+
+      if (reviewUnlocked) {
+        $("bandSetup").open = false;
+        $("bandReview").open = true;
+      }
     }
 
     function init() {
-      const ctx = getContext();
-      $("ctxCourse").value = ctx.course || "";
-      $("ctxArea").value = ctx.area || "";
-      $("ctxQuestionCount").value = ctx.questionCount || "10";
-      $("ctxNotes").value = ctx.notes || "";
+      $("openingPromptText").textContent = OPENING_PROMPT;
+      renderAcknowledgments();
+      renderReviewCards();
+      renderMostRecentCopied();
 
-      ["ctxCourse", "ctxArea", "ctxQuestionCount", "ctxNotes"].forEach((id) => {
-        $(id).addEventListener("input", () => {
-          setContext({
-            course: $("ctxCourse").value,
-            area: $("ctxArea").value,
-            questionCount: $("ctxQuestionCount").value || "10",
-            notes: $("ctxNotes").value
-          });
-          applyStageUI();
-        });
+      $("btnCopyOpening").addEventListener("click", async () => {
+        await copyToClipboard(OPENING_PROMPT, "Opening Prompt");
+        setOpeningCopied(true);
+        applyUI();
       });
 
-      $("btnCopyStarter").innerHTML = '<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>';
-      $("btnCopyStarter").classList.add("tooltipWrapper");
-      $("btnCopyFinal").innerHTML = '<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>';
-      $("btnCopyFinal").classList.add("tooltipWrapper");
-      $("btnCopyAgain").innerHTML = '<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>';
-      $("btnCopyAgain").classList.add("tooltipWrapper");
-
-      $("btnCopyStarter").addEventListener("click", async () => {
-        showCopiedState($("btnCopyStarter"));
-        await copyToClipboard(buildStarterPrompt(), "Starter prompt");
-        localStorage.setItem(KEYS.starterCopied, "true");
-        applyStageUI();
+      $("btnAfterOpening").addEventListener("click", () => {
+        if (!allAcksComplete() || !getOpeningCopied()) return;
+        setStage("review");
+        applyUI();
       });
 
-      $("btnGoPrompts").addEventListener("click", () => { setStage("prompts"); applyStageUI(); });
-      $("btnEditContext").addEventListener("click", () => { setStage("setup"); applyStageUI(); });
-      $("btnCopyFinal").addEventListener("click", async () => {
-        const text = buildFinalPrompt();
-        localStorage.setItem(KEYS.finalPrompt, text);
-        showCopiedState($("btnCopyFinal"));
-        await copyToClipboard(text, "Final prompt");
-      });
       $("btnCopyAgain").addEventListener("click", async () => {
         if (!lastCopiedText) return;
-        showCopiedState($("btnCopyAgain"));
-        await copyToClipboard(lastCopiedText, lastCopiedLabel || "Most recently copied");
+        await copyToClipboard(lastCopiedText, lastCopiedLabel || "Most Recently Copied");
       });
+
       $("btnClearRecent").addEventListener("click", () => {
-        lastCopiedText = ""; lastCopiedLabel = ""; lastCopiedAt = null; renderMostRecentCopied();
+        lastCopiedText = "";
+        lastCopiedLabel = "";
+        lastCopiedAt = null;
+        renderMostRecentCopied();
       });
 
-      const openModal = (id) => { const m = $(id); if (m) m.style.display = "flex"; };
-      const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
-
-      $("btnResetSession").addEventListener("click", () => {
-        openModal("modalReset");
-      });
-      $("btnResetCancel").addEventListener("click", () => {
-        closeModal("modalReset");
-      });
-      $("btnResetConfirm").addEventListener("click", () => {
-        clearSessionData();
-        closeModal("modalReset");
-        location.reload();
-      });
-
-      renderPromptList();
-      renderMostRecentCopied();
-      applyStageUI();
+      applyUI();
     }
 
     init();
