@@ -899,7 +899,6 @@
             </div>
             <div class="muted small" style="margin-top:8px;">
               <div>Goal: Build a 10-question set</div>
-              <div>Maximum task time: 40 minutes</div>
             </div>
           </div>
         </aside>
@@ -976,10 +975,10 @@
         instruction: "Use ChatGPT in its default mode for this activity. Do not manually switch to Instant or Thinking.",
         whereText: "Click the model selector at the top of the chat.",
         expectedOptions: [
-          { value: "auto_menu", label: "Auto selected; menu shows Instant 5.3 and Thinking 5.4" },
+          { value: "inst-5.3_thi-5.4", label: "Auto selected; menu shows Instant 5.3 and Thinking 5.4" },
           { value: "different", label: "I see something different" }
         ],
-        defaultExpected: "auto_menu",
+        defaultExpected: "inst-5.3_thi-5.4",
         image1Alt: "ChatGPT model selector location",
         image2Alt: "ChatGPT dropdown example"
       },
@@ -988,10 +987,10 @@
         instruction: "Use Claude in its default mode for this activity. Do not manually change the model or enable extended thinking unless it is already selected.",
         whereText: "Click the model selector near the chat input box.",
         expectedOptions: [
-          { value: "sonnet46_menu", label: "Sonnet 4.6 selected" },
+          { value: "sonnet-4.6", label: "Sonnet 4.6 selected" },
           { value: "different", label: "I see something different" }
         ],
-        defaultExpected: "sonnet46_menu",
+        defaultExpected: "sonnet-4.6",
         image1Alt: "Claude model selector location",
         image2Alt: "Claude dropdown example"
       },
@@ -1000,10 +999,10 @@
         instruction: "Use Gemini in its default mode for this activity. Do not manually switch modes.",
         whereText: "Click the mode dropdown next to the prompt box.",
         expectedOptions: [
-          { value: "fast_menu", label: "Fast selected; menu shows Gemini 3" },
+          { value: "gemini-3", label: "Fast selected; menu shows Gemini 3" },
           { value: "different", label: "I see something different" }
         ],
-        defaultExpected: "fast_menu",
+        defaultExpected: "gemini-3",
         image1Alt: "Gemini mode selector location",
         image2Alt: "Gemini dropdown example"
       },
@@ -1012,10 +1011,10 @@
         instruction: "Use Microsoft Copilot in its default mode for this activity. Do not manually change the conversation mode.",
         whereText: "Click the dropdown next to the prompt box that shows the current mode.",
         expectedOptions: [
-          { value: "smart_menu", label: "Smart selected; menu shows GPT 5.1" },
+          { value: "gpt-5.1", label: "Smart selected; menu shows GPT 5.1" },
           { value: "different", label: "I see something different" }
         ],
-        defaultExpected: "smart_menu",
+        defaultExpected: "gpt-5.1",
         image1Alt: "Copilot mode selector location",
         image2Alt: "Copilot dropdown example"
       }
