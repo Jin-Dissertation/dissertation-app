@@ -451,32 +451,68 @@
       border-radius: 10px;
     }
       .finalActionBtn.btn.warn { font-weight: 600; }
-    .warningButton {
-      white-space: nowrap;
+    #btnEndSession.finalActionBtn {
+      opacity: 0.96;
       font-weight: 600;
     }
-    @media (max-width: 640px) {
-      .warningButton {
-        white-space: normal;
-        max-width: 420px;
-      }
+    #btnEndSession.finalActionBtn.pseudo-disabled {
+      opacity: 0.45;
+      filter: grayscale(20%);
+      cursor: not-allowed;
     }
-    #formFailedDetails > summary.finalActionBtn {
-      min-height: 44px;
-      padding: 0 16px;
-      display: inline-flex;
-      align-items: center;
-    }
-    #formFailedDetails > summary.finalActionBtn,
-    #btnEndSession.finalActionBtn {
-      opacity: 0.88;
-      font-weight: 550;
-    }
-    #formFailedDetails > summary.finalActionBtn:hover,
     #btnEndSession.finalActionBtn:hover {
       opacity: 1;
     }
+    #btnEndSession.finalActionBtn.pseudo-disabled:hover {
+      opacity: 0.45;
+    }
 
+    .optionalFeedbackBox {
+      margin-top: 12px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+
+    .audioFeedbackSection {
+      margin-top: 6px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+    }
+    .audioRecorderTop .audioHelp {
+      margin: 0;
+    }
+    .audioControlRow,
+    .audioPlaybackRow {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .audioPlaybackRow {
+      display: none;
+    }
+    .audioControlRow .btn,
+    .audioPlaybackRow .btn {
+      min-width: 112px;
+      justify-content: center;
+    }
+    .audioControlRow .audioStateStatus {
+      cursor: default;
+      pointer-events: none;
+      opacity: 0.9;
+      border-color: var(--border);
+      color: var(--muted);
+      background: #eef2f7;
+    }
+    .audioPlaybackRow audio {
+      max-width: 100%;
+      min-width: 260px;
+    }
 
     details summary {
       list-style: none;
@@ -498,18 +534,6 @@
     .helpToggle[open] .whereToggleIcon {
       transform: rotate(90deg);
     }
-    #llmConfirmPanel {
-      padding: 14px;
-    }
-    #llmConfirmPanel > :first-child {
-      margin-top: 0;
-    }
-    #llmConfirmPanel > :last-child {
-      margin-bottom: 0;
-    }
-    #llmConfirmPanel select {
-      margin-bottom: 0;
-    }
 
     .promptTitle { font-weight:600; font-size:14px; margin:0 0 4px; line-height:1.2; min-width: 0; overflow-wrap: anywhere; color: var(--text); }
     .promptDesc {
@@ -520,21 +544,48 @@
       min-width: 0;
       overflow-wrap: anywhere;
     }
+
+    .training-tip {
+      display: none;
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-left: 3px solid #5b8def;
+      background: #eef4ff;
+      border-radius: 8px;
+      color: #2d3f62;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .training-tip-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #375b9c;
+      letter-spacing: 0.02em;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
     @media (max-width: 960px) {
       .promptCard { padding: 6px; }
       .promptDesc { font-size: 12px; }
       .btn { padding: 6px 8px; }
       .promptArea { max-height: calc(100vh - 260px); overflow:auto; padding-right:4px; min-width: 0; overflow-x: hidden; }
     }
-            #btnSubmitForm[disabled] { background:#d6e1f3; color:#678; border-color:#c8d8f0; cursor:not-allowed; }
 
   </style>
 </head>
 <body>
   <div class="pageShell">
     <h1>Dissertation Prompt App</h1>
+    <div id="trainingTopNote" class="training-tip">
+      <span class="training-tip-label">Training tip</span>
+      Training mode: The “Training tip” boxes on this page provide guidance for this tutorial and are not part of the normal app interface.
+    </div>
     <!-- Access gate -->
     <div class="card accessCard" id="accessGate">
+      <p class="muted small" style="margin:0 0 8px;">This tool is part of a research study conducted by Taemin Jin.</p>
+      <p class="muted small" style="margin:0 0 8px;">Questions about this study may be directed to: [your email here].</p>
+      <p class="muted small" style="margin:0 0 14px;">IRB approval: [IRB number here].</p>
       <p class="muted small" style="margin:0 0 10px;">Enter your participant code to begin this session.</p>
       <p class="muted small" style="margin:0 0 10px;">If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
 
@@ -584,7 +635,7 @@
               <h4 class="subBandTitle" id="productVersionTitle">Confirm product version</h4>
               <p class="muted small llmConfirmIntro" id="llmConfirmIntro"></p>
 
-              <div id="llmConfirmPanel" class="subBand" style="display:none; margin-top:8px;">
+              <div id="llmConfirmPanel" style="display:none; margin-top:8px;">
                 <p id="llmInstructionText" class="muted small" style="margin:0 0 6px;"></p>
                 <p id="llmWhereText" class="muted small" style="margin:0;"></p>
 
@@ -606,6 +657,11 @@
                 <div id="llmMismatchWrap" style="display:none; margin-top:10px;">
                   <label for="llmMismatchDescription">Please briefly describe the options you see in the menu.</label>
                   <textarea id="llmMismatchDescription" placeholder="Example: Auto, Instant 5.5, Thinking 5.6"></textarea>
+                </div>
+                <div id="trainingTipMismatch" class="training-tip">
+                  <span class="training-tip-label">Training tip</span>
+                  If the model name you see in your AI interface does not match the options listed here, choose “I see something different” and briefly describe what you see.<br><br>
+                  This helps us record which AI system and model you used.
                 </div>
               </div>
 
@@ -633,6 +689,12 @@
               <div style="flex:1; min-width: 240px;">
                 <label>Course / class context</label>
                 <input id="ctxCourse" placeholder="e.g., Health Assessment (first semester)" />
+                <div id="trainingTipCourseContext" class="training-tip">
+                  <span class="training-tip-label">Training tip</span>
+                  Describe the course context in one or two sentences. This should be enough information for the AI to understand the topic, but it does not need to be detailed.<br><br>
+                  Example: Undergraduate pediatric nursing course covering insulin administration and medication safety.<br><br>
+                  Avoid writing a full assignment description or copying a syllabus.
+                </div>
               </div>
               <div style="flex:1; min-width: 240px;">
                 <label>Content area</label>
@@ -726,14 +788,14 @@
       <details class="band" id="bandFinalize">
         <summary id="sumFinalize">
           <div class="summaryLeft">
-            <strong>3) Finalize & submit</strong>
+            <strong>3) Finalize</strong>
             <span class="tag lock" id="tagFinalize">Locked</span>
           </div>
 
         </summary>
         <div class="bandBody">
           <div class="lockMsg" id="lockFinalize">
-            Complete <strong>2) Making questions</strong> and click <strong>I'm done making questions</strong> to unlock final submission.
+            Complete <strong>2) Making questions</strong> and click <strong>I'm done making questions</strong> to unlock the final step.
           </div>
 
           <div id="finalizeInner" style="display:none;">
@@ -752,60 +814,41 @@
                   <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
                 </div>
 
-                <div style="margin-top:12px;">
-                  <label for="sessionNotes">Anything unusual about your session? (optional)</label>
+                <div class="optionalFeedbackBox" id="finalFeedbackSection">
+                  <p style="margin:0 0 6px; font-weight:600;">Optional feedback</p>
+                  <p class="muted small" style="margin:0 0 10px;">I would appreciate any feedback you have for me, which you may provide in writing and/or as an audio recording. This is completely optional.</p>
+
                   <textarea
                     id="sessionNotes"
-                    placeholder="Let me know if anything went out of the ordinary during your session."
+                    placeholder="Provide written feedback here"
                   ></textarea>
-                </div>
 
-                <p class="muted small" style="margin:10px 0 0;">This will submit your session automatically.</p>
-                <div class="row" style="margin-top:8px;">
-                  <button class="btn primary finalActionBtn" id="btnSubmitForm">Submit session</button>
-                  <button class="btn finalActionBtn" id="btnReviseAfterSubmit" type="button" style="display:none;">Return to question editing</button>
-                </div>
+                  <div class="audioFeedbackSection" id="audioRecorderPanel" style="margin-top:8px;">
+                    <div class="audioControlRow" id="audioPrimaryControls">
+                      <button class="btn primary" id="btnAudioStart" type="button">Start recording</button>
+                      <button class="btn audioStateStatus" id="btnAudioState" type="button" disabled>Recording</button>
+                      <button class="btn" id="btnAudioPauseResume" type="button">Pause</button>
+                      <button class="btn" id="btnAudioStop" type="button">Stop</button>
+                    </div>
 
-                <details id="formFailedDetails" style="margin-top:12px; display:none;">
-                <summary class="btn warn finalActionBtn warningButton">
-                  Click here if automatic submission failed
-                </summary>
-
-                <div style="margin-top:12px;">
-                  <p class="muted small" style="margin:0 0 10px;">
-                    Backup method (only if needed):
-                  </p>
-
-                  <ol class="muted small" style="margin:0 0 10px; padding-left:18px;">
-                    <li>Click <strong>Download backup file (.json)</strong> below.</li>
-                    <li>Email the downloaded file to <strong>tjin@crimson.ua.edu</strong>.</li>
-                    <li>Complete your recorded reflection using your usual submission method.</li>
-                  </ol>
-
-                  <div class="row" style="margin-top:10px;">
-                    <button class="btn" id="btnDownload">Download backup file (.json)</button>
-                  </div>
-
-                  <div class="hr"></div>
-
-                  <div class="muted small">
-                    <p style="margin:0 0 8px;"><strong>Recorded reflection prompts:</strong></p>
-                    <ol style="margin:0 0 8px; padding-left:18px;">
-                      <li>In your own words, how do you understand the purpose of this activity and what it is intended to help educators accomplish?</li>
-                      <li>To what extent do you see yourself or other educators being willing to use an approach like this when creating exam questions?</li>
-                      <li>Thinking about your own teaching context, how practical would it be to incorporate a process like this into your workflow?</li>
-                      <li>After completing today's session, how do you evaluate the usefulness of this approach for generating multiple-choice questions?</li>
-                    </ol>
-                    <p style="margin:0;">A single, unscripted take is preferred. Please do not feel the need to prepare, re-record, or edit your response.</p>
+                    <div class="audioPlaybackRow" id="audioPlaybackRow">
+                      <audio id="audioFeedbackPlayer" controls preload="metadata"></audio>
+                      <button class="btn" id="btnAudioSubmit" type="button">Submit audio</button>
+                      <button class="btn" id="btnAudioDelete" type="button">Delete recording</button>
+                    </div>
                   </div>
                 </div>
-              </details>
 
               </div>
 
               <p class="muted small" id="finalizeMsg" style="margin:10px 0 0;"></p>
 
-              <div class="row" id="endSessionRow" style="margin-top:10px; display:none;">
+              <div id="trainingTipEndSession" class="training-tip" style="margin-top:10px;">
+                <span class="training-tip-label">Training tip</span>
+                Click End Session when you are finished practicing.<br><br>
+                You do not need to produce perfect questions — the goal of this activity is simply to practice using the app. Your responses will be saved when you end the session.
+              </div>
+              <div class="row" id="endSessionRow" style="margin-top:18px; display:none;">
                 <button class="btn danger finalActionBtn" id="btnEndSession" type="button">End session</button>
               </div>
             </div>
@@ -857,7 +900,7 @@
   <div class="modalBackdrop" id="modalEnd">
     <div class="modalCard">
       <h3 style="margin:0 0 8px;">End session?</h3>
-      <p class="muted" style="margin:0 0 12px;">Before ending, make sure your session was submitted successfully or downloaded/saved as a backup. Ending the session will clear this browser’s stored data.</p>
+      <p class="muted" style="margin:0 0 12px;">Before ending, make sure you have saved any materials you need. Ending the session will clear this browser’s stored data.</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnEndCancel" type="button">Cancel</button>
         <button class="btn danger" id="btnEndConfirm" type="button">I saved it — end session</button>
@@ -865,7 +908,12 @@
     </div>
   </div>
 
-  <footer class="small muted" style="padding: 8px 24px 20px;" id="buildInfo"></footer>
+  <div id="trainingEndFallback" class="card training-tip" style="display:none; margin: 8px 24px 12px;">
+    <span class="training-tip-label">Training tip</span>
+    Training activity complete. You can now close this window and return to the training.
+  </div>
+
+  <footer class="small muted" style="padding: 8px 24px 20px;" id="buildInfo"><span id="lastUpdated"></span></footer>
   <div id="helpLinkRow" class="small" style="padding: 0 24px 24px;">
     <a
       href="https://jin-dissertation.github.io/dissertation-app/help.html"
@@ -884,46 +932,18 @@
   </div>
 
   <script>
+    window.addEventListener("error", (e) => {
+      console.error("Global script error:", e.message, "at", e.filename, "line", e.lineno);
+    });
+
     // -----------------------------
     // Config
     // -----------------------------
 
-    // Access code allowlist (your current codes; access code = participant identifier)
-    const ACCESS_CODES = {
-      "zzz": {},
-      "blue-sky": {},
-      "green-grass": {},
-      "bright-light": {},
-      "calm-water": {},
-      "morning-sun": {},
-      "quiet-night": {},
-      "tall-tree": {},
-      "warm-breeze": {},
-      "clear-path": {},
-      "soft-cloud": {},
-      "deep-ocean": {},
-      "fresh-air": {},
-      "open-field": {},
-      "gentle-rain": {},
-      "golden-hour": {},
-      "rising-tide": {},
-      "distant-hill": {},
-      "summer-wind": {},
-      "early-dawn": {},
-      "cool-shade": {},
-      "wide-river": {},
-      "bright-star": {},
-      "falling-leaf": {},
-      "white-sand": {},
-      "silver-moon": {},
-      "calm-harbor": {},
-      "quiet-forest": {},
-      "warm-sunlight": {},
-      "soft-snow": {},
-      "open-horizon": {}
-    };
+    const ACCESS_VERIFY_URL = "https://script.google.com/macros/s/AKfycbzlp6l70YV51i-jlnZr6_N1DVV_efWD3nf9n2aqvUPN7u92e5R2ZQ0zZbeCosSx2CZ78g/exec";
 
-    const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbwJQ3QfQ9AdniKd46SYoesy6GMx2GvP52-HWiqlPRTZ8zJuGoyzi7BiHN6sio7dJiLb/exec";
+    // Apps Script endpoint for background autosave events.
+    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbxL2vkcsWNQVRDug2rnZU01eQesd4S7QXY-3Qtm7ZeWgzTNw7jjvdYxT-DzMjD9gMTj/exec";
 
     // Paste your webhook URL into LLM_MISMATCH_ALERT_WEBHOOK to receive immediate mismatch alerts.
     const LLM_MISMATCH_ALERT_WEBHOOK = "";
@@ -979,70 +999,326 @@
       }
     };
 
-// Prompt library (grouped for UI)
-const PROMPTS = [
-  // -----------------------------
-  // Question Refinement
-  // -----------------------------
+// Prompt metadata (grouped for UI)
+const PROMPT_META = [
   {
     id: "next_question",
     group: "Question Refinement",
     title: "Accept & Continue",
-    description: "Accept this question and generate the next one.",
-    prompt:
-`This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
+    description: "Accept this question and generate the next one."
   },
   {
     id: "replace_question",
     group: "Question Refinement",
     title: "Generate Alternatives",
-    description: "Generate replacement versions of this question.",
-    prompt:
-`Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
+    description: "Generate replacement versions of this question."
   },
   {
     id: "distractor_options",
     group: "Question Refinement",
     title: "Refine Distractors",
-    description: "Generate additional plausible distractor options.",
-    prompt:
-`I want to improve the distractors for this question. Please list the 3 you already provided, then add 10 more plausible distractors that fit the same parameters. Number them 1-13 so I can tell you which ones to keep.`
+    description: "Generate additional plausible distractor options."
   },
   {
     id: "correct_answer_options",
     group: "Question Refinement",
     title: "Refine Correct Answer",
-    description: "Generate alternate versions of the correct answer.",
-    prompt:
-`Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors.`
+    description: "Generate alternate versions of the correct answer."
   },
-
-  // -----------------------------
-  // Pause and Audit
-  // -----------------------------
   {
     id: "pause_review",
     group: "Pause and Audit",
     title: "Review Questions",
-    description: "Show all questions generated so far.",
-    prompt:
-`Pause and show me all of the questions that have been generated so far in this session. Organize them in the same table format as before so I can review them before moving on.`
+    description: "Show all questions generated so far."
   },
   {
     id: "rebalance_content",
     group: "Pause and Audit",
     title: "Topic Coverage Audit",
-    description: "Identify overrepresented and underrepresented subtopics.",
-    prompt:
-`Pause and audit how the questions are balanced between potential subtopics. Please break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance.`
+    description: "Identify overrepresented and underrepresented subtopics."
   },
   {
     id: "core_or_peripheral",
     group: "Pause and Audit",
     title: "Breadth Audit",
-    description: "Classify questions as core or peripheral in focus.",
-    prompt:
-`Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
+    description: "Classify questions as core or peripheral in focus."
+  },
+  {
+    id: "rebalance_question_type",
+    group: "Pause and Audit",
+    title: "Question Type Audit",
+    description: "Analyze the distribution of question types."
+  },
+  {
+    id: "difficulty_audit",
+    group: "Pause and Audit",
+    title: "Difficulty Audit",
+    description: "Analyze the distribution of difficulty levels."
+  },
+  {
+    id: "blooms_taxonomy_audit",
+    group: "Pause and Audit",
+    title: "Bloom’s Level Audit",
+    description: "Analyze the distribution of Bloom’s taxonomy levels."
+  }
+];
+
+/* ==========================================
+   MODEL-SPECIFIC PROMPTS
+   Search for:
+   - PROMPT: STARTER
+   - PROMPT: NEXT_QUESTION
+   - PROMPT: FINAL_PROMPT
+   ========================================== */
+const PROMPTS = {
+  /* ==========================================
+     PROMPT: STARTER
+     ========================================== */
+  starter: {
+    /* MODEL: CHATGPT */
+    chatgpt: `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
+
+1. Class Context (e.g., subject, course objectives, level, etc.): {{COURSE}}
+2. Content Area (specific topic or unit): {{AREA}}
+3. Desired Number of Questions: {{QUESTION_COUNT}}
+4. Additional parameters to consider (if blank, ignore): {{NOTES_LINE}}
+
+I may attach documents (e.g., lecture notes, flashcards, readings) to guide question creation. Use them as a general reference, but do not rely on them exclusively. Try to create a question set that reflects the concepts within the content area that are most relevant to NCLEX and nursing practice.
+
+When outputting the questions, do not use any interactive widgets, quizzes, or UI tools. I want the output strictly in text form and placed in a table format with the following columns:
+1. Question Name: Number of the question, followed by a 4-word descriptive title, followed by four randomly chosen letters.
+2. Question Stem: The question stem.
+3. Correct Answer: The correct answer.
+4. Distractor 1: The first distractor.
+5. Distractor 2: The second distractor.
+6. Distractor 3: The third distractor.
+You will create 1 question at a time. Pause after each one so I can give feedback on the overall format or on individual questions. Once I respond, adjust if requested, or continue with the next question, until I have reached the goal number of questions.
+
+For now, give me the current time, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`,
+    /* MODEL: CLAUDE */
+    claude: `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
+
+1. Class Context (e.g., subject, course objectives, level, etc.): {{COURSE}}
+2. Content Area (specific topic or unit): {{AREA}}
+3. Desired Number of Questions: {{QUESTION_COUNT}}
+4. Additional parameters to consider (if blank, ignore): {{NOTES_LINE}}
+
+I may attach documents (e.g., lecture notes, flashcards, readings) to guide question creation. Use them as a general reference, but do not rely on them exclusively. Try to create a question set that reflects the concepts within the content area that are most relevant to NCLEX and nursing practice.
+
+When outputting the questions, do not use any interactive widgets, quizzes, or UI tools. I want the output strictly in text form and placed in a table format with the following columns:
+1. Question Name: Number of the question, followed by a 4-word descriptive title, followed by four randomly chosen letters.
+2. Question Stem: The question stem.
+3. Correct Answer: The correct answer.
+4. Distractor 1: The first distractor.
+5. Distractor 2: The second distractor.
+6. Distractor 3: The third distractor.
+You will create 1 question at a time. Pause after each one so I can give feedback on the overall format or on individual questions. Once I respond, adjust if requested, or continue with the next question, until I have reached the goal number of questions.
+
+For now, give me the current time, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`,
+    /* MODEL: GEMINI */
+    gemini: `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
+
+1. Class Context (e.g., subject, course objectives, level, etc.): {{COURSE}}
+2. Content Area (specific topic or unit): {{AREA}}
+3. Desired Number of Questions: {{QUESTION_COUNT}}
+4. Additional parameters to consider (if blank, ignore): {{NOTES_LINE}}
+
+I may attach documents (e.g., lecture notes, flashcards, readings) to guide question creation. Use them as a general reference, but do not rely on them exclusively. Try to create a question set that reflects the concepts within the content area that are most relevant to NCLEX and nursing practice.
+
+When outputting the questions, do not use any interactive widgets, quizzes, or UI tools. I want the output strictly in text form and placed in a table format with the following columns:
+1. Question Name: Number of the question, followed by a 4-word descriptive title, followed by four randomly chosen letters.
+2. Question Stem: The question stem.
+3. Correct Answer: The correct answer.
+4. Distractor 1: The first distractor.
+5. Distractor 2: The second distractor.
+6. Distractor 3: The third distractor.
+You will create 1 question at a time. Pause after each one so I can give feedback on the overall format or on individual questions. Once I respond, adjust if requested, or continue with the next question, until I have reached the goal number of questions.
+
+For now, give me the current time, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`,
+    /* MODEL: COPILOT */
+    copilot: `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
+
+1. Class Context (e.g., subject, course objectives, level, etc.): {{COURSE}}
+2. Content Area (specific topic or unit): {{AREA}}
+3. Desired Number of Questions: {{QUESTION_COUNT}}
+4. Additional parameters to consider (if blank, ignore): {{NOTES_LINE}}
+
+I may attach documents (e.g., lecture notes, flashcards, readings) to guide question creation. Use them as a general reference, but do not rely on them exclusively. Try to create a question set that reflects the concepts within the content area that are most relevant to NCLEX and nursing practice.
+
+When outputting the questions, do not use any interactive widgets, quizzes, or UI tools. I want the output strictly in text form and placed in a table format with the following columns:
+1. Question Name: Number of the question, followed by a 4-word descriptive title, followed by four randomly chosen letters.
+2. Question Stem: The question stem.
+3. Correct Answer: The correct answer.
+4. Distractor 1: The first distractor.
+5. Distractor 2: The second distractor.
+6. Distractor 3: The third distractor.
+You will create 1 question at a time. Pause after each one so I can give feedback on the overall format or on individual questions. Once I respond, adjust if requested, or continue with the next question, until I have reached the goal number of questions.
+
+For now, give me the current time, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`,
+    /* MODEL: OTHER */
+    other: `I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
+
+1. Class Context (e.g., subject, course objectives, level, etc.): {{COURSE}}
+2. Content Area (specific topic or unit): {{AREA}}
+3. Desired Number of Questions: {{QUESTION_COUNT}}
+4. Additional parameters to consider (if blank, ignore): {{NOTES_LINE}}
+
+I may attach documents (e.g., lecture notes, flashcards, readings) to guide question creation. Use them as a general reference, but do not rely on them exclusively. Try to create a question set that reflects the concepts within the content area that are most relevant to NCLEX and nursing practice.
+
+When outputting the questions, do not use any interactive widgets, quizzes, or UI tools. I want the output strictly in text form and placed in a table format with the following columns:
+1. Question Name: Number of the question, followed by a 4-word descriptive title, followed by four randomly chosen letters.
+2. Question Stem: The question stem.
+3. Correct Answer: The correct answer.
+4. Distractor 1: The first distractor.
+5. Distractor 2: The second distractor.
+6. Distractor 3: The third distractor.
+You will create 1 question at a time. Pause after each one so I can give feedback on the overall format or on individual questions. Once I respond, adjust if requested, or continue with the next question, until I have reached the goal number of questions.
+
+For now, give me the current time, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`
+  },
+
+  /* ==========================================
+     PROMPT: NEXT_QUESTION
+     ========================================== */
+  next_question: {
+    /* MODEL: CHATGPT */
+    chatgpt: `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`,
+    /* MODEL: CLAUDE */
+    claude: `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`,
+    /* MODEL: GEMINI */
+    gemini: `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`,
+    /* MODEL: COPILOT */
+    copilot: `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`,
+    /* MODEL: OTHER */
+    other: `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`
+  },
+
+  /* ==========================================
+     PROMPT: REPLACE_QUESTION
+     ========================================== */
+  replace_question: {
+    /* MODEL: CHATGPT */
+    chatgpt: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`,
+    /* MODEL: CLAUDE */
+    claude: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`,
+    /* MODEL: GEMINI */
+    gemini: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`,
+    /* MODEL: COPILOT */
+    copilot: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`,
+    /* MODEL: OTHER */
+    other: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic.`
+  },
+
+  /* ==========================================
+     PROMPT: CORRECT_ANSWER_OPTIONS
+     ========================================== */
+  correct_answer_options: {
+    /* MODEL: CHATGPT */
+    chatgpt: `Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors.`,
+    /* MODEL: CLAUDE */
+    claude: `Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors.`,
+    /* MODEL: GEMINI */
+    gemini: `Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors.`,
+    /* MODEL: COPILOT */
+    copilot: `Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors.`,
+    /* MODEL: OTHER */
+    other: `Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors.`
+  },
+
+  /* ==========================================
+     PROMPT: DISTRACTOR_OPTIONS
+     ========================================== */
+  distractor_options: {
+    /* MODEL: CHATGPT */
+    chatgpt: `I want to improve the distractors for this question. Please list the 3 you already provided, then add 10 more plausible distractors that fit the same parameters. Number them 1-13 so I can tell you which ones to keep.`,
+    /* MODEL: CLAUDE */
+    claude: `I want to improve the distractors for this question. Please list the 3 you already provided, then add 10 more plausible distractors that fit the same parameters. Number them 1-13 so I can tell you which ones to keep.`,
+    /* MODEL: GEMINI */
+    gemini: `I want to improve the distractors for this question. Please list the 3 you already provided, then add 10 more plausible distractors that fit the same parameters. Number them 1-13 so I can tell you which ones to keep.`,
+    /* MODEL: COPILOT */
+    copilot: `I want to improve the distractors for this question. Please list the 3 you already provided, then add 10 more plausible distractors that fit the same parameters. Number them 1-13 so I can tell you which ones to keep.`,
+    /* MODEL: OTHER */
+    other: `I want to improve the distractors for this question. Please list the 3 you already provided, then add 10 more plausible distractors that fit the same parameters. Number them 1-13 so I can tell you which ones to keep.`
+  },
+
+  /* ==========================================
+     PROMPT: PAUSE_REVIEW
+     ========================================== */
+  pause_review: {
+    /* MODEL: CHATGPT */
+    chatgpt: `Pause and show me all of the questions that have been generated so far in this session. Organize them in the same table format as before so I can review them before moving on.`,
+    /* MODEL: CLAUDE */
+    claude: `Pause and show me all of the questions that have been generated so far in this session. Organize them in the same table format as before so I can review them before moving on.`,
+    /* MODEL: GEMINI */
+    gemini: `Pause and show me all of the questions that have been generated so far in this session. Organize them in the same table format as before so I can review them before moving on.`,
+    /* MODEL: COPILOT */
+    copilot: `Pause and show me all of the questions that have been generated so far in this session. Organize them in the same table format as before so I can review them before moving on.`,
+    /* MODEL: OTHER */
+    other: `Pause and show me all of the questions that have been generated so far in this session. Organize them in the same table format as before so I can review them before moving on.`
+  },
+
+  /* ==========================================
+     PROMPT: REBALANCE_CONTENT
+     ========================================== */
+  rebalance_content: {
+    /* MODEL: CHATGPT */
+    chatgpt: `Pause and audit how the questions are balanced between potential subtopics. Please break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance.`,
+    /* MODEL: CLAUDE */
+    claude: `Pause and audit how the questions are balanced between potential subtopics. Please break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance.`,
+    /* MODEL: GEMINI */
+    gemini: `Pause and audit how the questions are balanced between potential subtopics. Please break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance.`,
+    /* MODEL: COPILOT */
+    copilot: `Pause and audit how the questions are balanced between potential subtopics. Please break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance.`,
+    /* MODEL: OTHER */
+    other: `Pause and audit how the questions are balanced between potential subtopics. Please break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance.`
+  },
+
+  /* ==========================================
+     PROMPT: CORE_OR_PERIPHERAL
+     ========================================== */
+  core_or_peripheral: {
+    /* MODEL: CHATGPT */
+    chatgpt: `Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
+Core: The most common, obvious, first-line, or 'go-to' fact or intervention.
+Peripheral: A less obvious but still clinically important area.
+
+Provide the results in a table with the following columns:
+1. Question Number
+2. Focus: Core or Peripheral
+3. Topic Covered: 2–4 words only
+4. Suggestion: If the question is core, suggest one peripheral angle within the same content area that has not yet been tested.`,
+    /* MODEL: CLAUDE */
+    claude: `Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
+Core: The most common, obvious, first-line, or 'go-to' fact or intervention.
+Peripheral: A less obvious but still clinically important area.
+
+Provide the results in a table with the following columns:
+1. Question Number
+2. Focus: Core or Peripheral
+3. Topic Covered: 2–4 words only
+4. Suggestion: If the question is core, suggest one peripheral angle within the same content area that has not yet been tested.`,
+    /* MODEL: GEMINI */
+    gemini: `Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
+Core: The most common, obvious, first-line, or 'go-to' fact or intervention.
+Peripheral: A less obvious but still clinically important area.
+
+Provide the results in a table with the following columns:
+1. Question Number
+2. Focus: Core or Peripheral
+3. Topic Covered: 2–4 words only
+4. Suggestion: If the question is core, suggest one peripheral angle within the same content area that has not yet been tested.`,
+    /* MODEL: COPILOT */
+    copilot: `Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
+Core: The most common, obvious, first-line, or 'go-to' fact or intervention.
+Peripheral: A less obvious but still clinically important area.
+
+Provide the results in a table with the following columns:
+1. Question Number
+2. Focus: Core or Peripheral
+3. Topic Covered: 2–4 words only
+4. Suggestion: If the question is core, suggest one peripheral angle within the same content area that has not yet been tested.`,
+    /* MODEL: OTHER */
+    other: `Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
 Core: The most common, obvious, first-line, or 'go-to' fact or intervention.
 Peripheral: A less obvious but still clinically important area.
 
@@ -1052,31 +1328,121 @@ Provide the results in a table with the following columns:
 3. Topic Covered: 2–4 words only
 4. Suggestion: If the question is core, suggest one peripheral angle within the same content area that has not yet been tested.`
   },
-  {
-    id: "rebalance_question_type",
-    group: "Pause and Audit",
-    title: "Question Type Audit",
-    description: "Analyze the distribution of question types.",
-    prompt:
-`I would like to pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I rebalance the types of questions.`
+
+  /* ==========================================
+     PROMPT: REBALANCE_QUESTION_TYPE
+     ========================================== */
+  rebalance_question_type: {
+    /* MODEL: CHATGPT */
+    chatgpt: `I would like to pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I rebalance the types of questions.`,
+    /* MODEL: CLAUDE */
+    claude: `I would like to pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I rebalance the types of questions.`,
+    /* MODEL: GEMINI */
+    gemini: `I would like to pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I rebalance the types of questions.`,
+    /* MODEL: COPILOT */
+    copilot: `I would like to pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I rebalance the types of questions.`,
+    /* MODEL: OTHER */
+    other: `I would like to pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I rebalance the types of questions.`
   },
-  {
-    id: "difficulty_audit",
-    group: "Pause and Audit",
-    title: "Difficulty Audit",
-    description: "Analyze the distribution of difficulty levels.",
-    prompt:
-`Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix.`
+
+  /* ==========================================
+     PROMPT: DIFFICULTY_AUDIT
+     ========================================== */
+  difficulty_audit: {
+    /* MODEL: CHATGPT */
+    chatgpt: `Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix.`,
+    /* MODEL: CLAUDE */
+    claude: `Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix.`,
+    /* MODEL: GEMINI */
+    gemini: `Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix.`,
+    /* MODEL: COPILOT */
+    copilot: `Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix.`,
+    /* MODEL: OTHER */
+    other: `Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix.`
   },
-  {
-    id: "blooms_taxonomy_audit",
-    group: "Pause and Audit",
-    title: "Bloom’s Level Audit",
-    description: "Analyze the distribution of Bloom’s taxonomy levels.",
-    prompt:
-`Please pause and audit my current MCQ set for Bloom’s taxonomy alignment. For each question, assign the primary level (Remember, Understand, Apply, Analyze, Evaluate, or Create). Show me the counts and percentages in each category. Then, suggest underrepresented levels and give me ideas for how to add or revise questions to cover them.`
+
+  /* ==========================================
+     PROMPT: BLOOMS_TAXONOMY_AUDIT
+     ========================================== */
+  blooms_taxonomy_audit: {
+    /* MODEL: CHATGPT */
+    chatgpt: `Please pause and audit my current MCQ set for Bloom’s taxonomy alignment. For each question, assign the primary level (Remember, Understand, Apply, Analyze, Evaluate, or Create). Show me the counts and percentages in each category. Then, suggest underrepresented levels and give me ideas for how to add or revise questions to cover them.`,
+    /* MODEL: CLAUDE */
+    claude: `Please pause and audit my current MCQ set for Bloom’s taxonomy alignment. For each question, assign the primary level (Remember, Understand, Apply, Analyze, Evaluate, or Create). Show me the counts and percentages in each category. Then, suggest underrepresented levels and give me ideas for how to add or revise questions to cover them.`,
+    /* MODEL: GEMINI */
+    gemini: `Please pause and audit my current MCQ set for Bloom’s taxonomy alignment. For each question, assign the primary level (Remember, Understand, Apply, Analyze, Evaluate, or Create). Show me the counts and percentages in each category. Then, suggest underrepresented levels and give me ideas for how to add or revise questions to cover them.`,
+    /* MODEL: COPILOT */
+    copilot: `Please pause and audit my current MCQ set for Bloom’s taxonomy alignment. For each question, assign the primary level (Remember, Understand, Apply, Analyze, Evaluate, or Create). Show me the counts and percentages in each category. Then, suggest underrepresented levels and give me ideas for how to add or revise questions to cover them.`,
+    /* MODEL: OTHER */
+    other: `Please pause and audit my current MCQ set for Bloom’s taxonomy alignment. For each question, assign the primary level (Remember, Understand, Apply, Analyze, Evaluate, or Create). Show me the counts and percentages in each category. Then, suggest underrepresented levels and give me ideas for how to add or revise questions to cover them.`
+  },
+
+  /* ==========================================
+     PROMPT: FINAL_PROMPT
+     ========================================== */
+  final_prompt: {
+    /* MODEL: CHATGPT */
+    chatgpt: `Please provide a full table of questions.
+
+Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
+1. Question Number
+2. Difficulty – Classify as Easy, Moderate, or Hard.
+3. Bloom’s Level – Classify as Remember, Understand, Apply, Analyze, Evaluate, or Create.
+4. Question Type – 1–2 words (e.g., Assessment, Prioritization, Delegation, Teaching, Pharmacology).
+5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
+
+After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.
+After that list, give me the current time.`,
+    /* MODEL: CLAUDE */
+    claude: `Please provide a full table of questions.
+
+Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
+1. Question Number
+2. Difficulty – Classify as Easy, Moderate, or Hard.
+3. Bloom’s Level – Classify as Remember, Understand, Apply, Analyze, Evaluate, or Create.
+4. Question Type – 1–2 words (e.g., Assessment, Prioritization, Delegation, Teaching, Pharmacology).
+5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
+
+After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.
+After that list, give me the current time.`,
+    /* MODEL: GEMINI */
+    gemini: `Please provide a full table of questions.
+
+Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
+1. Question Number
+2. Difficulty – Classify as Easy, Moderate, or Hard.
+3. Bloom’s Level – Classify as Remember, Understand, Apply, Analyze, Evaluate, or Create.
+4. Question Type – 1–2 words (e.g., Assessment, Prioritization, Delegation, Teaching, Pharmacology).
+5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
+
+After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.
+After that list, give me the current time.`,
+    /* MODEL: COPILOT */
+    copilot: `Please provide a full table of questions.
+
+Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
+1. Question Number
+2. Difficulty – Classify as Easy, Moderate, or Hard.
+3. Bloom’s Level – Classify as Remember, Understand, Apply, Analyze, Evaluate, or Create.
+4. Question Type – 1–2 words (e.g., Assessment, Prioritization, Delegation, Teaching, Pharmacology).
+5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
+
+After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.
+After that list, give me the current time.`,
+    /* MODEL: OTHER */
+    other: `Please provide a full table of questions.
+
+Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
+1. Question Number
+2. Difficulty – Classify as Easy, Moderate, or Hard.
+3. Bloom’s Level – Classify as Remember, Understand, Apply, Analyze, Evaluate, or Create.
+4. Question Type – 1–2 words (e.g., Assessment, Prioritization, Delegation, Teaching, Pharmacology).
+5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
+
+After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.
+After that list, give me the current time.`
   }
-];
+};
 
     // -----------------------------
     // Storage keys
@@ -1084,6 +1450,8 @@ Provide the results in a table with the following columns:
     const KEYS = {
       accessVerified: "dissertation.accessVerified",
       accessCode: "dissertation.accessCode",
+      participantId: "dissertation.participantId",
+      clientKey: "dissertation.clientKey",
       sessionId: "dissertation.sessionId",
       sessionStartTime: "dissertation.sessionStartTime",
       modelUsed: "dissertation.modelUsed",
@@ -1107,12 +1475,14 @@ Provide the results in a table with the following columns:
       timerPaused: "dissertation.timerPaused",
       timerWarned35: "dissertation.timerWarned35",
       timerWarned40: "dissertation.timerWarned40",
+      trainingTenMinuteNoticeShown: "dissertation.trainingTenMinuteNoticeShown",
       submissionAttempted: "dissertation.submissionAttempted",
       submissionStatus: "dissertation.submissionStatus",
       submissionCompletedAt: "dissertation.submissionCompletedAt",
       submissionError: "dissertation.submissionError",
       appsScriptResponseFileName: "dissertation.appsScriptResponseFileName",
-      appsScriptResponseFileId: "dissertation.appsScriptResponseFileId"
+      appsScriptResponseFileId: "dissertation.appsScriptResponseFileId",
+      autosaveEventIndex: "dissertation.autosaveEventIndex"
     };
 
     // -----------------------------
@@ -1120,6 +1490,21 @@ Provide the results in a table with the following columns:
     // -----------------------------
     const $ = (id) => document.getElementById(id);
     const nowIso = () => new Date().toISOString();
+    const isTrainingMode = new URLSearchParams(location.search).get("mode") === "training";
+
+    function getSelectedModelKey() {
+      const selectedProduct = localStorage.getItem(KEYS.llmProduct)
+        || normalizeLlmProduct(localStorage.getItem(KEYS.modelUsed) || "")
+        || "other";
+      return ["chatgpt", "claude", "gemini", "copilot", "other"].includes(selectedProduct)
+        ? selectedProduct
+        : "other";
+    }
+
+    function getPromptText(promptId) {
+      const modelKey = getSelectedModelKey();
+      return PROMPTS[promptId]?.[modelKey] || "";
+    }
 
     // Most recently copied state (desktop sidebar)
     let lastCopiedText = "";
@@ -1128,6 +1513,17 @@ Provide the results in a table with the following columns:
     let sessionTimerIntervalId = null;
     let llmMismatchReported = false;
     let llmMismatchAlertAttempted = false;
+
+    // Optional audio feedback recorder state (kept centralized for easy end-session integration later).
+    let currentAudioStream = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioBlob = null;
+    let audioUrl = "";
+    let audioSubmitted = false;
+    let audioDuration = 0;
+    let uploadedAudioInfo = null;
+    let audioStartedAt = null;
 
     function hideToast() {
       const t = $("toast");
@@ -1173,11 +1569,83 @@ Provide the results in a table with the following columns:
       return (s || "").trim().toLowerCase();
     }
 
+    function getOrCreateClientKey() {
+      const existing = localStorage.getItem(KEYS.clientKey);
+      if (existing) return existing;
+      const generated = "ck_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem(KEYS.clientKey, generated);
+      return generated;
+    }
+
     function loadJSON(key, fallback) {
       try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
       catch { return fallback; }
     }
     function saveJSON(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+    function getAppVersion() {
+      // appVersion comes from the visible Last updated text in the footer.
+      const el = document.getElementById("lastUpdated");
+      return el ? el.textContent.trim() : "";
+    }
+
+    function buildAutosave(eventType, extra = {}) {
+      const sessionId = localStorage.getItem(KEYS.sessionId) || "";
+      if (!sessionId) {
+        console.warn("Autosave skipped: no sessionId");
+        return null;
+      }
+
+      // Tracks event order within a session.
+      const nextEventIndex = (Number(localStorage.getItem(KEYS.autosaveEventIndex) || "0") || 0) + 1;
+      localStorage.setItem(KEYS.autosaveEventIndex, String(nextEventIndex));
+
+      const modeParam = new URLSearchParams(window.location.search).get("mode");
+      const ctx = getContext();
+      const details = extra.details && typeof extra.details === "object" ? extra.details : {};
+      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
+      const mismatchDescription = (($("llmMismatchDescription")?.value || localStorage.getItem(KEYS.llmMismatchDescription) || "")).trim();
+      const otherDescription = (localStorage.getItem(KEYS.llmOtherDescription) || "").trim();
+      const versionValue = expectedChoice || otherDescription || "";
+
+      const payload = {
+        sessionId,
+        mode: modeParam || "standard",
+        accessCode: localStorage.getItem(KEYS.accessCode) || "",
+        eventIndex: nextEventIndex,
+        eventType,
+        promptName: extra.promptName || "",
+        product: localStorage.getItem(KEYS.llmProduct) || localStorage.getItem(KEYS.modelUsed) || "",
+        version: versionValue,
+        llmMismatchDescription: mismatchDescription,
+        desiredQuestions: ctx.questionCount || "",
+        courseContext: ctx.course || "",
+        questionContext: ctx.area || "",
+        extraInstructions: ($("ctxNotes")?.value || "").trim(),
+        currentStage: getStage(),
+        finalLlmResponse: ($("llmResponse")?.value || "").trim(),
+        sessionNotes: ($("sessionNotes")?.value || "").trim(),
+        details,
+        appVersion: getAppVersion()
+      };
+      console.log("Autosave payload built", payload);
+      return payload;
+    }
+
+    // Background autosave only: do not block UI actions on this network call.
+    function sendAutosave(payload) {
+      if (!payload) return;
+      console.log("Sending autosave", payload);
+      fetch(AUTOSAVE_URL, {
+        method: "POST",
+        body: new URLSearchParams({
+          payload: JSON.stringify(payload)
+        })
+      })
+        .then(r => r.text())
+        .then(text => console.log("Autosave response", text))
+        .catch(err => console.error("Autosave failed", err));
+    }
 
     function logEvent(type, data = {}) {
       const events = loadJSON(KEYS.events, []);
@@ -1205,8 +1673,7 @@ Provide the results in a table with the following columns:
       saveJSON(KEYS.events, events);
     }
 
-    const TIMER_35_MIN_MS = 35 * 60 * 1000;
-    const TIMER_40_MIN_MS = 40 * 60 * 1000;
+    const TIMER_TRAINING_NOTICE_10_MIN_MS = 10 * 60 * 1000;
 
     function formatElapsed(ms) {
       const totalSeconds = Math.max(0, Math.floor((ms || 0) / 1000));
@@ -1242,14 +1709,14 @@ Provide the results in a table with the following columns:
     }
 
     function initializeSessionTimerIfNeeded() {
+      if (!isTrainingMode) return;
       const startedAt = localStorage.getItem(KEYS.timerStartedAt);
       const elapsed = localStorage.getItem(KEYS.timerElapsedBeforePause);
       const paused = localStorage.getItem(KEYS.timerPaused);
 
       if (!elapsed) localStorage.setItem(KEYS.timerElapsedBeforePause, "0");
       if (!paused) localStorage.setItem(KEYS.timerPaused, "false");
-      if (!localStorage.getItem(KEYS.timerWarned35)) localStorage.setItem(KEYS.timerWarned35, "false");
-      if (!localStorage.getItem(KEYS.timerWarned40)) localStorage.setItem(KEYS.timerWarned40, "false");
+      if (!localStorage.getItem(KEYS.trainingTenMinuteNoticeShown)) localStorage.setItem(KEYS.trainingTenMinuteNoticeShown, "false");
 
       const isPaused = localStorage.getItem(KEYS.timerPaused) === "true";
       if (!startedAt && !isPaused) {
@@ -1260,62 +1727,6 @@ Provide the results in a table with the following columns:
       restoreTimerButtonState();
     }
 
-
-    function resetSubmissionMeta() {
-      localStorage.setItem(KEYS.submissionAttempted, "false");
-      localStorage.setItem(KEYS.submissionStatus, "unknown");
-      localStorage.setItem(KEYS.submissionCompletedAt, "");
-      localStorage.setItem(KEYS.submissionError, "");
-      localStorage.setItem(KEYS.appsScriptResponseFileName, "");
-      localStorage.setItem(KEYS.appsScriptResponseFileId, "");
-    }
-
-    function setSubmissionMeta({
-      attempted,
-      status,
-      completedAt,
-      error,
-      fileName,
-      fileId
-    } = {}) {
-      if (typeof attempted === "boolean") localStorage.setItem(KEYS.submissionAttempted, attempted ? "true" : "false");
-      if (typeof status === "string") localStorage.setItem(KEYS.submissionStatus, status || "unknown");
-      if (typeof completedAt === "string") localStorage.setItem(KEYS.submissionCompletedAt, completedAt);
-      if (typeof error === "string") localStorage.setItem(KEYS.submissionError, error);
-      if (typeof fileName === "string") localStorage.setItem(KEYS.appsScriptResponseFileName, fileName);
-      if (typeof fileId === "string") localStorage.setItem(KEYS.appsScriptResponseFileId, fileId);
-    }
-
-    function ensureSubmissionRecordConsistency() {
-      const events = loadJSON(KEYS.events, []);
-      const hasSubmitFormClicked = events.some((e) => e?.type === "submit_form_clicked");
-      const submitClicked = localStorage.getItem(KEYS.submitClicked) === "true";
-
-      if (hasSubmitFormClicked && !submitClicked) {
-        localStorage.setItem(KEYS.submitClicked, "true");
-      }
-
-      if (localStorage.getItem(KEYS.submissionAttempted) !== "true" && (hasSubmitFormClicked || submitClicked)) {
-        localStorage.setItem(KEYS.submissionAttempted, "true");
-      }
-
-      if (!localStorage.getItem(KEYS.submissionStatus)) {
-        localStorage.setItem(KEYS.submissionStatus, "unknown");
-      }
-      if (!localStorage.getItem(KEYS.submissionCompletedAt)) {
-        localStorage.setItem(KEYS.submissionCompletedAt, "");
-      }
-      if (!localStorage.getItem(KEYS.submissionError)) {
-        localStorage.setItem(KEYS.submissionError, "");
-      }
-      if (!localStorage.getItem(KEYS.appsScriptResponseFileName)) {
-        localStorage.setItem(KEYS.appsScriptResponseFileName, "");
-      }
-      if (!localStorage.getItem(KEYS.appsScriptResponseFileId)) {
-        localStorage.setItem(KEYS.appsScriptResponseFileId, "");
-      }
-    }
-
     function updateSessionTimer() {
       const display = $("sessionTimerDisplay");
       const card = $("sessionTimerCard");
@@ -1324,45 +1735,66 @@ Provide the results in a table with the following columns:
       const elapsed = getTimerElapsedMs();
       display.textContent = formatElapsed(elapsed);
 
-      if (elapsed >= TIMER_35_MIN_MS && localStorage.getItem(KEYS.timerWarned35) !== "true") {
-        localStorage.setItem(KEYS.timerWarned35, "true");
-        showTimerNotice("5 minutes remaining in the task window. If your question set is close to 10 questions, you may want to finish your current item and run any final audits.");
-        logEvent("timer_35min_warning");
+      if (!isTrainingMode) {
+        restoreTimerButtonState();
+        return;
       }
 
-      if (elapsed >= TIMER_40_MIN_MS) {
-        card.classList.add("timerComplete");
-        if (localStorage.getItem(KEYS.timerWarned40) !== "true") {
-          localStorage.setItem(KEYS.timerWarned40, "true");
-          showTimerNotice("You have reached 40 minutes. If your question set is complete (about 10 usable questions), you may stop. You may also continue working if needed.");
-          logEvent("timer_40min_notice");
-        }
-      } else {
-        card.classList.remove("timerComplete");
+      if (elapsed >= TIMER_TRAINING_NOTICE_10_MIN_MS && localStorage.getItem(KEYS.trainingTenMinuteNoticeShown) !== "true") {
+        localStorage.setItem(KEYS.trainingTenMinuteNoticeShown, "true");
+        showTimerNotice("By this point, you have probably spent enough time practicing to understand how the app works. If you’d like to keep working on your questions, that’s perfectly fine, but feel free to finish the activity now, even if you don't have all 5 questions fully refined.");
+        console.log("10-minute training notice shown");
       }
 
       restoreTimerButtonState();
     }
 
     function startSessionTimerLoop() {
+      if (!isTrainingMode) return;
       if (sessionTimerIntervalId) clearInterval(sessionTimerIntervalId);
       sessionTimerIntervalId = setInterval(updateSessionTimer, 1000);
       updateSessionTimer();
     }
 
     function handlePauseResumeTimer() {
+      if (!isTrainingMode) return;
       const paused = localStorage.getItem(KEYS.timerPaused) === "true";
       if (paused) {
         localStorage.setItem(KEYS.timerStartedAt, String(Date.now()));
         localStorage.setItem(KEYS.timerPaused, "false");
         logEvent("timer_resumed");
+        sendAutosave(buildAutosave("timer_resumed"));
       } else {
         localStorage.setItem(KEYS.timerElapsedBeforePause, String(getTimerElapsedMs()));
         localStorage.removeItem(KEYS.timerStartedAt);
         localStorage.setItem(KEYS.timerPaused, "true");
         logEvent("timer_paused");
+        sendAutosave(buildAutosave("timer_paused"));
       }
       updateSessionTimer();
+    }
+
+
+    function configureTrainingTipsUI() {
+      const tipIds = ["trainingTopNote", "trainingTipCourseContext", "trainingTipMismatch"];
+      tipIds.forEach((id) => {
+        const el = $(id);
+        if (!el) return;
+        el.style.display = isTrainingMode ? "block" : "none";
+      });
+    }
+
+    function configureTimerModeUI() {
+      const timerCard = $("sessionTimerCard");
+      const timerNotice = $("timerNotice");
+      if (!isTrainingMode) {
+        if (timerCard) timerCard.style.display = "none";
+        if (timerNotice) timerNotice.style.display = "none";
+        hideTimerNotice();
+        return;
+      }
+      if (timerCard) timerCard.style.display = "";
+      console.log("Training mode timer enabled");
     }
 
     function makeSessionId(participantCode) {
@@ -1688,13 +2120,10 @@ Provide the results in a table with the following columns:
 
     function updateFinalizeContentUI() {
       const copied = localStorage.getItem(KEYS.finalPromptCopied) === "true";
-      const submitted = localStorage.getItem(KEYS.submitClicked) === "true";
       const notice = $("finalizeCopyNotice");
       const lockedArea = $("finalizeLockedArea");
-      const formFailed = $("formFailedDetails");
       const endRow = $("endSessionRow");
-      const reviseBtn = $("btnReviseAfterSubmit");
-      const submitBtn = $("btnSubmitForm");
+      const endTip = $("trainingTipEndSession");
       const llm = $("llmResponse");
 
       if (notice) {
@@ -1721,11 +2150,22 @@ Provide the results in a table with the following columns:
         lockedArea.classList.toggle("finalizeLockedContent", !copied);
       }
       if (llm) llm.disabled = !copied;
-      const hasResponse = !!((llm?.value || "").trim());
-      if (submitBtn) submitBtn.disabled = !copied || !hasResponse;
-      if (formFailed) formFailed.style.display = copied && submitted ? "block" : "none";
-      if (reviseBtn) reviseBtn.style.display = copied && submitted ? "inline-flex" : "none";
-      if (endRow) endRow.style.display = copied && submitted ? "flex" : "none";
+      if (endRow) endRow.style.display = copied ? "flex" : "none";
+      updateEndSessionState();
+      // End Session training tip is shown only when the End Session section is visible.
+      if (endTip) endTip.style.display = isTrainingMode && copied ? "block" : "none";
+    }
+
+
+    function canEndSession() {
+      return !!(($("llmResponse")?.value || "").trim());
+    }
+
+    function updateEndSessionState() {
+      const btn = $("btnEndSession");
+      if (!btn) return;
+      btn.disabled = false;
+      btn.classList.toggle("pseudo-disabled", !canEndSession());
     }
 
     function clearSessionData() {
@@ -1743,60 +2183,29 @@ Provide the results in a table with the following columns:
       const startIso = localStorage.getItem(KEYS.sessionStartTime);
       const started = startIso ? new Date(startIso).toLocaleString() : "—";
       const last = document.lastModified || "—";
-      $("buildInfo").textContent = `Participant: ${code} • Started: ${started} • Last updated: ${last}`;
+      const footer = $("buildInfo");
+      if (!footer) return;
+      footer.innerHTML = `Participant: ${code} • Started: ${started} • <span id="lastUpdated">Last updated: ${last}</span>`;
     }
 
     // -----------------------------
     // Build starter/final prompts
     // -----------------------------
     function buildStarterPrompt() {
-      const code = localStorage.getItem(KEYS.accessCode) || "—";
-      const sid = localStorage.getItem(KEYS.sessionId) || "—";
-      const model = localStorage.getItem(KEYS.modelUsed) || "—";
       const ctx = getContext();
-
       const notesLine = (ctx.notes || "").trim()
         ? `Additional instructions/parameters: ${ctx.notes.trim()}`
         : `Additional instructions/parameters: (none)`;
-
-      return (
-`I am a nursing school instructor, and I would like your help in writing multiple-choice exam questions for my class. Consider the following:
-
-1. Class Context (e.g., subject, course objectives, level, etc.): ${ctx.course || "(not provided)"}
-2. Content Area (specific topic or unit): ${ctx.area || "(not provided)"}
-3. Desired Number of Questions: ${ctx.questionCount || "10"}
-4. Additional parameters to consider (if blank, ignore): ${notesLine}
-
-I may attach documents (e.g., lecture notes, flashcards, readings) to guide question creation. Use them as a general reference, but do not rely on them exclusively. Try to create a question set that reflects the concepts within the content area that are most relevant to NCLEX and nursing practice.
-
-When outputting the questions, do not use any interactive widgets, quizzes, or UI tools. I want the output strictly in text form and placed in a table format with the following columns:
-1. Question Name: Number of the question, followed by a 4-word descriptive title, followed by four randomly chosen letters.
-2. Question Stem: The question stem.
-3. Correct Answer: The correct answer.
-4. Distractor 1: The first distractor.
-5. Distractor 2: The second distractor.
-6. Distractor 3: The third distractor.
-You will create 1 question at a time. Pause after each one so I can give feedback on the overall format or on individual questions. Once I respond, adjust if requested, or continue with the next question, until I have reached the goal number of questions.
-
-For now, give me the current time, present a tentative plan for all of the questions with their subtopics, and then ask me if I would like to make any adjustments before you begin creating them.`
-      );
+      const template = getPromptText("starter");
+      return template
+        .replaceAll("{{COURSE}}", ctx.course || "(not provided)")
+        .replaceAll("{{AREA}}", ctx.area || "(not provided)")
+        .replaceAll("{{QUESTION_COUNT}}", ctx.questionCount || "10")
+        .replaceAll("{{NOTES_LINE}}", notesLine);
     }
 
     function buildFinalPrompt() {
-      const sid = localStorage.getItem(KEYS.sessionId) || "—";
-      return (
-`Please provide a full table of questions.
-
-Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
-1. Question Number
-2. Difficulty – Classify as Easy, Moderate, or Hard.
-3. Bloom’s Level – Classify as Remember, Understand, Apply, Analyze, Evaluate, or Create.
-4. Question Type – 1–2 words (e.g., Assessment, Prioritization, Delegation, Teaching, Pharmacology).
-5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
-
-After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.
-After that list, give me the current time.`
-      );
+      return getPromptText("final_prompt");
     }
 
     function fillTemplate(template) {
@@ -1811,6 +2220,231 @@ After that list, give me the current time.`
         .replaceAll("{{NOTES_LINE}}", notesLine);
     }
 
+
+    // Audio recorder status text renderer.
+    function setAudioFeedbackStatus(message) {
+      const el = $("btnAudioState");
+      if (el) el.textContent = message;
+    }
+
+    // Release object URL whenever a recording is replaced.
+    function releaseAudioFeedbackUrl() {
+      if (!audioUrl) return;
+      URL.revokeObjectURL(audioUrl);
+      audioUrl = "";
+    }
+
+    // Stop current microphone stream tracks.
+    function stopAudioFeedbackStream() {
+      if (!currentAudioStream) return;
+      currentAudioStream.getTracks().forEach((track) => track.stop());
+      currentAudioStream = null;
+    }
+
+    // Keep recorder UI updates in one place for maintainability.
+    function updateAudioRecorderUI() {
+      const recorderState = mediaRecorder?.state || "inactive";
+      const hasRecording = !!audioBlob;
+      const controlsRow = $("audioPrimaryControls");
+      const playbackRow = $("audioPlaybackRow");
+      const startBtn = $("btnAudioStart");
+      const stateBtn = $("btnAudioState");
+      const pauseResumeBtn = $("btnAudioPauseResume");
+      const stopBtn = $("btnAudioStop");
+      const submitBtn = $("btnAudioSubmit");
+
+      const showInitial = recorderState === "inactive" && !hasRecording;
+      const showActive = recorderState === "recording" || recorderState === "paused";
+      const showStopped = recorderState === "inactive" && hasRecording;
+
+      if (controlsRow) controlsRow.style.display = (showInitial || showActive) ? "flex" : "none";
+      if (startBtn) startBtn.style.display = showInitial ? "inline-flex" : "none";
+
+      if (stateBtn) {
+        stateBtn.style.display = showActive ? "inline-flex" : "none";
+        stateBtn.textContent = recorderState === "paused" ? "Paused" : "Recording";
+      }
+
+      if (pauseResumeBtn) {
+        pauseResumeBtn.style.display = showActive ? "inline-flex" : "none";
+        pauseResumeBtn.textContent = recorderState === "paused" ? "Resume" : "Pause";
+      }
+
+      if (stopBtn) stopBtn.style.display = showActive ? "inline-flex" : "none";
+      if (playbackRow) playbackRow.style.display = showStopped ? "flex" : "none";
+      if (submitBtn) submitBtn.disabled = !hasRecording || audioSubmitted;
+    }
+
+    function clearAudioRecorderState({ keepSubmitted = false } = {}) {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      }
+      mediaRecorder = null;
+      stopAudioFeedbackStream();
+      releaseAudioFeedbackUrl();
+      audioChunks = [];
+      audioBlob = null;
+      audioDuration = 0;
+      audioStartedAt = null;
+      uploadedAudioInfo = null;
+      if (!keepSubmitted) audioSubmitted = false;
+
+      const player = $("audioFeedbackPlayer");
+      if (player) {
+        player.pause();
+        player.removeAttribute("src");
+        player.load();
+      }
+    }
+
+    async function startAudioRecording() {
+      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+        toast("Audio recording is not supported in this browser.");
+        return;
+      }
+      try {
+        clearAudioRecorderState();
+        currentAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(currentAudioStream);
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+          audioDuration = audioStartedAt ? Math.max(0, Date.now() - audioStartedAt) : 0;
+          releaseAudioFeedbackUrl();
+          audioUrl = URL.createObjectURL(audioBlob);
+          const player = $("audioFeedbackPlayer");
+          if (player) {
+            player.src = audioUrl;
+            player.load();
+          }
+          stopAudioFeedbackStream();
+          updateAudioRecorderUI();
+        };
+
+        audioStartedAt = Date.now();
+        audioSubmitted = false;
+        uploadedAudioInfo = null;
+        mediaRecorder.start();
+        updateAudioRecorderUI();
+      } catch (err) {
+        console.error("Audio recording start failed", err);
+        toast("Microphone permission or recording start failed.");
+        clearAudioRecorderState();
+        updateAudioRecorderUI();
+      }
+    }
+
+    function togglePauseResumeAudioRecording() {
+      if (!mediaRecorder) return;
+      if (mediaRecorder.state === "recording") {
+        mediaRecorder.pause();
+      } else if (mediaRecorder.state === "paused") {
+        mediaRecorder.resume();
+      }
+      updateAudioRecorderUI();
+    }
+
+    function stopAudioRecording() {
+      if (!mediaRecorder || mediaRecorder.state === "inactive") return;
+      mediaRecorder.stop();
+    }
+
+    function sanitizeFilenamePart(value) {
+      return (value || "")
+        .toString()
+        .trim()
+        .replace(/[^a-zA-Z0-9_-]+/g, "_")
+        .replace(/^_+|_+$/g, "") || "user";
+    }
+
+    function getYYMMDD(date = new Date()) {
+      const yy = String(date.getFullYear()).slice(-2);
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
+      return `${yy}${mm}${dd}`;
+    }
+
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const raw = String(reader.result || "");
+          const base64 = raw.includes(",") ? raw.split(",")[1] : raw;
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    // Upload flow (Apps Script action=uploadAudio).
+    async function submitAudioRecording() {
+      if (!audioBlob) return;
+
+      const accessCode = localStorage.getItem(KEYS.accessCode) || "participant";
+      const sessionId = localStorage.getItem(KEYS.sessionId) || "session";
+      const safeUser = sanitizeFilenamePart(accessCode);
+      const safeSession = sanitizeFilenamePart(sessionId);
+      // filename format: username_YYMMDD_sessionID.ext
+      const ext = (audioBlob.type || "").includes("ogg") ? "ogg" : "webm";
+      const filename = `${safeUser}_${getYYMMDD()}_${safeSession}.${ext}`;
+
+      try {
+        const audioBase64 = await blobToBase64(audioBlob);
+        const body = new URLSearchParams({
+          action: "uploadAudio",
+          filename,
+          mimeType: audioBlob.type || `audio/${ext}`,
+          audioBase64
+        });
+
+        const response = await fetch(AUTOSAVE_URL, {
+          method: "POST",
+          body
+        });
+        const text = await response.text();
+        let data = {};
+        try { data = JSON.parse(text); } catch { data = { raw: text }; }
+
+        if (!response.ok || data.ok === false) {
+          throw new Error(data.error || `Upload failed (${response.status})`);
+        }
+
+        uploadedAudioInfo = {
+          audioFilename: data.filename || filename,
+          audioFileId: data.fileId || data.audioFileId || "",
+          audioFileUrl: data.fileUrl || data.audioFileUrl || "",
+          audioMimeType: audioBlob.type || `audio/${ext}`,
+          audioDuration: audioDuration
+        };
+
+        audioSubmitted = true;
+        updateAudioRecorderUI();
+        toast("Audio submitted ✅");
+      } catch (err) {
+        console.error("Audio upload failed", err);
+        toast("Audio upload failed. Please try again.");
+      }
+    }
+
+    async function initializeAudioFeedbackUI() {
+      if (!$("btnAudioStart")) return;
+      updateAudioRecorderUI();
+
+      $("btnAudioStart").addEventListener("click", () => { startAudioRecording(); });
+      $("btnAudioPauseResume").addEventListener("click", togglePauseResumeAudioRecording);
+      $("btnAudioStop").addEventListener("click", stopAudioRecording);
+      $("btnAudioSubmit").addEventListener("click", () => { submitAudioRecording(); });
+      $("btnAudioDelete").addEventListener("click", () => {
+        clearAudioRecorderState();
+        updateAudioRecorderUI();
+      });
+    }
 
     function makeCopyIconButton({ id = "", label = "Copy prompt", title = "Copy prompt", className = "copyIconBtn" } = {}) {
       const btn = document.createElement("button");
@@ -2090,7 +2724,7 @@ After that list, give me the current time.`
       groupedPrompts.forEach((group) => {
         if (!group.container) return;
         group.items.forEach((id) => {
-          const prompt = PROMPTS.find((p) => p.id === id);
+          const prompt = PROMPT_META.find((p) => p.id === id);
           if (!prompt) return;
           group.container.appendChild(makePromptCard(prompt));
         });
@@ -2106,14 +2740,15 @@ After that list, give me the current time.`
         const id = btn.dataset.id;
         if (action !== "copy" || !id) return;
 
-        const prompt = PROMPTS.find((x) => x.id === id);
+        const prompt = PROMPT_META.find((x) => x.id === id);
         if (!prompt) return;
 
-        const promptText = fillTemplate(prompt.prompt);
+        const promptText = fillTemplate(getPromptText(id));
         showCopiedState(btn);
         const ok = await copyToClipboard(promptText, prompt.title);
         if (ok) {
           logEvent("prompt_copied", { promptId: id });
+          sendAutosave(buildAutosave("prompt_copied", { promptName: id, details: { promptId: id, promptTitle: prompt.title } }));
           btn.classList.add("isActive");
           if (btn._activeTimer) clearTimeout(btn._activeTimer);
           btn._activeTimer = setTimeout(() => {
@@ -2128,18 +2763,70 @@ After that list, give me the current time.`
     // -----------------------------
     // Access verification
     // -----------------------------
-    function verifyAccessCode() {
-      const code = normalizeCode($("accessCodeInput").value);
-      const isValidCode = Object.hasOwn(ACCESS_CODES, code);
+    async function verifyAccessCode() {
+      const verifyBtn = $("btnVerifyAccess");
+      if (verifyBtn?.dataset.verifying === "true") return false;
 
+      const code = normalizeCode($("accessCodeInput").value);
+      if (!code) {
+        setLockedState(true, "Please enter your access code.");
+        return false;
+      }
+
+      const originalBtnText = verifyBtn?.textContent || "Continue";
+      if (verifyBtn) {
+        verifyBtn.dataset.verifying = "true";
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = "Verifying...";
+      }
+
+      let validationResult;
+      try {
+        validationResult = await validateAccessCodeWithBackend(code);
+      } catch (err) {
+        setLockedState(true, "Could not verify access code right now. Please try again.");
+        logEvent("access_verification_error", { code_entered: code, error: String(err && err.message ? err.message : err) });
+        if (verifyBtn) {
+          verifyBtn.dataset.verifying = "false";
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = originalBtnText;
+        }
+        return false;
+      }
+
+      const { response, data } = validationResult;
+      if (response.ok && data && data.ok === true && data.valid === false && data.locked === true) {
+        const retryAfterSeconds = Number(data.retryAfterSeconds) || 0;
+        const waitMessage = retryAfterSeconds > 0
+          ? (retryAfterSeconds >= 60
+              ? `Too many failed attempts. Please wait ${Math.ceil(retryAfterSeconds / 60)} minute${Math.ceil(retryAfterSeconds / 60) === 1 ? "" : "s"} and try again.`
+              : `Too many failed attempts. Please wait ${retryAfterSeconds} seconds and try again.`)
+          : "Too many failed attempts. Please wait and try again.";
+        setLockedState(true, waitMessage);
+        logEvent("access_locked_out", { code_entered: code, retryAfterSeconds });
+        if (verifyBtn) {
+          verifyBtn.dataset.verifying = "false";
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = originalBtnText;
+        }
+        return false;
+      }
+
+      const isValidCode = response.ok && data && data.ok === true && data.valid === true;
       if (!isValidCode) {
         setLockedState(true, "Access code not recognized. Please contact the study team.");
         logEvent("access_denied", { code_entered: code });
+        if (verifyBtn) {
+          verifyBtn.dataset.verifying = "false";
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = originalBtnText;
+        }
         return false;
       }
 
       localStorage.setItem(KEYS.accessVerified, "true");
       localStorage.setItem(KEYS.accessCode, code);
+      localStorage.setItem(KEYS.participantId, data.participantId || "");
 
       // Start timestamp is the first step at sign-in (your request)
       if (!localStorage.getItem(KEYS.sessionStartTime)) {
@@ -2166,9 +2853,15 @@ After that list, give me the current time.`
       startSessionTimerLoop();
       if ($("topUser")) $("topUser").textContent = code || "User";
       logEvent("access_verified", { accessCode: code });
+      sendAutosave(buildAutosave("access_confirmed"));
       toast("Access verified ✅");
 
       applyStageUI();
+      if (verifyBtn) {
+        verifyBtn.dataset.verifying = "false";
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = originalBtnText;
+      }
       return true;
     }
 
@@ -2176,11 +2869,10 @@ After that list, give me the current time.`
     // Submit / JSON
     // -----------------------------
     function buildSessionRecord() {
-      ensureSubmissionRecordConsistency();
       const timerState = getCurrentTimerState();
       return {
         source: 'dissertation',
-        participant_code: localStorage.getItem(KEYS.accessCode) || "",
+        participant_code: localStorage.getItem(KEYS.participantId) || "",
         session_id: localStorage.getItem(KEYS.sessionId) || "",
         session_started_at: localStorage.getItem(KEYS.sessionStartTime) || "",
         product_used: localStorage.getItem(KEYS.modelUsed) || "",
@@ -2240,45 +2932,26 @@ After that list, give me the current time.`
       return `${participant}_${datePart}_${shortSession}${revisedSuffix}.json`.replace(/[^\w.-]/g, "_");
     }
 
-    function resetSubmitButtonToDefaultState() {
-      const submitBtn = $("btnSubmitForm");
-      if (!submitBtn) return;
-      submitBtn.textContent = "Submit session";
-      submitBtn.style.background = "";
-      submitBtn.style.borderColor = "";
-      submitBtn.style.color = "";
-    }
-
-    async function submitSessionJson(payload) {
-      const response = await fetch(SUBMIT_URL, {
+    async function validateAccessCodeWithBackend(code) {
+      const response = await fetch(ACCESS_VERIFY_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8"
-        },
-        body: JSON.stringify(payload),
-        redirect: "follow"
+        body: new URLSearchParams({
+          action: "validateCode",
+          code,
+          client_key: getOrCreateClientKey()
+        })
       });
 
-      const text = await response.text();
-
-      let data = null;
-      try {
-        data = JSON.parse(text);
-      } catch (_) {
-        data = { ok: false, error: "invalid_json_response", raw: text };
-      }
-
-      if (!response.ok) {
-        throw new Error(data?.error || `http_${response.status}`);
-      }
-
-      return data;
+      const data = await response.json();
+      return { response, data };
     }
 
     // -----------------------------
     // Init
     // -----------------------------
     function init() {
+      configureTrainingTipsUI();
+      configureTimerModeUI();
       // Gate
       const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
 
@@ -2300,9 +2973,9 @@ After that list, give me the current time.`
         }
       });
 
-      $("accessForm").addEventListener("submit", (e) => {
+      $("accessForm").addEventListener("submit", async (e) => {
         e.preventDefault();
-        verifyAccessCode();
+        await verifyAccessCode();
       });
       if ($("timerNoticeClose")) {
         $("timerNoticeClose").addEventListener("click", () => {
@@ -2461,10 +3134,17 @@ After that list, give me the current time.`
 
       if (confirmProductVersionBtn) {
         confirmProductVersionBtn.addEventListener("click", () => {
-          if (!isSetupVersionConfirmedForContext()) return;
+          console.log("Confirm product/version clicked");
+          if (!isSetupVersionConfirmedForContext()) {
+            console.log("Confirm product/version blocked: setup version requirements not met");
+            return;
+          }
           setProductVersionConfirmedState(true);
           logEvent("product_version_confirm_clicked");
+          sendAutosave(buildAutosave("product_version_confirmed"));
+          console.log("Confirm product/version autosave call completed");
           updateSetupSubbandVisibility();
+          console.log("Confirm product/version completed");
         });
       }
 
@@ -2489,19 +3169,13 @@ After that list, give me the current time.`
 
       renderMostRecentCopied();
       if (!localStorage.getItem(KEYS.finalPromptCopied)) localStorage.setItem(KEYS.finalPromptCopied, "false");
-      if (!localStorage.getItem(KEYS.submitClicked)) localStorage.setItem(KEYS.submitClicked, "false");
-      if (!localStorage.getItem(KEYS.resubmitting)) localStorage.setItem(KEYS.resubmitting, "false");
-      if (!localStorage.getItem(KEYS.submissionAttempted)) localStorage.setItem(KEYS.submissionAttempted, "false");
-      if (!localStorage.getItem(KEYS.submissionStatus)) localStorage.setItem(KEYS.submissionStatus, "unknown");
-      if (!localStorage.getItem(KEYS.submissionCompletedAt)) localStorage.setItem(KEYS.submissionCompletedAt, "");
-      if (!localStorage.getItem(KEYS.submissionError)) localStorage.setItem(KEYS.submissionError, "");
-      if (!localStorage.getItem(KEYS.appsScriptResponseFileName)) localStorage.setItem(KEYS.appsScriptResponseFileName, "");
-      if (!localStorage.getItem(KEYS.appsScriptResponseFileId)) localStorage.setItem(KEYS.appsScriptResponseFileId, "");
-      if ($("btnPauseTimer")) {
+      if (isTrainingMode && $("btnPauseTimer")) {
         $("btnPauseTimer").addEventListener("click", handlePauseResumeTimer);
       }
       startSessionTimerLoop();
       updateFinalizeContentUI();
+      updateEndSessionState();
+      initializeAudioFeedbackUI();
 
       $("btnCopyAgain").addEventListener("click", async (e) => {
         e.preventDefault();
@@ -2590,6 +3264,9 @@ After that list, give me the current time.`
         starterBtn.blur();
         if (ok) {
           logEvent("starter_copied", {});
+          const autosavePayload = buildAutosave("starter_prompt_copied", { promptName: "starter" });
+          console.log("Starter prompt autosave extraInstructions:", autosavePayload?.extraInstructions);
+          if (autosavePayload) sendAutosave(autosavePayload);
           localStorage.setItem(KEYS.starterCopied, "true");
           $("setupMsg").textContent = "Starter prompt copied. Paste it into your selected LLM, then click Proceed to 2) Making questions.";
           $("setupMsg").style.display = "block";
@@ -2615,16 +3292,16 @@ After that list, give me the current time.`
       // Prompts controls
       $("btnEditContext").addEventListener("click", () => {
         logEvent("edit_context_clicked");
+        sendAutosave(buildAutosave("edit_context_clicked", { details: { toStage: "setup" } }));
         setStage("setup");
       });
 
       $("btnReadyFinal").addEventListener("click", () => {
         logEvent("done_making_questions_clicked");
+        sendAutosave(buildAutosave("question_making_completed", { details: { toStage: "finalize" } }));
         const fp = buildFinalPrompt();
         localStorage.setItem(KEYS.finalPrompt, fp);
         localStorage.setItem(KEYS.finalPromptCopied, "false");
-        localStorage.setItem(KEYS.submitClicked, "false");
-        resetSubmissionMeta();
         logEvent("final_prompt_ready", {});
         setStage("finalize");
       });
@@ -2632,6 +3309,7 @@ After that list, give me the current time.`
       // Finalize controls
       $("btnBackToPrompts").addEventListener("click", () => {
         logEvent("back_to_making_questions_clicked");
+        sendAutosave(buildAutosave("back_to_question_making_clicked", { details: { toStage: "prompts" } }));
         logEvent("returned_from_finalize_to_prompts");
         setStage("prompts");
       });
@@ -2649,176 +3327,16 @@ After that list, give me the current time.`
         if (!ok) return;
         localStorage.setItem(KEYS.finalPromptCopied, "true");
         logEvent("final_prompt_copied", {});
+        sendAutosave(buildAutosave("final_prompt_copied", { promptName: "final_prompt" }));
         updateFinalizeContentUI();
-      });
-
-      $("btnSubmitForm").addEventListener("click", async () => {
-        if ($("btnSubmitForm").disabled) return;
-
-        const llm = ($("llmResponse").value || "").trim();
-        if (!llm) {
-          $("finalizeMsg").textContent = "Please paste the LLM Final Response before submitting.";
-          toast("Paste LLM response first");
-          return;
-        }
-
-        localStorage.setItem(KEYS.submitClicked, "true");
-        setSubmissionMeta({
-          attempted: true,
-          status: "unknown",
-          completedAt: "",
-          error: "",
-          fileName: "",
-          fileId: ""
-        });
-        logEvent("submit_form_clicked");
-        const payload = buildSessionRecord();
-        const revisedSubmission = localStorage.getItem(KEYS.resubmitting) === "true";
-        const clientFileName = buildSessionFilename(payload, { revised: revisedSubmission });
-        const submitBtn = $("btnSubmitForm");
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.textContent = "Submitting...";
-        }
-        $("finalizeMsg").textContent = "";
-
-        try {
-          const result = await submitSessionJson(payload);
-          if (result?.ok) {
-            const submitBtn = $("btnSubmitForm");
-
-            submitBtn.textContent = "Success! ✓";
-            submitBtn.style.background = "#16a34a";
-            submitBtn.style.borderColor = "#16a34a";
-            submitBtn.style.color = "#ffffff";
-            submitBtn.disabled = true;
-
-            $("finalizeMsg").textContent = "";
-            const completedAt = nowIso();
-            const resultFileName = String(result.fileName || clientFileName || "");
-            const resultFileId = String(result.fileId || "");
-            setSubmissionMeta({
-              attempted: true,
-              status: "success",
-              completedAt,
-              error: "",
-              fileName: resultFileName,
-              fileId: resultFileId
-            });
-            logEvent("session_submitted", {
-              method: "apps_script",
-              ok: true,
-              fileName: resultFileName,
-              fileId: resultFileId,
-              revised: revisedSubmission
-            });
-            localStorage.setItem(KEYS.resubmitting, "false");
-            toast("Session submitted ✅");
-          } else {
-            const submitBtn = $("btnSubmitForm");
-            submitBtn.textContent = "Success! ✓";
-            submitBtn.style.background = "#16a34a";
-            submitBtn.style.borderColor = "#16a34a";
-            submitBtn.style.color = "#ffffff";
-            submitBtn.disabled = true;
-
-            const completedAt = nowIso();
-            const submissionError = String(result?.error || "unknown");
-            setSubmissionMeta({
-              attempted: true,
-              status: "failure",
-              completedAt,
-              error: submissionError,
-              fileName: String(result?.fileName || ""),
-              fileId: String(result?.fileId || "")
-            });
-            $("finalizeMsg").textContent = "Automatic submission failed. Please download the backup file and email it.";
-            logEvent("session_submitted", {
-              method: "apps_script",
-              ok: false,
-              error: submissionError,
-              fileName: String(result?.fileName || ""),
-              fileId: String(result?.fileId || "")
-            });
-            toast("Automatic submission failed");
-          }
-        } catch (err) {
-          const submitBtn = $("btnSubmitForm");
-          submitBtn.textContent = "Success! ✓";
-          submitBtn.style.background = "#16a34a";
-          submitBtn.style.borderColor = "#16a34a";
-          submitBtn.style.color = "#ffffff";
-          submitBtn.disabled = true;
-
-          const completedAt = nowIso();
-          const submissionError = String(err?.message || err || "unknown");
-          setSubmissionMeta({
-            attempted: true,
-            status: "failure",
-            completedAt,
-            error: submissionError,
-            fileName: "",
-            fileId: ""
-          });
-          $("finalizeMsg").textContent = "Automatic submission failed. Please download the backup file and email it.";
-          logEvent("session_submitted", {
-            method: "apps_script",
-            ok: false,
-            error: submissionError
-          });
-          toast("Automatic submission failed");
-        } finally {
-          localStorage.setItem(KEYS.submitClicked, "true");
-          updateFinalizeContentUI();
-        }
       });
 
       $("llmResponse").addEventListener("input", () => {
         updateFinalizeContentUI();
+        updateEndSessionState();
       });
-
-      $("btnReviseAfterSubmit").addEventListener("click", () => {
-        localStorage.setItem(KEYS.resubmitting, "true");
-        localStorage.setItem(KEYS.submitClicked, "false");
-        resetSubmissionMeta();
-        resetSubmitButtonToDefaultState();
-        const reviseBtn = $("btnReviseAfterSubmit");
-        if (reviseBtn) reviseBtn.style.display = "none";
-        $("finalizeMsg").textContent = "You can now revise your work and submit again.";
-        logEvent("submission_revise_requested", { revised: true });
-        updateFinalizeContentUI();
-        setStage("prompts");
-      });
-
-      const formFailedDetails = $("formFailedDetails");
-      if (formFailedDetails) {
-        formFailedDetails.addEventListener("toggle", () => {
-          if (formFailedDetails.open) {
-            logEvent("form_failed_details_opened");
-          }
-        });
-      }
-
-      // Download backup json
-      $("btnDownload").addEventListener("click", () => {
-        logEvent("backup_download_clicked");
-        const record = {
-          ...buildSessionRecord(),
-          llm_response: $("llmResponse").value || "",
-          exported_at: nowIso()
-        };
-
-        const blob = new Blob([JSON.stringify(record, null, 2)], { type: "application/json" });
-        const a = document.createElement("a");
-        const revisedSubmission = localStorage.getItem(KEYS.resubmitting) === "true";
-        const fname = buildSessionFilename(record, { revised: revisedSubmission });
-        a.href = URL.createObjectURL(blob);
-        a.download = fname;
-        a.click();
-        URL.revokeObjectURL(a.href);
-
-        logEvent("backup_exported", { filename: fname });
-        toast("Downloaded ✅");
+      $("llmResponse").addEventListener("change", () => {
+        updateEndSessionState();
       });
 
       // Reset session (header)
@@ -2826,21 +3344,27 @@ After that list, give me the current time.`
       const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
 
       $("btnResetSession").addEventListener("click", () => {
-        logEvent("reset_opened");
+        try { logEvent("reset_opened"); } catch (err) { console.warn("Reset log failed", err); }
         openModal("modalReset");
       });
       $("btnResetCancel").addEventListener("click", () => {
-        logEvent("reset_cancelled");
+        try { logEvent("reset_cancelled"); } catch (err) { console.warn("Reset log failed", err); }
         closeModal("modalReset");
       });
       $("btnResetConfirm").addEventListener("click", () => {
-        logEvent("reset_confirmed");
+        try { logEvent("reset_confirmed"); } catch (err) { console.warn("Reset log failed", err); }
         clearSessionData();
         closeModal("modalReset");
         location.reload();
       });
 
       $("btnEndSession").addEventListener("click", () => {
+        console.log("End Session clicked. canEndSession =", canEndSession());
+        if (!canEndSession()) {
+          toast("Please paste the AI-generated response into the final response box before ending the session.");
+          updateEndSessionState();
+          return;
+        }
         logEvent("end_session_opened");
         openModal("modalEnd");
       });
@@ -2849,11 +3373,56 @@ After that list, give me the current time.`
         closeModal("modalEnd");
       });
       $("btnEndConfirm").addEventListener("click", () => {
+        console.log("End session confirm clicked");
         logEvent("end_session_confirmed");
-        clearSessionData();
-        sessionStorage.setItem("dissertation.ended", "true");
-        closeModal("modalEnd");
-        location.reload();
+        const autosavePayload = buildAutosave("session_ended", {
+          details: {
+            source: "end_confirm"
+          }
+        });
+        console.log("Final autosave payload:", autosavePayload);
+
+        const finishEndSession = () => {
+          clearSessionData();
+          sessionStorage.setItem("dissertation.ended", "true");
+          closeModal("modalEnd");
+
+          if (!isTrainingMode) {
+            location.reload();
+            return;
+          }
+
+          // window.close() in training mode may fail if the page was not opened by script.
+          window.close();
+          setTimeout(() => {
+            if (!window.closed) {
+              // Show fallback message if close does not succeed.
+              const fallback = $("trainingEndFallback");
+              if (fallback) fallback.style.display = "block";
+            }
+          }, 150);
+        };
+
+        if (autosavePayload) {
+          fetch(AUTOSAVE_URL, {
+            method: "POST",
+            body: new URLSearchParams({
+              payload: JSON.stringify(autosavePayload)
+            })
+          })
+            .then(r => r.text())
+            .then(text => {
+              console.log("Final autosave response:", text);
+            })
+            .catch(err => {
+              console.error("Final autosave failed:", err);
+            })
+            .finally(() => {
+              finishEndSession();
+            });
+        } else {
+          finishEndSession();
+        }
       });
 
       // Always show footer status immediately (even before access is verified)
