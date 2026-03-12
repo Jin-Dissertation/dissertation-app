@@ -499,23 +499,6 @@
       overflow-wrap: anywhere;
     }
 
-
-    .study-notice {
-      margin: 8px 0 14px;
-      padding: 10px 12px;
-      border: 1px solid #cfd8ea;
-      border-radius: 10px;
-      background: #f5f8ff;
-      color: #22324d;
-      font-size: 13px;
-      line-height: 1.45;
-    }
-    .study-notice p {
-      margin: 0;
-    }
-    .study-notice p + p {
-      margin-top: 8px;
-    }
     .training-tip {
       display: none;
       margin-top: 8px;
@@ -548,20 +531,15 @@
 <body>
   <div class="pageShell">
     <h1>Dissertation Prompt App</h1>
-    <div class="study-notice">
-      <p>This tool is part of a research study conducted by Taemin Jin.</p>
-      <p>If you have questions about this study, please contact:<br>
-      Taemin Jin&nbsp;&nbsp;<br>
-      Email: [your email here]</p>
-      <p>This study has been approved by an Institutional Review Board (IRB):&nbsp;&nbsp;<br>
-      [IRB number here]</p>
-    </div>
     <div id="trainingTopNote" class="training-tip">
       <span class="training-tip-label">Training tip</span>
       Training mode: The “Training tip” boxes on this page provide guidance for this tutorial and are not part of the normal app interface.
     </div>
     <!-- Access gate -->
     <div class="card accessCard" id="accessGate">
+      <p class="muted small" style="margin:0 0 8px;">This tool is part of a research study conducted by Taemin Jin.</p>
+      <p class="muted small" style="margin:0 0 8px;">Questions about this study may be directed to: [your email here].</p>
+      <p class="muted small" style="margin:0 0 14px;">IRB approval: [IRB number here].</p>
       <p class="muted small" style="margin:0 0 10px;">Enter your participant code to begin this session.</p>
       <p class="muted small" style="margin:0 0 10px;">If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
 
