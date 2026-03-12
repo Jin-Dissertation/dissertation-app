@@ -37,8 +37,7 @@
     ul, ol { margin:0 0 7px 18px; font-size:13px; line-height:1.32; }
     .prepList { margin: 0 0 6px 0; padding-left: 16px; }
     .prepList li { margin-bottom: 7px; }
-    .screenshotPlaceholder { border: 1px dashed #9bb4de; background:#f1f6ff; color:#3f5f97; border-radius:8px; padding:10px; font-size:12px; margin-top:6px; width: min(100%, 460px); }
-
+    
     .sectionCard { border:1px solid var(--border); border-radius:12px; background:#f8fbff; padding:12px 13px; margin-top:8px; }
     .ackItem { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-top:1px solid #d8e4f6; padding-top:8px; margin-top:8px; }
     .ackItem:first-child { border-top:none; padding-top:0; margin-top:0; }
@@ -71,7 +70,17 @@
     .promptDesc a { color:#1f4ca4; }
 
     .reviewIntro p { margin-bottom: 8px; }
-    .reviewIntro .screenshotPlaceholder { margin-top: 4px; }
+    .screenshotImage {
+      display:block;
+      width:min(100%, 460px);
+      height:auto;
+      border:1px solid #c8d8f0;
+      border-radius:8px;
+      background:#fff;
+      margin-top:6px;
+      margin-bottom:2px;
+    }
+    .reviewIntro .screenshotImage { margin-top: 6px; }
 
     .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     .copyIconBtn {
@@ -108,7 +117,7 @@
           <div class="bandBody">
             <div class="sectionCard">
               <h3>Introduction</h3>
-              <p>According to APU AI Policy, students may only use AI tools for assignments when the instructor gives explicit permission and specifies how the tool may be used. This page explains the conditions under which Gemini may be used for Health History Assignment Part 2.</p>
+              <p>According to <a href="https://apu.edu/ai" target="_blank" rel="noopener">APU AI Policy</a>, students may only use AI tools for assignments when the instructor gives explicit permission and specifies how the tool may be used. This page explains the conditions under which Gemini may be used for Health History Assignment Part 2.</p>
               <p>The prompts on this page are designed to help students review and improve their own writing, not generate new content, by having Gemini function only as an editor, not a co-author. Students remain responsible for verifying Gemini’s feedback and for the final version of their submission.</p>
               <p><strong>Before continuing, please acknowledge the following:</strong></p>
             </div>
@@ -123,11 +132,11 @@
               <ol class="prepList">
                 <li>
                   Log into Gemini using your APU account and confirm the Azusa Pacific University logo appears in the profile menu.
-                  <div class="screenshotPlaceholder">Screenshot placeholder for Step 1</div>
+                  <img class="screenshotImage" src="gemini_apu_icon.png" alt="Gemini profile menu showing APU account indicator" />
                 </li>
                 <li>
                   Start a new Gemini conversation.
-                  <div class="screenshotPlaceholder">Screenshot placeholder for Step 2</div>
+                  <img class="screenshotImage" src="gemini_new_chat.png" alt="Gemini interface showing how to start a new conversation" />
                 </li>
                 <li>Copy the Opening Prompt below and paste it into Gemini as your first message.</li>
               </ol>
@@ -153,7 +162,7 @@
             <div id="reviewInner" style="display:none;">
               <div class="sectionCard reviewIntro">
                 <p>You may now use any of the review prompts below to have Gemini evaluate your writing. You will need to attach your draft to the prompt.</p>
-                <div class="screenshotPlaceholder">Screenshot placeholder for attaching your draft in Gemini</div>
+                <img class="screenshotImage" src="gemini_upload.png" alt="Gemini interface showing how to attach a draft file" />
               </div>
 
               <div class="promptCards" id="promptCards"></div>
@@ -235,18 +244,18 @@ Restrict your responses to identifying issues, explaining why they are problemat
     function getAckState() {
       const fallback = Array(ACKS.length).fill(false);
       try {
-        const parsed = JSON.parse(localStorage.getItem(KEYS.ackState) || "null");
+        const parsed = JSON.parse(sessionStorage.getItem(KEYS.ackState) || "null");
         if (!Array.isArray(parsed)) return fallback;
         return ACKS.map((_, idx) => parsed[idx] === true);
       } catch {
         return fallback;
       }
     }
-    function setAckState(state) { localStorage.setItem(KEYS.ackState, JSON.stringify(state)); }
-    function getOpeningCopied() { return localStorage.getItem(KEYS.openingCopied) === "true"; }
-    function setOpeningCopied(value) { localStorage.setItem(KEYS.openingCopied, value ? "true" : "false"); }
-    function getStage() { return localStorage.getItem(KEYS.stage) === "review" ? "review" : "setup"; }
-    function setStage(stage) { localStorage.setItem(KEYS.stage, stage === "review" ? "review" : "setup"); }
+    function setAckState(state) { sessionStorage.setItem(KEYS.ackState, JSON.stringify(state)); }
+    function getOpeningCopied() { return sessionStorage.getItem(KEYS.openingCopied) === "true"; }
+    function setOpeningCopied(value) { sessionStorage.setItem(KEYS.openingCopied, value ? "true" : "false"); }
+    function getStage() { return sessionStorage.getItem(KEYS.stage) === "review" ? "review" : "setup"; }
+    function setStage(stage) { sessionStorage.setItem(KEYS.stage, stage === "review" ? "review" : "setup"); }
 
     function toast(msg, { duration = 1400 } = {}) {
       const t = $("toast");
