@@ -580,6 +580,8 @@
       <p class="muted small" style="margin:0 0 14px;">IRB approval: [IRB number here].</p>
       <p class="muted small" style="margin:0 0 10px;">Enter your participant code to begin this session.</p>
       <p class="muted small" style="margin:0 0 10px;">If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
+      <br>
+      <p class="muted small" style="margin:0 0 10px;">Enter your participant code to begin this session.</p>
 
       <form class="accessRow" id="accessForm">
         <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" />
@@ -813,7 +815,7 @@
                   <label for="sessionNotes">Anything unusual about your session? (optional)</label>
                   <textarea
                     id="sessionNotes"
-                    placeholder="Let me know if anything went out of the ordinary during your session."
+                    placeholder="I would appreciate any thoughts about your experience using this tool."
                   ></textarea>
 
                   <div class="audioFeedbackSection" id="audioRecorderPanel">
@@ -846,7 +848,7 @@
                 You do not need to produce perfect questions — the goal of this activity is simply to practice using the app. Your responses will be saved when you end the session.
               </div>
               <div class="row" id="endSessionRow" style="margin-top:10px; display:none;">
-                <button class="btn danger finalActionBtn" id="btnEndSession" type="button">End session</button>
+                <button class="btn danger finalActionBtn" id="btnEndSession" type="button" disabled>End session</button>
               </div>
             </div>
           </div>
