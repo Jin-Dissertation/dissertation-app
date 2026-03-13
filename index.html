@@ -1663,6 +1663,11 @@ After that list, give me the current time.`
         currentStage: getStage(),
         finalLlmResponse: ($("llmResponse")?.value || "").trim(),
         sessionNotes: ($("sessionNotes")?.value || "").trim(),
+        audioFilename: uploadedAudioInfo?.audioFilename || "",
+        audioFileId: uploadedAudioInfo?.audioFileId || "",
+        audioFileUrl: uploadedAudioInfo?.audioFileUrl || "",
+        audioMimeType: uploadedAudioInfo?.audioMimeType || "",
+        audioDuration: uploadedAudioInfo?.audioDuration || "",
         details,
         appVersion: getAppVersion()
       };
@@ -2541,6 +2546,12 @@ After that list, give me the current time.`
         };
 
         audioSubmitted = true;
+        const audioUploadPayload = buildAutosave("audio_uploaded", {
+          details: {
+            source: "submit_audio_button"
+          }
+        });
+        sendAutosave(audioUploadPayload);
         setAudioUploadButtonState("success", "Uploaded");
         updateAudioRecorderUI();
         toast("Audio submitted ✅");
