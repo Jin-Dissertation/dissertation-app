@@ -1424,65 +1424,50 @@ Provide the results in a table with the following columns and content:
      ========================================== */
   final_prompt: {
     /* MODEL: CHATGPT */
-    chatgpt: `Please provide a full table of questions.
+    chatgpt: `Pause and show all questions that have been accepted and finalized so far in this session. Do not include any question that was just generated for consideration but has not yet been accepted or added to the set.
 
-Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
-1. Question Number
-2. Difficulty – Classify as Easy, Moderate, or Hard.
-3. Bloom’s Level – Classify as Remember, Understand, Apply, Analyze, Evaluate, or Create.
-4. Question Type – 1–2 words (e.g., Assessment, Prioritization, Delegation, Teaching, Pharmacology).
-5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
+Display the questions in a list with:
+A numbered title
+The question stem on the next line
+The answer options listed below using capital letters (A–D)
 
-After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.
-After that list, give me the current time.`,
+Place the correct answer first and bold it.`,
     /* MODEL: CLAUDE */
-    claude: `Please provide a full table of questions.
+    claude: `Pause and show all questions that have been accepted and finalized so far in this session. Do not include any question that was just generated for consideration but has not yet been accepted or added to the set.
 
-Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
-1. Question Number
-2. Difficulty – Classify as Easy, Moderate, or Hard.
-3. Bloom’s Level – Classify as Remember, Understand, Apply, Analyze, Evaluate, or Create.
-4. Question Type – 1–2 words (e.g., Assessment, Prioritization, Delegation, Teaching, Pharmacology).
-5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
+Display the questions in a list with:
+A numbered title
+The question stem on the next line
+The answer options listed below using capital letters (A–D)
 
-After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.
-After that list, give me the current time.`,
+Place the correct answer first and bold it.`,
     /* MODEL: GEMINI */
-    gemini: `Please provide a full table of questions.
+    gemini: `Pause and show all questions that have been accepted and finalized so far in this session. Do not include any question that was just generated for consideration but has not yet been accepted or added to the set.
 
-Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
-1. Question Number
-2. Difficulty – Classify as Easy, Moderate, or Hard.
-3. Bloom’s Level – Classify as Remember, Understand, Apply, Analyze, Evaluate, or Create.
-4. Question Type – 1–2 words (e.g., Assessment, Prioritization, Delegation, Teaching, Pharmacology).
-5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
+Display the questions in a list with:
+A numbered title
+The question stem on the next line
+The answer options listed below using capital letters (A–D)
 
-After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.
-After that list, give me the current time.`,
+Place the correct answer first and bold it.`,
     /* MODEL: COPILOT */
-    copilot: `Please provide a full table of questions.
+    copilot: `Pause and show all questions that have been accepted and finalized so far in this session. Do not include any question that was just generated for consideration but has not yet been accepted or added to the set.
 
-Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
-1. Question Number
-2. Difficulty – Classify as Easy, Moderate, or Hard.
-3. Bloom’s Level – Classify as Remember, Understand, Apply, Analyze, Evaluate, or Create.
-4. Question Type – 1–2 words (e.g., Assessment, Prioritization, Delegation, Teaching, Pharmacology).
-5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
+Display the questions in a list with:
+A numbered title
+The question stem on the next line
+The answer options listed below using capital letters (A–D)
 
-After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.
-After that list, give me the current time.`,
+Place the correct answer first and bold it.`,
     /* MODEL: OTHER */
-    other: `Please provide a full table of questions.
+    other: `Pause and show all questions that have been accepted and finalized so far in this session. Do not include any question that was just generated for consideration but has not yet been accepted or added to the set.
 
-Then perform a final audit of all questions generated so far, and present the results in a second table where each row corresponds to one question. Include the following columns:
-1. Question Number
-2. Difficulty – Classify as Easy, Moderate, or Hard.
-3. Bloom’s Level – Classify as Remember, Understand, Apply, Analyze, Evaluate, or Create.
-4. Question Type – 1–2 words (e.g., Assessment, Prioritization, Delegation, Teaching, Pharmacology).
-5. Option Similarity Check – Compare the correct answer with the distractors and indicate whether it is noticeably different in length or complexity (Longer, Shorter, More Complex, Similar).
+Display the questions in a list with:
+A numbered title
+The question stem on the next line
+The answer options listed below using capital letters (A–D)
 
-After the table, provide a list of 5 subtopics within the content area that have not yet been tested and could be used for additional questions.
-After that list, give me the current time.`
+Place the correct answer first and bold it.`
   }
 };
 
