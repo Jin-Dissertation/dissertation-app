@@ -2506,15 +2506,22 @@ After that list, give me the current time.`
         console.log("filename:", filename);
         console.log("base64 length:", audioBase64 ? audioBase64.length : null);
 
-        const response = await uploadAudioWithProgress({
+        const body = new URLSearchParams({
           action: "uploadAudio",
           filename,
           mimeType: audioBlob.type || `audio/${ext}`,
           audioBase64
-        }, (loaded, total) => {
-          const pct = Math.max(1, Math.min(99, Math.round((loaded / total) * 100)));
-          setAudioUploadButtonState("uploading", `Uploading… ${pct}%`);
         });
+
+        const fetchResponse = await fetch(AUTOSAVE_URL, {
+          method: "POST",
+          body
+        });
+        const response = {
+          status: fetchResponse.status,
+          ok: fetchResponse.ok,
+          text: await fetchResponse.text()
+        };
 
         setAudioUploadButtonState("uploading", "Processing…");
         const text = response.text;
