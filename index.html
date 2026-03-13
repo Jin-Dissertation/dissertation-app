@@ -519,6 +519,24 @@
       min-width: 112px;
       justify-content: center;
     }
+    #btnAudioSubmit {
+      min-width: 148px;
+      position: relative;
+    }
+    #btnAudioSubmit.audioSubmitUploading {
+      opacity: 0.85;
+      cursor: progress;
+    }
+    #btnAudioSubmit.audioSubmitSuccess {
+      border-color: #1f7a4d;
+      background: #e8f8ef;
+      color: #185c3b;
+    }
+    #btnAudioSubmit.audioSubmitError {
+      border-color: #b42318;
+      background: #fef3f2;
+      color: #912018;
+    }
     .audioControlRow .audioStateStatus {
       cursor: default;
       pointer-events: none;
@@ -1543,6 +1561,7 @@ After that list, give me the current time.`
     let audioDuration = 0;
     let uploadedAudioInfo = null;
     let audioStartedAt = null;
+    let audioUploadInProgress = false;
 
     function hideToast() {
       const t = $("toast");
@@ -2246,6 +2265,31 @@ After that list, give me the current time.`
       if (el) el.textContent = message;
     }
 
+    function setAudioUploadButtonState(state = "default", text = "Submit audio") {
+      const btn = $("btnAudioSubmit");
+      if (!btn) return;
+      btn.classList.remove("audioSubmitUploading", "audioSubmitSuccess", "audioSubmitError");
+      btn.removeAttribute("aria-busy");
+      btn.textContent = text;
+
+      if (state === "uploading") {
+        btn.classList.add("audioSubmitUploading");
+        btn.setAttribute("aria-busy", "true");
+      } else if (state === "success") {
+        btn.classList.add("audioSubmitSuccess");
+      } else if (state === "error") {
+        btn.classList.add("audioSubmitError");
+      }
+    }
+
+    function resetAudioUploadButton() {
+      setAudioUploadButtonState("default", "Submit audio");
+    }
+
+    function sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
     // Release object URL whenever a recording is replaced.
     function releaseAudioFeedbackUrl() {
       if (!audioUrl) return;
@@ -2291,7 +2335,17 @@ After that list, give me the current time.`
 
       if (stopBtn) stopBtn.style.display = showActive ? "inline-flex" : "none";
       if (playbackRow) playbackRow.style.display = showStopped ? "flex" : "none";
-      if (submitBtn) submitBtn.disabled = !hasRecording || audioSubmitted;
+      if (submitBtn) {
+        if (audioUploadInProgress) {
+          submitBtn.disabled = true;
+        } else if (audioSubmitted) {
+          setAudioUploadButtonState("success", "Uploaded");
+          submitBtn.disabled = true;
+        } else {
+          resetAudioUploadButton();
+          submitBtn.disabled = !hasRecording;
+        }
+      }
     }
 
     function clearAudioRecorderState({ keepSubmitted = false } = {}) {
@@ -2306,7 +2360,9 @@ After that list, give me the current time.`
       audioDuration = 0;
       audioStartedAt = null;
       uploadedAudioInfo = null;
+      audioUploadInProgress = false;
       if (!keepSubmitted) audioSubmitted = false;
+      resetAudioUploadButton();
 
       const player = $("audioFeedbackPlayer");
       if (player) {
@@ -2402,8 +2458,27 @@ After that list, give me the current time.`
     }
 
     // Upload flow (Apps Script action=uploadAudio).
+    function uploadAudioWithProgress(payload, onProgress) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", AUTOSAVE_URL, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable || typeof onProgress !== "function") return;
+          onProgress(event.loaded, event.total);
+        };
+
+        xhr.onload = () => {
+          resolve({ status: xhr.status, ok: xhr.status >= 200 && xhr.status < 300, text: xhr.responseText || "" });
+        };
+        xhr.onerror = () => reject(new Error("Network error during audio upload."));
+        xhr.send(JSON.stringify(payload));
+      });
+    }
+
     async function submitAudioRecording() {
-      if (!audioBlob) return;
+      if (!audioBlob || audioUploadInProgress || audioSubmitted) return;
 
       const accessCode = localStorage.getItem(KEYS.accessCode) || "participant";
       const sessionId = localStorage.getItem(KEYS.sessionId) || "session";
@@ -2414,20 +2489,42 @@ After that list, give me the current time.`
       const filename = `${safeUser}_${getYYMMDD()}_${safeSession}.${ext}`;
 
       try {
+        audioUploadInProgress = true;
+        const submitBtn = $("btnAudioSubmit");
+        if (submitBtn) submitBtn.disabled = true;
+        setAudioUploadButtonState("uploading", "Preparing audio…");
+        await sleep(120);
+
+        setAudioUploadButtonState("uploading", "Encoding audio…");
         const audioBase64 = await blobToBase64(audioBlob);
-        const response = await fetch(AUTOSAVE_URL, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    action: "uploadAudio",
-    filename,
-    mimeType: audioBlob.type || `audio/${ext}`,
-    audioBase64
-  })
-});
-        const text = await response.text();
+        setAudioUploadButtonState("uploading", "Uploading… 0%");
+
+        console.log("Submitting audio...");
+        console.log("audioBlob exists:", !!audioBlob);
+        console.log("audioBlob size:", audioBlob ? audioBlob.size : null);
+        console.log("audioBlob type:", audioBlob ? audioBlob.type : null);
+        console.log("filename:", filename);
+        console.log("base64 length:", audioBase64 ? audioBase64.length : null);
+
+        const body = new URLSearchParams({
+          action: "uploadAudio",
+          filename,
+          mimeType: audioBlob.type || `audio/${ext}`,
+          audioBase64
+        });
+
+        const fetchResponse = await fetch(AUTOSAVE_URL, {
+          method: "POST",
+          body
+        });
+        const response = {
+          status: fetchResponse.status,
+          ok: fetchResponse.ok,
+          text: await fetchResponse.text()
+        };
+
+        setAudioUploadButtonState("uploading", "Processing…");
+        const text = response.text;
         let data = {};
         try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
@@ -2444,11 +2541,22 @@ After that list, give me the current time.`
         };
 
         audioSubmitted = true;
+        setAudioUploadButtonState("success", "Uploaded");
         updateAudioRecorderUI();
         toast("Audio submitted ✅");
+        await sleep(1700);
       } catch (err) {
         console.error("Audio upload failed", err);
+        setAudioUploadButtonState("error", "Upload failed");
         toast("Audio upload failed. Please try again.");
+        await sleep(2000);
+        if (!audioSubmitted) {
+          resetAudioUploadButton();
+          updateAudioRecorderUI();
+        }
+      } finally {
+        audioUploadInProgress = false;
+        updateAudioRecorderUI();
       }
     }
 
