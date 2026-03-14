@@ -1093,6 +1093,7 @@ let moduleLabelText = 'Professional Development Module';
 let sessionId       = '';
 let sessionStart    = null;
 let events          = [];
+const interactionTimes = [];
 let totalQuestions  = 0;
 let correctFirst    = 0;
 let totalSlots      = 0;
@@ -1146,6 +1147,21 @@ function formatDuration(ms) {
   if (h > 0) return `${h}h ${m % 60}m`;
   if (m > 0) return `${m}m ${s % 60}s`;
   return `${s}s`;
+}
+
+function computeActiveSeconds(events) {
+  if (!Array.isArray(events) || events.length < 2) return 0;
+  let total = 0;
+  for (let i = 1; i < events.length; i++) {
+    const gap = (events[i] - events[i - 1]) / 1000;
+    if (!Number.isFinite(gap) || gap < 0) continue;
+    total += Math.min(gap, 60);
+  }
+  return total;
+}
+
+function getDeviceType() {
+  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') ? 'mobile' : 'desktop';
 }
 
 function scrollToEl(el, offset = 80) {
@@ -1238,6 +1254,7 @@ function saveProgress() {
       totalQuestions,
       correctFirst,
       events,
+      interactionTimes,
       completionReached,
       hasSuccessfulSubmission,
       quizStates
@@ -1655,6 +1672,7 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
       isIdk
     };
     sectionState.currentQi = currentQi;
+    interactionTimes.push(Date.now());
     saveProgress();
 
     logEvent('question_answered', {
@@ -1924,6 +1942,7 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
     sectionState.selectedText = isIdk ? "I don't know" : btn.querySelector('.option-text').textContent;
     sectionState.isCorrect    = isCorrect && !isIdk;
     sectionState.isIdk        = isIdk;
+    interactionTimes.push(Date.now());
     saveProgress();
 
     logEvent('question_answered', {
@@ -2068,8 +2087,10 @@ function renderTraining(structure, savedState = null) {
 
     accordion.querySelector('.section-toggle').addEventListener('click', () => {
       if (!sectionState[sectionIdx].unlocked) return;
+      const wasExpanded = sectionState[sectionIdx].expanded;
       const isCompletedSection = sectionState[sectionIdx].completedCards >= allSections[sectionIdx].cards.length;
       collapseAllExcept(sectionIdx, !isCompletedSection);
+      if (!wasExpanded) interactionTimes.push(Date.now());
     });
 
     const content = accordion.querySelector('.section-content');
@@ -2193,21 +2214,30 @@ async function submitSession() {
   btn.textContent = 'Submitting…';
   status.textContent = '';
 
-  const elapsed = sessionStart ? Date.now() - sessionStart : 0;
+  const nowMs = Date.now();
+  const clockSeconds = sessionStart ? Math.max(0, (nowMs - sessionStart) / 1000) : 0;
+  const activeSeconds = computeActiveSeconds(interactionTimes);
+  const clockMinutes = Number((clockSeconds / 60).toFixed(2));
+  const activeMinutes = Number((activeSeconds / 60).toFixed(2));
+  const interactionRate = activeMinutes > 0
+    ? Number((totalQuestions / activeMinutes).toFixed(2))
+    : 0;
+  const deviceType = getDeviceType();
 
   const payload = {
-  action:           'submitSession',
-  participantEmail: participantEmail,
-  participantCode:  participantCode,
-  moduleKey:        moduleKey,
-  sessionId:        sessionId,
-  sessionStart:     sessionStart ? new Date(sessionStart).toISOString() : null,
-  sessionEnd:       now(),
-  timeElapsedSeconds: sessionStart ? Math.round((Date.now() - sessionStart) / 1000) : 0,
-  totalQuestions:   totalQuestions,
-  correctFirst:     correctFirst,
+  action:            'submitSession',
+  participantEmail:  participantEmail,
+  participantCode:   participantCode,
+  moduleKey:         moduleKey,
+  sessionId:         sessionId,
+  sessionStart:      sessionStart ? new Date(sessionStart).toISOString() : null,
+  sessionEnd:        now(),
+  totalQuestions:    totalQuestions,
   completionReached: completionReached,
-  hasSuccessfulSubmission: hasSuccessfulSubmission,
+  clock_minutes:     clockMinutes,
+  active_minutes:    activeMinutes,
+  interaction_rate:  interactionRate,
+  device_type:       deviceType,
   events
 };
   
@@ -2373,6 +2403,8 @@ document.addEventListener('DOMContentLoaded', () => {
         totalQuestions  = saved.totalQuestions || 0;
         correctFirst    = saved.correctFirst || 0;
         events          = saved.events || [];
+        interactionTimes.length = 0;
+        interactionTimes.push(...(saved.interactionTimes || []));
         completionReached = !!saved.completionReached;
         hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
         quizStates = saved.quizStates || {};
@@ -2394,6 +2426,7 @@ document.addEventListener('DOMContentLoaded', () => {
       hasSuccessfulSubmission = false;
       quizStates = {};
       events = [];
+      interactionTimes.length = 0;
       totalQuestions = 0;
       correctFirst = 0;
     }
@@ -2424,6 +2457,8 @@ document.addEventListener('DOMContentLoaded', () => {
       $('training').style.display = 'block';
 
       renderTraining(structure, resuming ? saved : null);
+
+      if (interactionTimes.length === 0) interactionTimes.push(Date.now());
 
       logEvent('content_loaded', {
         sections: structure.length,
