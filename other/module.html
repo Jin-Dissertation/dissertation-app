@@ -40,7 +40,7 @@
       background: var(--cream);
       color: var(--navy);
       line-height: 1.7;
-      min-height: 100vh;
+      min-height: 100dvh;
       -webkit-font-smoothing: antialiased;
       -webkit-tap-highlight-color: transparent;
     }
@@ -93,6 +93,8 @@
       margin: 0 auto;
       padding: 0 28px 100px;
     }
+
+    #app.auth-mode { padding-bottom: 0; }
 
     /* ── ACCESS GATE ── */
     #auth-screen {
@@ -259,6 +261,7 @@
     .module-meta p { margin: 2px 0; font-size:0.85rem; color:var(--muted); }
     .module-item .action-btn { font-size:0.75rem; padding:8px 12px; }
     .empty-modules { color: var(--muted); font-size:0.9rem; }
+    .dashboard-error { margin-top: 10px; color: var(--red); font-size: 0.85rem; min-height: 1.1em; }
 
     /* ── LOADING ── */
     #loading {
@@ -1117,6 +1120,7 @@
     <section class="dashboard-card">
       <h3>Available Modules</h3>
       <div id="modules-list" class="modules-list"></div>
+      <p class="dashboard-error" id="dashboard-error"></p>
     </section>
   </div>
 
@@ -2550,11 +2554,13 @@ function showScreen(name) {
   $('dashboard').style.display = name === 'dashboard' ? 'block' : 'none';
   $('loading').style.display = name === 'loading' ? 'flex' : 'none';
   $('training').style.display = name === 'training' ? 'block' : 'none';
+  $('app').classList.toggle('auth-mode', name === 'auth');
 }
 
 function renderDashboard(payload) {
   const user = payload.user || {};
   const stats = payload.stats || {};
+  $('dashboard-error').textContent = '';
   availableModules = Array.isArray(payload.modules) ? payload.modules : [];
   currentUserName = user.name || currentUserName;
   currentUserEmail = normalizeIdentityValue(user.email || currentUserEmail);
@@ -2589,8 +2595,9 @@ function renderDashboard(payload) {
           <strong>${mod.module_title || key}</strong>
           <p>${mod.module_subtitle || ''}</p>
           <p>Status: ${completed ? 'Completed' : 'In progress'} · Progress: ${Math.max(0, Math.min(100, progress))}%</p>
+          <p>Last activity: ${mod.last_activity ? new Date(mod.last_activity).toLocaleString() : '—'}</p>
         </div>
-        <button class="action-btn" type="button" data-module-key="${key}">${progress > 0 && !completed ? 'Resume' : 'Start'}</button>
+        <button class="action-btn" type="button" data-module-key="${key}">${progress > 0 && !completed ? 'Resume Module' : 'Start Module'}</button>
       </article>
     `;
   }).join('');
@@ -2681,7 +2688,7 @@ async function startModule(selectedModuleKey) {
     });
   } catch (err) {
     showScreen('dashboard');
-    alert(`Failed to load module: ${err.message}`);
+    $('dashboard-error').textContent = `Failed to load module: ${err.message}`;
     logEvent('content_load_failed', { error: String(err.message), module_key: moduleKey });
   }
 }
@@ -2793,8 +2800,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       await loadDashboard();
       return;
     } catch (err) {
+      clearAuthSession();
+      currentUserEmail = '';
+      currentUserName = '';
+      isAuthenticated = false;
       $('auth-error').textContent = `Session restore failed: ${err.message}`;
-      logoutToAuth();
+      switchAuthMode('login');
+      showScreen('auth');
     }
   }
 
