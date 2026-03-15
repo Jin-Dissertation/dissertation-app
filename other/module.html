@@ -98,7 +98,7 @@
 
     /* ── ACCESS GATE ── */
     #auth-screen {
-      min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -192,38 +192,71 @@
       border: 1px solid var(--rule);
       border-radius: 14px;
       padding: 28px 24px 20px;
-      box-shadow: 0 10px 25px rgba(16,33,61,0.07);
+      box-shadow: 0 14px 30px rgba(16,33,61,0.12);
     }
 
-    .auth-tabs {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 16px;
+    .auth-mode-head {
+      margin-bottom: 14px;
+      text-align: left;
     }
 
-    .auth-tab {
-      border: 1px solid var(--rule);
-      background: var(--cream);
+    .auth-mode-title {
+      font-family: var(--serif);
+      font-size: clamp(1.2rem, 3vw, 1.55rem);
       color: var(--navy);
-      border-radius: 10px;
-      padding: 10px 12px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
+      margin-bottom: 6px;
+      line-height: 1.2;
     }
 
-    .auth-tab.active {
-      background: var(--navy);
-      border-color: var(--navy);
-      color: var(--cream);
+    .auth-mode-sub {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 6px;
     }
 
     .auth-form {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      align-items: center;
+      align-items: stretch;
+      width: 100%;
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .auth-form[hidden] {
+      display: none;
+      opacity: 0;
+      transform: translateY(6px);
+    }
+
+    .auth-primary-btn { width: 100%; }
+
+    .auth-link-btn {
+      background: transparent;
+      border: none;
+      color: var(--navy-mid);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 6px 2px;
+      cursor: pointer;
+      text-decoration: underline;
+      justify-self: center;
+    }
+
+    .auth-link-btn:hover { color: var(--navy); }
+
+    .auth-submit[disabled],
+    .auth-link-btn[disabled],
+    .auth-form input[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .auth-card.signup-mode {
+      border-color: #d7c17b;
+      box-shadow: 0 12px 28px rgba(16,33,61,0.1);
     }
 
     .auth-footer {
@@ -1078,15 +1111,16 @@
       <h1 class="gate-title">AI-Assisted MCQ Development for Nursing Education</h1>
       <p class="gate-sub">Log in to your account or create one to access your assigned modules.</p>
 
-      <div class="auth-tabs" role="tablist" aria-label="Authentication modes">
-        <button type="button" class="auth-tab active" id="tab-login" data-mode="login">Log In</button>
-        <button type="button" class="auth-tab" id="tab-signup" data-mode="signup">Create Account</button>
+      <div class="auth-mode-head">
+        <h2 class="auth-mode-title" id="auth-mode-title">Welcome back</h2>
+        <p class="auth-mode-sub" id="auth-mode-sub">Log in to continue your learning modules.</p>
       </div>
 
       <form class="auth-form" id="login-form">
         <input class="gate-input" id="login-email" type="email" placeholder="name@school.edu" autocomplete="email" autocapitalize="none" spellcheck="false" />
         <input class="gate-input" id="login-password" type="password" placeholder="Password" autocomplete="current-password" />
-        <button class="gate-btn" type="submit">Log In</button>
+        <button class="gate-btn auth-primary-btn auth-submit" id="login-submit-btn" type="submit">Log In</button>
+        <button class="auth-link-btn" id="switch-to-signup" type="button">Create Account</button>
       </form>
 
       <form class="auth-form" id="signup-form" hidden>
@@ -1094,7 +1128,8 @@
         <input class="gate-input" id="signup-email" type="email" placeholder="name@school.edu" autocomplete="email" autocapitalize="none" spellcheck="false" />
         <input class="gate-input" id="signup-password" type="password" placeholder="Password (min 8 characters)" autocomplete="new-password" />
         <input class="gate-input" id="signup-confirm" type="password" placeholder="Confirm password" autocomplete="new-password" />
-        <button class="gate-btn" type="submit">Create Account</button>
+        <button class="gate-btn auth-primary-btn auth-submit" id="signup-submit-btn" type="submit">Create Account</button>
+        <button class="auth-link-btn" id="switch-to-login" type="button">Back to Log In</button>
       </form>
 
       <p class="gate-error" id="auth-error"></p>
@@ -1222,6 +1257,8 @@ let currentUserName  = '';
 let isAuthenticated  = false;
 let availableModules = [];
 let currentModuleMeta = null;
+let authBusy = false;
+let authMode = 'login';
 let moduleTitleText = 'AI-Assisted MCQ Development for Nursing Education';
 let moduleLabelText = 'Professional Development Module';
 let sessionId       = '';
@@ -2538,13 +2575,35 @@ function resetModuleState() {
   $('submit-status').textContent = '';
 }
 
+function setAuthBusyState(busy, mode) {
+  authBusy = busy;
+  const form = mode === 'signup' ? $('signup-form') : $('login-form');
+  const submitBtn = mode === 'signup' ? $('signup-submit-btn') : $('login-submit-btn');
+  const submitLabel = mode === 'signup' ? 'Create Account' : 'Log In';
+  const busyLabel = mode === 'signup' ? 'Creating Account…' : 'Logging In…';
+
+  submitBtn.disabled = busy;
+  submitBtn.textContent = busy ? busyLabel : submitLabel;
+  form.querySelectorAll('input, button').forEach(el => {
+    if (el === submitBtn) return;
+    el.disabled = busy;
+  });
+}
+
 function switchAuthMode(mode) {
+  if (authBusy) return;
   const loginMode = mode === 'login';
-  $('tab-login').classList.toggle('active', loginMode);
-  $('tab-signup').classList.toggle('active', !loginMode);
+  authMode = loginMode ? 'login' : 'signup';
+  $('auth-screen').querySelector('.auth-card').classList.toggle('signup-mode', !loginMode);
+  $('auth-mode-title').textContent = loginMode ? 'Welcome back' : 'Create your account';
+  $('auth-mode-sub').textContent = loginMode
+    ? 'Log in to continue your learning modules.'
+    : 'Set up your account to access assigned modules.';
   $('login-form').hidden = !loginMode;
   $('signup-form').hidden = loginMode;
   $('auth-error').textContent = '';
+  setAuthBusyState(false, 'login');
+  setAuthBusyState(false, 'signup');
   if (loginMode) $('login-email').focus();
   else $('signup-name').focus();
 }
@@ -2698,12 +2757,15 @@ async function handleLoginSubmit(e) {
   const email = normalizeIdentityValue($('login-email').value);
   const password = $('login-password').value;
   const errorEl = $('auth-error');
+  if (authBusy) return;
   errorEl.textContent = '';
 
   if (!email || !password) {
     errorEl.textContent = 'Please enter your email and password.';
     return;
   }
+
+  setAuthBusyState(true, 'login');
 
   try {
     const data = await postToAppsScript(LOAD_URL, { action: 'verifyUserLogin', email, password });
@@ -2716,6 +2778,7 @@ async function handleLoginSubmit(e) {
     await loadDashboard();
   } catch (err) {
     errorEl.textContent = err.message || 'Log in failed. Please try again.';
+    setAuthBusyState(false, 'login');
   }
 }
 
@@ -2726,6 +2789,7 @@ async function handleSignUpSubmit(e) {
   const password = $('signup-password').value;
   const confirmPassword = $('signup-confirm').value;
   const errorEl = $('auth-error');
+  if (authBusy) return;
   errorEl.textContent = '';
 
   if (!name || !email || !password || !confirmPassword) {
@@ -2741,6 +2805,8 @@ async function handleSignUpSubmit(e) {
     return;
   }
 
+  setAuthBusyState(true, 'signup');
+
   try {
     const signUp = await postToAppsScript(LOAD_URL, { action: 'signUpUser', name, email, password });
     if (!signUp || signUp.ok !== true) throw new Error(signUp?.error || 'Account creation failed.');
@@ -2755,6 +2821,7 @@ async function handleSignUpSubmit(e) {
     await loadDashboard();
   } catch (err) {
     errorEl.textContent = err.message || 'Sign up failed. Please try again.';
+    setAuthBusyState(false, 'signup');
   }
 }
 
@@ -2780,8 +2847,8 @@ function logoutToAuth() {
 document.addEventListener('DOMContentLoaded', async () => {
   $('last-updated').textContent = document.lastModified;
 
-  $('tab-login').addEventListener('click', () => switchAuthMode('login'));
-  $('tab-signup').addEventListener('click', () => switchAuthMode('signup'));
+  $('switch-to-signup').addEventListener('click', () => switchAuthMode('signup'));
+  $('switch-to-login').addEventListener('click', () => switchAuthMode('login'));
   $('login-form').addEventListener('submit', handleLoginSubmit);
   $('signup-form').addEventListener('submit', handleSignUpSubmit);
   $('btn-logout').addEventListener('click', logoutToAuth);
