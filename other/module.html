@@ -1171,8 +1171,8 @@
   <!-- TRAINING CONTENT -->
   <div id="training">
     <header class="module-header">
-      <p class="module-label">Professional Development Module</p>
-      <h1 class="module-title">AI-Assisted MCQ Development<br>for Nursing Education</h1>
+      <p class="module-label" id="training-module-label">Professional Development Module</p>
+      <h1 class="module-title" id="training-module-title">AI-Assisted MCQ Development<br>for Nursing Education</h1>
       <span class="module-participant" id="participant-badge"></span>
       <div class="overall-progress" id="overall-progress">
         <span id="overall-total">Sections: 0</span>
@@ -1184,7 +1184,7 @@
     <div id="completion">
       <div class="completion-icon">✓</div>
       <h2 class="completion-title">Training Complete</h2>
-      <p class="completion-sub">Thank you for completing the module. Your session data has been recorded.</p>
+      <p class="completion-sub">You have finished the module. Please submit your session data below to complete the process.</p>
       <div class="completion-stats">
         <div class="stat-item"><strong id="stat-questions">—</strong>Questions answered</div>
         <div class="stat-item"><strong id="stat-correct">—</strong>Correct on first try</div>
@@ -1427,7 +1427,7 @@ async function loadTrainingRowsFromSheet(email, selectedModuleKey) {
     moduleTitle: data.moduleTitle || moduleTitleText,
     moduleLabel: data.moduleLabel || moduleLabelText,
     moduleKey: data.moduleKey || normalizedModuleKey,
-    participantBadge: data.participantBadge || normalizedEmail
+    participantBadge: data.participantBadge || data.badgeText || normalizedEmail
   };
 }
 
@@ -1438,7 +1438,7 @@ async function loadTrainingRowsFromSheet(email, selectedModuleKey) {
 const STORAGE_KEY = 'training_progress_v1';
 const AUTH_STORAGE_KEY = 'training_auth_session_v1';
 
-function saveProgress() {
+function saveLocalProgress() {
   if (!participantEmail || !moduleKey) return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -1462,6 +1462,35 @@ function saveProgress() {
   } catch (_) {}
 }
 
+async function syncProgressToServer() {
+  if (!participantEmail || !moduleKey) return;
+
+  const progressPercent = totalSlots > 0
+    ? Math.round((completedSlots.size / totalSlots) * 100)
+    : 0;
+
+  const currentSectionLabel =
+    allSections?.[progressionSectionIndex]?.title || '';
+
+  try {
+    await postToAppsScript(LOAD_URL, {
+      action: 'saveProgress',
+      email: participantEmail,
+      module_key: moduleKey,
+      progress_percent: progressPercent,
+      last_section: currentSectionLabel,
+      completed: completionReached
+    });
+  } catch (err) {
+    console.warn('Progress sync failed:', err);
+  }
+}
+
+async function persistProgress() {
+  saveLocalProgress();
+  await syncProgressToServer();
+}
+
 function loadSavedProgress() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); }
   catch (_) { return null; }
@@ -1469,43 +1498,6 @@ function loadSavedProgress() {
 
 function clearSavedProgress() {
   try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
-}
-
-// ─────────────────────────────────────────────
-// CSV PARSER
-// ─────────────────────────────────────────────
-function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  if (lines.length < 2) return [];
-  const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
-  const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    const vals = parseCSVLine(line);
-    const row  = {};
-    headers.forEach((h, idx) => { row[h] = (vals[idx] || '').trim(); });
-    rows.push(row);
-  }
-  return rows;
-}
-
-function parseCSVLine(line) {
-  const result = [];
-  let cur = '', inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
-      else { inQuotes = !inQuotes; }
-    } else if (ch === ',' && !inQuotes) {
-      result.push(cur); cur = '';
-    } else {
-      cur += ch;
-    }
-  }
-  result.push(cur);
-  return result;
 }
 
 // ─────────────────────────────────────────────
@@ -1873,7 +1865,7 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
     };
     sectionState.currentQi = currentQi;
     interactionTimes.push(Date.now());
-    saveProgress();
+    persistProgress();
 
     logEvent('question_answered', {
       slot:        item.slot,
@@ -1930,7 +1922,7 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
         sectionState.currentQi = currentQi;
         const nextBlock = block.querySelector(`.question-block[data-qi="${currentQi}"]`);
         nextBlock.classList.add('active');
-        saveProgress();
+        persistProgress();
         scrollToEl(nextBlock, 100);
       } else {
         const correct = qCorrectFirst.filter(Boolean).length;
@@ -1950,7 +1942,7 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
         continueRow.classList.add('show');
         sectionState.completed = true;
         sectionState.currentQi = item.questions.length - 1;
-        saveProgress();
+        persistProgress();
         scrollToEl(continueRow, 100);
 
         $(`continue-btn-${sectionIndex}`).addEventListener('click', () => {
@@ -2143,7 +2135,7 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
     sectionState.isCorrect    = isCorrect && !isIdk;
     sectionState.isIdk        = isIdk;
     interactionTimes.push(Date.now());
-    saveProgress();
+    persistProgress();
 
     logEvent('question_answered', {
       slot: item.slot, sectionIndex,
@@ -2323,7 +2315,7 @@ function renderTraining(structure, savedState = null) {
 
         updateSectionUI(sectionIdx);
         if (sectionIdx + 1 < allSections.length) updateSectionUI(sectionIdx + 1);
-        saveProgress();
+        persistProgress();
         updateProgress();
       };
 
@@ -2376,7 +2368,7 @@ function renderTraining(structure, savedState = null) {
 
   revealedSlots = Math.max(preRevealCount, completedSlots.size);
   if (completionReached) showCompletion();
-  saveProgress();
+  persistProgress();
   updateProgress();
 }
 
@@ -2732,8 +2724,8 @@ async function startModule(selectedModuleKey) {
     participantCode = moduleKey;
 
     document.title = moduleTitleText;
-    document.querySelector('.module-label').textContent = moduleLabelText;
-    document.querySelector('.module-title').innerHTML = moduleTitleText.replace(/\n/g, '<br>');
+    $('training-module-label').textContent = moduleLabelText;
+    $('training-module-title').innerHTML = moduleTitleText.replace(/\n/g, '<br>');
     $('participant-badge').textContent = currentUserName
       ? `${currentUserName} · ${currentUserEmail}`
       : currentUserEmail;
