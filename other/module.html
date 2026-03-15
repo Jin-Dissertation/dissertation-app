@@ -103,8 +103,9 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px 28px;
+      padding: 24px 20px;
       text-align: center;
+      width: 100%;
     }
 
     .gate-eyebrow {
@@ -114,30 +115,30 @@
       letter-spacing: 0.22em;
       text-transform: uppercase;
       color: var(--gold);
-      margin-bottom: 16px;
+      margin-bottom: 8px;
     }
 
     .gate-title {
       font-family: var(--serif);
-      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-size: clamp(1.1rem, 3.2vw, 1.5rem);
       font-weight: 700;
       color: var(--navy);
-      line-height: 1.2;
-      margin-bottom: 12px;
-      max-width: 520px;
+      line-height: 1.22;
+      margin-bottom: 0;
+      max-width: 460px;
     }
 
     .gate-sub {
-      font-size: 0.95rem;
+      font-size: 0.84rem;
       color: var(--muted);
       font-style: italic;
-      margin-bottom: 36px;
-      max-width: 420px;
+      margin-bottom: 10px;
+      max-width: 430px;
     }
 
     .gate-form {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: stretch;
       flex-wrap: wrap;
       justify-content: center;
@@ -147,12 +148,12 @@
       font-family: var(--sans);
       font-size: 1rem;
       font-weight: 400;
-      padding: 12px 18px;
+      padding: 11px 14px;
       border: 1px solid var(--rule);
       border-radius: var(--radius);
       background: var(--white);
       color: var(--navy);
-      width: min(320px, 90vw);
+      width: 100%;
       outline: none;
       transition: border-color 0.2s;
     }
@@ -187,37 +188,38 @@
 
 
     .auth-card {
-      width: min(560px, 100%);
+      width: min(520px, 100%);
       background: var(--white);
       border: 1px solid var(--rule);
       border-radius: 14px;
-      padding: 28px 24px 20px;
-      box-shadow: 0 14px 30px rgba(16,33,61,0.12);
+      padding: 20px 20px 12px;
+      box-shadow: 0 10px 22px rgba(16,33,61,0.1);
     }
 
     .auth-mode-head {
-      margin-bottom: 14px;
+      margin-bottom: 10px;
       text-align: left;
+      padding-bottom: 4px;
     }
 
     .auth-mode-title {
       font-family: var(--serif);
-      font-size: clamp(1.2rem, 3vw, 1.55rem);
+      font-size: clamp(1.02rem, 2.3vw, 1.22rem);
       color: var(--navy);
-      margin-bottom: 6px;
+      margin-bottom: 0;
       line-height: 1.2;
     }
 
     .auth-mode-sub {
       color: var(--muted);
-      font-size: 0.9rem;
-      margin-bottom: 6px;
+      font-size: 0.8rem;
+      margin-bottom: 0;
     }
 
     .auth-form {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       align-items: stretch;
       width: 100%;
       opacity: 1;
@@ -231,7 +233,7 @@
       transform: translateY(6px);
     }
 
-    .auth-primary-btn { width: 100%; }
+    .auth-primary-btn { width: 100%; margin-top: 2px; }
 
     .auth-link-btn {
       background: transparent;
@@ -260,9 +262,10 @@
     }
 
     .auth-footer {
-      margin-top: 12px;
-      font-size: 0.72rem;
+      margin-top: 8px;
+      font-size: 0.66rem;
       color: var(--muted);
+      opacity: 0.75;
       text-align: center;
     }
 
@@ -272,14 +275,14 @@
       justify-content:space-between;
       align-items:center;
       gap:12px;
-      margin-bottom: 16px;
+      margin-bottom: 8px;
     }
     .dashboard-card {
       background: var(--white);
       border:1px solid var(--rule);
       border-radius: 12px;
       padding: 16px;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
     .dashboard-card h3 { margin: 0 0 10px; font-size: 1rem; }
     .stats-grid {
@@ -395,7 +398,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 8px;
       cursor: pointer;
     }
 
@@ -431,7 +434,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 8px;
     }
 
     .section-num {
@@ -542,7 +545,7 @@
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
 
     .question-stem {
@@ -658,7 +661,7 @@
       margin-top: 18px;
       padding: 14px 16px;
       border-radius: var(--radius);
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       line-height: 1.65;
       display: none;
     }
@@ -682,7 +685,7 @@
       font-size: 0.78rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 6px;
+      margin-bottom: 0;
       display: block;
     }
 
@@ -808,7 +811,7 @@
     }
 
     .completion-sub {
-      font-size: 0.95rem;
+      font-size: 0.84rem;
       color: var(--muted);
       font-style: italic;
       margin-bottom: 32px;
@@ -842,7 +845,7 @@
     .completion-actions {
       display: flex;
       justify-content: center;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
@@ -874,11 +877,11 @@
       font-weight: 700;
       color: var(--navy);
       line-height: 1.3;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
 
     .content-body {
-      font-size: 0.95rem;
+      font-size: 0.84rem;
       color: var(--navy);
       line-height: 1.75;
     }
@@ -1011,7 +1014,7 @@
       #app { padding: 0 16px 80px; }
 
       /* Gate screen — cut the dead space */
-      #auth-screen { min-height: 0; padding: 72px 20px 60px; }
+      #auth-screen { min-height: 100dvh; padding: 24px 14px 18px; }
       .gate-form { flex-direction: column; align-items: stretch; width: 100%; max-width: 340px; }
       .gate-input { width: 100%; }
       .gate-btn   { width: 100%; }
@@ -1067,9 +1070,9 @@
 
       #app { padding: 0 16px 72px; }
 
-      #auth-screen { padding: 56px 16px 44px; }
-      .gate-title { line-height: 1.25; }
-      .gate-sub { margin-bottom: 24px; }
+      #auth-screen { padding: 20px 12px 14px; }
+      .gate-title { line-height: 1.22; font-size: clamp(1.02rem, 5.2vw, 1.28rem); }
+      .gate-sub { margin-bottom: 10px; }
       .gate-form { max-width: 100%; }
 
       .module-label { letter-spacing: 0.16em; }
