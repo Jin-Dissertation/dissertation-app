@@ -40,7 +40,7 @@
       background: var(--cream);
       color: var(--navy);
       line-height: 1.7;
-      min-height: 100vh;
+      min-height: 100dvh;
       -webkit-font-smoothing: antialiased;
       -webkit-tap-highlight-color: transparent;
     }
@@ -94,15 +94,18 @@
       padding: 0 28px 100px;
     }
 
+    #app.auth-mode { padding-bottom: 0; }
+
     /* ── ACCESS GATE ── */
-    #gate {
-      min-height: 100vh;
+    #auth-screen {
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px 28px;
+      padding: 24px 20px;
       text-align: center;
+      width: 100%;
     }
 
     .gate-eyebrow {
@@ -112,30 +115,30 @@
       letter-spacing: 0.22em;
       text-transform: uppercase;
       color: var(--gold);
-      margin-bottom: 16px;
+      margin-bottom: 8px;
     }
 
     .gate-title {
       font-family: var(--serif);
-      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-size: clamp(1.1rem, 3.2vw, 1.5rem);
       font-weight: 700;
       color: var(--navy);
-      line-height: 1.2;
-      margin-bottom: 12px;
-      max-width: 520px;
+      line-height: 1.22;
+      margin-bottom: 0;
+      max-width: 460px;
     }
 
     .gate-sub {
-      font-size: 0.95rem;
+      font-size: 0.84rem;
       color: var(--muted);
       font-style: italic;
-      margin-bottom: 36px;
-      max-width: 420px;
+      margin-bottom: 10px;
+      max-width: 430px;
     }
 
     .gate-form {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: stretch;
       flex-wrap: wrap;
       justify-content: center;
@@ -145,12 +148,12 @@
       font-family: var(--sans);
       font-size: 1rem;
       font-weight: 400;
-      padding: 12px 18px;
+      padding: 11px 14px;
       border: 1px solid var(--rule);
       border-radius: var(--radius);
       background: var(--white);
       color: var(--navy);
-      width: min(320px, 90vw);
+      width: 100%;
       outline: none;
       transition: border-color 0.2s;
     }
@@ -182,6 +185,119 @@
       color: var(--red);
       min-height: 1.2em;
     }
+
+
+    .auth-card {
+      width: min(520px, 100%);
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 14px;
+      padding: 20px 20px 12px;
+      box-shadow: 0 10px 22px rgba(16,33,61,0.1);
+    }
+
+    .auth-mode-head {
+      margin-bottom: 10px;
+      text-align: left;
+      padding-bottom: 4px;
+    }
+
+    .auth-mode-title {
+      font-family: var(--serif);
+      font-size: clamp(1.02rem, 2.3vw, 1.22rem);
+      color: var(--navy);
+      margin-bottom: 0;
+      line-height: 1.2;
+    }
+
+    .auth-mode-sub {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-bottom: 0;
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+      width: 100%;
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .auth-form[hidden] {
+      display: none;
+      opacity: 0;
+      transform: translateY(6px);
+    }
+
+    .auth-primary-btn { width: 100%; margin-top: 2px; }
+
+    .auth-link-btn {
+      background: transparent;
+      border: none;
+      color: var(--navy-mid);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 6px 2px;
+      cursor: pointer;
+      text-decoration: underline;
+      justify-self: center;
+    }
+
+    .auth-link-btn:hover { color: var(--navy); }
+
+    .auth-submit[disabled],
+    .auth-link-btn[disabled],
+    .auth-form input[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .auth-card.signup-mode {
+      border-color: #d7c17b;
+      box-shadow: 0 12px 28px rgba(16,33,61,0.1);
+    }
+
+    .auth-footer {
+      margin-top: 8px;
+      font-size: 0.66rem;
+      color: var(--muted);
+      opacity: 0.75;
+      text-align: center;
+    }
+
+    #dashboard { display:none; padding-top: 24px; }
+    .dashboard-header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom: 8px;
+    }
+    .dashboard-card {
+      background: var(--white);
+      border:1px solid var(--rule);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 10px;
+    }
+    .dashboard-card h3 { margin: 0 0 10px; font-size: 1rem; }
+    .stats-grid {
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap:10px;
+    }
+    .stat-chip { border:1px solid var(--rule); border-radius:10px; padding:10px; background: var(--cream); }
+    .stat-chip strong { display:block; font-size:1rem; color:var(--navy); }
+    .modules-list { display:flex; flex-direction:column; gap:10px; }
+    .module-item { border:1px solid var(--rule); border-radius:10px; padding:12px; display:flex; justify-content:space-between; gap:10px; align-items:center; }
+    .module-meta p { margin: 2px 0; font-size:0.85rem; color:var(--muted); }
+    .module-item .action-btn { font-size:0.75rem; padding:8px 12px; }
+    .empty-modules { color: var(--muted); font-size:0.9rem; }
+    .dashboard-error { margin-top: 10px; color: var(--red); font-size: 0.85rem; min-height: 1.1em; }
 
     /* ── LOADING ── */
     #loading {
@@ -282,7 +398,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 8px;
       cursor: pointer;
     }
 
@@ -318,7 +434,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 8px;
     }
 
     .section-num {
@@ -429,7 +545,7 @@
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
 
     .question-stem {
@@ -545,7 +661,7 @@
       margin-top: 18px;
       padding: 14px 16px;
       border-radius: var(--radius);
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       line-height: 1.65;
       display: none;
     }
@@ -569,7 +685,7 @@
       font-size: 0.78rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 6px;
+      margin-bottom: 0;
       display: block;
     }
 
@@ -695,7 +811,7 @@
     }
 
     .completion-sub {
-      font-size: 0.95rem;
+      font-size: 0.84rem;
       color: var(--muted);
       font-style: italic;
       margin-bottom: 32px;
@@ -726,6 +842,13 @@
       margin-bottom: 2px;
     }
 
+    .completion-actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
     .submit-status {
       font-size: 0.88rem;
       color: var(--muted);
@@ -754,11 +877,11 @@
       font-weight: 700;
       color: var(--navy);
       line-height: 1.3;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
 
     .content-body {
-      font-size: 0.95rem;
+      font-size: 0.84rem;
       color: var(--navy);
       line-height: 1.75;
     }
@@ -891,10 +1014,13 @@
       #app { padding: 0 16px 80px; }
 
       /* Gate screen — cut the dead space */
-      #gate { min-height: 0; padding: 72px 20px 60px; }
+      #auth-screen { min-height: 100dvh; padding: 24px 14px 18px; }
       .gate-form { flex-direction: column; align-items: stretch; width: 100%; max-width: 340px; }
       .gate-input { width: 100%; }
       .gate-btn   { width: 100%; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .module-item { flex-direction: column; align-items: stretch; }
+      .module-item .action-btn { width: 100%; justify-content:center; }
 
       /* Header and shell spacing */
       .module-header { padding: 28px 0 22px; }
@@ -944,9 +1070,9 @@
 
       #app { padding: 0 16px 72px; }
 
-      #gate { padding: 56px 16px 44px; }
-      .gate-title { line-height: 1.25; }
-      .gate-sub { margin-bottom: 24px; }
+      #auth-screen { padding: 20px 12px 14px; }
+      .gate-title { line-height: 1.22; font-size: clamp(1.02rem, 5.2vw, 1.28rem); }
+      .gate-sub { margin-bottom: 10px; }
       .gate-form { max-width: 100%; }
 
       .module-label { letter-spacing: 0.16em; }
@@ -981,21 +1107,59 @@
 
 <div id="app">
 
-  <!-- ACCESS GATE -->
-  <div id="gate">
-    <p class="gate-eyebrow">Professional Development Module</p>
-    <h1 class="gate-title">AI-Assisted MCQ Development for Nursing Education</h1>
-    <p class="gate-sub">Enter your school email address and access code to load your assigned module from Google Sheets.</p>
-    <form class="gate-form" id="gate-form">
-      <input class="gate-input" id="email-input" type="email" autofocus
-        placeholder="name@school.edu"
-        autocomplete="email" autocapitalize="none" spellcheck="false" />
-      <input class="gate-input" id="code-input" type="text"
-        placeholder="your-code"
-        autocomplete="off" autocapitalize="none" spellcheck="false" />
-      <button class="gate-btn" type="submit">Begin</button>
-    </form>
-    <p class="gate-error" id="gate-error"></p>
+  <!-- AUTH -->
+  <div id="auth-screen">
+    <div class="auth-card">
+      <p class="gate-eyebrow">Professional Development Module</p>
+      <h1 class="gate-title">AI-Assisted MCQ Development for Nursing Education</h1>
+      <p class="gate-sub">Log in to your account or create one to access your assigned modules.</p>
+
+      <div class="auth-mode-head">
+        <h2 class="auth-mode-title" id="auth-mode-title">Welcome back</h2>
+        <p class="auth-mode-sub" id="auth-mode-sub">Log in to continue your learning modules.</p>
+      </div>
+
+      <form class="auth-form" id="login-form">
+        <input class="gate-input" id="login-email" type="email" placeholder="name@school.edu" autocomplete="email" autocapitalize="none" spellcheck="false" />
+        <input class="gate-input" id="login-password" type="password" placeholder="Password" autocomplete="current-password" />
+        <button class="gate-btn auth-primary-btn auth-submit" id="login-submit-btn" type="submit">Log In</button>
+        <button class="auth-link-btn" id="switch-to-signup" type="button">Create Account</button>
+      </form>
+
+      <form class="auth-form" id="signup-form" hidden>
+        <input class="gate-input" id="signup-name" type="text" placeholder="Full name" autocomplete="name" />
+        <input class="gate-input" id="signup-email" type="email" placeholder="name@school.edu" autocomplete="email" autocapitalize="none" spellcheck="false" />
+        <input class="gate-input" id="signup-password" type="password" placeholder="Password (min 8 characters)" autocomplete="new-password" />
+        <input class="gate-input" id="signup-confirm" type="password" placeholder="Confirm password" autocomplete="new-password" />
+        <button class="gate-btn auth-primary-btn auth-submit" id="signup-submit-btn" type="submit">Create Account</button>
+        <button class="auth-link-btn" id="switch-to-login" type="button">Back to Log In</button>
+      </form>
+
+      <p class="gate-error" id="auth-error"></p>
+      <footer class="auth-footer">Template updated: <span id="last-updated"></span></footer>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" style="display:none;">
+    <header class="dashboard-header">
+      <div>
+        <p class="module-label">Dashboard</p>
+        <h2 id="dashboard-greeting">Welcome</h2>
+      </div>
+      <button class="action-btn" id="btn-logout" type="button">Log out</button>
+    </header>
+
+    <section class="dashboard-card" id="stats-card">
+      <h3>Your Stats</h3>
+      <div class="stats-grid" id="dashboard-stats"></div>
+    </section>
+
+    <section class="dashboard-card">
+      <h3>Available Modules</h3>
+      <div id="modules-list" class="modules-list"></div>
+      <p class="dashboard-error" id="dashboard-error"></p>
+    </section>
   </div>
 
   <!-- LOADING -->
@@ -1026,12 +1190,15 @@
         <div class="stat-item"><strong id="stat-correct">—</strong>Correct on first try</div>
         <div class="stat-item"><strong id="stat-time">—</strong>Time elapsed</div>
       </div>
-      <button class="action-btn" id="btn-submit-final">
-        Submit session data
-        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M2 7h10M8 3l4 4-4 4"/>
-        </svg>
-      </button>
+      <div class="completion-actions">
+        <button class="action-btn" id="btn-submit-final">
+          Submit session data
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 7h10M8 3l4 4-4 4"/>
+          </svg>
+        </button>
+        <button class="action-btn" id="btn-back-dashboard" type="button" style="background:#2f6edc;">Back to Dashboard</button>
+      </div>
       <p class="submit-status" id="submit-status"></p>
     </div>
   </div>
@@ -1075,7 +1242,7 @@
   {
     "action": "loadTraining",
     "email": "student@school.edu",
-    "code": "blue-sky"
+    "module_key": "aqg_intro"
   }
 */
 const LOAD_URL = 'https://script.google.com/macros/s/AKfycbyxevT1EWOj_IgdmL2oFiubBWc3b1BC5BnUuCL5-w0PxLjVPE9xsO_m_3RoIgqZ9mvO_A/exec';
@@ -1088,11 +1255,19 @@ const ENABLE_DEMO_FALLBACK = false;
 let participantCode = '';
 let participantEmail = '';
 let moduleKey       = '';
+let currentUserEmail = '';
+let currentUserName  = '';
+let isAuthenticated  = false;
+let availableModules = [];
+let currentModuleMeta = null;
+let authBusy = false;
+let authMode = 'login';
 let moduleTitleText = 'AI-Assisted MCQ Development for Nursing Education';
 let moduleLabelText = 'Professional Development Module';
 let sessionId       = '';
 let sessionStart    = null;
 let events          = [];
+const interactionTimes = [];
 let totalQuestions  = 0;
 let correctFirst    = 0;
 let totalSlots      = 0;
@@ -1148,6 +1323,21 @@ function formatDuration(ms) {
   return `${s}s`;
 }
 
+function computeActiveSeconds(events) {
+  if (!Array.isArray(events) || events.length < 2) return 0;
+  let total = 0;
+  for (let i = 1; i < events.length; i++) {
+    const gap = (events[i] - events[i - 1]) / 1000;
+    if (!Number.isFinite(gap) || gap < 0) continue;
+    total += Math.min(gap, 60);
+  }
+  return total;
+}
+
+function getDeviceType() {
+  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') ? 'mobile' : 'desktop';
+}
+
 function scrollToEl(el, offset = 80) {
   const top = el.getBoundingClientRect().top + window.scrollY - offset;
   window.scrollTo({ top, behavior: 'smooth' });
@@ -1171,48 +1361,73 @@ function normalizeIdentityValue(value) {
   return String(value || '').trim().toLowerCase();
 }
 
-async function loadTrainingRowsFromSheet(email, code) {
-  const normalizedEmail = normalizeIdentityValue(email);
-  const normalizedCode  = normalizeIdentityValue(code);
-
-  if (!normalizedEmail || !normalizedCode) {
-    throw new Error('Please enter both your email address and access code.');
-  }
-
-  if (!LOAD_URL || LOAD_URL.includes('PASTE_YOUR_LOAD_APPS_SCRIPT_URL_HERE')) {
-    throw new Error('LOAD_URL is not configured yet.');
-  }
-
-  const response = await fetch(LOAD_URL, {
+async function postToAppsScript(url, payload) {
+  const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({
-      action: 'loadTraining',
-      email: normalizedEmail,
-      code: normalizedCode
-    })
+    body: JSON.stringify(payload),
+    redirect: 'follow'
   });
 
+  const text = await response.text();
+  let data = null;
+  try { data = JSON.parse(text); }
+  catch (_) { throw new Error('invalid_json_response'); }
+
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
+    throw new Error(data?.error || `HTTP ${response.status}`);
   }
 
-  const data = await response.json();
+  return data;
+}
+
+function saveAuthSession() {
+  try {
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
+      email: currentUserEmail,
+      name: currentUserName,
+      authenticated: isAuthenticated
+    }));
+  } catch (_) {}
+}
+
+function loadAuthSession() {
+  try { return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY)); }
+  catch (_) { return null; }
+}
+
+function clearAuthSession() {
+  try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch (_) {}
+}
+
+async function loadTrainingRowsFromSheet(email, selectedModuleKey) {
+  const normalizedEmail = normalizeIdentityValue(email);
+  const normalizedModuleKey = String(selectedModuleKey || '').trim();
+
+  if (!normalizedEmail || !normalizedModuleKey) {
+    throw new Error('Please select a module from your dashboard.');
+  }
+
+  const data = await postToAppsScript(LOAD_URL, {
+    action: 'loadTraining',
+    email: normalizedEmail,
+    module_key: normalizedModuleKey
+  });
 
   if (!data || data.ok !== true) {
     throw new Error(data?.error || 'The server did not return a valid training payload.');
   }
 
   if (!Array.isArray(data.rows) || data.rows.length === 0) {
-    throw new Error('No training rows were returned for this student/code combination.');
+    throw new Error('No training rows were returned for this module.');
   }
 
   return {
     rows: data.rows,
     moduleTitle: data.moduleTitle || moduleTitleText,
     moduleLabel: data.moduleLabel || moduleLabelText,
-    moduleKey: data.moduleKey || '',
-    participantBadge: data.participantBadge || `${normalizedEmail} · ${normalizedCode}`
+    moduleKey: data.moduleKey || normalizedModuleKey,
+    participantBadge: data.participantBadge || normalizedEmail
   };
 }
 
@@ -1221,9 +1436,10 @@ async function loadTrainingRowsFromSheet(email, code) {
 // PROGRESS PERSISTENCE
 // ─────────────────────────────────────────────
 const STORAGE_KEY = 'training_progress_v1';
+const AUTH_STORAGE_KEY = 'training_auth_session_v1';
 
 function saveProgress() {
-  if (!participantCode) return;
+  if (!participantEmail || !moduleKey) return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       participantCode,
@@ -1238,6 +1454,7 @@ function saveProgress() {
       totalQuestions,
       correctFirst,
       events,
+      interactionTimes,
       completionReached,
       hasSuccessfulSubmission,
       quizStates
@@ -1655,6 +1872,7 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
       isIdk
     };
     sectionState.currentQi = currentQi;
+    interactionTimes.push(Date.now());
     saveProgress();
 
     logEvent('question_answered', {
@@ -1924,6 +2142,7 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
     sectionState.selectedText = isIdk ? "I don't know" : btn.querySelector('.option-text').textContent;
     sectionState.isCorrect    = isCorrect && !isIdk;
     sectionState.isIdk        = isIdk;
+    interactionTimes.push(Date.now());
     saveProgress();
 
     logEvent('question_answered', {
@@ -1978,7 +2197,7 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
 
 // Warn before leaving while training is active
 window.addEventListener('beforeunload', e => {
-  if (participantCode && !hasSuccessfulSubmission) {
+  if (trainingActive && !hasSuccessfulSubmission) {
     e.preventDefault();
     e.returnValue = '';
   }
@@ -2068,8 +2287,10 @@ function renderTraining(structure, savedState = null) {
 
     accordion.querySelector('.section-toggle').addEventListener('click', () => {
       if (!sectionState[sectionIdx].unlocked) return;
+      const wasExpanded = sectionState[sectionIdx].expanded;
       const isCompletedSection = sectionState[sectionIdx].completedCards >= allSections[sectionIdx].cards.length;
       collapseAllExcept(sectionIdx, !isCompletedSection);
+      if (!wasExpanded) interactionTimes.push(Date.now());
     });
 
     const content = accordion.querySelector('.section-content');
@@ -2193,21 +2414,30 @@ async function submitSession() {
   btn.textContent = 'Submitting…';
   status.textContent = '';
 
-  const elapsed = sessionStart ? Date.now() - sessionStart : 0;
+  const nowMs = Date.now();
+  const clockSeconds = sessionStart ? Math.max(0, (nowMs - sessionStart) / 1000) : 0;
+  const activeSeconds = computeActiveSeconds(interactionTimes);
+  const clockMinutes = Number((clockSeconds / 60).toFixed(2));
+  const activeMinutes = Number((activeSeconds / 60).toFixed(2));
+  const interactionRate = activeMinutes > 0
+    ? Number((totalQuestions / activeMinutes).toFixed(2))
+    : 0;
+  const deviceType = getDeviceType();
 
   const payload = {
-  action:           'submitSession',
-  participantEmail: participantEmail,
-  participantCode:  participantCode,
-  moduleKey:        moduleKey,
-  sessionId:        sessionId,
-  sessionStart:     sessionStart ? new Date(sessionStart).toISOString() : null,
-  sessionEnd:       now(),
-  timeElapsedSeconds: sessionStart ? Math.round((Date.now() - sessionStart) / 1000) : 0,
-  totalQuestions:   totalQuestions,
-  correctFirst:     correctFirst,
+  action:            'submitSession',
+  participantEmail:  participantEmail,
+  participantCode:   participantCode,
+  moduleKey:         moduleKey,
+  sessionId:         sessionId,
+  sessionStart:      sessionStart ? new Date(sessionStart).toISOString() : null,
+  sessionEnd:        now(),
+  totalQuestions:    totalQuestions,
   completionReached: completionReached,
-  hasSuccessfulSubmission: hasSuccessfulSubmission,
+  clock_minutes:     clockMinutes,
+  active_minutes:    activeMinutes,
+  interaction_rate:  interactionRate,
+  device_type:       deviceType,
   events
 };
   
@@ -2278,10 +2508,10 @@ function offerDownload(payload) {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `${payload.participant_code}_${payload.session_id}.json`;
+    a.download = `${payload.participantEmail || 'session'}_${payload.sessionId || 'data'}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
-    logEvent('backup_downloaded', { participant: payload.participant_code });
+    logEvent('backup_downloaded', { participant: payload.participantEmail });
 
     dlBtn.remove();
     const confirm = document.createElement('p');
@@ -2327,125 +2557,333 @@ function offerDownload(payload) {
 })();
 
 // ─────────────────────────────────────────────
+// AUTH + DASHBOARD FLOW
+// ─────────────────────────────────────────────
+function resetModuleState() {
+  moduleTitleText = 'AI-Assisted MCQ Development for Nursing Education';
+  moduleLabelText = 'Professional Development Module';
+  sessionId = makeSessionId((moduleKey || 'module').slice(0, 12));
+  sessionStart = Date.now();
+  completionReached = false;
+  hasSuccessfulSubmission = false;
+  quizStates = {};
+  events = [];
+  interactionTimes.length = 0;
+  totalQuestions = 0;
+  correctFirst = 0;
+  revealedSlots = 0;
+  completedSlots = new Set();
+  $('sections-container').innerHTML = '';
+  $('completion').style.display = 'none';
+  $('submit-status').textContent = '';
+}
+
+function setAuthBusyState(busy, mode) {
+  authBusy = busy;
+  const form = mode === 'signup' ? $('signup-form') : $('login-form');
+  const submitBtn = mode === 'signup' ? $('signup-submit-btn') : $('login-submit-btn');
+  const submitLabel = mode === 'signup' ? 'Create Account' : 'Log In';
+  const busyLabel = mode === 'signup' ? 'Creating Account…' : 'Logging In…';
+
+  submitBtn.disabled = busy;
+  submitBtn.textContent = busy ? busyLabel : submitLabel;
+  form.querySelectorAll('input, button').forEach(el => {
+    if (el === submitBtn) return;
+    el.disabled = busy;
+  });
+}
+
+function switchAuthMode(mode) {
+  if (authBusy) return;
+  const loginMode = mode === 'login';
+  authMode = loginMode ? 'login' : 'signup';
+  $('auth-screen').querySelector('.auth-card').classList.toggle('signup-mode', !loginMode);
+  $('auth-mode-title').textContent = loginMode ? 'Welcome back' : 'Create your account';
+  $('auth-mode-sub').textContent = loginMode
+    ? 'Log in to continue your learning modules.'
+    : 'Set up your account to access assigned modules.';
+  $('login-form').hidden = !loginMode;
+  $('signup-form').hidden = loginMode;
+  $('auth-error').textContent = '';
+  setAuthBusyState(false, 'login');
+  setAuthBusyState(false, 'signup');
+  if (loginMode) $('login-email').focus();
+  else $('signup-name').focus();
+}
+
+function showScreen(name) {
+  $('auth-screen').style.display = name === 'auth' ? 'flex' : 'none';
+  $('dashboard').style.display = name === 'dashboard' ? 'block' : 'none';
+  $('loading').style.display = name === 'loading' ? 'flex' : 'none';
+  $('training').style.display = name === 'training' ? 'block' : 'none';
+  $('app').classList.toggle('auth-mode', name === 'auth');
+}
+
+function renderDashboard(payload) {
+  const user = payload.user || {};
+  const stats = payload.stats || {};
+  $('dashboard-error').textContent = '';
+  availableModules = Array.isArray(payload.modules) ? payload.modules : [];
+  currentUserName = user.name || currentUserName;
+  currentUserEmail = normalizeIdentityValue(user.email || currentUserEmail);
+  $('dashboard-greeting').textContent = `Welcome, ${currentUserName || currentUserEmail}`;
+
+  const statsEntries = [
+    ['Modules started', stats.modules_started ?? 0],
+    ['Modules completed', stats.modules_completed ?? 0],
+    ['Total sessions', stats.total_sessions ?? 0],
+    ['Avg active minutes', stats.avg_active_minutes ?? 0],
+    ['Avg interaction rate', stats.avg_interaction_rate ?? 0],
+    ['Last activity', stats.last_activity ? new Date(stats.last_activity).toLocaleString() : '—']
+  ];
+
+  $('dashboard-stats').innerHTML = statsEntries.map(([label, value]) => `
+    <div class="stat-chip"><strong>${value}</strong><span>${label}</span></div>
+  `).join('');
+
+  const list = $('modules-list');
+  if (!availableModules.length) {
+    list.innerHTML = '<p class="empty-modules">No modules are assigned yet.</p>';
+    return;
+  }
+
+  list.innerHTML = availableModules.map((mod, idx) => {
+    const key = mod.module_key || `module_${idx}`;
+    const completed = !!mod.completed;
+    const progress = Number(mod.progress_percent ?? 0);
+    return `
+      <article class="module-item">
+        <div class="module-meta">
+          <strong>${mod.module_title || key}</strong>
+          <p>${mod.module_subtitle || ''}</p>
+          <p>Status: ${completed ? 'Completed' : 'In progress'} · Progress: ${Math.max(0, Math.min(100, progress))}%</p>
+          <p>Last activity: ${mod.last_activity ? new Date(mod.last_activity).toLocaleString() : '—'}</p>
+        </div>
+        <button class="action-btn" type="button" data-module-key="${key}">${progress > 0 && !completed ? 'Resume Module' : 'Start Module'}</button>
+      </article>
+    `;
+  }).join('');
+
+  list.querySelectorAll('button[data-module-key]').forEach(btn => {
+    btn.addEventListener('click', () => startModule(btn.dataset.moduleKey));
+  });
+}
+
+async function loadDashboard() {
+  if (!currentUserEmail) throw new Error('Missing user email for dashboard request.');
+  showScreen('loading');
+  const data = await postToAppsScript(LOAD_URL, {
+    action: 'getUserDashboard',
+    email: currentUserEmail
+  });
+
+  if (!data || data.ok !== true) {
+    throw new Error(data?.error || 'Failed to load dashboard.');
+  }
+
+  renderDashboard(data);
+  showScreen('dashboard');
+}
+
+async function startModule(selectedModuleKey) {
+  moduleKey = String(selectedModuleKey || '').trim();
+  participantEmail = currentUserEmail;
+  participantCode = moduleKey;
+  currentModuleMeta = availableModules.find(m => m.module_key === moduleKey) || { module_key: moduleKey };
+
+  const saved = loadSavedProgress();
+  let savedState = null;
+  if (
+    saved &&
+    normalizeIdentityValue(saved.participantEmail) === currentUserEmail &&
+    saved.moduleKey === moduleKey &&
+    saved.revealedSlots > 1
+  ) {
+    const doResume = confirm('You have saved progress for this module. Click OK to resume or Cancel to start over.');
+    if (doResume) {
+      sessionId = saved.sessionId;
+      sessionStart = saved.sessionStart;
+      totalQuestions = saved.totalQuestions || 0;
+      correctFirst = saved.correctFirst || 0;
+      events = saved.events || [];
+      interactionTimes.length = 0;
+      interactionTimes.push(...(saved.interactionTimes || []));
+      completionReached = !!saved.completionReached;
+      hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
+      quizStates = saved.quizStates || {};
+      savedState = saved;
+    } else {
+      clearSavedProgress();
+      resetModuleState();
+    }
+  } else {
+    resetModuleState();
+  }
+
+  showScreen('loading');
+  try {
+    const payload = await loadTrainingRowsFromSheet(currentUserEmail, moduleKey);
+    const structure = buildStructure(payload.rows);
+    if (structure.length === 0) throw new Error('No content found for this assignment.');
+
+    moduleTitleText = payload.moduleTitle || moduleTitleText;
+    moduleLabelText = payload.moduleLabel || moduleLabelText;
+    moduleKey = payload.moduleKey || moduleKey;
+    participantCode = moduleKey;
+
+    document.title = moduleTitleText;
+    document.querySelector('.module-label').textContent = moduleLabelText;
+    document.querySelector('.module-title').innerHTML = moduleTitleText.replace(/\n/g, '<br>');
+    $('participant-badge').textContent = currentUserName
+      ? `${currentUserName} · ${currentUserEmail}`
+      : currentUserEmail;
+
+    showScreen('training');
+    renderTraining(structure, savedState);
+    if (interactionTimes.length === 0) interactionTimes.push(Date.now());
+
+    logEvent('content_loaded', {
+      sections: structure.length,
+      cards: structure.reduce((n, sec) => n + sec.cards.length, 0),
+      resumed: !!savedState,
+      module_key: moduleKey
+    });
+  } catch (err) {
+    showScreen('dashboard');
+    $('dashboard-error').textContent = `Failed to load module: ${err.message}`;
+    logEvent('content_load_failed', { error: String(err.message), module_key: moduleKey });
+  }
+}
+
+async function handleLoginSubmit(e) {
+  e.preventDefault();
+  const email = normalizeIdentityValue($('login-email').value);
+  const password = $('login-password').value;
+  const errorEl = $('auth-error');
+  if (authBusy) return;
+  errorEl.textContent = '';
+
+  if (!email || !password) {
+    errorEl.textContent = 'Please enter your email and password.';
+    return;
+  }
+
+  setAuthBusyState(true, 'login');
+
+  try {
+    const data = await postToAppsScript(LOAD_URL, { action: 'verifyUserLogin', email, password });
+    if (!data || data.ok !== true) throw new Error(data?.error || 'Login failed.');
+
+    currentUserEmail = normalizeIdentityValue(data.email || email);
+    currentUserName = String(data.name || '').trim();
+    isAuthenticated = true;
+    saveAuthSession();
+    await loadDashboard();
+  } catch (err) {
+    errorEl.textContent = err.message || 'Log in failed. Please try again.';
+    setAuthBusyState(false, 'login');
+  }
+}
+
+async function handleSignUpSubmit(e) {
+  e.preventDefault();
+  const name = String($('signup-name').value || '').trim();
+  const email = normalizeIdentityValue($('signup-email').value);
+  const password = $('signup-password').value;
+  const confirmPassword = $('signup-confirm').value;
+  const errorEl = $('auth-error');
+  if (authBusy) return;
+  errorEl.textContent = '';
+
+  if (!name || !email || !password || !confirmPassword) {
+    errorEl.textContent = 'Please fill in all account fields.';
+    return;
+  }
+  if (password.length < 8) {
+    errorEl.textContent = 'Password must be at least 8 characters.';
+    return;
+  }
+  if (password !== confirmPassword) {
+    errorEl.textContent = 'Password and confirmation do not match.';
+    return;
+  }
+
+  setAuthBusyState(true, 'signup');
+
+  try {
+    const signUp = await postToAppsScript(LOAD_URL, { action: 'signUpUser', name, email, password });
+    if (!signUp || signUp.ok !== true) throw new Error(signUp?.error || 'Account creation failed.');
+
+    const login = await postToAppsScript(LOAD_URL, { action: 'verifyUserLogin', email, password });
+    if (!login || login.ok !== true) throw new Error(login?.error || 'Account created but login failed.');
+
+    currentUserEmail = normalizeIdentityValue(login.email || email);
+    currentUserName = String(login.name || name).trim();
+    isAuthenticated = true;
+    saveAuthSession();
+    await loadDashboard();
+  } catch (err) {
+    errorEl.textContent = err.message || 'Sign up failed. Please try again.';
+    setAuthBusyState(false, 'signup');
+  }
+}
+
+function logoutToAuth() {
+  clearSavedProgress();
+  clearAuthSession();
+  currentUserEmail = '';
+  currentUserName = '';
+  isAuthenticated = false;
+  availableModules = [];
+  currentModuleMeta = null;
+  participantEmail = '';
+  participantCode = '';
+  moduleKey = '';
+  resetModuleState();
+  switchAuthMode('login');
+  showScreen('auth');
+}
+
+// ─────────────────────────────────────────────
 // BOOT
 // ─────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  const gateForm = $('gate-form');
-  const emailInput = $('email-input');
-  const codeInput = $('code-input');
-  const gateError = $('gate-error');
+document.addEventListener('DOMContentLoaded', async () => {
+  $('last-updated').textContent = document.lastModified;
 
-  emailInput.focus();
-
-  gateForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    gateError.textContent = '';
-
-    const enteredEmail = normalizeIdentityValue(emailInput.value);
-    const enteredCode = normalizeIdentityValue(codeInput.value);
-
-    if (!enteredEmail || !enteredCode) {
-      gateError.textContent = 'Please enter both your email address and access code.';
-      if (!enteredEmail) emailInput.focus();
-      else codeInput.focus();
-      return;
-    }
-
-    const saved = loadSavedProgress();
-    let resuming = false;
-    if (
-      saved &&
-      saved.participantCode === enteredCode &&
-      normalizeIdentityValue(saved.participantEmail) === enteredEmail &&
-      saved.revealedSlots > 1
-    ) {
-      const doResume = confirm(
-        'You have a training session in progress.\n\nClick OK to resume where you left off, or Cancel to start over from the beginning.'
-      );
-      if (doResume) {
-        participantCode = saved.participantCode;
-        participantEmail = normalizeIdentityValue(saved.participantEmail);
-        moduleKey = saved.moduleKey || '';
-        moduleTitleText = saved.moduleTitleText || moduleTitleText;
-        moduleLabelText = saved.moduleLabelText || moduleLabelText;
-        sessionId       = saved.sessionId;
-        sessionStart    = saved.sessionStart;
-        totalQuestions  = saved.totalQuestions || 0;
-        correctFirst    = saved.correctFirst || 0;
-        events          = saved.events || [];
-        completionReached = !!saved.completionReached;
-        hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
-        quizStates = saved.quizStates || {};
-        resuming = true;
-      } else {
-        clearSavedProgress();
-      }
-    }
-
-    if (!resuming) {
-      participantCode = enteredCode;
-      participantEmail = enteredEmail;
-      moduleKey = '';
-      moduleTitleText = 'AI-Assisted MCQ Development for Nursing Education';
-      moduleLabelText = 'Professional Development Module';
-      sessionId = makeSessionId(enteredCode);
-      sessionStart = Date.now();
-      completionReached = false;
-      hasSuccessfulSubmission = false;
-      quizStates = {};
-      events = [];
-      totalQuestions = 0;
-      correctFirst = 0;
-    }
-
-    $('gate').style.display = 'none';
-    $('loading').style.display = 'flex';
-
-    if (!resuming) {
-      logEvent('access_requested', { participantCode: enteredCode, participantEmail: enteredEmail });
-    }
-
-    try {
-      const payload = await loadTrainingRowsFromSheet(enteredEmail, enteredCode);
-      const structure = buildStructure(payload.rows);
-
-      if (structure.length === 0) throw new Error('No content found for this assignment.');
-
-      moduleTitleText = payload.moduleTitle || moduleTitleText;
-      moduleLabelText = payload.moduleLabel || moduleLabelText;
-      moduleKey = payload.moduleKey || moduleKey;
-
-      document.title = moduleTitleText;
-      document.querySelector('.module-label').textContent = moduleLabelText;
-      document.querySelector('.module-title').innerHTML = moduleTitleText.replace(/\n/g, '<br>');
-      $('participant-badge').textContent = payload.participantBadge || `${participantEmail} · ${participantCode}`;
-
-      $('loading').style.display = 'none';
-      $('training').style.display = 'block';
-
-      renderTraining(structure, resuming ? saved : null);
-
-      logEvent('content_loaded', {
-        sections: structure.length,
-        cards: structure.reduce((n, sec) => n + sec.cards.length, 0),
-        resumed: resuming
-      });
-
-    } catch (err) {
-      $('loading').style.display = 'none';
-      $('gate').style.display = 'flex';
-      gateError.textContent = `Failed to load training content: ${err.message}`;
-      logEvent('content_load_failed', { error: String(err.message) });
-    }
+  $('switch-to-signup').addEventListener('click', () => switchAuthMode('signup'));
+  $('switch-to-login').addEventListener('click', () => switchAuthMode('login'));
+  $('login-form').addEventListener('submit', handleLoginSubmit);
+  $('signup-form').addEventListener('submit', handleSignUpSubmit);
+  $('btn-logout').addEventListener('click', logoutToAuth);
+  $('btn-back-dashboard').addEventListener('click', async () => {
+    trainingActive = false;
+    showScreen('dashboard');
+    try { await loadDashboard(); } catch (_) {}
   });
+
+  const savedAuth = loadAuthSession();
+  if (savedAuth?.authenticated && savedAuth.email) {
+    currentUserEmail = normalizeIdentityValue(savedAuth.email);
+    currentUserName = String(savedAuth.name || '').trim();
+    isAuthenticated = true;
+    try {
+      await loadDashboard();
+      return;
+    } catch (err) {
+      clearAuthSession();
+      currentUserEmail = '';
+      currentUserName = '';
+      isAuthenticated = false;
+      $('auth-error').textContent = `Session restore failed: ${err.message}`;
+      switchAuthMode('login');
+      showScreen('auth');
+    }
+  }
+
+  switchAuthMode('login');
+  showScreen('auth');
 });
 </script>
 
 </body>
-<footer style="text-align:center; padding: 12px 24px 24px; font-size: 0.72rem; color: var(--muted); font-family: var(--sans);">
-  Template updated: <span id="last-updated"></span>
-</footer>
-<script>
-  document.getElementById('last-updated').textContent = document.lastModified;
-</script>
 </html>
