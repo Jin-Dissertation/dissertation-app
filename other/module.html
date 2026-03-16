@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI-Assisted MCQ Development — Training Module</title>
+  <title>Course Learning Modules</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet" />
@@ -1188,8 +1188,8 @@
   <!-- TRAINING CONTENT -->
   <div id="training">
     <header class="module-header">
-      <p class="module-label" id="training-module-label">Professional Development Module</p>
-      <h1 class="module-title" id="training-module-title">AI-Assisted MCQ Development<br>for Nursing Education</h1>
+      <p class="module-label" id="training-module-label">Student Learning Module</p>
+      <h1 class="module-title" id="training-module-title">Course Learning Module</h1>
       <div class="module-header-actions">
       <span class="module-participant" id="participant-badge"></span>
       <button class="action-btn secondary" id="btn-save-exit" type="button">Save and exit</button>
@@ -1297,8 +1297,8 @@ let practiceCourses = [];
 let practiceModules = [];
 let assignmentEntryEnabled = true;
 let currentModuleMeta = null;
-let moduleTitleText = 'AI-Assisted MCQ Development for Nursing Education';
-let moduleLabelText = 'Professional Development Module';
+let moduleTitleText = 'Course Learning Module';
+let moduleLabelText = 'Student Learning Module';
 let sessionId       = '';
 let sessionStart    = null;
 let events          = [];
@@ -2637,8 +2637,8 @@ function offerDownload(payload) {
 // AUTH + DASHBOARD FLOW
 // ─────────────────────────────────────────────
 function resetModuleState() {
-  moduleTitleText = 'AI-Assisted MCQ Development for Nursing Education';
-  moduleLabelText = 'Professional Development Module';
+  moduleTitleText = 'Course Learning Module';
+  moduleLabelText = 'Student Learning Module';
   sessionId = makeSessionId((moduleKey || 'module').slice(0, 12));
   sessionStart = Date.now();
   completionReached = false;
@@ -2704,13 +2704,26 @@ async function handleGoogleCredentialResponse(response) {
   }
 }
 
+let googleSignInInitAttempts = 0;
+let googleSignInInitialized = false;
+
 function initializeGoogleSignIn() {
-  if (!window.google?.accounts?.id) {
-    setAuthStatus('Google Sign-In is still loading. Please wait and refresh if needed.', true);
-    return;
+  if (googleSignInInitialized) return true;
+
+  const googleId = window.google?.accounts?.id;
+  if (!googleId) {
+    googleSignInInitAttempts += 1;
+
+    if (googleSignInInitAttempts <= 40) {
+      setAuthStatus('Loading Google Sign-In…');
+      setTimeout(initializeGoogleSignIn, 250);
+    } else {
+      setAuthStatus('Google Sign-In could not be loaded. Please refresh the page and try again.', true);
+    }
+    return false;
   }
 
-  google.accounts.id.initialize({
+  googleId.initialize({
     client_id: GOOGLE_CLIENT_ID,
     callback: handleGoogleCredentialResponse
   });
@@ -2718,7 +2731,7 @@ function initializeGoogleSignIn() {
   const container = $('google-signin-button');
   if (container) {
     container.innerHTML = '';
-    google.accounts.id.renderButton(container, {
+    googleId.renderButton(container, {
       theme: 'outline',
       size: 'large',
       type: 'standard',
@@ -2728,6 +2741,10 @@ function initializeGoogleSignIn() {
       width: 320
     });
   }
+
+  googleSignInInitialized = true;
+  setAuthStatus('');
+  return true;
 }
 
 function showScreen(name) {
