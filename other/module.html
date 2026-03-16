@@ -1182,7 +1182,7 @@
   <!-- LOADING -->
   <div id="loading">
     <div class="spinner"></div>
-    <p class="loading-text">Loading training content…</p>
+    <p class="loading-text">Loading…</p>
   </div>
 
   <!-- TRAINING CONTENT -->
@@ -2699,9 +2699,14 @@ async function handleGoogleCredentialResponse(response) {
     setAuthStatus('');
     await loadDashboard();
   } catch (err) {
-    isAuthenticated = false;
-    setAuthStatus(err.message || 'Sign in failed. Please try again.', true);
-  }
+  isAuthenticated = false;
+  clearAuthSession();
+  currentUserEmail = '';
+  currentUserName = '';
+  showScreen('auth');
+  initializeGoogleSignIn();
+  setAuthStatus(err.message || 'Sign in failed. Please try again.', true);
+}
 }
 
 let googleSignInInitAttempts = 0;
