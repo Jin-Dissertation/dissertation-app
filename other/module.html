@@ -285,6 +285,25 @@
       margin-bottom: 10px;
     }
     .dashboard-card h3 { margin: 0 0 10px; font-size: 1rem; }
+    .dashboard-kicker { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
+    .streak-line { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+    .streak-status { font-size: 0.95rem; font-weight: 600; margin-bottom: 2px; }
+    .streak-subline { font-size: 0.82rem; color: var(--muted); margin-bottom: 10px; }
+    .goal-progress-text { font-size: 0.88rem; margin-bottom: 6px; }
+    .goal-progress-track { width: 100%; height: 10px; background: var(--cream); border: 1px solid var(--rule); border-radius: 999px; overflow: hidden; margin-bottom: 8px; }
+    .goal-progress-fill { height: 100%; background: var(--gold); transition: width 0.25s ease; }
+    .goal-progress-fill.goal-complete { background: #0d8f4d; }
+    .goal-celebration { color: #0d8f4d; font-size: 0.88rem; font-weight: 600; margin-bottom: 8px; }
+    .goal-controls { display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; }
+    .goal-control { display:flex; flex-direction:column; gap:4px; min-width: 150px; }
+    .goal-control label { font-size: 0.8rem; color: var(--muted); }
+    .goal-save-message { font-size: 0.78rem; min-height: 1.1em; color: var(--muted); }
+    .goal-save-message.error { color: var(--red); }
+    .summary-metrics { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-bottom: 10px; }
+    .summary-metric { border:1px solid var(--rule); border-radius:10px; padding:10px; background: var(--cream); }
+    .summary-metric strong { display:block; font-size: 1rem; }
+    .top-modules-list { margin: 0; padding-left: 18px; display:flex; flex-direction:column; gap:4px; }
+    .top-modules-list li { font-size: 0.88rem; }
     .stats-grid {
       display:grid;
       grid-template-columns: repeat(2, minmax(0,1fr));
@@ -1165,6 +1184,7 @@
       .gate-input { width: 100%; }
       .gate-btn   { width: 100%; }
       .stats-grid { grid-template-columns: 1fr; }
+      .summary-metrics { grid-template-columns: 1fr; }
       .module-item { flex-direction: column; align-items: stretch; }
       .module-item .action-btn { width: 100%; justify-content:center; }
       .assignment-entry-row { flex-direction: column; align-items: stretch; }
@@ -1283,9 +1303,19 @@
       <button class="action-btn" id="btn-logout" type="button">Sign out</button>
     </header>
 
+    <section class="dashboard-card" id="streak-goal-card">
+      <p class="dashboard-kicker">Daily Momentum</p>
+      <div id="streak-goal-summary"></div>
+    </section>
+
     <section class="dashboard-card" id="stats-card">
       <h3>Your Stats</h3>
       <div class="stats-grid" id="dashboard-stats"></div>
+    </section>
+
+    <section class="dashboard-card" id="practice-summary-card">
+      <h3>Practice Summary</h3>
+      <div id="practice-summary-content"></div>
     </section>
 
     <section class="dashboard-card" id="assignment-card">
@@ -1423,6 +1453,7 @@ let availableModules = [];
 let practiceCourses = [];
 let practiceModules = [];
 let assignmentEntryEnabled = true;
+let dashboardStats = null;
 let currentModuleMeta = null;
 let moduleTitleText = 'Course Learning Module';
 let moduleLabelText = 'Student Learning Module';
@@ -2842,9 +2873,99 @@ function renderPracticeModulesForCourse(selectedCourse) {
   });
 }
 
+
+function normalizeDashboardStats(rawStats) {
+  const stats = rawStats || {};
+  const fallbackGoal = Number(stats.daily_goal ?? 20);
+  const dailyGoal = [10, 20, 30, 50].includes(fallbackGoal) ? fallbackGoal : 20;
+  return {
+    ...stats,
+    total_modules_completed: Number(stats.total_modules_completed ?? 0),
+    total_questions_answered: Number(stats.total_questions_answered ?? 0),
+    daily_goal: dailyGoal,
+    questions_today: Number(stats.questions_today ?? 0),
+    streak_days: Number(stats.streak_days ?? 0),
+    streak_secured_today: Boolean(stats.streak_secured_today),
+    top_modules: Array.isArray(stats.top_modules) ? stats.top_modules : []
+  };
+}
+
+function renderDashboardSummary(stats) {
+  const safeStats = normalizeDashboardStats(stats);
+  dashboardStats = safeStats;
+
+  const dailyGoal = Math.max(1, safeStats.daily_goal);
+  const questionsToday = Math.max(0, safeStats.questions_today);
+  const remainingQuestions = Math.max(0, dailyGoal - questionsToday);
+  const progressPercent = Math.max(0, Math.min(100, (questionsToday / dailyGoal) * 100));
+  const streakSecured = safeStats.streak_secured_today || remainingQuestions <= 0;
+
+  const statusHeadline = streakSecured ? '🎉 Streak secured for today' : 'Keep your streak alive today';
+  const statusSubline = streakSecured ? '' : `${remainingQuestions} more questions to keep your streak`;
+
+  $('streak-goal-summary').innerHTML = `
+    <p class="streak-line">🔥 ${safeStats.streak_days}-day streak</p>
+    <p class="streak-status">${statusHeadline}</p>
+    <p class="streak-subline">${statusSubline || '&nbsp;'}</p>
+    <p class="goal-progress-text">${questionsToday} / ${dailyGoal} questions completed</p>
+    <div class="goal-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="${dailyGoal}" aria-valuenow="${Math.min(questionsToday, dailyGoal)}" aria-label="Daily goal progress">
+      <div class="goal-progress-fill ${remainingQuestions === 0 ? 'goal-complete' : ''}" style="width:${progressPercent}%;"></div>
+    </div>
+    ${remainingQuestions === 0 ? '<p class="goal-celebration">🎉 Goal achieved today!</p>' : ''}
+    <div class="goal-controls">
+      <div class="goal-control">
+        <label for="daily-goal-select">Daily goal</label>
+        <select id="daily-goal-select" class="gate-input">
+          ${[10, 20, 30, 50].map(goal => `<option value="${goal}" ${goal === dailyGoal ? 'selected' : ''}>${goal}</option>`).join('')}
+        </select>
+      </div>
+      <p id="daily-goal-message" class="goal-save-message" aria-live="polite"></p>
+    </div>
+  `;
+
+  $('practice-summary-content').innerHTML = `
+    <div class="summary-metrics">
+      <div class="summary-metric"><strong>${safeStats.total_modules_completed}</strong><span>Modules completed</span></div>
+      <div class="summary-metric"><strong>${safeStats.total_questions_answered}</strong><span>Questions answered</span></div>
+    </div>
+    <h4>Most practiced modules</h4>
+    ${safeStats.top_modules.length ? `<ol class="top-modules-list">${safeStats.top_modules.slice(0, 3).map((mod, idx) => `<li>${idx + 1}. ${mod.module_title || mod.module_key || 'Untitled module'} — ${Number(mod.completion_count ?? 0)} completions</li>`).join('')}</ol>` : '<p class="empty-modules">No completed modules yet.</p>'}
+  `;
+
+  const goalSelect = $('daily-goal-select');
+  if (goalSelect) {
+    goalSelect.addEventListener('change', async e => {
+      const nextGoal = Number(e.target.value);
+      const messageEl = $('daily-goal-message');
+      if (messageEl) {
+        messageEl.classList.remove('error');
+        messageEl.textContent = 'Saving goal…';
+      }
+      try {
+        const result = await postToAppsScript(LOAD_URL, {
+          action: 'updateDailyGoal',
+          email: currentUserEmail,
+          daily_goal: nextGoal
+        });
+        if (!result || result.ok !== true) {
+          throw new Error(result?.error || 'Unable to update daily goal.');
+        }
+        dashboardStats = { ...safeStats, daily_goal: nextGoal };
+        renderDashboardSummary(dashboardStats);
+        if ($('daily-goal-message')) $('daily-goal-message').textContent = 'Daily goal saved.';
+      } catch (err) {
+        if (messageEl) {
+          messageEl.classList.add('error');
+          messageEl.textContent = err.message || 'Unable to save goal right now.';
+        }
+      }
+    });
+  }
+}
+
 function renderDashboard(payload) {
   const user = payload.user || {};
-  const stats = payload.stats || {};
+  const stats = normalizeDashboardStats(payload.stats);
   $('dashboard-error').textContent = '';
 
   practiceCourses = Array.isArray(payload.practice_courses) ? payload.practice_courses : [];
@@ -2856,7 +2977,7 @@ function renderDashboard(payload) {
 
   const statsEntries = [
     ['Modules started', stats.modules_started ?? 0],
-    ['Modules completed', stats.modules_completed ?? 0],
+    ['Modules completed', stats.modules_completed ?? stats.total_modules_completed ?? 0],
     ['Total sessions', stats.total_sessions ?? 0],
     ['Avg active minutes', stats.avg_active_minutes ?? 0],
     ['Avg interaction rate', stats.avg_interaction_rate ?? 0],
@@ -2866,6 +2987,8 @@ function renderDashboard(payload) {
   $('dashboard-stats').innerHTML = statsEntries.map(([label, value]) => `
     <div class="stat-chip"><strong>${value}</strong><span>${label}</span></div>
   `).join('');
+
+  renderDashboardSummary(stats);
 
   $('assignment-card').style.display = assignmentEntryEnabled ? 'block' : 'none';
   $('assignment-key-input').value = '';
