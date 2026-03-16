@@ -2093,6 +2093,23 @@ function renderFillBlankCard(item, sectionIndex, onComplete) {
   return block;
 }
 
+function isCoarsePointerDevice() {
+  return !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+}
+
+function assignSelectedItemToCategory(cardState, selectedItem, categoryName) {
+  if (!cardState || !selectedItem) return;
+
+  if (!categoryName) {
+    delete cardState.placements[selectedItem];
+  } else {
+    cardState.placements[selectedItem] = categoryName;
+  }
+
+  cardState.selectedItem = '';
+  persistProgress();
+}
+
 function renderCategorizeCard(item, sectionIndex, onComplete) {
   if (!item.prompt || item.options.length === 0 || item.categoryMappings.length === 0) {
     return renderIncompleteCard(item, sectionIndex, onComplete, 'Categorize card data is malformed.');
@@ -2102,7 +2119,7 @@ function renderCategorizeCard(item, sectionIndex, onComplete) {
   const categories = item.categoryMappings.map(m => m.category);
   const expected = {};
   item.categoryMappings.forEach(m => m.items.forEach(i => expected[i] = m.category));
-  const isCoarsePointer = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  const isCoarsePointer = isCoarsePointerDevice();
 
   const block = document.createElement('div');
   block.className = 'section-block';
@@ -2165,10 +2182,7 @@ function renderCategorizeCard(item, sectionIndex, onComplete) {
           e.preventDefault();
           if (!dragged) return;
           const cat = zone.dataset.category || '';
-          if (cat) state.placements[dragged] = cat;
-          else delete state.placements[dragged];
-          state.selectedItem = '';
-          persistProgress();
+          assignSelectedItemToCategory(state, dragged, cat);
           replaceCard(block, renderCategorizeCard(item, sectionIndex, onComplete));
         });
       });
@@ -2179,21 +2193,20 @@ function renderCategorizeCard(item, sectionIndex, onComplete) {
         if (!isCoarsePointer) return;
         const tapped = el.dataset.item;
         if (!tapped) return;
+        if (state.placements[tapped]) delete state.placements[tapped];
         state.selectedItem = state.selectedItem === tapped ? '' : tapped;
         persistProgress();
         replaceCard(block, renderCategorizeCard(item, sectionIndex, onComplete));
       });
     });
 
-    block.querySelectorAll('.drop-zone, .drag-pool').forEach(zone => {
+    block.querySelectorAll('.drop-zone').forEach(zone => {
       zone.addEventListener('click', () => {
-        if (!isCoarsePointer) return;
-        if (!state.selectedItem) return;
+        if (!isCoarsePointerDevice()) return;
+        const selected = state.selectedItem;
         const cat = zone.dataset.category || '';
-        if (cat) state.placements[state.selectedItem] = cat;
-        else delete state.placements[state.selectedItem];
-        state.selectedItem = '';
-        persistProgress();
+        if (!selected || !cat) return;
+        assignSelectedItemToCategory(state, selected, cat);
         replaceCard(block, renderCategorizeCard(item, sectionIndex, onComplete));
       });
     });
