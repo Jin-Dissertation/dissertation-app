@@ -298,6 +298,25 @@
     .module-item .action-btn { font-size:0.75rem; padding:8px 12px; }
     .empty-modules { color: var(--muted); font-size:0.9rem; }
     .dashboard-error { margin-top: 10px; color: var(--red); font-size: 0.85rem; min-height: 1.1em; }
+    .assignment-entry-row { display:flex; gap:10px; align-items:center; }
+    .assignment-entry-row .gate-input { flex:1; }
+    .practice-modules-strip { margin-top: 12px; display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
+    .practice-module-box {
+      min-width: 220px;
+      border:1px solid var(--rule);
+      border-radius:10px;
+      padding:10px;
+      background: var(--white);
+      cursor:pointer;
+    }
+    .practice-module-box:hover { border-color: var(--gold); }
+    .practice-module-box p { margin: 4px 0; font-size: 0.82rem; color: var(--muted); }
+    .module-header-actions { margin-top: 10px; display:flex; gap:10px; align-items:center; flex-wrap: wrap; }
+    #resume-modal { position: fixed; inset:0; z-index:9998; background: rgba(10,20,40,0.45); align-items:center; justify-content:center; }
+    .resume-modal-card { width:min(420px,92vw); background: var(--white); border:1px solid var(--rule); border-radius:12px; padding:18px; }
+    .resume-modal-card h3 { margin:0 0 8px; }
+    .resume-modal-card p { margin:0 0 12px; color: var(--muted); }
+    .resume-modal-actions { display:flex; gap:10px; flex-wrap:wrap; }
 
     /* ── LOADING ── */
     #loading {
@@ -1021,6 +1040,8 @@
       .stats-grid { grid-template-columns: 1fr; }
       .module-item { flex-direction: column; align-items: stretch; }
       .module-item .action-btn { width: 100%; justify-content:center; }
+      .assignment-entry-row { flex-direction: column; align-items: stretch; }
+      .practice-module-box { min-width: 180px; }
 
       /* Header and shell spacing */
       .module-header { padding: 28px 0 22px; }
@@ -1127,7 +1148,6 @@
       </form>
 
       <form class="auth-form" id="signup-form" hidden>
-        <input class="gate-input" id="signup-name" type="text" placeholder="Full name" autocomplete="name" />
         <input class="gate-input" id="signup-email" type="email" placeholder="name@school.edu" autocomplete="email" autocapitalize="none" spellcheck="false" />
         <input class="gate-input" id="signup-password" type="password" placeholder="Password (min 8 characters)" autocomplete="new-password" />
         <input class="gate-input" id="signup-confirm" type="password" placeholder="Confirm password" autocomplete="new-password" />
@@ -1155,9 +1175,20 @@
       <div class="stats-grid" id="dashboard-stats"></div>
     </section>
 
+    <section class="dashboard-card" id="assignment-card">
+      <h3>Enter Assignment Key</h3>
+      <div class="assignment-entry-row">
+        <input class="gate-input" id="assignment-key-input" type="text" placeholder="Enter assignment key" autocomplete="off" autocapitalize="none" spellcheck="false" />
+        <button class="action-btn" type="button" id="assignment-key-btn">Continue</button>
+      </div>
+    </section>
+
     <section class="dashboard-card">
-      <h3>Available Modules</h3>
-      <div id="modules-list" class="modules-list"></div>
+      <h3>Practice Modules</h3>
+      <select id="practice-course-select" class="gate-input">
+        <option value="">Select your course</option>
+      </select>
+      <div id="practice-modules-strip" class="practice-modules-strip"></div>
       <p class="dashboard-error" id="dashboard-error"></p>
     </section>
   </div>
@@ -1173,7 +1204,10 @@
     <header class="module-header">
       <p class="module-label" id="training-module-label">Professional Development Module</p>
       <h1 class="module-title" id="training-module-title">AI-Assisted MCQ Development<br>for Nursing Education</h1>
+      <div class="module-header-actions">
       <span class="module-participant" id="participant-badge"></span>
+      <button class="action-btn secondary" id="btn-save-exit" type="button">Save and exit</button>
+      </div>
       <div class="overall-progress" id="overall-progress">
         <span id="overall-total">Sections: 0</span>
         <span id="overall-current">Current: —</span>
@@ -1203,6 +1237,18 @@
     </div>
   </div>
 
+</div>
+
+<!-- RESUME PROMPT -->
+<div id="resume-modal" role="dialog" aria-modal="true" aria-label="Resume training" style="display:none;">
+  <div class="resume-modal-card">
+    <h3>Resume your module?</h3>
+    <p>We found saved progress for this module.</p>
+    <div class="resume-modal-actions">
+      <button class="action-btn" id="resume-continue-btn" type="button">Continue where I left off</button>
+      <button class="action-btn secondary" id="resume-startover-btn" type="button">Start over</button>
+    </div>
+  </div>
 </div>
 
 <!-- IMAGE LIGHTBOX -->
@@ -1259,6 +1305,9 @@ let currentUserEmail = '';
 let currentUserName  = '';
 let isAuthenticated  = false;
 let availableModules = [];
+let practiceCourses = [];
+let practiceModules = [];
+let assignmentEntryEnabled = true;
 let currentModuleMeta = null;
 let authBusy = false;
 let authMode = 'login';
@@ -1427,6 +1476,36 @@ async function loadTrainingRowsFromSheet(email, selectedModuleKey) {
     moduleTitle: data.moduleTitle || moduleTitleText,
     moduleLabel: data.moduleLabel || moduleLabelText,
     moduleKey: data.moduleKey || normalizedModuleKey,
+    participantBadge: data.participantBadge || data.badgeText || normalizedEmail
+  };
+}
+
+async function loadTrainingByAssignmentKey(email, assignmentKey) {
+  const normalizedEmail = normalizeIdentityValue(email);
+  const normalizedAssignmentKey = String(assignmentKey || '').trim();
+  if (!normalizedEmail || !normalizedAssignmentKey) {
+    throw new Error('Please enter your assignment key.');
+  }
+
+  const data = await postToAppsScript(LOAD_URL, {
+    action: 'loadTrainingByAssignmentKey',
+    email: normalizedEmail,
+    assignment_key: normalizedAssignmentKey
+  });
+
+  if (!data || data.ok !== true) {
+    throw new Error(data?.error || 'The server did not return a valid assignment payload.');
+  }
+
+  if (!Array.isArray(data.rows) || data.rows.length === 0) {
+    throw new Error('No training rows were returned for this assignment key.');
+  }
+
+  return {
+    rows: data.rows,
+    moduleTitle: data.moduleTitle || moduleTitleText,
+    moduleLabel: data.moduleLabel || moduleLabelText,
+    moduleKey: data.moduleKey || '',
     participantBadge: data.participantBadge || data.badgeText || normalizedEmail
   };
 }
@@ -2600,7 +2679,7 @@ function switchAuthMode(mode) {
   setAuthBusyState(false, 'login');
   setAuthBusyState(false, 'signup');
   if (loginMode) $('login-email').focus();
-  else $('signup-name').focus();
+  else $('signup-email').focus();
 }
 
 function showScreen(name) {
@@ -2611,11 +2690,45 @@ function showScreen(name) {
   $('app').classList.toggle('auth-mode', name === 'auth');
 }
 
+function renderPracticeModulesForCourse(selectedCourse) {
+  const strip = $('practice-modules-strip');
+  const visible = practiceModules.filter(mod => String(mod.course || '') === selectedCourse);
+
+  if (!selectedCourse) {
+    strip.innerHTML = '<p class="empty-modules">Select a course to view practice modules.</p>';
+    return;
+  }
+
+  if (!visible.length) {
+    strip.innerHTML = '<p class="empty-modules">No practice modules available for this course.</p>';
+    return;
+  }
+
+  strip.innerHTML = visible.map((mod, idx) => {
+    const key = mod.module_key || `practice_${idx}`;
+    const progress = Number(mod.progress_percent ?? 0);
+    return `
+      <article class="practice-module-box" data-module-key="${key}">
+        <strong>${mod.module_title || key}</strong>
+        <p>${mod.module_subtitle || ''}</p>
+        <p>Progress: ${Math.max(0, Math.min(100, progress))}%</p>
+      </article>
+    `;
+  }).join('');
+
+  strip.querySelectorAll('.practice-module-box').forEach(box => {
+    box.addEventListener('click', () => startModuleByKey(box.dataset.moduleKey));
+  });
+}
+
 function renderDashboard(payload) {
   const user = payload.user || {};
   const stats = payload.stats || {};
   $('dashboard-error').textContent = '';
-  availableModules = Array.isArray(payload.modules) ? payload.modules : [];
+
+  practiceCourses = Array.isArray(payload.practice_courses) ? payload.practice_courses : [];
+  practiceModules = Array.isArray(payload.practice_modules) ? payload.practice_modules : [];
+  assignmentEntryEnabled = payload.assignment_entry_enabled !== false;
   currentUserName = user.name || currentUserName;
   currentUserEmail = normalizeIdentityValue(user.email || currentUserEmail);
   $('dashboard-greeting').textContent = `Welcome, ${currentUserName || currentUserEmail}`;
@@ -2633,32 +2746,18 @@ function renderDashboard(payload) {
     <div class="stat-chip"><strong>${value}</strong><span>${label}</span></div>
   `).join('');
 
-  const list = $('modules-list');
-  if (!availableModules.length) {
-    list.innerHTML = '<p class="empty-modules">No modules are assigned yet.</p>';
-    return;
-  }
+  $('assignment-card').style.display = assignmentEntryEnabled ? 'block' : 'none';
+  $('assignment-key-input').value = '';
 
-  list.innerHTML = availableModules.map((mod, idx) => {
-    const key = mod.module_key || `module_${idx}`;
-    const completed = !!mod.completed;
-    const progress = Number(mod.progress_percent ?? 0);
-    return `
-      <article class="module-item">
-        <div class="module-meta">
-          <strong>${mod.module_title || key}</strong>
-          <p>${mod.module_subtitle || ''}</p>
-          <p>Status: ${completed ? 'Completed' : 'In progress'} · Progress: ${Math.max(0, Math.min(100, progress))}%</p>
-          <p>Last activity: ${mod.last_activity ? new Date(mod.last_activity).toLocaleString() : '—'}</p>
-        </div>
-        <button class="action-btn" type="button" data-module-key="${key}">${progress > 0 && !completed ? 'Resume Module' : 'Start Module'}</button>
-      </article>
-    `;
-  }).join('');
-
-  list.querySelectorAll('button[data-module-key]').forEach(btn => {
-    btn.addEventListener('click', () => startModule(btn.dataset.moduleKey));
+  const courseSelect = $('practice-course-select');
+  courseSelect.innerHTML = '<option value="">Select your course</option>';
+  practiceCourses.forEach(course => {
+    const option = document.createElement('option');
+    option.value = String(course || '');
+    option.textContent = String(course || '');
+    courseSelect.appendChild(option);
   });
+  renderPracticeModulesForCourse('');
 }
 
 async function loadDashboard() {
@@ -2677,22 +2776,89 @@ async function loadDashboard() {
   showScreen('dashboard');
 }
 
-async function startModule(selectedModuleKey) {
-  moduleKey = String(selectedModuleKey || '').trim();
-  participantEmail = currentUserEmail;
-  participantCode = moduleKey;
-  currentModuleMeta = availableModules.find(m => m.module_key === moduleKey) || { module_key: moduleKey };
+function askResumeChoice() {
+  return new Promise(resolve => {
+    const modal = $('resume-modal');
+    const continueBtn = $('resume-continue-btn');
+    const startOverBtn = $('resume-startover-btn');
 
+    function cleanup(choice) {
+      continueBtn.removeEventListener('click', onContinue);
+      startOverBtn.removeEventListener('click', onStartOver);
+      modal.style.display = 'none';
+      resolve(choice);
+    }
+
+    function onContinue() { cleanup('continue'); }
+    function onStartOver() { cleanup('startover'); }
+
+    continueBtn.addEventListener('click', onContinue);
+    startOverBtn.addEventListener('click', onStartOver);
+    modal.style.display = 'flex';
+  });
+}
+
+function findSavedProgressForModule(selectedModuleKey) {
   const saved = loadSavedProgress();
-  let savedState = null;
   if (
     saved &&
     normalizeIdentityValue(saved.participantEmail) === currentUserEmail &&
-    saved.moduleKey === moduleKey &&
+    saved.moduleKey === selectedModuleKey &&
     saved.revealedSlots > 1
   ) {
-    const doResume = confirm('You have saved progress for this module. Click OK to resume or Cancel to start over.');
-    if (doResume) {
+    return saved;
+  }
+  return null;
+}
+
+async function launchModuleFromPayload(payload, selectedModuleKey, savedState) {
+  const structure = buildStructure(payload.rows);
+  if (structure.length === 0) throw new Error('No content found for this assignment.');
+
+  moduleTitleText = payload.moduleTitle || moduleTitleText;
+  moduleLabelText = payload.moduleLabel || moduleLabelText;
+  moduleKey = payload.moduleKey || selectedModuleKey;
+  participantCode = moduleKey;
+
+  document.title = moduleTitleText;
+  $('training-module-label').textContent = moduleLabelText;
+  $('training-module-title').innerHTML = moduleTitleText.replace(/\n/g, '<br>');
+  $('participant-badge').textContent = currentUserName
+    ? `${currentUserName} · ${currentUserEmail}`
+    : currentUserEmail;
+
+  showScreen('training');
+  renderTraining(structure, savedState);
+  if (interactionTimes.length === 0) interactionTimes.push(Date.now());
+
+  logEvent('content_loaded', {
+    sections: structure.length,
+    cards: structure.reduce((n, sec) => n + sec.cards.length, 0),
+    resumed: !!savedState,
+    module_key: moduleKey
+  });
+}
+
+async function startModuleByKey(selectedModuleKey) {
+  const selectedKey = String(selectedModuleKey || '').trim();
+  if (!selectedKey) {
+    $('dashboard-error').textContent = 'Missing module key.';
+    return;
+  }
+
+  moduleKey = selectedKey;
+  participantEmail = currentUserEmail;
+  participantCode = selectedKey;
+  currentModuleMeta = practiceModules.find(m => m.module_key === selectedKey)
+    || availableModules.find(m => m.module_key === selectedKey)
+    || { module_key: selectedKey };
+
+  const saved = findSavedProgressForModule(selectedKey);
+  let savedState = null;
+
+  if (saved) {
+    const choice = await askResumeChoice();
+    if (choice === 'continue') {
       sessionId = saved.sessionId;
       sessionStart = saved.sessionStart;
       totalQuestions = saved.totalQuestions || 0;
@@ -2714,37 +2880,70 @@ async function startModule(selectedModuleKey) {
 
   showScreen('loading');
   try {
-    const payload = await loadTrainingRowsFromSheet(currentUserEmail, moduleKey);
-    const structure = buildStructure(payload.rows);
-    if (structure.length === 0) throw new Error('No content found for this assignment.');
-
-    moduleTitleText = payload.moduleTitle || moduleTitleText;
-    moduleLabelText = payload.moduleLabel || moduleLabelText;
-    moduleKey = payload.moduleKey || moduleKey;
-    participantCode = moduleKey;
-
-    document.title = moduleTitleText;
-    $('training-module-label').textContent = moduleLabelText;
-    $('training-module-title').innerHTML = moduleTitleText.replace(/\n/g, '<br>');
-    $('participant-badge').textContent = currentUserName
-      ? `${currentUserName} · ${currentUserEmail}`
-      : currentUserEmail;
-
-    showScreen('training');
-    renderTraining(structure, savedState);
-    if (interactionTimes.length === 0) interactionTimes.push(Date.now());
-
-    logEvent('content_loaded', {
-      sections: structure.length,
-      cards: structure.reduce((n, sec) => n + sec.cards.length, 0),
-      resumed: !!savedState,
-      module_key: moduleKey
-    });
+    const payload = await loadTrainingRowsFromSheet(currentUserEmail, selectedKey);
+    await launchModuleFromPayload(payload, selectedKey, savedState);
   } catch (err) {
     showScreen('dashboard');
     $('dashboard-error').textContent = `Failed to load module: ${err.message}`;
-    logEvent('content_load_failed', { error: String(err.message), module_key: moduleKey });
+    logEvent('content_load_failed', { error: String(err.message), module_key: selectedKey });
   }
+}
+
+async function startModuleByAssignmentKey() {
+  const assignmentKey = String($('assignment-key-input').value || '').trim();
+  $('dashboard-error').textContent = '';
+  if (!assignmentKey) {
+    $('dashboard-error').textContent = 'Please enter an assignment key.';
+    return;
+  }
+
+  showScreen('loading');
+  try {
+    const payload = await loadTrainingByAssignmentKey(currentUserEmail, assignmentKey);
+    const assignedKey = String(payload.moduleKey || '').trim();
+    if (!assignedKey) throw new Error('The assignment did not return a module key.');
+
+    const saved = findSavedProgressForModule(assignedKey);
+    let savedState = null;
+
+    moduleKey = assignedKey;
+    participantEmail = currentUserEmail;
+    participantCode = assignedKey;
+
+    if (saved) {
+      const choice = await askResumeChoice();
+      if (choice === 'continue') {
+        sessionId = saved.sessionId;
+        sessionStart = saved.sessionStart;
+        totalQuestions = saved.totalQuestions || 0;
+        correctFirst = saved.correctFirst || 0;
+        events = saved.events || [];
+        interactionTimes.length = 0;
+        interactionTimes.push(...(saved.interactionTimes || []));
+        completionReached = !!saved.completionReached;
+        hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
+        quizStates = saved.quizStates || {};
+        savedState = saved;
+      } else {
+        clearSavedProgress();
+        resetModuleState();
+      }
+    } else {
+      resetModuleState();
+    }
+
+    await launchModuleFromPayload(payload, assignedKey, savedState);
+  } catch (err) {
+    showScreen('dashboard');
+    $('dashboard-error').textContent = err.message || 'Unable to load assignment.';
+  }
+}
+
+async function handleSaveAndExit() {
+  persistProgress();
+  trainingActive = false;
+  showScreen('dashboard');
+  await loadDashboard();
 }
 
 async function handleLoginSubmit(e) {
@@ -2779,7 +2978,6 @@ async function handleLoginSubmit(e) {
 
 async function handleSignUpSubmit(e) {
   e.preventDefault();
-  const name = String($('signup-name').value || '').trim();
   const email = normalizeIdentityValue($('signup-email').value);
   const password = $('signup-password').value;
   const confirmPassword = $('signup-confirm').value;
@@ -2787,8 +2985,8 @@ async function handleSignUpSubmit(e) {
   if (authBusy) return;
   errorEl.textContent = '';
 
-  if (!name || !email || !password || !confirmPassword) {
-    errorEl.textContent = 'Please fill in all account fields.';
+  if (!email || !password || !confirmPassword) {
+    errorEl.textContent = 'Please enter your email and password in all required fields.';
     return;
   }
   if (password.length < 8) {
@@ -2803,14 +3001,14 @@ async function handleSignUpSubmit(e) {
   setAuthBusyState(true, 'signup');
 
   try {
-    const signUp = await postToAppsScript(LOAD_URL, { action: 'signUpUser', name, email, password });
+    const signUp = await postToAppsScript(LOAD_URL, { action: 'signUpUser', email, password });
     if (!signUp || signUp.ok !== true) throw new Error(signUp?.error || 'Account creation failed.');
 
     const login = await postToAppsScript(LOAD_URL, { action: 'verifyUserLogin', email, password });
     if (!login || login.ok !== true) throw new Error(login?.error || 'Account created but login failed.');
 
     currentUserEmail = normalizeIdentityValue(login.email || email);
-    currentUserName = String(login.name || name).trim();
+    currentUserName = String(login.name || '').trim();
     isAuthenticated = true;
     saveAuthSession();
     await loadDashboard();
@@ -2847,6 +3045,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('login-form').addEventListener('submit', handleLoginSubmit);
   $('signup-form').addEventListener('submit', handleSignUpSubmit);
   $('btn-logout').addEventListener('click', logoutToAuth);
+  $('assignment-key-btn').addEventListener('click', startModuleByAssignmentKey);
+  $('practice-course-select').addEventListener('change', e => renderPracticeModulesForCourse(e.target.value));
+  $('btn-save-exit').addEventListener('click', () => { handleSaveAndExit(); });
   $('btn-back-dashboard').addEventListener('click', async () => {
     trainingActive = false;
     showScreen('dashboard');
