@@ -1856,6 +1856,31 @@ function attachContinue(block, sectionIndex, onComplete, slot) {
   block.appendChild(row);
 }
 
+function interactiveContinueHtml(state) {
+  if (!state.submitted) return '';
+  if (state.completed) {
+    return `<div class="poll-ack">Completed. You may review this card any time.</div>`;
+  }
+  return `<div class="continue-row show"><button class="action-btn">Continue</button></div>`;
+}
+
+function bindInteractiveContinue(block, state, onComplete, slot, sectionIndex) {
+  const continueBtn = block.querySelector('.continue-row .action-btn');
+  if (!continueBtn || state.completed) return;
+  continueBtn.addEventListener('click', () => {
+    if (state.completed) return;
+    state.completed = true;
+    logEvent('continue_clicked', { slot, sectionIndex });
+    persistProgress();
+    onComplete();
+  }, { once: true });
+}
+
+function replaceCard(block, nextBlock) {
+  if (block.classList.contains('revealed')) nextBlock.classList.add('revealed');
+  block.replaceWith(nextBlock);
+}
+
 function renderVideoBlock(item, sectionIndex, onComplete) {
   if (!item.mediaUrl) return renderIncompleteCard(item, sectionIndex, onComplete, 'Video card is missing media_url (YouTube ID).');
   const block = document.createElement('div');
@@ -1936,6 +1961,7 @@ function renderQuestionCard(item, sectionIndex, onComplete, withImage = false) {
       <div class="poll-options">${optionsHtml}</div>
       <button class="action-btn">Check answer</button>
       ${renderFeedbackAndRationale(item, state, state.submitted ? (state.wasCorrect ? 'correct':'incorrect') : 'neutral')}
+      ${interactiveContinueHtml(state)}
       ${imageHtml}
     </div>
   `);
@@ -1952,14 +1978,11 @@ function renderQuestionCard(item, sectionIndex, onComplete, withImage = false) {
     if (state.wasCorrect) correctFirst++;
     interactionTimes.push(Date.now());
     persistProgress();
-    block.replaceWith(renderQuestionCard(item, sectionIndex, onComplete, withImage));
-    if (!state.completed) {
-      state.completed = true;
-      onComplete();
-    }
+    replaceCard(block, renderQuestionCard(item, sectionIndex, onComplete, withImage));
   };
   if (!state.submitted) btn.addEventListener('click', submit);
   else btn.remove();
+  bindInteractiveContinue(block, state, onComplete, item.slot, sectionIndex);
   return block;
 }
 
@@ -1979,6 +2002,7 @@ function renderSelectAllCard(item, sectionIndex, onComplete) {
       <div class="poll-options">${optionsHtml}</div>
       <button class="action-btn">Check answer</button>
       ${renderFeedbackAndRationale(item, state, state.submitted ? (state.wasCorrect ? 'correct':'incorrect') : 'neutral')}
+      ${interactiveContinueHtml(state)}
     </div>
   `);
   const btn = block.querySelector('.action-btn');
@@ -1990,9 +2014,9 @@ function renderSelectAllCard(item, sectionIndex, onComplete) {
     state.wasCorrect = selected.length === correctSet.size && selected.every(v => correctSet.has(v));
     if (state.wasCorrect) correctFirst++;
     persistProgress();
-    block.replaceWith(renderSelectAllCard(item, sectionIndex, onComplete));
-    if (!state.completed) { state.completed = true; onComplete(); }
+    replaceCard(block, renderSelectAllCard(item, sectionIndex, onComplete));
   }); else btn.remove();
+  bindInteractiveContinue(block, state, onComplete, item.slot, sectionIndex);
   return block;
 }
 
@@ -2009,6 +2033,7 @@ function renderFillBlankCard(item, sectionIndex, onComplete) {
       <input class="gate-input" value="${html(state.text)}" ${state.submitted?'disabled':''} placeholder="Type your answer"/>
       <button class="action-btn">Check answer</button>
       ${renderFeedbackAndRationale(item, state, state.submitted ? (state.wasCorrect ? 'correct':'incorrect') : 'neutral')}
+      ${interactiveContinueHtml(state)}
     </div>
   `);
   const btn = block.querySelector('.action-btn');
@@ -2022,9 +2047,9 @@ function renderFillBlankCard(item, sectionIndex, onComplete) {
     state.wasCorrect = item.answers.map(norm).includes(norm(val));
     if (state.wasCorrect) correctFirst++;
     persistProgress();
-    block.replaceWith(renderFillBlankCard(item, sectionIndex, onComplete));
-    if (!state.completed) { state.completed = true; onComplete(); }
+    replaceCard(block, renderFillBlankCard(item, sectionIndex, onComplete));
   }); else btn.remove();
+  bindInteractiveContinue(block, state, onComplete, item.slot, sectionIndex);
   return block;
 }
 
@@ -2056,6 +2081,7 @@ function renderCategorizeCard(item, sectionIndex, onComplete) {
       </div>
       <button class="action-btn">Check answer</button>
       ${renderFeedbackAndRationale(item, state, state.submitted ? (state.wasCorrect ? 'correct':'incorrect') : 'neutral')}
+      ${interactiveContinueHtml(state)}
     </div>
   `);
 
@@ -2073,7 +2099,7 @@ function renderCategorizeCard(item, sectionIndex, onComplete) {
         if (cat) state.placements[dragged] = cat;
         else delete state.placements[dragged];
         persistProgress();
-        block.replaceWith(renderCategorizeCard(item, sectionIndex, onComplete));
+        replaceCard(block, renderCategorizeCard(item, sectionIndex, onComplete));
       });
     });
     block.querySelector('.action-btn').addEventListener('click', () => {
@@ -2083,13 +2109,13 @@ function renderCategorizeCard(item, sectionIndex, onComplete) {
       state.wasCorrect = allPlaced && item.options.every(opt => expected[opt] === state.placements[opt]);
       if (state.wasCorrect) correctFirst++;
       persistProgress();
-      block.replaceWith(renderCategorizeCard(item, sectionIndex, onComplete));
-      if (!state.completed) { state.completed = true; onComplete(); }
+      replaceCard(block, renderCategorizeCard(item, sectionIndex, onComplete));
     });
   } else {
     block.querySelector('.action-btn')?.remove();
   }
 
+  bindInteractiveContinue(block, state, onComplete, item.slot, sectionIndex);
   return block;
 }
 
@@ -2105,6 +2131,7 @@ function renderReflectionCard(item, sectionIndex, onComplete) {
       <textarea class="reflection-input" placeholder="Write your reflection..." ${state.submitted?'disabled':''}>${html(state.text)}</textarea>
       <button class="action-btn">Submit reflection</button>
       ${state.submitted ? `<div class="poll-ack">Your reflection was saved.</div>${renderFeedbackAndRationale(item, state, 'neutral')}` : ''}
+      ${interactiveContinueHtml(state)}
     </div>
   `);
   const btn = block.querySelector('.action-btn');
@@ -2112,9 +2139,9 @@ function renderReflectionCard(item, sectionIndex, onComplete) {
     state.text = block.querySelector('textarea').value;
     state.submitted = true;
     persistProgress();
-    block.replaceWith(renderReflectionCard(item, sectionIndex, onComplete));
-    if (!state.completed) { state.completed = true; onComplete(); }
+    replaceCard(block, renderReflectionCard(item, sectionIndex, onComplete));
   }); else btn.remove();
+  bindInteractiveContinue(block, state, onComplete, item.slot, sectionIndex);
   return block;
 }
 
@@ -2136,6 +2163,7 @@ function renderPollCard(item, sectionIndex, onComplete) {
       <div class="poll-options">${optionsHtml}</div>
       <button class="action-btn">Submit</button>
       ${state.submitted ? `<div class="poll-ack">Thanks for sharing your response.</div>${renderFeedbackAndRationale(item, state, 'neutral')}` : ''}
+      ${interactiveContinueHtml(state)}
     </div>
   `);
   const btn = block.querySelector('.action-btn');
@@ -2150,9 +2178,9 @@ function renderPollCard(item, sectionIndex, onComplete) {
     }
     state.submitted = true;
     persistProgress();
-    block.replaceWith(renderPollCard(item, sectionIndex, onComplete));
-    if (!state.completed) { state.completed = true; onComplete(); }
+    replaceCard(block, renderPollCard(item, sectionIndex, onComplete));
   }); else btn.remove();
+  bindInteractiveContinue(block, state, onComplete, item.slot, sectionIndex);
   return block;
 }
 
@@ -2232,10 +2260,22 @@ function renderTraining(structure, savedState = null) {
 
   // SECTION PROGRESSION TRACKING: progressionSectionIndex is the learner's true position.
   // Manual review can open completed sections without changing this index.
-  function collapseAllExcept(idx, updateProgressPointer = true) {
-    sectionState.forEach((st, i) => { st.expanded = i === idx; updateSectionUI(i); });
+  function setOnlyExpanded(idx, updateProgressPointer = true) {
+    sectionState.forEach((st, i) => {
+      st.expanded = i === idx;
+      updateSectionUI(i);
+    });
     currentSectionIndex = idx;
     if (updateProgressPointer) progressionSectionIndex = idx;
+    updateProgress();
+  }
+
+  function ensureProgressSectionExpanded() {
+    sectionState.forEach((st, i) => {
+      if (i === progressionSectionIndex && st.unlocked && !st.expanded) st.expanded = true;
+      updateSectionUI(i);
+    });
+    currentSectionIndex = progressionSectionIndex;
     updateProgress();
   }
 
@@ -2265,9 +2305,14 @@ function renderTraining(structure, savedState = null) {
 
     accordion.querySelector('.section-toggle').addEventListener('click', () => {
       if (!sectionState[sectionIdx].unlocked) return;
-      const wasExpanded = sectionState[sectionIdx].expanded;
       const isCompletedSection = sectionState[sectionIdx].completedCards >= allSections[sectionIdx].cards.length;
-      collapseAllExcept(sectionIdx, !isCompletedSection);
+      const wasExpanded = sectionState[sectionIdx].expanded;
+      if (isCompletedSection) {
+        sectionState[sectionIdx].expanded = !wasExpanded;
+        ensureProgressSectionExpanded();
+      } else {
+        setOnlyExpanded(sectionIdx, true);
+      }
       if (!wasExpanded) interactionTimes.push(Date.now());
     });
 
@@ -2291,7 +2336,7 @@ function renderTraining(structure, savedState = null) {
           if (nextSection < allSections.length) {
             sectionState[nextSection].unlocked = true;
             revealCard(nextSection, 0);
-            collapseAllExcept(nextSection, true);
+            setOnlyExpanded(nextSection, true);
             scrollToEl(container.querySelector(`[data-section-idx="${nextSection}"]`), 80);
           } else {
             completionReached = true;
@@ -2345,7 +2390,7 @@ function renderTraining(structure, savedState = null) {
   const firstIncomplete = sectionState.findIndex((st, idx) => st.completedCards < allSections[idx].cards.length && st.unlocked);
   const initialSection = firstIncomplete >= 0 ? firstIncomplete : 0;
   progressionSectionIndex = initialSection;
-  collapseAllExcept(initialSection, false);
+  setOnlyExpanded(initialSection, false);
 
   revealedSlots = Math.max(preRevealCount, completedSlots.size);
   if (completionReached) showCompletion();
