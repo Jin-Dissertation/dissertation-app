@@ -1133,29 +1133,15 @@
     <div class="auth-card">
       <p class="gate-eyebrow">Professional Development Module</p>
       <h1 class="gate-title">AI-Assisted MCQ Development for Nursing Education</h1>
-      <p class="gate-sub">Log in to your account or create one to access your assigned modules.</p>
+      <p class="gate-sub">Sign in with your school Google account to access your assigned modules.</p>
 
       <div class="auth-mode-head">
-        <h2 class="auth-mode-title" id="auth-mode-title">Welcome back</h2>
-        <p class="auth-mode-sub" id="auth-mode-sub">Log in to continue your learning modules.</p>
+        <h2 class="auth-mode-title">Sign in with Google</h2>
+        <p class="auth-mode-sub">Use your school Google account to continue your learning modules.</p>
       </div>
 
-      <form class="auth-form" id="login-form">
-        <input class="gate-input" id="login-email" type="email" placeholder="name@school.edu" autocomplete="email" autocapitalize="none" spellcheck="false" />
-        <input class="gate-input" id="login-password" type="password" placeholder="Password" autocomplete="current-password" />
-        <button class="gate-btn auth-primary-btn auth-submit" id="login-submit-btn" type="submit">Log In</button>
-        <button class="auth-link-btn" id="switch-to-signup" type="button">Create Account</button>
-      </form>
-
-      <form class="auth-form" id="signup-form" hidden>
-        <input class="gate-input" id="signup-email" type="email" placeholder="name@school.edu" autocomplete="email" autocapitalize="none" spellcheck="false" />
-        <input class="gate-input" id="signup-password" type="password" placeholder="Password (min 8 characters)" autocomplete="new-password" />
-        <input class="gate-input" id="signup-confirm" type="password" placeholder="Confirm password" autocomplete="new-password" />
-        <button class="gate-btn auth-primary-btn auth-submit" id="signup-submit-btn" type="submit">Create Account</button>
-        <button class="auth-link-btn" id="switch-to-login" type="button">Back to Log In</button>
-      </form>
-
-      <p class="gate-error" id="auth-error"></p>
+      <div id="google-signin-button" style="display:flex; justify-content:center; margin-top:10px;"></div>
+      <p class="gate-error" id="auth-status" role="status" aria-live="polite"></p>
       <footer class="auth-footer">Template updated: <span id="last-updated"></span></footer>
     </div>
   </div>
@@ -1167,7 +1153,7 @@
         <p class="module-label">Dashboard</p>
         <h2 id="dashboard-greeting">Welcome</h2>
       </div>
-      <button class="action-btn" id="btn-logout" type="button">Log out</button>
+      <button class="action-btn" id="btn-logout" type="button">Sign out</button>
     </header>
 
     <section class="dashboard-card" id="stats-card">
@@ -1257,6 +1243,7 @@
   <img id="img-lightbox-img" src="" alt="" />
 </div>
 
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 // ─────────────────────────────────────────────
 // CONFIG
@@ -1293,6 +1280,7 @@
 */
 const LOAD_URL = 'https://script.google.com/macros/s/AKfycbyxevT1EWOj_IgdmL2oFiubBWc3b1BC5BnUuCL5-w0PxLjVPE9xsO_m_3RoIgqZ9mvO_A/exec';
 const SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbyxevT1EWOj_IgdmL2oFiubBWc3b1BC5BnUuCL5-w0PxLjVPE9xsO_m_3RoIgqZ9mvO_A/exec';
+const GOOGLE_CLIENT_ID = '534534627380-bd6hjuj4ihbf6i7r2qsjnen6cqhm14ma.apps.googleusercontent.com';
 const ENABLE_DEMO_FALLBACK = false;
 
 // ─────────────────────────────────────────────
@@ -1309,8 +1297,6 @@ let practiceCourses = [];
 let practiceModules = [];
 let assignmentEntryEnabled = true;
 let currentModuleMeta = null;
-let authBusy = false;
-let authMode = 'login';
 let moduleTitleText = 'AI-Assisted MCQ Development for Nursing Education';
 let moduleLabelText = 'Professional Development Module';
 let sessionId       = '';
@@ -1432,21 +1418,39 @@ async function postToAppsScript(url, payload) {
 
 function saveAuthSession() {
   try {
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
+    const payload = {
       email: currentUserEmail,
       name: currentUserName,
-      authenticated: isAuthenticated
-    }));
+      authenticated: isAuthenticated,
+      googleAuth: true
+    };
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload));
+    localStorage.setItem(CURRENT_USER_EMAIL_KEY, currentUserEmail || '');
+    localStorage.setItem(GOOGLE_AUTH_STORAGE_KEY, isAuthenticated ? 'true' : 'false');
   } catch (_) {}
 }
 
 function loadAuthSession() {
-  try { return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY)); }
-  catch (_) { return null; }
+  try {
+    const saved = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY));
+    if (saved && saved.email) return saved;
+  } catch (_) {}
+
+  try {
+    const email = normalizeIdentityValue(localStorage.getItem(CURRENT_USER_EMAIL_KEY));
+    const googleAuth = localStorage.getItem(GOOGLE_AUTH_STORAGE_KEY) === 'true';
+    if (email && googleAuth) return { email, authenticated: true, googleAuth: true };
+  } catch (_) {}
+
+  return null;
 }
 
 function clearAuthSession() {
-  try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch (_) {}
+  try {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem(CURRENT_USER_EMAIL_KEY);
+    localStorage.removeItem(GOOGLE_AUTH_STORAGE_KEY);
+  } catch (_) {}
 }
 
 async function loadTrainingRowsFromSheet(email, selectedModuleKey) {
@@ -1516,6 +1520,8 @@ async function loadTrainingByAssignmentKey(email, assignmentKey) {
 // ─────────────────────────────────────────────
 const STORAGE_KEY = 'training_progress_v1';
 const AUTH_STORAGE_KEY = 'training_auth_session_v1';
+const GOOGLE_AUTH_STORAGE_KEY = 'googleAuth';
+const CURRENT_USER_EMAIL_KEY = 'currentUserEmail';
 
 function saveLocalProgress() {
   if (!participantEmail || !moduleKey) return;
@@ -2649,37 +2655,69 @@ function resetModuleState() {
   $('submit-status').textContent = '';
 }
 
-function setAuthBusyState(busy, mode) {
-  authBusy = busy;
-  const form = mode === 'signup' ? $('signup-form') : $('login-form');
-  const submitBtn = mode === 'signup' ? $('signup-submit-btn') : $('login-submit-btn');
-  const submitLabel = mode === 'signup' ? 'Create Account' : 'Log In';
-  const busyLabel = mode === 'signup' ? 'Creating Account…' : 'Logging In…';
-
-  submitBtn.disabled = busy;
-  submitBtn.textContent = busy ? busyLabel : submitLabel;
-  form.querySelectorAll('input, button').forEach(el => {
-    if (el === submitBtn) return;
-    el.disabled = busy;
-  });
+function setAuthStatus(message, isError = false) {
+  const el = $('auth-status');
+  if (!el) return;
+  el.textContent = message || '';
+  el.style.color = isError ? 'var(--red)' : 'var(--muted)';
 }
 
-function switchAuthMode(mode) {
-  if (authBusy) return;
-  const loginMode = mode === 'login';
-  authMode = loginMode ? 'login' : 'signup';
-  $('auth-screen').querySelector('.auth-card').classList.toggle('signup-mode', !loginMode);
-  $('auth-mode-title').textContent = loginMode ? 'Welcome back' : 'Create your account';
-  $('auth-mode-sub').textContent = loginMode
-    ? 'Log in to continue your learning modules.'
-    : 'Set up your account to access assigned modules.';
-  $('login-form').hidden = !loginMode;
-  $('signup-form').hidden = loginMode;
-  $('auth-error').textContent = '';
-  setAuthBusyState(false, 'login');
-  setAuthBusyState(false, 'signup');
-  if (loginMode) $('login-email').focus();
-  else $('signup-email').focus();
+async function handleGoogleCredentialResponse(response) {
+  const idToken = String(response?.credential || '').trim();
+  if (!idToken) {
+    setAuthStatus('Google sign-in failed. Missing credential token.', true);
+    return;
+  }
+
+  setAuthStatus('Signing in with Google…');
+
+  try {
+    const data = await postToAppsScript(LOAD_URL, {
+      action: 'verifyGoogleLogin',
+      id_token: idToken
+    });
+
+    if (!data || data.ok !== true) {
+      throw new Error(data?.error || 'Google login verification failed.');
+    }
+
+    currentUserEmail = normalizeIdentityValue(data.email || '');
+    if (!currentUserEmail) throw new Error('No email returned by the server.');
+    currentUserName = String(data.name || '').trim();
+    isAuthenticated = true;
+    saveAuthSession();
+    setAuthStatus('');
+    await loadDashboard();
+  } catch (err) {
+    isAuthenticated = false;
+    setAuthStatus(err.message || 'Sign in failed. Please try again.', true);
+  }
+}
+
+function initializeGoogleSignIn() {
+  if (!window.google?.accounts?.id) {
+    setAuthStatus('Google Sign-In is still loading. Please wait and refresh if needed.', true);
+    return;
+  }
+
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleCredentialResponse
+  });
+
+  const container = $('google-signin-button');
+  if (container) {
+    container.innerHTML = '';
+    google.accounts.id.renderButton(container, {
+      theme: 'outline',
+      size: 'large',
+      type: 'standard',
+      shape: 'rectangular',
+      text: 'signin_with',
+      logo_alignment: 'left',
+      width: 320
+    });
+  }
 }
 
 function showScreen(name) {
@@ -2946,80 +2984,8 @@ async function handleSaveAndExit() {
   await loadDashboard();
 }
 
-async function handleLoginSubmit(e) {
-  e.preventDefault();
-  const email = normalizeIdentityValue($('login-email').value);
-  const password = $('login-password').value;
-  const errorEl = $('auth-error');
-  if (authBusy) return;
-  errorEl.textContent = '';
-
-  if (!email || !password) {
-    errorEl.textContent = 'Please enter your email and password.';
-    return;
-  }
-
-  setAuthBusyState(true, 'login');
-
-  try {
-    const data = await postToAppsScript(LOAD_URL, { action: 'verifyUserLogin', email, password });
-    if (!data || data.ok !== true) throw new Error(data?.error || 'Login failed.');
-
-    currentUserEmail = normalizeIdentityValue(data.email || email);
-    currentUserName = String(data.name || '').trim();
-    isAuthenticated = true;
-    saveAuthSession();
-    await loadDashboard();
-  } catch (err) {
-    errorEl.textContent = err.message || 'Log in failed. Please try again.';
-    setAuthBusyState(false, 'login');
-  }
-}
-
-async function handleSignUpSubmit(e) {
-  e.preventDefault();
-  const email = normalizeIdentityValue($('signup-email').value);
-  const password = $('signup-password').value;
-  const confirmPassword = $('signup-confirm').value;
-  const errorEl = $('auth-error');
-  if (authBusy) return;
-  errorEl.textContent = '';
-
-  if (!email || !password || !confirmPassword) {
-    errorEl.textContent = 'Please enter your email and password in all required fields.';
-    return;
-  }
-  if (password.length < 8) {
-    errorEl.textContent = 'Password must be at least 8 characters.';
-    return;
-  }
-  if (password !== confirmPassword) {
-    errorEl.textContent = 'Password and confirmation do not match.';
-    return;
-  }
-
-  setAuthBusyState(true, 'signup');
-
-  try {
-    const signUp = await postToAppsScript(LOAD_URL, { action: 'signUpUser', email, password });
-    if (!signUp || signUp.ok !== true) throw new Error(signUp?.error || 'Account creation failed.');
-
-    const login = await postToAppsScript(LOAD_URL, { action: 'verifyUserLogin', email, password });
-    if (!login || login.ok !== true) throw new Error(login?.error || 'Account created but login failed.');
-
-    currentUserEmail = normalizeIdentityValue(login.email || email);
-    currentUserName = String(login.name || '').trim();
-    isAuthenticated = true;
-    saveAuthSession();
-    await loadDashboard();
-  } catch (err) {
-    errorEl.textContent = err.message || 'Sign up failed. Please try again.';
-    setAuthBusyState(false, 'signup');
-  }
-}
-
 function logoutToAuth() {
-  clearSavedProgress();
+
   clearAuthSession();
   currentUserEmail = '';
   currentUserName = '';
@@ -3030,7 +2996,9 @@ function logoutToAuth() {
   participantCode = '';
   moduleKey = '';
   resetModuleState();
-  switchAuthMode('login');
+  setAuthStatus('');
+  if (window.google?.accounts?.id?.disableAutoSelect) google.accounts.id.disableAutoSelect();
+  initializeGoogleSignIn();
   showScreen('auth');
 }
 
@@ -3040,10 +3008,6 @@ function logoutToAuth() {
 document.addEventListener('DOMContentLoaded', async () => {
   $('last-updated').textContent = document.lastModified;
 
-  $('switch-to-signup').addEventListener('click', () => switchAuthMode('signup'));
-  $('switch-to-login').addEventListener('click', () => switchAuthMode('login'));
-  $('login-form').addEventListener('submit', handleLoginSubmit);
-  $('signup-form').addEventListener('submit', handleSignUpSubmit);
   $('btn-logout').addEventListener('click', logoutToAuth);
   $('assignment-key-btn').addEventListener('click', startModuleByAssignmentKey);
   $('practice-course-select').addEventListener('change', e => renderPracticeModulesForCourse(e.target.value));
@@ -3067,14 +3031,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentUserEmail = '';
       currentUserName = '';
       isAuthenticated = false;
-      $('auth-error').textContent = `Session restore failed: ${err.message}`;
-      switchAuthMode('login');
+      setAuthStatus(`Session restore failed: ${err.message}`, true);
       showScreen('auth');
+      initializeGoogleSignIn();
     }
   }
 
-  switchAuthMode('login');
   showScreen('auth');
+  initializeGoogleSignIn();
 });
 </script>
 
