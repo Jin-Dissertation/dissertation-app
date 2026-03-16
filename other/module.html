@@ -815,6 +815,46 @@
 
     .drag-item.placed { cursor: default; }
 
+    .drag-item.selected {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 2px rgba(47, 110, 220, 0.2);
+      background: #f2f7ff;
+    }
+
+    .categorize-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 4px 0 10px;
+    }
+
+    .categorize-mobile-helper {
+      font-size: 0.76rem;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .categorize-reset-btn {
+      min-height: 32px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--rule);
+      background: var(--white);
+      color: var(--navy-mid);
+      font-family: var(--sans);
+      font-size: 0.74rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .categorize-reset-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     /* ── QUIZ COMPLETE ── */
     .quiz-complete {
       padding: 22px 22px;
@@ -2057,24 +2097,44 @@ function renderCategorizeCard(item, sectionIndex, onComplete) {
   if (!item.prompt || item.options.length === 0 || item.categoryMappings.length === 0) {
     return renderIncompleteCard(item, sectionIndex, onComplete, 'Categorize card data is malformed.');
   }
-  const state = ensureCardState(sectionIndex, { submitted: false, placements: {}, wasCorrect: false, completed: false });
+  const state = ensureCardState(sectionIndex, { submitted: false, placements: {}, selectedItem: '', wasCorrect: false, completed: false });
+  if (typeof state.selectedItem !== 'string') state.selectedItem = '';
   const categories = item.categoryMappings.map(m => m.category);
   const expected = {};
   item.categoryMappings.forEach(m => m.items.forEach(i => expected[i] = m.category));
+  const isCoarsePointer = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
 
   const block = document.createElement('div');
   block.className = 'section-block';
   const itemPool = item.options.filter(opt => !state.placements[opt]);
-  const poolHtml = itemPool.map(opt => `<div class="drag-item" draggable="${state.submitted?'false':'true'}" data-item="${html(opt)}">${html(opt)}</div>`).join('');
+  const poolHtml = itemPool.map(opt => {
+    const isSelected = !state.submitted && state.selectedItem === opt;
+    return `<div class="drag-item ${isSelected ? 'selected' : ''}" draggable="${state.submitted || isCoarsePointer ? 'false' : 'true'}" data-item="${html(opt)}">${html(opt)}</div>`;
+  }).join('');
   const zonesHtml = categories.map(cat => {
-    const items = Object.entries(state.placements).filter(([,c]) => c===cat).map(([i]) => `<div class="drag-item placed">${html(i)}</div>`).join('');
+    const items = Object.entries(state.placements)
+      .filter(([, c]) => c === cat)
+      .map(([i]) => {
+        const isSelected = !state.submitted && state.selectedItem === i;
+        const classes = `drag-item placed ${isSelected ? 'selected' : ''}`.trim();
+        return `<div class="${classes}" data-item="${html(i)}" draggable="${state.submitted || isCoarsePointer ? 'false' : 'true'}">${html(i)}</div>`;
+      }).join('');
     return `<div class="drop-zone" data-category="${html(cat)}"><div class="drop-zone-title">${html(cat)}</div>${items}</div>`;
   }).join('');
+
+  const hasPlacements = Object.keys(state.placements).length > 0;
+  const helperHtml = isCoarsePointer && !state.submitted
+    ? `<div class="categorize-mobile-helper">Tap an item, then tap a category.</div>`
+    : '';
 
   block.innerHTML = baseCardShell(sectionIndex, 'Knowledge Check', `
     <div class="interactive-card">
       <h2 class="content-header">${html(item.header)}</h2><div class="content-body">${html(item.body)}</div>
       <p class="question-stem">${html(item.prompt)}</p>
+      <div class="categorize-toolbar">
+        ${helperHtml}
+        <button class="categorize-reset-btn" ${state.submitted || !hasPlacements ? 'disabled' : ''}>Reset</button>
+      </div>
       <div class="categorize-layout">
         <div class="drag-pool" data-category="">${poolHtml}</div>
         <div class="drop-zones">${zonesHtml}</div>
@@ -2086,26 +2146,63 @@ function renderCategorizeCard(item, sectionIndex, onComplete) {
   `);
 
   if (!state.submitted) {
-    let dragged = null;
-    block.querySelectorAll('.drag-item[draggable="true"]').forEach(el => {
-      el.addEventListener('dragstart', () => { dragged = el.dataset.item; });
+    const resetBtn = block.querySelector('.categorize-reset-btn');
+    resetBtn?.addEventListener('click', () => {
+      state.placements = {};
+      state.selectedItem = '';
+      persistProgress();
+      replaceCard(block, renderCategorizeCard(item, sectionIndex, onComplete));
     });
-    block.querySelectorAll('.drop-zone, .drag-pool').forEach(zone => {
-      zone.addEventListener('dragover', e => e.preventDefault());
-      zone.addEventListener('drop', e => {
-        e.preventDefault();
-        if (!dragged) return;
-        const cat = zone.dataset.category || '';
-        if (cat) state.placements[dragged] = cat;
-        else delete state.placements[dragged];
+
+    if (!isCoarsePointer) {
+      let dragged = null;
+      block.querySelectorAll('.drag-item[draggable="true"]').forEach(el => {
+        el.addEventListener('dragstart', () => { dragged = el.dataset.item; });
+      });
+      block.querySelectorAll('.drop-zone, .drag-pool').forEach(zone => {
+        zone.addEventListener('dragover', e => e.preventDefault());
+        zone.addEventListener('drop', e => {
+          e.preventDefault();
+          if (!dragged) return;
+          const cat = zone.dataset.category || '';
+          if (cat) state.placements[dragged] = cat;
+          else delete state.placements[dragged];
+          state.selectedItem = '';
+          persistProgress();
+          replaceCard(block, renderCategorizeCard(item, sectionIndex, onComplete));
+        });
+      });
+    }
+
+    block.querySelectorAll('.drag-item').forEach(el => {
+      el.addEventListener('click', () => {
+        if (!isCoarsePointer) return;
+        const tapped = el.dataset.item;
+        if (!tapped) return;
+        state.selectedItem = state.selectedItem === tapped ? '' : tapped;
         persistProgress();
         replaceCard(block, renderCategorizeCard(item, sectionIndex, onComplete));
       });
     });
+
+    block.querySelectorAll('.drop-zone, .drag-pool').forEach(zone => {
+      zone.addEventListener('click', () => {
+        if (!isCoarsePointer) return;
+        if (!state.selectedItem) return;
+        const cat = zone.dataset.category || '';
+        if (cat) state.placements[state.selectedItem] = cat;
+        else delete state.placements[state.selectedItem];
+        state.selectedItem = '';
+        persistProgress();
+        replaceCard(block, renderCategorizeCard(item, sectionIndex, onComplete));
+      });
+    });
+
     block.querySelector('.action-btn').addEventListener('click', () => {
       if (!state.submitted) totalQuestions++;
       const allPlaced = item.options.every(opt => state.placements[opt]);
       state.submitted = true;
+      state.selectedItem = '';
       state.wasCorrect = allPlaced && item.options.every(opt => expected[opt] === state.placements[opt]);
       if (state.wasCorrect) correctFirst++;
       persistProgress();
