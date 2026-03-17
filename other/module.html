@@ -1315,7 +1315,7 @@
 
     <section class="dashboard-card">
       <h3>Practice Modules</h3>
-      <button class="action-btn" onclick="fetchPracticeQuestions()">
+      <button class="action-btn" type="button" id="test-practice-btn">
         Test Practice Questions
       </button>
       <select id="practice-course-select" class="gate-input">
@@ -1617,6 +1617,54 @@ async function postToAppsScript(url, payload) {
   }
 
   return data;
+}
+
+async function fetchPracticeQuestionsTest() {
+  try {
+    const email = normalizeIdentityValue(currentUserEmail || participantEmail || '');
+
+    if (!email) {
+      throw new Error('No signed-in user email was found.');
+    }
+
+    const payload = {
+      action: 'getPracticeQuestions',
+      email: email,
+      topics: ['intro'],
+      question_count: 5
+    };
+
+    const response = await fetch(PRACTICE_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const text = await response.text();
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      console.error('Raw server response:', text);
+      throw new Error('Server returned invalid JSON.');
+    }
+
+    if (!data.ok) {
+      throw new Error(data.error || 'Practice question request failed.');
+    }
+
+    console.log('Practice questions loaded successfully:', data.question_set);
+    alert('Practice question request worked. Open the console to view the returned questions.');
+
+    return data.question_set;
+  } catch (err) {
+    console.error('Practice question test failed:', err);
+    alert('Practice question test failed: ' + err.message);
+    return [];
+  }
 }
 
 
@@ -3276,6 +3324,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('btn-logout').addEventListener('click', logoutToAuth);
   $('assignment-key-btn').addEventListener('click', startModuleByAssignmentKey);
   $('practice-course-select').addEventListener('change', e => renderPracticeModulesForCourse(e.target.value));
+  const testPracticeBtn = document.getElementById('test-practice-btn');
+  if (testPracticeBtn) {
+    testPracticeBtn.addEventListener('click', fetchPracticeQuestionsTest);
+  }
   $('btn-save-exit').addEventListener('click', () => { handleSaveAndExit(); });
   $('btn-back-dashboard').addEventListener('click', async () => {
     trainingActive = false;
