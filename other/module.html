@@ -102,36 +102,27 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
-      padding: 36px 20px 24px;
+      justify-content: center;
+      padding: 24px 20px 20px;
       text-align: center;
       width: 100%;
     }
 
-    .gate-eyebrow {
-      font-family: var(--sans);
-      font-size: 0.68rem;
-      font-weight: 600;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 8px;
-    }
-
     .gate-title {
       font-family: var(--serif);
-      font-size: clamp(1.06rem, 2.9vw, 1.34rem);
+      font-size: clamp(1.2rem, 3.2vw, 1.58rem);
       font-weight: 700;
       color: var(--navy);
-      line-height: 1.22;
-      margin-bottom: 0;
-      max-width: 540px;
+      line-height: 1.18;
+      margin-bottom: 2px;
+      max-width: 560px;
     }
 
     .gate-sub {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin: 8px auto 0;
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: #3e5375;
+      margin: 6px auto 0;
       max-width: 520px;
     }
 
@@ -191,8 +182,8 @@
       background: #f8fbff;
       border: 1px solid var(--rule);
       border-radius: 14px;
-      padding: 20px 24px 14px;
-      box-shadow: 0 4px 12px rgba(16,33,61,0.05);
+      padding: 22px 24px 12px;
+      box-shadow: 0 8px 20px rgba(16,33,61,0.07);
     }
 
 
@@ -242,17 +233,18 @@
     }
 
     .auth-footer {
-      margin-top: 10px;
-      font-size: 0.66rem;
+      margin-top: 8px;
+      font-size: 0.58rem;
       color: var(--muted);
-      opacity: 0.75;
+      opacity: 0.52;
+      letter-spacing: 0.04em;
       text-align: center;
     }
 
     #google-signin-wrap {
       display: flex;
       justify-content: center;
-      margin: 16px 0 14px;
+      margin: 14px 0 10px;
       transform: scale(1.03);
       transform-origin: top center;
     }
@@ -1446,7 +1438,7 @@
       #app { padding: 0 16px 80px; }
 
       /* Gate screen — cut the dead space */
-      #auth-screen { min-height: 100dvh; padding: 30px 14px 18px; }
+      #auth-screen { min-height: 100dvh; padding: 22px 14px 16px; }
       .gate-form { flex-direction: column; align-items: stretch; width: 100%; max-width: 340px; }
       .gate-input { width: 100%; }
       .gate-btn   { width: 100%; }
@@ -1505,11 +1497,11 @@
 
       #app { padding: 0 16px 72px; }
 
-      #auth-screen { padding: 24px 12px 14px; }
-      .auth-card { padding: 18px 16px 14px; }
-      #google-signin-wrap { margin: 14px 0 12px; transform: scale(1); }
-      .gate-title { line-height: 1.22; font-size: clamp(1.02rem, 5.2vw, 1.28rem); }
-      .gate-sub { margin-top: 8px; }
+      #auth-screen { padding: 18px 12px 12px; }
+      .auth-card { padding: 18px 16px 10px; }
+      #google-signin-wrap { margin: 12px 0 8px; transform: scale(1); }
+      .gate-title { line-height: 1.18; font-size: clamp(1.12rem, 5.2vw, 1.35rem); }
+      .gate-sub { margin-top: 6px; }
       .gate-form { max-width: 100%; }
 
       .module-label { letter-spacing: 0.16em; }
@@ -1547,16 +1539,12 @@
   <!-- AUTH -->
   <div id="auth-screen">
     <div class="auth-card">
-      <p class="gate-eyebrow">STUDENT LEARNING MODULES</p>
       <h1 class="gate-title">Student Learning Modules</h1>
       <p class="gate-sub">Sign in with Google using your APU account.</p>
 
       <div id="google-signin-wrap">
         <div id="google-signin-button"></div>
       </div>
-      <button class="action-btn secondary" type="button" onclick="resetGoogleAutoSelectDebug()" style="margin-top:10px;">
-        Reset Google Auto-Select
-      </button>
       <p class="gate-error" id="auth-status" role="status" aria-live="polite"></p>
       <footer class="auth-footer">Template updated: <span id="last-updated"></span></footer>
     </div>
