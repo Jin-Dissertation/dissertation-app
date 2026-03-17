@@ -381,18 +381,32 @@
       background: #2f6edc;
       border: 2px solid #2f6edc;
       color: #ffffff;
-      box-shadow: 0 0 0 2px rgba(47, 110, 220, 0.25);
+      box-shadow: none;
       transform: none;
     }
 
-    .practice-answer-btn:focus {
+    .practice-answer-btn:focus,
+    .practice-answer-btn:focus-visible {
       outline: none;
       box-shadow: none;
     }
 
-    .practice-answer-btn:focus-visible {
+    .practice-answer-btn:active {
       outline: none;
       box-shadow: none;
+      transform: none;
+    }
+
+    .practice-answer-btn.correct-choice {
+      background: #166534;
+      border: 2px solid #166534;
+      color: #ffffff;
+    }
+
+    .practice-answer-btn.wrong-choice {
+      background: #991b1b;
+      border: 2px solid #991b1b;
+      color: #ffffff;
     }
 
     .sata-check {
@@ -2306,7 +2320,9 @@ function renderSATAQuestion(q, index, total) {
   optionButtons.forEach(button => {
     button.addEventListener("click", (event) => {
       event.preventDefault();
+      event.stopPropagation();
       if (button.disabled) return;
+
       button.classList.toggle("selected");
       button.blur();
     });
@@ -2740,15 +2756,12 @@ function handlePracticeSATAAnswer(selectedAnswers, correctAnswers) {
 
     button.disabled = true;
     button.style.opacity = "0.8";
+    button.classList.remove("selected", "correct-choice", "wrong-choice");
 
     if (isActuallyCorrect) {
-      button.style.border = "2px solid #166534";
-      button.style.background = "#166534";
-      button.style.color = "#ffffff";
+      button.classList.add("correct-choice");
     } else if (isSelected && !isActuallyCorrect) {
-      button.style.border = "2px solid #991b1b";
-      button.style.background = "#991b1b";
-      button.style.color = "#ffffff";
+      button.classList.add("wrong-choice");
     }
   });
 
