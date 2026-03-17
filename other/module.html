@@ -346,6 +346,48 @@
     .practice-module-box:hover { border-color: var(--gold); }
     .practice-module-box p { margin: 4px 0; font-size: 0.82rem; color: var(--muted); }
 
+    .practice-setup-card {
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      background: #f8fbff;
+      padding: 12px;
+      margin-top: 12px;
+    }
+    .practice-topic-list {
+      display: grid;
+      gap: 8px;
+      margin: 8px 0 10px;
+    }
+    .practice-topic-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: var(--navy);
+    }
+    .practice-topic-item input[type="checkbox"] {
+      min-height: unset;
+      width: 16px;
+      height: 16px;
+    }
+    .practice-setup-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+    .practice-setup-row select {
+      width: auto;
+      min-width: 100px;
+    }
+    .practice-setup-note {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 6px;
+      min-height: 1.1em;
+    }
+
     /* === Practice Question Card === */
     .practice-question-card {
       padding: 18px;
@@ -1620,13 +1662,25 @@
 
     <section class="dashboard-card">
       <h3>Practice Modules</h3>
-      <button class="action-btn" type="button" id="test-practice-btn" onclick="fetchPracticeQuestionsTest()">
-  Test Practice Questions
-</button>
       <select id="practice-course-select" class="gate-input">
         <option value="">Select your course</option>
       </select>
       <div id="practice-modules-strip" class="practice-modules-strip"></div>
+      <div id="practice-setup-card" class="practice-setup-card">
+        <p class="module-label">Practice Questions</p>
+        <div id="practice-topic-list" class="practice-topic-list"></div>
+        <div class="practice-setup-row">
+          <label for="practice-question-count">Question count</label>
+          <select id="practice-question-count" class="gate-input">
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="40">40</option>
+          </select>
+          <button class="action-btn" type="button" id="practice-start-btn">Start practice</button>
+        </div>
+        <p class="practice-setup-note" id="practice-setup-message"></p>
+      </div>
       <div id="practice-question-container" style="margin-top:20px;"></div>
       <p class="dashboard-error" id="dashboard-error"></p>
     </section>
@@ -1749,13 +1803,14 @@ let isAuthenticated  = false;
 let availableModules = [];
 let practiceCourses = [];
 let practiceModules = [];
+let practiceTopics = [];
 let practiceTestState = {
   questions: [],
   currentIndex: 0,
   sessionId: "",
   startedAt: null,
-  selectedTopics: ["intro"],
-  requestedQuestionCount: 5,
+  selectedTopics: [],
+  requestedQuestionCount: 10,
   results: [],
   resultsSubmitted: false,
   correctCount: 0,
@@ -1939,11 +1994,96 @@ async function postToAppsScript(url, payload) {
 
 async function fetchPracticeQuestionsTest() {
   try {
-    return await startPracticeSessionWithSettings(["intro"], 5);
+    return await fetchPracticeQuestions();
   } catch (err) {
     console.error('Practice question test failed:', err);
     alert('Practice question test failed: ' + err.message);
     return [];
+  }
+}
+
+async function fetchPracticeTopics() {
+  try {
+    const response = await fetch(PRACTICE_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({ action: 'getPracticeTopics' })
+    });
+
+    const text = await response.text();
+    const data = JSON.parse(text);
+
+    if (response.ok && data?.ok) {
+      return data.practice_topics || [];
+    }
+
+    console.error('Failed to fetch practice topics:', data);
+    return [];
+  } catch (error) {
+    console.error('Failed to fetch practice topics:', error);
+    return [];
+  }
+}
+
+function getSelectedPracticeTopicKeys() {
+  return Array.from(document.querySelectorAll('input[name="practice-topic"]:checked'))
+    .map(input => String(input.value || '').trim())
+    .filter(Boolean);
+}
+
+function renderPracticeSetupTopics(topics) {
+  const topicList = $('practice-topic-list');
+  const messageEl = $('practice-setup-message');
+  if (!topicList) return;
+
+  practiceTopics = Array.isArray(topics) ? topics : [];
+
+  if (!practiceTopics.length) {
+    topicList.innerHTML = '<p class="empty-modules">No practice topics available.</p>';
+    if (messageEl) messageEl.textContent = '';
+    return;
+  }
+
+  topicList.innerHTML = practiceTopics.map((topic, index) => {
+    const topicKey = String(topic.topic_key || '').trim();
+    const topicLabel = topic.topic_label || topicKey || `Topic ${index + 1}`;
+    const topicCourse = String(topic.course || '').trim();
+    const supportingText = topicCourse ? ` (${topicCourse})` : '';
+    return `
+      <label class="practice-topic-item">
+        <input type="checkbox" name="practice-topic" value="${html(topicKey)}">
+        <span>${html(topicLabel)}${html(supportingText)}</span>
+      </label>
+    `;
+  }).join('');
+
+  if (messageEl) messageEl.textContent = '';
+}
+
+async function initializePracticeSetup() {
+  const topics = await fetchPracticeTopics();
+  renderPracticeSetupTopics(topics);
+}
+
+async function handleStartPracticeClick() {
+  const messageEl = $('practice-setup-message');
+  const topics = getSelectedPracticeTopicKeys();
+  const questionCount = Number(($('practice-question-count')?.value || 10));
+
+  if (!topics.length) {
+    if (messageEl) messageEl.textContent = 'Select at least one topic to start practice.';
+    return;
+  }
+
+  if (messageEl) messageEl.textContent = '';
+
+  try {
+    await startPracticeSessionWithSettings(topics, questionCount);
+  } catch (error) {
+    console.error('Failed to start practice session:', error);
+    if (messageEl) messageEl.textContent = error.message || 'Unable to start practice right now.';
   }
 }
 
@@ -1962,8 +2102,11 @@ async function startPracticeSessionWithSettings(topics, questionCount) {
     throw new Error('No signed-in user email was found.');
   }
 
-  const selectedTopics = Array.isArray(topics) && topics.length ? topics : ["intro"];
-  const requestedQuestionCount = Number(questionCount) > 0 ? Number(questionCount) : 5;
+  const selectedTopics = Array.isArray(topics) ? topics.map(topic => String(topic || '').trim()).filter(Boolean) : [];
+  if (!selectedTopics.length) {
+    throw new Error('Please select at least one practice topic.');
+  }
+  const requestedQuestionCount = [10, 20, 30, 40].includes(Number(questionCount)) ? Number(questionCount) : 10;
 
   const payload = {
     action: 'getPracticeQuestions',
@@ -3090,10 +3233,10 @@ async function advancePracticeQuestion() {
   const summary = getPracticeSessionSummary();
   const restartTopics = Array.isArray(practiceTestState.selectedTopics) && practiceTestState.selectedTopics.length
     ? practiceTestState.selectedTopics
-    : ["intro"];
+    : getSelectedPracticeTopicKeys();
   const restartQuestionCount = Number(practiceTestState.requestedQuestionCount) > 0
     ? Number(practiceTestState.requestedQuestionCount)
-    : 5;
+    : Number(($('practice-question-count')?.value || 10));
 
   container.innerHTML = `
     <div class="practice-question-card">
@@ -3122,7 +3265,9 @@ async function advancePracticeQuestion() {
 
 
 async function fetchPracticeQuestions() {
-  return await startPracticeSessionWithSettings(["intro"], 5);
+  const topics = getSelectedPracticeTopicKeys();
+  const questionCount = Number(($('practice-question-count')?.value || 10));
+  return await startPracticeSessionWithSettings(topics, questionCount);
 }
 
 function saveAuthSession() {
@@ -4569,6 +4714,9 @@ function renderDashboard(payload) {
     courseSelect.appendChild(option);
   });
   renderPracticeModulesForCourse('');
+  $('practice-question-count').value = '10';
+  $('practice-setup-message').textContent = '';
+  initializePracticeSetup();
 }
 
 async function loadDashboard() {
@@ -4784,10 +4932,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('btn-logout').addEventListener('click', logoutToAuth);
   $('assignment-key-btn').addEventListener('click', startModuleByAssignmentKey);
   $('practice-course-select').addEventListener('change', e => renderPracticeModulesForCourse(e.target.value));
-  const testPracticeBtn = document.getElementById('test-practice-btn');
-  if (testPracticeBtn) {
-    testPracticeBtn.addEventListener('click', fetchPracticeQuestionsTest);
-  }
+  $('practice-start-btn').addEventListener('click', handleStartPracticeClick);
   $('btn-save-exit').addEventListener('click', () => { handleSaveAndExit(); });
   $('btn-back-dashboard').addEventListener('click', async () => {
     trainingActive = false;
