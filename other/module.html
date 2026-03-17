@@ -2008,6 +2008,35 @@ function isCaseInsensitive(settings) {
   return String(settings.case_sensitive || '').toLowerCase() !== 'true';
 }
 
+function isQuestionCardType(type) {
+  const t = String(type || '').trim().toLowerCase();
+  return [
+    'question',
+    'question_image',
+    'select_all',
+    'fill_blank',
+    'categorize_drag_drop'
+  ].includes(t);
+}
+
+function countAnsweredQuestionCards(structure, states) {
+  if (!Array.isArray(structure) || !states) return 0;
+
+  let cardIndex = 0;
+  let count = 0;
+
+  structure.forEach(section => {
+    const cards = Array.isArray(section?.cards) ? section.cards : [];
+    cards.forEach(card => {
+      const state = states[cardIndex];
+      if (isQuestionCardType(card?.type) && state?.submitted) count += 1;
+      cardIndex += 1;
+    });
+  });
+
+  return count;
+}
+
 function renderQuestionCard(item, sectionIndex, onComplete, withImage = false) {
   if (!item.prompt || item.options.length === 0 || item.answers.length === 0) {
     return renderIncompleteCard(item, sectionIndex, onComplete, 'Question card is missing prompt/options/answer data.');
@@ -2040,7 +2069,7 @@ function renderQuestionCard(item, sectionIndex, onComplete, withImage = false) {
   const submit = () => {
     const selected = block.querySelector(`input[name="single-${sectionIndex}"]:checked`);
     if (!selected) return;
-    if (!state.submitted) {
+    if (!state.submitted && isQuestionCardType(item.type)) {
       totalQuestions++;
     }
     state.submitted = true;
@@ -2079,7 +2108,7 @@ function renderSelectAllCard(item, sectionIndex, onComplete) {
   const btn = block.querySelector('.action-btn');
   if (!state.submitted) btn.addEventListener('click', () => {
     const selected = [...block.querySelectorAll('input[type="checkbox"]:checked')].map(el => el.value);
-    if (!state.submitted) totalQuestions++;
+    if (!state.submitted && isQuestionCardType(item.type)) totalQuestions++;
     state.selected = selected;
     state.submitted = true;
     state.wasCorrect = selected.length === correctSet.size && selected.every(v => correctSet.has(v));
@@ -2112,7 +2141,7 @@ function renderFillBlankCard(item, sectionIndex, onComplete) {
     const val = block.querySelector('input').value.trim();
     if (!val) return;
     const norm = x => caseInsensitive ? String(x).trim().toLowerCase() : String(x).trim();
-    if (!state.submitted) totalQuestions++;
+    if (!state.submitted && isQuestionCardType(item.type)) totalQuestions++;
     state.text = val;
     state.submitted = true;
     state.wasCorrect = item.answers.map(norm).includes(norm(val));
@@ -2243,7 +2272,7 @@ function renderCategorizeCard(item, sectionIndex, onComplete) {
     });
 
     block.querySelector('.action-btn').addEventListener('click', () => {
-      if (!state.submitted) totalQuestions++;
+      if (!state.submitted && isQuestionCardType(item.type)) totalQuestions++;
       const allPlaced = item.options.every(opt => state.placements[opt]);
       state.submitted = true;
       state.selectedItem = '';
@@ -2357,6 +2386,7 @@ function renderTraining(structure, savedState = null) {
   const container = $('sections-container');
   container.innerHTML = '';
   allSections = structure.map(section => ({ ...section, completed: false, unlocked: false }));
+  totalQuestions = countAnsweredQuestionCards(allSections, quizStates);
   totalSlots = allSections.reduce((sum, section) => sum + section.cards.length, 0);
   completedSlots = new Set();
   trainingActive = true;
