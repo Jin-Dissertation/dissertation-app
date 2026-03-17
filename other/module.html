@@ -249,56 +249,36 @@
       transform-origin: top center;
     }
 
-    #dashboard { display:none; padding-top: 24px; }
+    #dashboard { display:none; padding-top: 16px; }
     .dashboard-header {
       display:flex;
       justify-content:space-between;
       align-items:center;
       gap:12px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     .dashboard-card {
       background: var(--white);
       border:1px solid var(--rule);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 10px;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
     }
-    .dashboard-card h3 { margin: 0 0 10px; font-size: 1rem; }
-    .dashboard-kicker { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
-    .streak-line { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
-    .streak-status { font-size: 0.95rem; font-weight: 600; margin-bottom: 2px; }
-    .streak-subline { font-size: 0.82rem; color: var(--muted); margin-bottom: 10px; }
-    .goal-progress-text { font-size: 0.88rem; margin-bottom: 6px; }
-    .goal-progress-track { width: 100%; height: 10px; background: var(--cream); border: 1px solid var(--rule); border-radius: 999px; overflow: hidden; margin-bottom: 8px; }
+    .dashboard-card h3 { margin: 0 0 8px; font-size: 0.98rem; }
+    .streak-line { font-size: 1rem; font-weight: 600; margin-bottom: 2px; }
+    .streak-subline { font-size: 0.82rem; color: var(--muted); margin-bottom: 8px; }
+    .goal-progress-track { width: 100%; height: 9px; background: var(--cream); border: 1px solid var(--rule); border-radius: 999px; overflow: hidden; margin-bottom: 8px; }
     .goal-progress-fill { height: 100%; background: var(--gold); transition: width 0.25s ease; }
     .goal-progress-fill.goal-complete { background: #0d8f4d; }
-    .goal-celebration { color: #0d8f4d; font-size: 0.88rem; font-weight: 600; margin-bottom: 8px; }
-    .goal-controls { display:flex; flex-direction:column; gap:6px; }
-    .goal-control-row { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-    .goal-inline-status { font-size: 0.85rem; color: var(--navy-mid); }
-    .goal-adjust-btn {
-      min-height: 34px;
-      font-size: 0.76rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      border: 1px solid var(--rule);
-      background: var(--white);
-      color: var(--navy-mid);
-      border-radius: 999px;
-      padding: 6px 12px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .goal-adjust-btn:hover { border-color: var(--gold); color: var(--gold); }
-    .goal-control-shell { min-height: 54px; }
-    .goal-control-shell[hidden] { display: none; }
-    .goal-control { display:flex; align-items:flex-end; gap:8px; }
-    .goal-control-select { flex:1; min-width: 130px; }
-    .goal-control-select label { font-size: 0.8rem; color: var(--muted); }
+    .goal-celebration { color: #0d8f4d; font-size: 0.84rem; font-weight: 600; margin-bottom: 6px; }
+    .goal-control-row { display:flex; justify-content:space-between; align-items:flex-end; gap:8px; flex-wrap: wrap; }
+    .goal-inline-status { font-size: 0.84rem; color: var(--navy-mid); }
+    .goal-control { display:flex; align-items:flex-end; gap:6px; }
+    .goal-control-select { min-width: 110px; }
+    .goal-control-select label { font-size: 0.76rem; color: var(--muted); line-height: 1.1; }
+    .goal-control-select .gate-input { min-height: 36px; padding: 7px 10px; }
     .goal-save-btn {
-      min-height: 44px;
+      min-height: 36px;
       font-size: 0.76rem;
       font-weight: 600;
       letter-spacing: 0.06em;
@@ -311,7 +291,15 @@
       cursor: pointer;
     }
     .goal-save-btn:hover { background: var(--navy-mid); }
-    .goal-control label { font-size: 0.8rem; color: var(--muted); }
+    .dashboard-primary-btn {
+      margin-top: 8px;
+      width: 100%;
+      justify-content: center;
+      font-size: 0.86rem;
+      padding: 11px 16px;
+      background: var(--gold);
+    }
+    .dashboard-primary-btn:hover { background: var(--gold-lt); }
     .goal-save-message { font-size: 0.78rem; min-height: 1.1em; color: var(--muted); }
     .goal-save-message.error { color: var(--red); }
     .summary-metrics { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-bottom: 10px; }
@@ -319,13 +307,6 @@
     .summary-metric strong { display:block; font-size: 1rem; }
     .top-modules-list { margin: 0; padding-left: 18px; display:flex; flex-direction:column; gap:4px; }
     .top-modules-list li { font-size: 0.88rem; }
-    .stats-grid {
-      display:grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap:10px;
-    }
-    .stat-chip { border:1px solid var(--rule); border-radius:10px; padding:10px; background: var(--cream); }
-    .stat-chip strong { display:block; font-size:1rem; color:var(--navy); }
     .modules-list { display:flex; flex-direction:column; gap:10px; }
     .module-item { border:1px solid var(--rule); border-radius:10px; padding:12px; display:flex; justify-content:space-between; gap:10px; align-items:center; }
     .module-meta p { margin: 2px 0; font-size:0.85rem; color:var(--muted); }
@@ -334,7 +315,7 @@
     .dashboard-error { margin-top: 10px; color: var(--red); font-size: 0.85rem; min-height: 1.1em; }
     .assignment-entry-row { display:flex; gap:10px; align-items:center; }
     .assignment-entry-row .gate-input { flex:1; }
-    .practice-modules-strip { margin-top: 12px; display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
+    .practice-modules-strip { margin-top: 8px; display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; }
     .practice-module-box {
       min-width: 220px;
       border:1px solid var(--rule);
@@ -1477,7 +1458,6 @@
       .gate-form { flex-direction: column; align-items: stretch; width: 100%; max-width: 340px; }
       .gate-input { width: 100%; }
       .gate-btn   { width: 100%; }
-      .stats-grid { grid-template-columns: 1fr; }
       .summary-metrics { grid-template-columns: 1fr; }
       .module-item { flex-direction: column; align-items: stretch; }
       .module-item .action-btn { width: 100%; justify-content:center; }
@@ -1596,13 +1576,7 @@
     </header>
 
     <section class="dashboard-card" id="streak-goal-card">
-      <p class="dashboard-kicker">Daily Momentum</p>
       <div id="streak-goal-summary"></div>
-    </section>
-
-    <section class="dashboard-card" id="stats-card">
-      <h3>Your Stats</h3>
-      <div class="stats-grid" id="dashboard-stats"></div>
     </section>
 
     <section class="dashboard-card" id="practice-summary-card">
@@ -4438,36 +4412,29 @@ function renderDashboardSummary(stats, options = {}) {
   const streakSecured = safeStats.streak_secured_today || remainingQuestions <= 0;
   const saveNotice = options.goalMessage || '';
 
-  const statusHeadline = streakSecured ? '🎉 Streak secured for today' : 'Keep your streak alive today';
-  const statusSubline = streakSecured ? '' : `${remainingQuestions} more questions to keep your streak`;
+  const statusSubline = streakSecured ? 'Streak secured for today.' : 'Keep your streak alive';
 
   $('streak-goal-summary').innerHTML = `
     <p class="streak-line">🔥 ${safeStats.streak_days}-day streak</p>
-    <p class="streak-status">${statusHeadline}</p>
-    <p class="streak-subline">${statusSubline || '&nbsp;'}</p>
-    <p class="goal-progress-text">${questionsToday} / ${dailyGoal} questions completed</p>
+    <p class="streak-subline">${statusSubline}</p>
     <div class="goal-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="${dailyGoal}" aria-valuenow="${Math.min(questionsToday, dailyGoal)}" aria-label="Daily goal progress">
       <div class="goal-progress-fill ${remainingQuestions === 0 ? 'goal-complete' : ''}" style="width:${progressPercent}%;"></div>
     </div>
     ${remainingQuestions === 0 ? '<p class="goal-celebration">🎉 Goal achieved today!</p>' : ''}
-    <div class="goal-controls">
-      <div class="goal-control-row">
-        <p class="goal-inline-status">${questionsToday} / ${dailyGoal} questions</p>
-        <button id="daily-goal-toggle" class="goal-adjust-btn" type="button" aria-expanded="false" aria-controls="daily-goal-panel">Adjust goal ▾</button>
-      </div>
-      <div id="daily-goal-panel" class="goal-control-shell" hidden>
-        <div class="goal-control">
-          <div class="goal-control-select">
-            <label for="daily-goal-select">Daily goal</label>
-            <select id="daily-goal-select" class="gate-input">
-              ${[10, 20, 30, 50].map(goal => `<option value="${goal}" ${goal === dailyGoal ? 'selected' : ''}>${goal}</option>`).join('')}
-            </select>
-          </div>
-          <button id="daily-goal-save" class="goal-save-btn" type="button">Save</button>
+    <div class="goal-control-row">
+      <p class="goal-inline-status">${questionsToday} / ${dailyGoal} questions</p>
+      <div class="goal-control">
+        <div class="goal-control-select">
+          <label for="daily-goal-select">Goal</label>
+          <select id="daily-goal-select" class="gate-input">
+            ${[10, 20, 30, 50].map(goal => `<option value="${goal}" ${goal === dailyGoal ? 'selected' : ''}>${goal}</option>`).join('')}
+          </select>
         </div>
+        <button id="daily-goal-save" class="goal-save-btn" type="button">Save</button>
       </div>
-      <p id="daily-goal-message" class="goal-save-message" aria-live="polite">${saveNotice}</p>
     </div>
+    <p id="daily-goal-message" class="goal-save-message" aria-live="polite">${saveNotice}</p>
+    <button id="start-practice-btn" class="action-btn dashboard-primary-btn" type="button">Start Practice</button>
   `;
 
   $('practice-summary-content').innerHTML = `
@@ -4479,23 +4446,15 @@ function renderDashboardSummary(stats, options = {}) {
     ${safeStats.top_modules.length ? `<ol class="top-modules-list">${safeStats.top_modules.slice(0, 3).map((mod, idx) => `<li>${idx + 1}. ${mod.module_title || mod.module_key || 'Untitled module'} — ${Number(mod.completion_count ?? 0)} completions</li>`).join('')}</ol>` : '<p class="empty-modules">No completed modules yet.</p>'}
   `;
 
-  const goalToggle = $('daily-goal-toggle');
-  const goalPanel = $('daily-goal-panel');
   const goalSaveButton = $('daily-goal-save');
   const goalSelect = $('daily-goal-select');
+  const startPracticeBtn = $('start-practice-btn');
 
-  if (goalToggle && goalPanel) {
-    goalToggle.addEventListener('click', () => {
-      const isOpen = !goalPanel.hasAttribute('hidden');
-      if (isOpen) {
-        goalPanel.setAttribute('hidden', '');
-        goalToggle.setAttribute('aria-expanded', 'false');
-        goalToggle.textContent = 'Adjust goal ▾';
-      } else {
-        goalPanel.removeAttribute('hidden');
-        goalToggle.setAttribute('aria-expanded', 'true');
-        goalToggle.textContent = 'Adjust goal ▴';
-      }
+  if (startPracticeBtn) {
+    startPracticeBtn.addEventListener('click', () => {
+      const courseSelect = document.getElementById('practice-course-select');
+      courseSelect?.closest('.dashboard-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      courseSelect?.focus();
     });
   }
 
@@ -4540,20 +4499,8 @@ function renderDashboard(payload) {
   assignmentEntryEnabled = payload.assignment_entry_enabled !== false;
   currentUserName = user.name || currentUserName;
   currentUserEmail = normalizeIdentityValue(user.email || currentUserEmail);
-  $('dashboard-greeting').textContent = `Welcome, ${currentUserName || currentUserEmail}`;
+  $('dashboard-greeting').textContent = 'Welcome back 👋';
 
-  const statsEntries = [
-    ['Modules started', stats.modules_started ?? 0],
-    ['Modules completed', stats.modules_completed ?? stats.total_modules_completed ?? 0],
-    ['Total sessions', stats.total_sessions ?? 0],
-    ['Avg active minutes', stats.avg_active_minutes ?? 0],
-    ['Avg interaction rate', stats.avg_interaction_rate ?? 0],
-    ['Last activity', stats.last_activity ? new Date(stats.last_activity).toLocaleString() : '—']
-  ];
-
-  $('dashboard-stats').innerHTML = statsEntries.map(([label, value]) => `
-    <div class="stat-chip"><strong>${value}</strong><span>${label}</span></div>
-  `).join('');
 
   renderDashboardSummary(stats);
 
