@@ -2878,8 +2878,6 @@ let googleSignInInitAttempts = 0;
 let googleSignInInitialized = false;
 
 function initializeGoogleSignIn() {
-  if (googleSignInInitialized) return true;
-
   const googleId = window.google?.accounts?.id;
   if (!googleId) {
     googleSignInInitAttempts += 1;
@@ -2893,10 +2891,13 @@ function initializeGoogleSignIn() {
     return false;
   }
 
-  googleId.initialize({
-    client_id: GOOGLE_CLIENT_ID,
-    callback: handleGoogleCredentialResponse
-  });
+  if (!googleSignInInitialized) {
+    googleId.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredentialResponse
+    });
+    googleSignInInitialized = true;
+  }
 
   const container = $('google-signin-button');
   if (container) {
@@ -2912,7 +2913,6 @@ function initializeGoogleSignIn() {
     });
   }
 
-  googleSignInInitialized = true;
   setAuthStatus('');
   return true;
 }
