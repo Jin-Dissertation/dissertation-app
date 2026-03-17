@@ -268,21 +268,12 @@
       margin-bottom: 8px;
     }
     .dashboard-card h3 { margin: 0 0 8px; font-size: 0.98rem; }
-    #streak-goal-card { padding: 10px 12px 12px; }
-    .streak-line { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
-    .goal-progress-track { width: 100%; height: 9px; background: var(--cream); border: 1px solid var(--rule); border-radius: 999px; overflow: hidden; margin-bottom: 6px; }
+    #streak-goal-card { padding: 10px 12px; }
+    .streak-line { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+    .goal-progress-track { width: 100%; height: 9px; background: var(--cream); border: 1px solid var(--rule); border-radius: 999px; overflow: hidden; margin-bottom: 4px; }
     .goal-progress-fill { height: 100%; background: var(--gold); transition: width 0.25s ease; }
     .goal-progress-fill.goal-complete { background: #0d8f4d; }
-    .goal-inline-status { font-size: 0.84rem; color: var(--navy-mid); margin-bottom: 6px; }
-    .dashboard-primary-btn {
-      margin-top: 2px;
-      width: 100%;
-      justify-content: center;
-      font-size: 0.86rem;
-      padding: 11px 16px;
-      background: var(--gold);
-    }
-    .dashboard-primary-btn:hover { background: var(--gold-lt); }
+    .goal-inline-status { font-size: 0.84rem; color: var(--navy-mid); }
     .modules-list { display:flex; flex-direction:column; gap:10px; }
     .module-item { border:1px solid var(--rule); border-radius:10px; padding:12px; display:flex; justify-content:space-between; gap:10px; align-items:center; }
     .module-meta p { margin: 2px 0; font-size:0.85rem; color:var(--muted); }
@@ -4530,19 +4521,7 @@ function renderDashboardSummary(stats) {
       <div class="goal-progress-fill ${remainingQuestions === 0 ? 'goal-complete' : ''}" style="width:${progressPercent}%;"></div>
     </div>
     <p class="goal-inline-status">${questionsToday} / ${dailyGoal} questions</p>
-    <button id="start-practice-btn" class="action-btn dashboard-primary-btn" type="button">Start Practice</button>
   `;
-
-  const startPracticeBtn = $('start-practice-btn');
-
-  if (startPracticeBtn) {
-    startPracticeBtn.addEventListener('click', () => {
-      const courseSelect = document.getElementById('practice-course-select');
-      courseSelect?.closest('.dashboard-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      courseSelect?.focus();
-    });
-  }
-
 }
 
 function renderDashboard(payload) {
