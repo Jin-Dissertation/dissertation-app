@@ -377,35 +377,54 @@
       line-height: 1.35;
     }
 
-    .practice-answer-btn.selected {
+    .practice-sata-btn {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      margin-bottom: 8px;
+      padding: 10px 12px;
+
+      font-family: var(--sans);
+      font-size: 0.9rem;
+      line-height: 1.35;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+
+      background: #10213d;
+      color: #ffffff;
+      border: 2px solid #10213d;
+      border-radius: 12px;
+      cursor: pointer;
+
+      transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .practice-sata-btn:focus,
+    .practice-sata-btn:focus-visible,
+    .practice-sata-btn:active {
+      outline: none;
+      box-shadow: none;
+    }
+
+    .practice-sata-btn.selected {
       background: #2f6edc;
-      border: 2px solid #2f6edc;
+      border-color: #2f6edc;
       color: #ffffff;
       box-shadow: none;
-      transform: none;
     }
 
-    .practice-answer-btn:focus,
-    .practice-answer-btn:focus-visible {
-      outline: none;
-      box-shadow: none;
-    }
-
-    .practice-answer-btn:active {
-      outline: none;
-      box-shadow: none;
-      transform: none;
-    }
-
-    .practice-answer-btn.correct-choice {
+    .practice-sata-btn.correct-choice {
       background: #166534;
-      border: 2px solid #166534;
+      border-color: #166534;
       color: #ffffff;
     }
 
-    .practice-answer-btn.wrong-choice {
+    .practice-sata-btn.wrong-choice {
       background: #991b1b;
-      border: 2px solid #991b1b;
+      border-color: #991b1b;
       color: #ffffff;
     }
 
@@ -415,12 +434,15 @@
       margin-left: 12px;
     }
 
-    .practice-answer-btn.selected .sata-check {
+    .practice-sata-btn.selected .sata-check,
+    .practice-sata-btn.correct-choice .sata-check,
+    .practice-sata-btn.wrong-choice .sata-check {
       opacity: 1;
     }
 
-    .practice-answer-btn[disabled] {
+    .practice-sata-btn:disabled {
       cursor: default;
+      opacity: 1;
     }
 
     .practice-categorize-helper {
@@ -2288,7 +2310,7 @@ function renderSATAQuestion(q, index, total) {
         ${shuffledOptions.map(answer => `
           <button
             type="button"
-            class="action-btn practice-answer-btn"
+            class="practice-sata-btn"
             data-answer="${String(answer).replace(/"/g, '&quot;')}"
           >
             <span class="sata-label">${answer}</span>
@@ -2316,7 +2338,7 @@ function renderSATAQuestion(q, index, total) {
 
   initializePracticeStemToggle(container);
 
-  const optionButtons = container.querySelectorAll(".practice-answer-btn");
+  const optionButtons = container.querySelectorAll(".practice-sata-btn");
   optionButtons.forEach(button => {
     button.addEventListener("click", (event) => {
       event.preventDefault();
@@ -2331,7 +2353,7 @@ function renderSATAQuestion(q, index, total) {
   const submitBtn = container.querySelector("#practice-sata-submit");
   if (submitBtn) {
     submitBtn.addEventListener("click", () => {
-      const selectedAnswers = [...container.querySelectorAll(".practice-answer-btn.selected")]
+      const selectedAnswers = [...container.querySelectorAll(".practice-sata-btn.selected")]
         .map(btn => btn.getAttribute("data-answer") || "");
 
       handlePracticeSATAAnswer(selectedAnswers, correctAnswers);
@@ -2731,7 +2753,7 @@ function handlePracticeSATAAnswer(selectedAnswers, correctAnswers) {
   if (!container) return;
 
   const feedback = container.querySelector("#practice-feedback");
-  const buttons = container.querySelectorAll(".practice-answer-btn");
+  const buttons = container.querySelectorAll(".practice-sata-btn");
   const submitBtn = container.querySelector("#practice-sata-submit");
 
   const normalize = (value) =>
@@ -2755,7 +2777,6 @@ function handlePracticeSATAAnswer(selectedAnswers, correctAnswers) {
     const isActuallyCorrect = correctNorm.includes(answerNorm);
 
     button.disabled = true;
-    button.style.opacity = "0.8";
     button.classList.remove("selected", "correct-choice", "wrong-choice");
 
     if (isActuallyCorrect) {
