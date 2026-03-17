@@ -1288,6 +1288,9 @@
       </div>
 
       <div id="google-signin-button" style="display:flex; justify-content:center; margin-top:10px;"></div>
+      <button class="action-btn secondary" type="button" onclick="resetGoogleAutoSelectDebug()" style="margin-top:10px;">
+        Reset Google Auto-Select
+      </button>
       <p class="gate-error" id="auth-status" role="status" aria-live="polite"></p>
       <footer class="auth-footer">Template updated: <span id="last-updated"></span></footer>
     </div>
@@ -1630,6 +1633,15 @@ async function postToAppsScript(url, payload) {
   }
 
   return data;
+}
+
+function resetGoogleAutoSelectDebug() {
+  try {
+    google.accounts.id.disableAutoSelect();
+    console.log("Google auto-select disabled for debugging.");
+  } catch (err) {
+    console.warn("disableAutoSelect failed:", err);
+  }
 }
 
 async function fetchPracticeQuestions() {
@@ -2824,6 +2836,7 @@ function setAuthStatus(message, isError = false) {
 }
 
 async function handleGoogleCredentialResponse(response) {
+  console.log("Google credential response:", response);
   const idToken = String(response?.credential || '').trim();
   if (!idToken) {
     setAuthStatus('Google sign-in failed. Missing credential token.', true);
