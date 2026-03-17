@@ -1704,9 +1704,9 @@ function renderSBAQuestion(q) {
         ${answers.map(answer => `
           <button
             type="button"
-            class="action-btn"
+            class="action-btn practice-answer-btn"
+            data-answer="${String(answer).replace(/"/g, '&quot;')}"
             style="display:block; width:100%; margin-bottom:10px;"
-            onclick="handlePracticeAnswer(${JSON.stringify(answer)}, ${JSON.stringify(correct)})"
           >
             ${answer}
           </button>
@@ -1714,6 +1714,14 @@ function renderSBAQuestion(q) {
       </div>
     </div>
   `;
+
+  const buttons = container.querySelectorAll(".practice-answer-btn");
+  buttons.forEach(button => {
+    button.addEventListener("click", () => {
+      const selected = button.getAttribute("data-answer") || "";
+      handlePracticeAnswer(selected, correct);
+    });
+  });
 }
 
 function handlePracticeAnswer(selected, correct) {
