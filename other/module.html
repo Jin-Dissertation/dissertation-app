@@ -377,6 +377,23 @@
       line-height: 1.35;
     }
 
+    .practice-rationale {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid #dbe5f0;
+      color: #10213d;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .practice-rationale strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #1a3560;
+    }
+
     .practice-sata-btn {
       width: 100%;
       display: flex;
@@ -2029,6 +2046,17 @@ function parseCategorizeMappings(blob) {
     .filter(Boolean);
 }
 
+function buildPracticeRationaleHtml(rationale) {
+  const text = String(rationale || "").trim();
+  if (!text) return "";
+  return `
+    <div class="practice-rationale">
+      <strong>Rationale</strong>
+      <div>${text}</div>
+    </div>
+  `;
+}
+
 function initializePracticeStemToggle(container) {
   const stem = container.querySelector("#practice-stem");
   const toggle = container.querySelector("#practice-stem-toggle");
@@ -2119,7 +2147,7 @@ function renderSBAImageQuestion(q, index, total) {
   buttons.forEach(button => {
     button.addEventListener("click", () => {
       const selected = button.getAttribute("data-answer") || "";
-      handlePracticeAnswer(selected, correct);
+      handlePracticeAnswer(selected, correct, q.rationale || "");
     });
   });
 
@@ -2185,7 +2213,7 @@ function renderSBAQuestion(q, index, total) {
   buttons.forEach(button => {
     button.addEventListener("click", () => {
       const selected = button.getAttribute("data-answer") || "";
-      handlePracticeAnswer(selected, correct);
+      handlePracticeAnswer(selected, correct, q.rationale || "");
     });
   });
 }
@@ -2251,7 +2279,11 @@ function renderFITBQuestion(q, index, total) {
   if (submitBtn) {
     submitBtn.addEventListener("click", () => {
       const selected = input ? input.value.trim() : "";
-      handlePracticeFITBAnswer(selected, String(q.correct_blob || "").trim());
+      handlePracticeFITBAnswer(
+        selected,
+        String(q.correct_blob || "").trim(),
+        q.rationale || ""
+      );
     });
   }
 
@@ -2356,7 +2388,7 @@ function renderSATAQuestion(q, index, total) {
       const selectedAnswers = [...container.querySelectorAll(".practice-sata-btn.selected")]
         .map(btn => btn.getAttribute("data-answer") || "");
 
-      handlePracticeSATAAnswer(selectedAnswers, correctAnswers);
+      handlePracticeSATAAnswer(selectedAnswers, correctAnswers, q.rationale || "");
     });
   }
 }
@@ -2456,10 +2488,10 @@ function renderCategorizeQuestion(q, index, total) {
   `;
 
   initializePracticeStemToggle(container);
-  initializeCategorizeInteractions(container, mappings, uniqueCategories, isMobileMode);
+  initializeCategorizeInteractions(container, mappings, uniqueCategories, isMobileMode, q.rationale || "");
 }
 
-function initializeCategorizeInteractions(container, mappings, categories, isMobileMode) {
+function initializeCategorizeInteractions(container, mappings, categories, isMobileMode, rationale) {
   const pool = container.querySelector("#practice-categorize-pool");
   const poolItems = container.querySelector("#practice-categorize-pool-items");
   const dropzones = container.querySelectorAll(".practice-categorize-zone.practice-categorize-dropzone");
@@ -2629,14 +2661,14 @@ function initializeCategorizeInteractions(container, mappings, categories, isMob
         placedIn: item.parentElement?.getAttribute("data-category") || "pool"
       }));
 
-      handlePracticeCategorizeAnswer(container, mappings, placements);
+      handlePracticeCategorizeAnswer(container, mappings, placements, rationale);
     });
   }
 
   refreshSelectionHint();
 }
 
-function handlePracticeAnswer(selected, correct) {
+function handlePracticeAnswer(selected, correct, rationale) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
@@ -2666,6 +2698,7 @@ function handlePracticeAnswer(selected, correct) {
       <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#dcfce7; border:1px solid #166534; color:#14532d;">
         <strong>Correct ✅</strong>
       </div>
+      ${buildPracticeRationaleHtml(rationale)}
     `;
   } else {
     feedback.innerHTML = `
@@ -2673,6 +2706,7 @@ function handlePracticeAnswer(selected, correct) {
         <strong>Incorrect ❌</strong><br>
         Correct answer: ${correct}
       </div>
+      ${buildPracticeRationaleHtml(rationale)}
     `;
   }
 
@@ -2688,7 +2722,7 @@ function handlePracticeAnswer(selected, correct) {
   }
 }
 
-function handlePracticeFITBAnswer(selected, correct) {
+function handlePracticeFITBAnswer(selected, correct, rationale) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
@@ -2725,6 +2759,7 @@ function handlePracticeFITBAnswer(selected, correct) {
         <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#dcfce7; border:1px solid #166534; color:#14532d;">
           <strong>Correct ✅</strong>
         </div>
+        ${buildPracticeRationaleHtml(rationale)}
       `;
     } else {
       feedback.innerHTML = `
@@ -2732,6 +2767,7 @@ function handlePracticeFITBAnswer(selected, correct) {
           <strong>Incorrect ❌</strong><br>
           Correct answer: ${correct}
         </div>
+        ${buildPracticeRationaleHtml(rationale)}
       `;
     }
   }
@@ -2748,7 +2784,7 @@ function handlePracticeFITBAnswer(selected, correct) {
   }
 }
 
-function handlePracticeSATAAnswer(selectedAnswers, correctAnswers) {
+function handlePracticeSATAAnswer(selectedAnswers, correctAnswers, rationale) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
@@ -2797,6 +2833,7 @@ function handlePracticeSATAAnswer(selectedAnswers, correctAnswers) {
         <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#dcfce7; border:1px solid #166534; color:#14532d;">
           <strong>Correct ✅</strong>
         </div>
+        ${buildPracticeRationaleHtml(rationale)}
       `;
     } else {
       feedback.innerHTML = `
@@ -2804,6 +2841,7 @@ function handlePracticeSATAAnswer(selectedAnswers, correctAnswers) {
           <strong>Incorrect ❌</strong><br>
           Correct answer(s): ${correctAnswers.join(", ")}
         </div>
+        ${buildPracticeRationaleHtml(rationale)}
       `;
     }
   }
@@ -2820,7 +2858,7 @@ function handlePracticeSATAAnswer(selectedAnswers, correctAnswers) {
   }
 }
 
-function handlePracticeCategorizeAnswer(container, mappings, placements) {
+function handlePracticeCategorizeAnswer(container, mappings, placements, rationale) {
   const feedback = container.querySelector("#practice-feedback");
   const submitBtn = container.querySelector("#practice-categorize-submit");
   const items = container.querySelectorAll(".practice-categorize-item");
@@ -2870,6 +2908,7 @@ function handlePracticeCategorizeAnswer(container, mappings, placements) {
         <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#dcfce7; border:1px solid #166534; color:#14532d;">
           <strong>Correct ✅</strong>
         </div>
+        ${buildPracticeRationaleHtml(rationale)}
       `;
     } else {
       const answerText = mappings
@@ -2881,6 +2920,7 @@ function handlePracticeCategorizeAnswer(container, mappings, placements) {
           <strong>Incorrect ❌</strong><br>
           Correct placement:<br><br>${answerText}
         </div>
+        ${buildPracticeRationaleHtml(rationale)}
       `;
     }
   }
