@@ -1728,7 +1728,12 @@ let practiceCourses = [];
 let practiceModules = [];
 let practiceTestState = {
   questions: [],
-  currentIndex: 0
+  currentIndex: 0,
+  sessionId: "",
+  startedAt: null,
+  results: [],
+  correctCount: 0,
+  incorrectCount: 0
 };
 let assignmentEntryEnabled = true;
 let dashboardStats = null;
@@ -1954,6 +1959,11 @@ async function fetchPracticeQuestionsTest() {
 
     practiceTestState.questions = questions;
     practiceTestState.currentIndex = 0;
+    practiceTestState.sessionId = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    practiceTestState.startedAt = new Date().toISOString();
+    practiceTestState.results = [];
+    practiceTestState.correctCount = 0;
+    practiceTestState.incorrectCount = 0;
     renderCurrentPracticeQuestion();
 
     return questions;
@@ -2082,6 +2092,33 @@ function initializePracticeStemToggle(container) {
   }
 }
 
+function recordPracticeQuestionResult(question, isCorrect) {
+  if (!practiceTestState) return;
+  if (!question || !question.question_id) return;
+
+  if (!Array.isArray(practiceTestState.results)) {
+    practiceTestState.results = [];
+  }
+
+  const alreadyRecorded = practiceTestState.results.some(result => result.question_id === question.question_id);
+  if (alreadyRecorded) return;
+
+  practiceTestState.results.push({
+    question_id: question.question_id,
+    topic: question.topic || "",
+    question_type: question.question_type || "",
+    is_correct: !!isCorrect
+  });
+
+  if (isCorrect) {
+    practiceTestState.correctCount += 1;
+  } else {
+    practiceTestState.incorrectCount += 1;
+  }
+
+  console.log("practice results", practiceTestState.results);
+}
+
 function renderSBAImageQuestion(q, index, total) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
@@ -2147,7 +2184,7 @@ function renderSBAImageQuestion(q, index, total) {
   buttons.forEach(button => {
     button.addEventListener("click", () => {
       const selected = button.getAttribute("data-answer") || "";
-      handlePracticeAnswer(selected, correct, q.rationale || "");
+      handlePracticeAnswer(q, selected, correct, q.rationale || "");
     });
   });
 
@@ -2213,7 +2250,7 @@ function renderSBAQuestion(q, index, total) {
   buttons.forEach(button => {
     button.addEventListener("click", () => {
       const selected = button.getAttribute("data-answer") || "";
-      handlePracticeAnswer(selected, correct, q.rationale || "");
+      handlePracticeAnswer(q, selected, correct, q.rationale || "");
     });
   });
 }
@@ -2280,6 +2317,7 @@ function renderFITBQuestion(q, index, total) {
     submitBtn.addEventListener("click", () => {
       const selected = input ? input.value.trim() : "";
       handlePracticeFITBAnswer(
+        q,
         selected,
         String(q.correct_blob || "").trim(),
         q.rationale || ""
@@ -2388,7 +2426,7 @@ function renderSATAQuestion(q, index, total) {
       const selectedAnswers = [...container.querySelectorAll(".practice-sata-btn.selected")]
         .map(btn => btn.getAttribute("data-answer") || "");
 
-      handlePracticeSATAAnswer(selectedAnswers, correctAnswers, q.rationale || "");
+      handlePracticeSATAAnswer(q, selectedAnswers, correctAnswers, q.rationale || "");
     });
   }
 }
@@ -2661,14 +2699,14 @@ function initializeCategorizeInteractions(container, mappings, categories, isMob
         placedIn: item.parentElement?.getAttribute("data-category") || "pool"
       }));
 
-      handlePracticeCategorizeAnswer(container, mappings, placements, rationale);
+      handlePracticeCategorizeAnswer(q, container, mappings, placements, rationale);
     });
   }
 
   refreshSelectionHint();
 }
 
-function handlePracticeAnswer(selected, correct, rationale) {
+function handlePracticeAnswer(question, selected, correct, rationale) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
@@ -2717,12 +2755,14 @@ function handlePracticeAnswer(selected, correct, rationale) {
     nextWrap.style.display = "block";
   }
 
+  recordPracticeQuestionResult(question, selected === correct);
+
   if (nextBtn) {
     nextBtn.addEventListener("click", advancePracticeQuestion, { once: true });
   }
 }
 
-function handlePracticeFITBAnswer(selected, correct, rationale) {
+function handlePracticeFITBAnswer(question, selected, correct, rationale) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
@@ -2779,12 +2819,14 @@ function handlePracticeFITBAnswer(selected, correct, rationale) {
     nextWrap.style.display = "block";
   }
 
+  recordPracticeQuestionResult(question, isCorrect);
+
   if (nextBtn) {
     nextBtn.addEventListener("click", advancePracticeQuestion, { once: true });
   }
 }
 
-function handlePracticeSATAAnswer(selectedAnswers, correctAnswers, rationale) {
+function handlePracticeSATAAnswer(question, selectedAnswers, correctAnswers, rationale) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
@@ -2853,12 +2895,14 @@ function handlePracticeSATAAnswer(selectedAnswers, correctAnswers, rationale) {
     nextWrap.style.display = "block";
   }
 
+  recordPracticeQuestionResult(question, isCorrect);
+
   if (nextBtn) {
     nextBtn.addEventListener("click", advancePracticeQuestion, { once: true });
   }
 }
 
-function handlePracticeCategorizeAnswer(container, mappings, placements, rationale) {
+function handlePracticeCategorizeAnswer(question, container, mappings, placements, rationale) {
   const feedback = container.querySelector("#practice-feedback");
   const submitBtn = container.querySelector("#practice-categorize-submit");
   const items = container.querySelectorAll(".practice-categorize-item");
@@ -2931,6 +2975,8 @@ function handlePracticeCategorizeAnswer(container, mappings, placements, rationa
   if (nextWrap) {
     nextWrap.style.display = "block";
   }
+
+  recordPracticeQuestionResult(question, allCorrect);
 
   if (nextBtn) {
     nextBtn.addEventListener("click", advancePracticeQuestion, { once: true });
