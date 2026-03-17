@@ -1761,6 +1761,11 @@ function renderCurrentPracticeQuestion() {
     return;
   }
 
+  if (q.question_type === "sba_image") {
+    renderSBAImageQuestion(q, index, questions.length);
+    return;
+  }
+
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
@@ -1784,6 +1789,107 @@ function renderCurrentPracticeQuestion() {
   const nextBtn = container.querySelector("#practice-next-btn");
   if (nextBtn) {
     nextBtn.addEventListener("click", advancePracticeQuestion);
+  }
+}
+
+function renderSBAImageQuestion(q, index, total) {
+  const container = document.getElementById("practice-question-container");
+  if (!container) return;
+
+  const correct = q.correct_blob || "";
+  const distractors = (q.distractors_blob || "").split("|").filter(Boolean);
+  const answers = [correct, ...distractors].sort(() => Math.random() - 0.5);
+
+  const imageHtml = q.media_url
+    ? `
+      <div style="margin-bottom:14px;">
+        <img
+          src="${q.media_url}"
+          alt="Question image"
+          style="
+            width:100%;
+            max-height:240px;
+            object-fit:contain;
+            border-radius:10px;
+            border:1px solid #e3e8f0;
+            background:#ffffff;
+          "
+        />
+      </div>
+    `
+    : "";
+
+  container.innerHTML = `
+    <div class="practice-question-card">
+
+      <div class="practice-meta">
+        Question ${index + 1} of ${total}
+      </div>
+
+      <div id="practice-stem" class="practice-stem">
+        ${q.stem}
+      </div>
+
+      <button id="practice-stem-toggle" class="practice-stem-toggle" style="display:none;">
+        Expand case
+      </button>
+
+      ${imageHtml}
+
+      <div style="margin-top:10px;">
+        ${answers.map(answer => `
+          <button
+            type="button"
+            class="action-btn practice-answer-btn"
+            data-answer="${String(answer).replace(/"/g, '&quot;')}"
+          >
+            ${answer}
+          </button>
+        `).join("")}
+      </div>
+
+      <div id="practice-feedback" style="margin-top:14px;"></div>
+
+      <div id="practice-next-wrap" style="margin-top:14px; display:none;">
+        <button type="button" class="action-btn" id="practice-next-btn">
+          ${index < total - 1 ? "Next Question" : "Finish"}
+        </button>
+      </div>
+
+    </div>
+  `;
+
+  // === Attach answer listeners ===
+  const buttons = container.querySelectorAll(".practice-answer-btn");
+  buttons.forEach(button => {
+    button.addEventListener("click", () => {
+      const selected = button.getAttribute("data-answer") || "";
+      handlePracticeAnswer(selected, correct);
+    });
+  });
+
+  // === Stem expand/collapse ===
+  const stem = container.querySelector("#practice-stem");
+  const toggle = container.querySelector("#practice-stem-toggle");
+
+  if (stem && toggle) {
+    requestAnimationFrame(() => {
+      if (stem.scrollHeight > stem.clientHeight + 4) {
+        toggle.style.display = "inline-block";
+      }
+    });
+
+    toggle.addEventListener("click", () => {
+      const expanded = stem.classList.contains("expanded");
+
+      if (expanded) {
+        stem.classList.remove("expanded");
+        toggle.textContent = "Expand case";
+      } else {
+        stem.classList.add("expanded");
+        toggle.textContent = "Collapse case";
+      }
+    });
   }
 }
 
