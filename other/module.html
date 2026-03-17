@@ -385,6 +385,16 @@
       transform: translateY(-1px);
     }
 
+    .practice-answer-btn:focus {
+      outline: none;
+      box-shadow: none;
+    }
+
+    .practice-answer-btn:focus-visible {
+      outline: 2px solid #2f6edc;
+      outline-offset: 2px;
+    }
+
     .practice-answer-btn:not([disabled]):active {
       transform: translateY(1px);
     }
@@ -422,7 +432,7 @@
       border-radius: 12px;
       background: #f8fafc;
       padding: 12px;
-      min-height: 120px;
+      min-height: 96px;
     }
 
     .practice-categorize-zone-title,
@@ -454,12 +464,14 @@
       line-height: 1.2;
       cursor: grab;
       user-select: none;
+      transition: box-shadow 0.15s ease, transform 0.15s ease, background 0.15s ease;
     }
 
     .practice-categorize-item.selected {
       background: #2f6edc;
       border-color: #2f6edc;
-      box-shadow: 0 0 0 2px rgba(47, 110, 220, 0.2);
+      box-shadow: 0 0 0 3px rgba(47, 110, 220, 0.28);
+      transform: translateY(-1px);
     }
 
     .practice-categorize-item.correct {
@@ -493,6 +505,21 @@
     @media (max-width: 700px) {
       .practice-categorize-layout {
         grid-template-columns: 1fr;
+      }
+
+      .practice-categorize-pool,
+      .practice-categorize-zone {
+        min-height: 72px;
+        padding: 10px;
+      }
+
+      .practice-categorize-zone-title,
+      .practice-categorize-pool-title {
+        margin-bottom: 8px;
+      }
+
+      .practice-categorize-items {
+        min-height: 40px;
       }
     }
 
@@ -2284,6 +2311,7 @@ function renderSATAQuestion(q, index, total) {
     button.addEventListener("click", () => {
       if (button.disabled) return;
       button.classList.toggle("selected");
+      button.blur();
     });
   });
 
@@ -2342,28 +2370,33 @@ function renderCategorizeQuestion(q, index, total) {
       </div>
 
       <div class="practice-categorize-layout">
-        <div class="practice-categorize-pool">
+        <div
+          class="practice-categorize-pool practice-categorize-dropzone"
+          id="practice-categorize-pool"
+          data-category="pool"
+        >
           <div class="practice-categorize-pool-title">Items to place</div>
-          <div class="practice-categorize-items" id="practice-categorize-pool">
-            ${shuffledItems.map(item => `
-              <div
-                class="practice-categorize-item"
-                draggable="true"
-                data-item="${String(item).replace(/"/g, '&quot;')}"
-                data-location="pool"
-              >
-                ${item}
-              </div>
-            `).join("")}
-          </div>
+          ${shuffledItems.map(item => `
+            <div
+              class="practice-categorize-item"
+              draggable="true"
+              data-item="${String(item).replace(/"/g, '&quot;')}"
+              data-location="pool"
+            >
+              ${item}
+            </div>
+          `).join("")}
           ${isMobileMode ? `<div class="practice-categorize-mobile-hint" id="practice-categorize-selection-hint">No item selected.</div>` : ""}
         </div>
 
         <div>
           ${uniqueCategories.map(category => `
-            <div class="practice-categorize-zone" data-category="${String(category).replace(/"/g, '&quot;')}" style="margin-bottom:12px;">
+            <div
+              class="practice-categorize-zone practice-categorize-dropzone"
+              data-category="${String(category).replace(/"/g, '&quot;')}"
+              style="margin-bottom:12px;"
+            >
               <div class="practice-categorize-zone-title">${category}</div>
-              <div class="practice-categorize-items practice-categorize-dropzone" data-category="${String(category).replace(/"/g, '&quot;')}"></div>
             </div>
           `).join("")}
         </div>
@@ -2395,7 +2428,7 @@ function renderCategorizeQuestion(q, index, total) {
 
 function initializeCategorizeInteractions(container, mappings, categories, isMobileMode) {
   const pool = container.querySelector("#practice-categorize-pool");
-  const dropzones = container.querySelectorAll(".practice-categorize-dropzone");
+  const dropzones = container.querySelectorAll(".practice-categorize-zone.practice-categorize-dropzone");
   const resetBtn = container.querySelector("#practice-categorize-reset");
   const submitBtn = container.querySelector("#practice-categorize-submit");
   const selectionHint = container.querySelector("#practice-categorize-selection-hint");
@@ -2456,9 +2489,7 @@ function initializeCategorizeInteractions(container, mappings, categories, isMob
     if (!item || !zone) return;
     zone.appendChild(item);
     item.setAttribute("data-location", zone.getAttribute("data-category") || "pool");
-    if (item.classList.contains("selected")) {
-      item.classList.remove("selected");
-    }
+    item.classList.remove("selected");
     if (selectedMobileItem === item) {
       selectedMobileItem = null;
       refreshSelectionHint();
@@ -2469,9 +2500,7 @@ function initializeCategorizeInteractions(container, mappings, categories, isMob
     if (!item || !pool) return;
     pool.appendChild(item);
     item.setAttribute("data-location", "pool");
-    if (item.classList.contains("selected")) {
-      item.classList.remove("selected");
-    }
+    item.classList.remove("selected");
     if (selectedMobileItem === item) {
       selectedMobileItem = null;
       refreshSelectionHint();
