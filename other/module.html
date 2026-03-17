@@ -1659,10 +1659,26 @@ async function fetchPracticeQuestionsTest() {
       throw new Error(data.error || 'Practice question request failed.');
     }
 
-    console.log('Practice questions loaded successfully:', data.question_set);
-    alert('Practice question request worked. Open the console to view the returned questions.');
+    const questions = data.question_set || [];
 
-    return data.question_set;
+    console.log('Practice questions loaded successfully:', questions);
+
+    if (!questions.length) {
+      alert('No practice questions were returned.');
+      return [];
+    }
+
+    const q = questions[0];
+
+    alert(
+      'Loaded question:\n\n' +
+      q.stem + '\n\n' +
+      'Type: ' + q.question_type + '\n' +
+      'Correct: ' + q.correct_blob + '\n' +
+      'Distractors: ' + q.distractors_blob
+    );
+
+    return questions;
   } catch (err) {
     console.error('Practice question test failed:', err);
     alert('Practice question test failed: ' + err.message);
