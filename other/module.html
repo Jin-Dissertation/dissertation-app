@@ -1275,6 +1275,9 @@
       <div id="google-signin-wrap">
         <div id="google-signin-button"></div>
       </div>
+      <button class="action-btn secondary" type="button" onclick="resetGoogleAutoSelectDebug()" style="margin-top:10px;">
+        Reset Google Auto-Select
+      </button>
       <p class="gate-error" id="auth-status" role="status" aria-live="polite"></p>
       <footer class="auth-footer">Template updated: <span id="last-updated"></span></footer>
     </div>
@@ -2939,6 +2942,15 @@ function initializeGoogleSignIn() {
 
   setAuthStatus('');
   return true;
+}
+
+function resetGoogleAutoSelectDebug() {
+  try {
+    google.accounts.id.disableAutoSelect();
+    console.log("Google auto-select disabled for debugging.");
+  } catch (err) {
+    console.warn("disableAutoSelect failed:", err);
+  }
 }
 
 function showScreen(name) {
