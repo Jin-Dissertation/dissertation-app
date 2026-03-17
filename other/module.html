@@ -2526,10 +2526,10 @@ function renderCategorizeQuestion(q, index, total) {
   `;
 
   initializePracticeStemToggle(container);
-  initializeCategorizeInteractions(container, mappings, uniqueCategories, isMobileMode, q.rationale || "");
+  initializeCategorizeInteractions(container, q, mappings, uniqueCategories, isMobileMode, q.rationale || "");
 }
 
-function initializeCategorizeInteractions(container, mappings, categories, isMobileMode, rationale) {
+function initializeCategorizeInteractions(container, question, mappings, categories, isMobileMode, rationale) {
   const pool = container.querySelector("#practice-categorize-pool");
   const poolItems = container.querySelector("#practice-categorize-pool-items");
   const dropzones = container.querySelectorAll(".practice-categorize-zone.practice-categorize-dropzone");
@@ -2699,7 +2699,7 @@ function initializeCategorizeInteractions(container, mappings, categories, isMob
         placedIn: item.parentElement?.getAttribute("data-category") || "pool"
       }));
 
-      handlePracticeCategorizeAnswer(q, container, mappings, placements, rationale);
+      handlePracticeCategorizeAnswer(question, container, mappings, placements, rationale);
     });
   }
 
