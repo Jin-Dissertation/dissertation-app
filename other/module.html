@@ -345,6 +345,12 @@
       min-height: 1.1em;
     }
 
+    .action-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     /* === Practice Question Card === */
     .practice-question-card {
       padding: 18px;
@@ -1602,15 +1608,14 @@
     </section>
 
     <section class="dashboard-card">
-      <h3>Practice Modules</h3>
-      <div id="practice-modules-strip" class="practice-modules-strip"></div>
+      <h3>Practice Quizzes</h3>
       <div id="practice-setup-card" class="practice-setup-card">
-        <p class="module-label">Practice Questions</p>
+        <p class="module-label">Select a Course</p>
         <select id="practice-course-select" class="gate-input">
           <option value="">Select a course</option>
         </select>
         <div id="practice-topic-list" class="practice-topic-list"></div>
-        <div class="practice-setup-row">
+        <div class="practice-setup-row" id="practice-controls-row" hidden>
           <label for="practice-question-count">Question count</label>
           <select id="practice-question-count" class="gate-input">
             <option value="10" selected>10</option>
@@ -1986,6 +1991,7 @@ function updatePracticeStartButtonState() {
 function renderPracticeSetupTopics(topics) {
   const topicList = $('practice-topic-list');
   const messageEl = $('practice-setup-message');
+  const controlsRow = $('practice-controls-row');
   if (!topicList) return;
 
   practiceTopics = Array.isArray(topics) ? topics : [];
@@ -1995,13 +2001,25 @@ function renderPracticeSetupTopics(topics) {
     ? practiceTopics.filter(topic => String(topic.course || '').trim() === selectedCourse)
     : [];
 
-  if (!visibleTopics.length) {
-    topicList.innerHTML = '<p class="empty-modules">No topics available for this course.</p>';
+  if (!selectedCourse) {
+    topicList.innerHTML = '';
     practiceTestState.selectedTopics = [];
+    if (controlsRow) controlsRow.hidden = true;
     updatePracticeStartButtonState();
     if (messageEl) messageEl.textContent = '';
     return;
   }
+
+  if (!visibleTopics.length) {
+    topicList.innerHTML = '';
+    practiceTestState.selectedTopics = [];
+    if (controlsRow) controlsRow.hidden = true;
+    updatePracticeStartButtonState();
+    if (messageEl) messageEl.textContent = '';
+    return;
+  }
+
+  if (controlsRow) controlsRow.hidden = false;
 
   const selectedSet = new Set(
     (Array.isArray(practiceTestState.selectedTopics) ? practiceTestState.selectedTopics : [])
@@ -4524,38 +4542,6 @@ function showScreen(name) {
   $('app').classList.toggle('auth-mode', name === 'auth');
 }
 
-function renderPracticeModulesForCourse(selectedCourse) {
-  const strip = $('practice-modules-strip');
-  const visible = practiceModules.filter(mod => String(mod.course || '') === selectedCourse);
-
-  if (!selectedCourse) {
-    strip.innerHTML = '<p class="empty-modules">Select a course to view practice modules.</p>';
-    return;
-  }
-
-  if (!visible.length) {
-    strip.innerHTML = '<p class="empty-modules">No practice modules available for this course.</p>';
-    return;
-  }
-
-  strip.innerHTML = visible.map((mod, idx) => {
-    const key = mod.module_key || `practice_${idx}`;
-    const progress = Number(mod.progress_percent ?? 0);
-    return `
-      <article class="practice-module-box" data-module-key="${key}">
-        <strong>${mod.module_title || key}</strong>
-        <p>${mod.module_subtitle || ''}</p>
-        <p>Progress: ${Math.max(0, Math.min(100, progress))}%</p>
-      </article>
-    `;
-  }).join('');
-
-  strip.querySelectorAll('.practice-module-box').forEach(box => {
-    box.addEventListener('click', () => startModuleByKey(box.dataset.moduleKey));
-  });
-}
-
-
 function normalizeDashboardStats(rawStats) {
   const stats = rawStats || {};
   const dailyGoal = 20;
@@ -4615,7 +4601,6 @@ function renderDashboard(payload) {
   $('assignment-card').style.display = assignmentEntryEnabled ? 'block' : 'none';
   $('assignment-key-input').value = '';
 
-  renderPracticeModulesForCourse('');
   practiceTestState.selectedCourse = '';
   practiceTestState.selectedTopics = [];
   practiceTestState.requestedQuestionCount = 10;
@@ -4841,7 +4826,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const selectedCourse = String(e.target.value || '').trim();
     practiceTestState.selectedCourse = selectedCourse;
     practiceTestState.selectedTopics = [];
-    renderPracticeModulesForCourse(selectedCourse);
     renderPracticeSetupTopics(practiceTopics);
     updatePracticeStartButtonState();
   });
