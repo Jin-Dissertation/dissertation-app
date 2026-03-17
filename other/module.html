@@ -1325,6 +1325,7 @@
         <option value="">Select your course</option>
       </select>
       <div id="practice-modules-strip" class="practice-modules-strip"></div>
+      <div id="practice-question-container" style="margin-top:20px;"></div>
       <p class="dashboard-error" id="dashboard-error"></p>
     </section>
   </div>
@@ -1668,21 +1669,58 @@ async function fetchPracticeQuestionsTest() {
       return [];
     }
 
-    const q = questions[0];
-
-    alert(
-      'Loaded question:\n\n' +
-      q.stem + '\n\n' +
-      'Type: ' + q.question_type + '\n' +
-      'Correct: ' + q.correct_blob + '\n' +
-      'Distractors: ' + q.distractors_blob
-    );
+    renderSBAQuestion(questions[0]);
 
     return questions;
   } catch (err) {
     console.error('Practice question test failed:', err);
     alert('Practice question test failed: ' + err.message);
     return [];
+  }
+}
+
+function renderSBAQuestion(q) {
+  const container = document.getElementById("practice-question-container");
+  if (!container) return;
+
+  const correct = String(q.correct_blob || "");
+  const distractors = q.distractors_blob
+    ? String(q.distractors_blob).split("|").map(s => s.trim()).filter(Boolean)
+    : [];
+
+  const answers = [correct, ...distractors];
+
+  for (let i = answers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [answers[i], answers[j]] = [answers[j], answers[i]];
+  }
+
+  container.innerHTML = `
+    <div style="padding:20px; border:1px solid #ddd; border-radius:10px; background:#fff;">
+      <div style="font-weight:600; margin-bottom:15px;">
+        ${q.stem}
+      </div>
+      <div>
+        ${answers.map(answer => `
+          <button
+            type="button"
+            class="action-btn"
+            style="display:block; width:100%; margin-bottom:10px;"
+            onclick="handlePracticeAnswer(${JSON.stringify(answer)}, ${JSON.stringify(correct)})"
+          >
+            ${answer}
+          </button>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function handlePracticeAnswer(selected, correct) {
+  if (selected === correct) {
+    alert("Correct ✅");
+  } else {
+    alert("Incorrect ❌\n\nCorrect answer: " + correct);
   }
 }
 
