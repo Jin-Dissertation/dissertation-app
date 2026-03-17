@@ -1607,12 +1607,12 @@
 
     <section class="dashboard-card">
       <h3>Practice Modules</h3>
-      <select id="practice-course-select" class="gate-input">
-        <option value="">Select your course</option>
-      </select>
       <div id="practice-modules-strip" class="practice-modules-strip"></div>
       <div id="practice-setup-card" class="practice-setup-card">
         <p class="module-label">Practice Questions</p>
+        <select id="practice-course-select" class="gate-input">
+          <option value="">Select a course</option>
+        </select>
         <div id="practice-topic-list" class="practice-topic-list"></div>
         <div class="practice-setup-row">
           <label for="practice-question-count">Question count</label>
@@ -1754,6 +1754,7 @@ let practiceTestState = {
   currentIndex: 0,
   sessionId: "",
   startedAt: null,
+  selectedCourse: '',
   selectedTopics: [],
   requestedQuestionCount: 10,
   results: [],
@@ -1978,6 +1979,14 @@ function getSelectedPracticeTopicKeys() {
     .filter(Boolean);
 }
 
+function updatePracticeStartButtonState() {
+  const startBtn = $('practice-start-btn');
+  if (!startBtn) return;
+  const hasCourse = Boolean(String(practiceTestState.selectedCourse || '').trim());
+  const hasTopics = Array.isArray(practiceTestState.selectedTopics) && practiceTestState.selectedTopics.length > 0;
+  startBtn.disabled = !(hasCourse && hasTopics);
+}
+
 function renderPracticeSetupTopics(topics) {
   const topicList = $('practice-topic-list');
   const messageEl = $('practice-setup-message');
@@ -1985,40 +1994,88 @@ function renderPracticeSetupTopics(topics) {
 
   practiceTopics = Array.isArray(topics) ? topics : [];
 
-  if (!practiceTopics.length) {
-    topicList.innerHTML = '<p class="empty-modules">No practice topics available.</p>';
+  const selectedCourse = String(practiceTestState.selectedCourse || '').trim();
+  const visibleTopics = selectedCourse
+    ? practiceTopics.filter(topic => String(topic.course || '').trim() === selectedCourse)
+    : [];
+
+  if (!visibleTopics.length) {
+    topicList.innerHTML = '<p class="empty-modules">No topics available for this course.</p>';
+    practiceTestState.selectedTopics = [];
+    updatePracticeStartButtonState();
     if (messageEl) messageEl.textContent = '';
     return;
   }
 
-  topicList.innerHTML = practiceTopics.map((topic, index) => {
+  const selectedSet = new Set(
+    (Array.isArray(practiceTestState.selectedTopics) ? practiceTestState.selectedTopics : [])
+      .map(topic => String(topic || '').trim())
+      .filter(Boolean)
+  );
+
+  topicList.innerHTML = visibleTopics.map((topic, index) => {
     const topicKey = String(topic.topic_key || '').trim();
     const topicLabel = topic.topic_label || topicKey || `Topic ${index + 1}`;
-    const topicCourse = String(topic.course || '').trim();
-    const supportingText = topicCourse ? ` (${topicCourse})` : '';
+    const questionCount = Number(topic.question_count ?? 0);
+    const checked = selectedSet.has(topicKey) ? 'checked' : '';
     return `
       <label class="practice-topic-item">
-        <input type="checkbox" name="practice-topic" value="${html(topicKey)}">
-        <span>${html(topicLabel)}${html(supportingText)}</span>
+        <input type="checkbox" name="practice-topic" value="${html(topicKey)}" ${checked}>
+        <span>${html(topicLabel)} (${Number.isFinite(questionCount) ? Math.max(0, questionCount) : 0} questions)</span>
       </label>
     `;
   }).join('');
 
+  topicList.querySelectorAll('input[name="practice-topic"]').forEach(input => {
+    input.addEventListener('change', () => {
+      practiceTestState.selectedTopics = getSelectedPracticeTopicKeys();
+      updatePracticeStartButtonState();
+    });
+  });
+
+  practiceTestState.selectedTopics = getSelectedPracticeTopicKeys();
+  updatePracticeStartButtonState();
   if (messageEl) messageEl.textContent = '';
+}
+
+function populatePracticeCourseDropdown(topics) {
+  const courseSelect = $('practice-course-select');
+  if (!courseSelect) return;
+
+  const priorSelectedCourse = String(practiceTestState.selectedCourse || '').trim();
+  const courses = Array.from(new Set(
+    (Array.isArray(topics) ? topics : [])
+      .map(topic => String(topic.course || '').trim())
+      .filter(Boolean)
+  )).sort((a, b) => a.localeCompare(b));
+
+  courseSelect.innerHTML = '<option value="">Select a course</option>';
+  courses.forEach(course => {
+    const option = document.createElement('option');
+    option.value = course;
+    option.textContent = course;
+    courseSelect.appendChild(option);
+  });
+
+  practiceTestState.selectedCourse = courses.includes(priorSelectedCourse) ? priorSelectedCourse : '';
+  courseSelect.value = practiceTestState.selectedCourse;
 }
 
 async function initializePracticeSetup() {
   const topics = await fetchPracticeTopics();
+  populatePracticeCourseDropdown(topics);
   renderPracticeSetupTopics(topics);
 }
 
 async function handleStartPracticeClick() {
   const messageEl = $('practice-setup-message');
-  const topics = getSelectedPracticeTopicKeys();
-  const questionCount = Number(($('practice-question-count')?.value || 10));
+  const selectedCourse = String(practiceTestState.selectedCourse || '').trim();
+  const topics = Array.isArray(practiceTestState.selectedTopics) ? practiceTestState.selectedTopics : [];
+  const questionCount = Number(practiceTestState.requestedQuestionCount || $('practice-question-count')?.value || 10);
 
-  if (!topics.length) {
-    if (messageEl) messageEl.textContent = 'Select at least one topic to start practice.';
+  if (!selectedCourse || !topics.length) {
+    if (messageEl) messageEl.textContent = 'Select a course and at least one topic to start practice.';
+    updatePracticeStartButtonState();
     return;
   }
 
@@ -2056,6 +2113,7 @@ async function startPracticeSessionWithSettings(topics, questionCount) {
   const payload = {
     action: 'getPracticeQuestions',
     email,
+    course: String(practiceTestState.selectedCourse || '').trim(),
     topics: selectedTopics,
     question_count: requestedQuestionCount
   };
@@ -2095,6 +2153,7 @@ async function startPracticeSessionWithSettings(topics, questionCount) {
   practiceTestState.currentIndex = 0;
   practiceTestState.sessionId = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   practiceTestState.startedAt = new Date().toISOString();
+  practiceTestState.selectedCourse = String(practiceTestState.selectedCourse || '').trim();
   practiceTestState.selectedTopics = selectedTopics;
   practiceTestState.requestedQuestionCount = requestedQuestionCount;
   practiceTestState.results = [];
@@ -4563,17 +4622,13 @@ function renderDashboard(payload) {
   $('assignment-card').style.display = assignmentEntryEnabled ? 'block' : 'none';
   $('assignment-key-input').value = '';
 
-  const courseSelect = $('practice-course-select');
-  courseSelect.innerHTML = '<option value="">Select your course</option>';
-  practiceCourses.forEach(course => {
-    const option = document.createElement('option');
-    option.value = String(course || '');
-    option.textContent = String(course || '');
-    courseSelect.appendChild(option);
-  });
   renderPracticeModulesForCourse('');
+  practiceTestState.selectedCourse = '';
+  practiceTestState.selectedTopics = [];
+  practiceTestState.requestedQuestionCount = 10;
   $('practice-question-count').value = '10';
   $('practice-setup-message').textContent = '';
+  updatePracticeStartButtonState();
   initializePracticeSetup();
 }
 
@@ -4789,7 +4844,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   $('btn-logout').addEventListener('click', logoutToAuth);
   $('assignment-key-btn').addEventListener('click', startModuleByAssignmentKey);
-  $('practice-course-select').addEventListener('change', e => renderPracticeModulesForCourse(e.target.value));
+  $('practice-course-select').addEventListener('change', e => {
+    const selectedCourse = String(e.target.value || '').trim();
+    practiceTestState.selectedCourse = selectedCourse;
+    practiceTestState.selectedTopics = [];
+    renderPracticeModulesForCourse(selectedCourse);
+    renderPracticeSetupTopics(practiceTopics);
+    updatePracticeStartButtonState();
+  });
+  $('practice-question-count').addEventListener('change', e => {
+    const value = Number(e.target.value || 10);
+    practiceTestState.requestedQuestionCount = [10, 20, 30, 40].includes(value) ? value : 10;
+    e.target.value = String(practiceTestState.requestedQuestionCount);
+  });
   $('practice-start-btn').addEventListener('click', handleStartPracticeClick);
   $('btn-save-exit').addEventListener('click', () => { handleSaveAndExit(); });
   $('btn-back-dashboard').addEventListener('click', async () => {
