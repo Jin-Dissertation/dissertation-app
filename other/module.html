@@ -102,8 +102,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 24px 20px;
+      justify-content: flex-start;
+      padding: 36px 20px 24px;
       text-align: center;
       width: 100%;
     }
@@ -120,20 +120,19 @@
 
     .gate-title {
       font-family: var(--serif);
-      font-size: clamp(1.1rem, 3.2vw, 1.5rem);
+      font-size: clamp(1.06rem, 2.9vw, 1.34rem);
       font-weight: 700;
       color: var(--navy);
       line-height: 1.22;
       margin-bottom: 0;
-      max-width: 460px;
+      max-width: 540px;
     }
 
     .gate-sub {
-      font-size: 0.84rem;
+      font-size: 0.85rem;
       color: var(--muted);
-      font-style: italic;
-      margin-bottom: 10px;
-      max-width: 430px;
+      margin: 8px auto 0;
+      max-width: 520px;
     }
 
     .gate-form {
@@ -188,33 +187,14 @@
 
 
     .auth-card {
-      width: min(520px, 100%);
-      background: var(--white);
+      width: min(760px, 100%);
+      background: #f8fbff;
       border: 1px solid var(--rule);
       border-radius: 14px;
-      padding: 20px 20px 12px;
-      box-shadow: 0 10px 22px rgba(16,33,61,0.1);
+      padding: 20px 24px 14px;
+      box-shadow: 0 4px 12px rgba(16,33,61,0.05);
     }
 
-    .auth-mode-head {
-      margin-bottom: 10px;
-      text-align: left;
-      padding-bottom: 4px;
-    }
-
-    .auth-mode-title {
-      font-family: var(--serif);
-      font-size: clamp(1.02rem, 2.3vw, 1.22rem);
-      color: var(--navy);
-      margin-bottom: 0;
-      line-height: 1.2;
-    }
-
-    .auth-mode-sub {
-      color: var(--muted);
-      font-size: 0.8rem;
-      margin-bottom: 0;
-    }
 
     .auth-form {
       display: flex;
@@ -262,11 +242,19 @@
     }
 
     .auth-footer {
-      margin-top: 8px;
+      margin-top: 10px;
       font-size: 0.66rem;
       color: var(--muted);
       opacity: 0.75;
       text-align: center;
+    }
+
+    #google-signin-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 16px 0 14px;
+      transform: scale(1.03);
+      transform-origin: top center;
     }
 
     #dashboard { display:none; padding-top: 24px; }
@@ -1179,7 +1167,7 @@
       #app { padding: 0 16px 80px; }
 
       /* Gate screen — cut the dead space */
-      #auth-screen { min-height: 100dvh; padding: 24px 14px 18px; }
+      #auth-screen { min-height: 100dvh; padding: 30px 14px 18px; }
       .gate-form { flex-direction: column; align-items: stretch; width: 100%; max-width: 340px; }
       .gate-input { width: 100%; }
       .gate-btn   { width: 100%; }
@@ -1238,9 +1226,11 @@
 
       #app { padding: 0 16px 72px; }
 
-      #auth-screen { padding: 20px 12px 14px; }
+      #auth-screen { padding: 24px 12px 14px; }
+      .auth-card { padding: 18px 16px 14px; }
+      #google-signin-wrap { margin: 14px 0 12px; transform: scale(1); }
       .gate-title { line-height: 1.22; font-size: clamp(1.02rem, 5.2vw, 1.28rem); }
-      .gate-sub { margin-bottom: 10px; }
+      .gate-sub { margin-top: 8px; }
       .gate-form { max-width: 100%; }
 
       .module-label { letter-spacing: 0.16em; }
@@ -1279,18 +1269,12 @@
   <div id="auth-screen">
     <div class="auth-card">
       <p class="gate-eyebrow">STUDENT LEARNING MODULES</p>
-      <h1 class="gate-title">Course Learning Modules</h1>
-      <p class="gate-sub">Sign in with your school Google account to access course activities, practice modules, and assigned learning materials.</p>
+      <h1 class="gate-title">Student Learning Modules</h1>
+      <p class="gate-sub">Sign in with Google using your APU account.</p>
 
-      <div class="auth-mode-head">
-        <h2 class="auth-mode-title">Sign in with Google</h2>
-        <p class="auth-mode-sub">Use your school Google account to continue to your learning modules.</p>
+      <div id="google-signin-wrap">
+        <div id="google-signin-button"></div>
       </div>
-
-      <div id="google-signin-button" style="display:flex; justify-content:center; margin-top:10px;"></div>
-      <button class="action-btn secondary" type="button" onclick="resetGoogleAutoSelectDebug()" style="margin-top:10px;">
-        Reset Google Auto-Select
-      </button>
       <p class="gate-error" id="auth-status" role="status" aria-live="polite"></p>
       <footer class="auth-footer">Template updated: <span id="last-updated"></span></footer>
     </div>
@@ -1635,14 +1619,6 @@ async function postToAppsScript(url, payload) {
   return data;
 }
 
-function resetGoogleAutoSelectDebug() {
-  try {
-    google.accounts.id.disableAutoSelect();
-    console.log("Google auto-select disabled for debugging.");
-  } catch (err) {
-    console.warn("disableAutoSelect failed:", err);
-  }
-}
 
 async function fetchPracticeQuestions() {
 
