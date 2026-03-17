@@ -1732,6 +1732,7 @@ let practiceTestState = {
   sessionId: "",
   startedAt: null,
   results: [],
+  resultsSubmitted: false,
   correctCount: 0,
   incorrectCount: 0
 };
@@ -1962,6 +1963,7 @@ async function fetchPracticeQuestionsTest() {
     practiceTestState.sessionId = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     practiceTestState.startedAt = new Date().toISOString();
     practiceTestState.results = [];
+    practiceTestState.resultsSubmitted = false;
     practiceTestState.correctCount = 0;
     practiceTestState.incorrectCount = 0;
     renderCurrentPracticeQuestion();
@@ -2117,6 +2119,51 @@ function recordPracticeQuestionResult(question, isCorrect) {
   }
 
   console.log("practice results", practiceTestState.results);
+}
+
+async function submitPracticeResultsToServer() {
+  const email = normalizeIdentityValue(currentUserEmail || participantEmail || '');
+  const results = practiceTestState?.results;
+
+  if (!practiceTestState || !email || !Array.isArray(results) || results.length === 0) {
+    return { ok: true, skipped: true };
+  }
+
+  if (practiceTestState.resultsSubmitted) {
+    return { ok: true, skipped: true, alreadySubmitted: true };
+  }
+
+  const payload = {
+    action: "submitPracticeResults",
+    email,
+    session_id: practiceTestState.sessionId || "",
+    question_results: results || []
+  };
+
+  try {
+    const response = await fetch(PRACTICE_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const text = await response.text();
+    const data = JSON.parse(text);
+
+    if (data.ok) {
+      practiceTestState.resultsSubmitted = true;
+      console.log("Practice results submitted successfully:", data);
+    } else {
+      console.log("Practice results submission failed:", data);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Practice results submission error:", error);
+    return { ok: false, error: error.message || "Failed to submit practice results." };
+  }
 }
 
 function renderSBAImageQuestion(q, index, total) {
@@ -2983,7 +3030,7 @@ function handlePracticeCategorizeAnswer(question, container, mappings, placement
   }
 }
 
-function advancePracticeQuestion() {
+async function advancePracticeQuestion() {
   const questions = practiceTestState.questions || [];
   if (!questions.length) return;
 
@@ -2995,6 +3042,8 @@ function advancePracticeQuestion() {
 
   const container = document.getElementById("practice-question-container");
   if (!container) return;
+
+  await submitPracticeResultsToServer();
 
   container.innerHTML = `
     <div style="padding:20px; border:1px solid #ddd; border-radius:10px; background:#fff;">
@@ -3037,6 +3086,13 @@ async function fetchPracticeQuestions() {
   }
 
   console.log("Practice questions:", data.question_set);
+
+  practiceTestState.sessionId = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  practiceTestState.startedAt = new Date().toISOString();
+  practiceTestState.results = [];
+  practiceTestState.resultsSubmitted = false;
+  practiceTestState.correctCount = 0;
+  practiceTestState.incorrectCount = 0;
 
   return data.question_set;
 }
