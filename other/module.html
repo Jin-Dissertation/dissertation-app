@@ -318,6 +318,62 @@
     }
     .practice-module-box:hover { border-color: var(--gold); }
     .practice-module-box p { margin: 4px 0; font-size: 0.82rem; color: var(--muted); }
+
+    /* === Practice Question Card === */
+    .practice-question-card {
+      padding: 18px;
+      border: 1px solid #e3e8f0;
+      border-radius: 14px;
+      background: #ffffff;
+    }
+
+    /* === Question meta (Question 1 of 4) === */
+    .practice-meta {
+      font-size: 0.82rem;
+      color: #6b7a90;
+      margin-bottom: 10px;
+    }
+
+    /* === Case stem (THIS is the key change) === */
+    .practice-stem {
+      font-size: 0.95rem;
+      line-height: 1.55;
+      color: #10213d;
+      max-height: 160px;
+      overflow: hidden;
+      padding: 12px 14px;
+      background: #f8fafc;
+      border-radius: 10px;
+      border: 1px solid #e3e8f0;
+    }
+
+    /* Expanded state */
+    .practice-stem.expanded {
+      max-height: none;
+    }
+
+    /* Expand button */
+    .practice-stem-toggle {
+      margin-top: 6px;
+      background: none;
+      border: none;
+      color: #1a3560;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    /* === Answer buttons (denser) === */
+    .practice-answer-btn {
+      display: block;
+      width: 100%;
+      margin-bottom: 8px;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      line-height: 1.35;
+    }
+
     .module-header-actions { margin-top: 10px; display:flex; gap:10px; align-items:center; flex-wrap: wrap; }
     #resume-modal { position: fixed; inset:0; z-index:9998; background: rgba(10,20,40,0.45); align-items:center; justify-content:center; }
     .resume-modal-card { width:min(420px,92vw); background: var(--white); border:1px solid var(--rule); border-radius:12px; padding:18px; }
@@ -1748,68 +1804,39 @@ function renderSBAQuestion(q, index, total) {
   }
 
   container.innerHTML = `
-    <div style="padding:20px; border:1px solid #ddd; border-radius:10px; background:#fff;">
-      <div style="font-size:0.9rem; color:#5f718f; margin-bottom:10px;">
+    <div class="practice-question-card">
+      <div class="practice-meta">
         Question ${index + 1} of ${total}
       </div>
-      <div id="practice-stem-wrap" style="margin-bottom:16px;">
-        <div
-          id="practice-stem"
-          class="practice-stem"
-          style="
-            font-size:0.96rem;
-            line-height:1.55;
-            color:#10213d;
-            max-height:10.5em;
-            overflow:hidden;
-          "
-        >
-          ${q.stem}
-        </div>
-        <button
-          type="button"
-          id="practice-stem-toggle"
-          style="
-            display:none;
-            margin-top:8px;
-            background:none;
-            border:none;
-            padding:0;
-            color:#1a3560;
-            font-size:0.84rem;
-            font-weight:600;
-            text-decoration:underline;
-            cursor:pointer;
-          "
-        >
-          Expand case
-        </button>
+
+      <div id="practice-stem" class="practice-stem">
+        ${q.stem}
       </div>
-      <div>
+
+      <button id="practice-stem-toggle" class="practice-stem-toggle" style="display:none;">
+        Expand case
+      </button>
+
+      <div style="margin-top:14px;">
         ${answers.map(answer => `
           <button
             type="button"
             class="action-btn practice-answer-btn"
             data-answer="${String(answer).replace(/"/g, '&quot;')}"
-            style="
-              display:block;
-              width:100%;
-              margin-bottom:8px;
-              padding:10px 12px;
-              font-size:0.9rem;
-              line-height:1.35;
-            "
           >
             ${answer}
           </button>
         `).join("")}
       </div>
+
       <div id="practice-feedback" style="margin-top:14px;"></div>
+
       <div id="practice-next-wrap" style="margin-top:14px; display:none;">
         <button type="button" class="action-btn" id="practice-next-btn">
           ${index < total - 1 ? "Next Question" : "Finish"}
         </button>
       </div>
+
     </div>
   `;
 
@@ -1824,17 +1851,13 @@ function renderSBAQuestion(q, index, total) {
     });
 
     stemToggle.addEventListener("click", () => {
-      const expanded = stemEl.getAttribute("data-expanded") === "true";
+      const expanded = stemEl.classList.contains("expanded");
 
       if (expanded) {
-        stemEl.style.maxHeight = "10.5em";
-        stemEl.style.overflow = "hidden";
-        stemEl.setAttribute("data-expanded", "false");
+        stemEl.classList.remove("expanded");
         stemToggle.textContent = "Expand case";
       } else {
-        stemEl.style.maxHeight = "none";
-        stemEl.style.overflow = "visible";
-        stemEl.setAttribute("data-expanded", "true");
+        stemEl.classList.add("expanded");
         stemToggle.textContent = "Collapse case";
       }
     });
