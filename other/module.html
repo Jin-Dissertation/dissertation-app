@@ -1752,8 +1752,38 @@ function renderSBAQuestion(q, index, total) {
       <div style="font-size:0.9rem; color:#5f718f; margin-bottom:10px;">
         Question ${index + 1} of ${total}
       </div>
-      <div style="font-weight:600; margin-bottom:15px;">
-        ${q.stem}
+      <div id="practice-stem-wrap" style="margin-bottom:16px;">
+        <div
+          id="practice-stem"
+          class="practice-stem"
+          style="
+            font-size:0.96rem;
+            line-height:1.55;
+            color:#10213d;
+            max-height:10.5em;
+            overflow:hidden;
+          "
+        >
+          ${q.stem}
+        </div>
+        <button
+          type="button"
+          id="practice-stem-toggle"
+          style="
+            display:none;
+            margin-top:8px;
+            background:none;
+            border:none;
+            padding:0;
+            color:#1a3560;
+            font-size:0.84rem;
+            font-weight:600;
+            text-decoration:underline;
+            cursor:pointer;
+          "
+        >
+          Expand case
+        </button>
       </div>
       <div>
         ${answers.map(answer => `
@@ -1761,7 +1791,14 @@ function renderSBAQuestion(q, index, total) {
             type="button"
             class="action-btn practice-answer-btn"
             data-answer="${String(answer).replace(/"/g, '&quot;')}"
-            style="display:block; width:100%; margin-bottom:10px;"
+            style="
+              display:block;
+              width:100%;
+              margin-bottom:8px;
+              padding:10px 12px;
+              font-size:0.9rem;
+              line-height:1.35;
+            "
           >
             ${answer}
           </button>
@@ -1775,6 +1812,33 @@ function renderSBAQuestion(q, index, total) {
       </div>
     </div>
   `;
+
+  const stemEl = container.querySelector("#practice-stem");
+  const stemToggle = container.querySelector("#practice-stem-toggle");
+
+  if (stemEl && stemToggle) {
+    requestAnimationFrame(() => {
+      if (stemEl.scrollHeight > stemEl.clientHeight + 4) {
+        stemToggle.style.display = "inline-block";
+      }
+    });
+
+    stemToggle.addEventListener("click", () => {
+      const expanded = stemEl.getAttribute("data-expanded") === "true";
+
+      if (expanded) {
+        stemEl.style.maxHeight = "10.5em";
+        stemEl.style.overflow = "hidden";
+        stemEl.setAttribute("data-expanded", "false");
+        stemToggle.textContent = "Expand case";
+      } else {
+        stemEl.style.maxHeight = "none";
+        stemEl.style.overflow = "visible";
+        stemEl.setAttribute("data-expanded", "true");
+        stemToggle.textContent = "Collapse case";
+      }
+    });
+  }
 
   const buttons = container.querySelectorAll(".practice-answer-btn");
   buttons.forEach(button => {
