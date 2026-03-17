@@ -375,6 +375,16 @@
       line-height: 1.35;
     }
 
+    .practice-answer-btn.selected {
+      outline: 2px solid #2f6edc;
+      outline-offset: 1px;
+      background: #1a3560;
+    }
+
+    .practice-answer-btn[disabled] {
+      cursor: default;
+    }
+
     /* === Practice image block === */
     .practice-image-wrap {
       margin-bottom: 14px;
@@ -1797,6 +1807,11 @@ function renderCurrentPracticeQuestion() {
     return;
   }
 
+  if (q.question_type === "sata") {
+    renderSATAQuestion(q, index, questions.length);
+    return;
+  }
+
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
@@ -2076,6 +2091,12 @@ function renderFITBQuestion(q, index, total) {
   const input = container.querySelector("#practice-fitb-input");
   const submitBtn = container.querySelector("#practice-fitb-submit");
 
+  if (input) {
+    input.addEventListener("blur", () => {
+      input.value = input.value.trim();
+    });
+  }
+
   if (submitBtn) {
     submitBtn.addEventListener("click", () => {
       const selected = input ? input.value.trim() : "";
@@ -2089,6 +2110,118 @@ function renderFITBQuestion(q, index, total) {
         event.preventDefault();
         submitBtn?.click();
       }
+    });
+  }
+}
+
+function renderSATAQuestion(q, index, total) {
+  const container = document.getElementById("practice-question-container");
+  if (!container) return;
+
+  const correctAnswers = String(q.correct_blob || "")
+    .split("|")
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const options = String(q.distractors_blob || "")
+    .split("|")
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const uniqueOptions = [...new Set(options)];
+
+  const shuffledOptions = uniqueOptions.slice();
+  for (let i = shuffledOptions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+  }
+
+  container.innerHTML = `
+    <div class="practice-question-card">
+
+      <div class="practice-meta">
+        Question ${index + 1} of ${total}
+      </div>
+
+      <div id="practice-stem" class="practice-stem">
+        ${q.stem}
+      </div>
+
+      <button id="practice-stem-toggle" class="practice-stem-toggle" style="display:none;">
+        Expand case
+      </button>
+
+      <div style="margin-top:10px; margin-bottom:12px; font-size:0.86rem; color:#5f718f;">
+        Select all that apply.
+      </div>
+
+      <div id="practice-sata-options">
+        ${shuffledOptions.map(answer => `
+          <button
+            type="button"
+            class="action-btn practice-answer-btn"
+            data-answer="${String(answer).replace(/"/g, '&quot;')}"
+          >
+            ${answer}
+          </button>
+        `).join("")}
+      </div>
+
+      <div style="margin-top:10px;">
+        <button type="button" class="action-btn" id="practice-sata-submit">
+          Check Answer
+        </button>
+      </div>
+
+      <div id="practice-feedback" style="margin-top:14px;"></div>
+
+      <div id="practice-next-wrap" style="margin-top:14px; display:none;">
+        <button type="button" class="action-btn" id="practice-next-btn">
+          ${index < total - 1 ? "Next Question" : "Finish"}
+        </button>
+      </div>
+
+    </div>
+  `;
+
+  const stem = container.querySelector("#practice-stem");
+  const toggle = container.querySelector("#practice-stem-toggle");
+
+  if (stem && toggle) {
+    requestAnimationFrame(() => {
+      if (stem.scrollHeight > stem.clientHeight + 4) {
+        toggle.style.display = "inline-block";
+      }
+    });
+
+    toggle.addEventListener("click", () => {
+      const expanded = stem.classList.contains("expanded");
+
+      if (expanded) {
+        stem.classList.remove("expanded");
+        toggle.textContent = "Expand case";
+      } else {
+        stem.classList.add("expanded");
+        toggle.textContent = "Collapse case";
+      }
+    });
+  }
+
+  const optionButtons = container.querySelectorAll(".practice-answer-btn");
+  optionButtons.forEach(button => {
+    button.addEventListener("click", () => {
+      if (button.disabled) return;
+      button.classList.toggle("selected");
+    });
+  });
+
+  const submitBtn = container.querySelector("#practice-sata-submit");
+  if (submitBtn) {
+    submitBtn.addEventListener("click", () => {
+      const selectedAnswers = [...container.querySelectorAll(".practice-answer-btn.selected")]
+        .map(btn => btn.getAttribute("data-answer") || "");
+
+      handlePracticeSATAAnswer(selectedAnswers, correctAnswers);
     });
   }
 }
@@ -2153,12 +2286,17 @@ function handlePracticeFITBAnswer(selected, correct) {
   const input = container.querySelector("#practice-fitb-input");
   const submitBtn = container.querySelector("#practice-fitb-submit");
 
-  const normalize = value =>
+  const normalize = (value) =>
     String(value || "")
-      .trim()
-      .toLowerCase();
+      .toLowerCase()
+      .replace(/[^\w\s]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
 
-  const isCorrect = normalize(selected) === normalize(correct);
+  const selectedNorm = normalize(selected);
+  const correctNorm = normalize(correct);
+
+  const isCorrect = selectedNorm === correctNorm;
 
   if (input) {
     input.disabled = true;
@@ -2183,6 +2321,82 @@ function handlePracticeFITBAnswer(selected, correct) {
         <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#fef2f2; border:1px solid #991b1b; color:#991b1b;">
           <strong>Incorrect ❌</strong><br>
           Correct answer: ${correct}
+        </div>
+      `;
+    }
+  }
+
+  const nextWrap = container.querySelector("#practice-next-wrap");
+  const nextBtn = container.querySelector("#practice-next-btn");
+
+  if (nextWrap) {
+    nextWrap.style.display = "block";
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener("click", advancePracticeQuestion, { once: true });
+  }
+}
+
+function handlePracticeSATAAnswer(selectedAnswers, correctAnswers) {
+  const container = document.getElementById("practice-question-container");
+  if (!container) return;
+
+  const feedback = container.querySelector("#practice-feedback");
+  const buttons = container.querySelectorAll(".practice-answer-btn");
+  const submitBtn = container.querySelector("#practice-sata-submit");
+
+  const normalize = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .replace(/[^\w\s]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const selectedNorm = selectedAnswers.map(normalize).sort();
+  const correctNorm = correctAnswers.map(normalize).sort();
+
+  const isCorrect =
+    selectedNorm.length === correctNorm.length &&
+    selectedNorm.every((value, index) => value === correctNorm[index]);
+
+  buttons.forEach(button => {
+    const answer = button.getAttribute("data-answer") || "";
+    const answerNorm = normalize(answer);
+    const isSelected = button.classList.contains("selected");
+    const isActuallyCorrect = correctNorm.includes(answerNorm);
+
+    button.disabled = true;
+    button.style.opacity = "0.8";
+
+    if (isActuallyCorrect) {
+      button.style.border = "2px solid #166534";
+      button.style.background = "#166534";
+      button.style.color = "#ffffff";
+    } else if (isSelected && !isActuallyCorrect) {
+      button.style.border = "2px solid #991b1b";
+      button.style.background = "#991b1b";
+      button.style.color = "#ffffff";
+    }
+  });
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = "0.75";
+  }
+
+  if (feedback) {
+    if (isCorrect) {
+      feedback.innerHTML = `
+        <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#dcfce7; border:1px solid #166534; color:#14532d;">
+          <strong>Correct ✅</strong>
+        </div>
+      `;
+    } else {
+      feedback.innerHTML = `
+        <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#fef2f2; border:1px solid #991b1b; color:#991b1b;">
+          <strong>Incorrect ❌</strong><br>
+          Correct answer(s): ${correctAnswers.join(", ")}
         </div>
       `;
     }
