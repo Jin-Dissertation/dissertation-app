@@ -379,10 +379,10 @@
 
     .practice-answer-btn.selected {
       background: #2f6edc;
-      color: #ffffff;
       border: 2px solid #2f6edc;
+      color: #ffffff;
       box-shadow: 0 0 0 2px rgba(47, 110, 220, 0.25);
-      transform: translateY(-1px);
+      transform: none;
     }
 
     .practice-answer-btn:focus {
@@ -391,12 +391,8 @@
     }
 
     .practice-answer-btn:focus-visible {
-      outline: 2px solid #2f6edc;
-      outline-offset: 2px;
-    }
-
-    .practice-answer-btn:not([disabled]):active {
-      transform: translateY(1px);
+      outline: none;
+      box-shadow: none;
     }
 
     .sata-check {
@@ -471,7 +467,7 @@
       background: #2f6edc;
       border-color: #2f6edc;
       box-shadow: 0 0 0 3px rgba(47, 110, 220, 0.28);
-      transform: translateY(-1px);
+      transform: none;
     }
 
     .practice-categorize-item.correct {
@@ -2308,7 +2304,8 @@ function renderSATAQuestion(q, index, total) {
 
   const optionButtons = container.querySelectorAll(".practice-answer-btn");
   optionButtons.forEach(button => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
       if (button.disabled) return;
       button.classList.toggle("selected");
       button.blur();
@@ -2370,23 +2367,21 @@ function renderCategorizeQuestion(q, index, total) {
       </div>
 
       <div class="practice-categorize-layout">
-        <div
-          class="practice-categorize-pool practice-categorize-dropzone"
-          id="practice-categorize-pool"
-          data-category="pool"
-        >
+        <div class="practice-categorize-pool practice-categorize-dropzone" id="practice-categorize-pool" data-category="pool">
           <div class="practice-categorize-pool-title">Items to place</div>
-          ${shuffledItems.map(item => `
-            <div
-              class="practice-categorize-item"
-              draggable="true"
-              data-item="${String(item).replace(/"/g, '&quot;')}"
-              data-location="pool"
-            >
-              ${item}
-            </div>
-          `).join("")}
           ${isMobileMode ? `<div class="practice-categorize-mobile-hint" id="practice-categorize-selection-hint">No item selected.</div>` : ""}
+          <div class="practice-categorize-items" id="practice-categorize-pool-items">
+            ${shuffledItems.map(item => `
+              <div
+                class="practice-categorize-item"
+                draggable="true"
+                data-item="${String(item).replace(/"/g, '&quot;')}"
+                data-location="pool"
+              >
+                ${item}
+              </div>
+            `).join("")}
+          </div>
         </div>
 
         <div>
@@ -2428,6 +2423,7 @@ function renderCategorizeQuestion(q, index, total) {
 
 function initializeCategorizeInteractions(container, mappings, categories, isMobileMode) {
   const pool = container.querySelector("#practice-categorize-pool");
+  const poolItems = container.querySelector("#practice-categorize-pool-items");
   const dropzones = container.querySelectorAll(".practice-categorize-zone.practice-categorize-dropzone");
   const resetBtn = container.querySelector("#practice-categorize-reset");
   const submitBtn = container.querySelector("#practice-categorize-submit");
@@ -2465,7 +2461,10 @@ function initializeCategorizeInteractions(container, mappings, categories, isMob
     });
 
     if (isMobileMode) {
-      item.addEventListener("click", () => {
+      item.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
         if (item.getAttribute("data-locked") === "true") return;
 
         if (selectedMobileItem === item) {
@@ -2497,8 +2496,8 @@ function initializeCategorizeInteractions(container, mappings, categories, isMob
   };
 
   const moveItemToPool = (item) => {
-    if (!item || !pool) return;
-    pool.appendChild(item);
+    if (!item || !poolItems) return;
+    poolItems.appendChild(item);
     item.setAttribute("data-location", "pool");
     item.classList.remove("selected");
     if (selectedMobileItem === item) {
