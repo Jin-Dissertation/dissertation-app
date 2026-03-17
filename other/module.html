@@ -1447,6 +1447,10 @@ let isAuthenticated  = false;
 let availableModules = [];
 let practiceCourses = [];
 let practiceModules = [];
+let practiceTestState = {
+  questions: [],
+  currentIndex: 0
+};
 let assignmentEntryEnabled = true;
 let dashboardStats = null;
 let currentModuleMeta = null;
@@ -1669,7 +1673,9 @@ async function fetchPracticeQuestionsTest() {
       return [];
     }
 
-    renderSBAQuestion(questions[0]);
+    practiceTestState.questions = questions;
+    practiceTestState.currentIndex = 0;
+    renderCurrentPracticeQuestion();
 
     return questions;
   } catch (err) {
@@ -1679,7 +1685,53 @@ async function fetchPracticeQuestionsTest() {
   }
 }
 
-function renderSBAQuestion(q) {
+function renderCurrentPracticeQuestion() {
+  const questions = practiceTestState.questions || [];
+  const index = practiceTestState.currentIndex || 0;
+
+  if (!questions.length) {
+    const container = document.getElementById("practice-question-container");
+    if (container) {
+      container.innerHTML = "";
+    }
+    return;
+  }
+
+  const q = questions[index];
+  if (!q) return;
+
+  if (q.question_type === "sba") {
+    renderSBAQuestion(q, index, questions.length);
+    return;
+  }
+
+  const container = document.getElementById("practice-question-container");
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="padding:20px; border:1px solid #ddd; border-radius:10px; background:#fff;">
+      <div style="font-size:0.9rem; color:#5f718f; margin-bottom:10px;">
+        Question ${index + 1} of ${questions.length}
+      </div>
+      <div style="font-weight:600; margin-bottom:15px;">
+        This temporary renderer only supports SBA right now.
+      </div>
+      <div style="margin-bottom:14px;">
+        Unsupported question type: <strong>${q.question_type || "(blank)"}</strong>
+      </div>
+      <button type="button" class="action-btn" id="practice-next-btn">
+        ${index < questions.length - 1 ? "Next Question" : "Finish"}
+      </button>
+    </div>
+  `;
+
+  const nextBtn = container.querySelector("#practice-next-btn");
+  if (nextBtn) {
+    nextBtn.addEventListener("click", advancePracticeQuestion);
+  }
+}
+
+function renderSBAQuestion(q, index, total) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
@@ -1697,6 +1749,9 @@ function renderSBAQuestion(q) {
 
   container.innerHTML = `
     <div style="padding:20px; border:1px solid #ddd; border-radius:10px; background:#fff;">
+      <div style="font-size:0.9rem; color:#5f718f; margin-bottom:10px;">
+        Question ${index + 1} of ${total}
+      </div>
       <div style="font-weight:600; margin-bottom:15px;">
         ${q.stem}
       </div>
@@ -1713,6 +1768,11 @@ function renderSBAQuestion(q) {
         `).join("")}
       </div>
       <div id="practice-feedback" style="margin-top:14px;"></div>
+      <div id="practice-next-wrap" style="margin-top:14px; display:none;">
+        <button type="button" class="action-btn" id="practice-next-btn">
+          ${index < total - 1 ? "Next Question" : "Finish"}
+        </button>
+      </div>
     </div>
   `;
 
@@ -1764,6 +1824,38 @@ function handlePracticeAnswer(selected, correct) {
       </div>
     `;
   }
+
+  const nextWrap = container.querySelector("#practice-next-wrap");
+  const nextBtn = container.querySelector("#practice-next-btn");
+
+  if (nextWrap) {
+    nextWrap.style.display = "block";
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener("click", advancePracticeQuestion, { once: true });
+  }
+}
+
+function advancePracticeQuestion() {
+  const questions = practiceTestState.questions || [];
+  if (!questions.length) return;
+
+  if (practiceTestState.currentIndex < questions.length - 1) {
+    practiceTestState.currentIndex += 1;
+    renderCurrentPracticeQuestion();
+    return;
+  }
+
+  const container = document.getElementById("practice-question-container");
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="padding:20px; border:1px solid #ddd; border-radius:10px; background:#fff;">
+      <div style="font-weight:600; margin-bottom:10px;">Practice test complete ✅</div>
+      <div style="color:#5f718f;">You reached the end of the returned practice questions.</div>
+    </div>
+  `;
 }
 
 
