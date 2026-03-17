@@ -367,7 +367,9 @@
 
     /* === Answer buttons (denser) === */
     .practice-answer-btn {
-      display: block;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       width: 100%;
       margin-bottom: 8px;
       padding: 10px 12px;
@@ -376,13 +378,122 @@
     }
 
     .practice-answer-btn.selected {
-      outline: 2px solid #2f6edc;
-      outline-offset: 1px;
-      background: #1a3560;
+      background: #2f6edc;
+      color: #ffffff;
+      border: 2px solid #2f6edc;
+      box-shadow: 0 0 0 2px rgba(47, 110, 220, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .practice-answer-btn:not([disabled]):active {
+      transform: translateY(1px);
+    }
+
+    .sata-check {
+      opacity: 0;
+      font-weight: 700;
+      margin-left: 12px;
+    }
+
+    .practice-answer-btn.selected .sata-check {
+      opacity: 1;
     }
 
     .practice-answer-btn[disabled] {
       cursor: default;
+    }
+
+    .practice-categorize-helper {
+      margin-top: 10px;
+      margin-bottom: 12px;
+      font-size: 0.86rem;
+      color: #5f718f;
+    }
+
+    .practice-categorize-layout {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .practice-categorize-pool,
+    .practice-categorize-zone {
+      border: 1px solid #e3e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+      padding: 12px;
+      min-height: 120px;
+    }
+
+    .practice-categorize-zone-title,
+    .practice-categorize-pool-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #1a3560;
+      margin-bottom: 10px;
+    }
+
+    .practice-categorize-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-content: flex-start;
+      min-height: 56px;
+    }
+
+    .practice-categorize-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #10213d;
+      color: #ffffff;
+      border: 1px solid #10213d;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.86rem;
+      line-height: 1.2;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .practice-categorize-item.selected {
+      background: #2f6edc;
+      border-color: #2f6edc;
+      box-shadow: 0 0 0 2px rgba(47, 110, 220, 0.2);
+    }
+
+    .practice-categorize-item.correct {
+      background: #166534;
+      border-color: #166534;
+    }
+
+    .practice-categorize-item.incorrect {
+      background: #991b1b;
+      border-color: #991b1b;
+    }
+
+    .practice-categorize-controls {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .practice-categorize-mobile-hint {
+      font-size: 0.82rem;
+      color: #5f718f;
+      margin-top: 6px;
+    }
+
+    .practice-drop-target-active {
+      border-color: #2f6edc;
+      box-shadow: 0 0 0 2px rgba(47, 110, 220, 0.18);
+    }
+
+    @media (max-width: 700px) {
+      .practice-categorize-layout {
+        grid-template-columns: 1fr;
+      }
     }
 
     /* === Practice image block === */
@@ -1812,6 +1923,11 @@ function renderCurrentPracticeQuestion() {
     return;
   }
 
+  if (q.question_type === "categorize") {
+    renderCategorizeQuestion(q, index, questions.length);
+    return;
+  }
+
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
@@ -1835,6 +1951,47 @@ function renderCurrentPracticeQuestion() {
   const nextBtn = container.querySelector("#practice-next-btn");
   if (nextBtn) {
     nextBtn.addEventListener("click", advancePracticeQuestion);
+  }
+}
+
+function parseCategorizeMappings(blob) {
+  return String(blob || "")
+    .split("||")
+    .map(part => part.trim())
+    .filter(Boolean)
+    .map(part => {
+      const pieces = part.split("|");
+      if (pieces.length < 2) return null;
+      const item = pieces[0].trim();
+      const category = pieces[1].trim();
+      if (!item || !category) return null;
+      return { item, category };
+    })
+    .filter(Boolean);
+}
+
+function initializePracticeStemToggle(container) {
+  const stem = container.querySelector("#practice-stem");
+  const toggle = container.querySelector("#practice-stem-toggle");
+
+  if (stem && toggle) {
+    requestAnimationFrame(() => {
+      if (stem.scrollHeight > stem.clientHeight + 4) {
+        toggle.style.display = "inline-block";
+      }
+    });
+
+    toggle.addEventListener("click", () => {
+      const expanded = stem.classList.contains("expanded");
+
+      if (expanded) {
+        stem.classList.remove("expanded");
+        toggle.textContent = "Expand case";
+      } else {
+        stem.classList.add("expanded");
+        toggle.textContent = "Collapse case";
+      }
+    });
   }
 }
 
@@ -1907,29 +2064,7 @@ function renderSBAImageQuestion(q, index, total) {
     });
   });
 
-  // === Stem expand/collapse ===
-  const stem = container.querySelector("#practice-stem");
-  const toggle = container.querySelector("#practice-stem-toggle");
-
-  if (stem && toggle) {
-    requestAnimationFrame(() => {
-      if (stem.scrollHeight > stem.clientHeight + 4) {
-        toggle.style.display = "inline-block";
-      }
-    });
-
-    toggle.addEventListener("click", () => {
-      const expanded = stem.classList.contains("expanded");
-
-      if (expanded) {
-        stem.classList.remove("expanded");
-        toggle.textContent = "Expand case";
-      } else {
-        stem.classList.add("expanded");
-        toggle.textContent = "Collapse case";
-      }
-    });
-  }
+  initializePracticeStemToggle(container);
 }
 
 function renderSBAQuestion(q, index, total) {
@@ -1985,28 +2120,7 @@ function renderSBAQuestion(q, index, total) {
     </div>
   `;
 
-  const stemEl = container.querySelector("#practice-stem");
-  const stemToggle = container.querySelector("#practice-stem-toggle");
-
-  if (stemEl && stemToggle) {
-    requestAnimationFrame(() => {
-      if (stemEl.scrollHeight > stemEl.clientHeight + 4) {
-        stemToggle.style.display = "inline-block";
-      }
-    });
-
-    stemToggle.addEventListener("click", () => {
-      const expanded = stemEl.classList.contains("expanded");
-
-      if (expanded) {
-        stemEl.classList.remove("expanded");
-        stemToggle.textContent = "Expand case";
-      } else {
-        stemEl.classList.add("expanded");
-        stemToggle.textContent = "Collapse case";
-      }
-    });
-  }
+  initializePracticeStemToggle(container);
 
   const buttons = container.querySelectorAll(".practice-answer-btn");
   buttons.forEach(button => {
@@ -2065,31 +2179,9 @@ function renderFITBQuestion(q, index, total) {
     </div>
   `;
 
-  const stem = container.querySelector("#practice-stem");
-  const toggle = container.querySelector("#practice-stem-toggle");
+  initializePracticeStemToggle(container);
 
-  if (stem && toggle) {
-    requestAnimationFrame(() => {
-      if (stem.scrollHeight > stem.clientHeight + 4) {
-        toggle.style.display = "inline-block";
-      }
-    });
-
-    toggle.addEventListener("click", () => {
-      const expanded = stem.classList.contains("expanded");
-
-      if (expanded) {
-        stem.classList.remove("expanded");
-        toggle.textContent = "Expand case";
-      } else {
-        stem.classList.add("expanded");
-        toggle.textContent = "Collapse case";
-      }
-    });
-  }
-
-  const input = container.querySelector("#practice-fitb-input");
-  const submitBtn = container.querySelector("#practice-fitb-submit");
+  const input = container.querySelector("#practice-fitb-input");  const submitBtn = container.querySelector("#practice-fitb-submit");
 
   if (input) {
     input.addEventListener("blur", () => {
@@ -2162,7 +2254,8 @@ function renderSATAQuestion(q, index, total) {
             class="action-btn practice-answer-btn"
             data-answer="${String(answer).replace(/"/g, '&quot;')}"
           >
-            ${answer}
+            <span class="sata-label">${answer}</span>
+            <span class="sata-check">✓</span>
           </button>
         `).join("")}
       </div>
@@ -2184,28 +2277,7 @@ function renderSATAQuestion(q, index, total) {
     </div>
   `;
 
-  const stem = container.querySelector("#practice-stem");
-  const toggle = container.querySelector("#practice-stem-toggle");
-
-  if (stem && toggle) {
-    requestAnimationFrame(() => {
-      if (stem.scrollHeight > stem.clientHeight + 4) {
-        toggle.style.display = "inline-block";
-      }
-    });
-
-    toggle.addEventListener("click", () => {
-      const expanded = stem.classList.contains("expanded");
-
-      if (expanded) {
-        stem.classList.remove("expanded");
-        toggle.textContent = "Expand case";
-      } else {
-        stem.classList.add("expanded");
-        toggle.textContent = "Collapse case";
-      }
-    });
-  }
+  initializePracticeStemToggle(container);
 
   const optionButtons = container.querySelectorAll(".practice-answer-btn");
   optionButtons.forEach(button => {
@@ -2224,6 +2296,278 @@ function renderSATAQuestion(q, index, total) {
       handlePracticeSATAAnswer(selectedAnswers, correctAnswers);
     });
   }
+}
+
+function renderCategorizeQuestion(q, index, total) {
+  const container = document.getElementById("practice-question-container");
+  if (!container) return;
+
+  const mappings = parseCategorizeMappings(q.correct_blob);
+  const categories = String(q.distractors_blob || "")
+    .split("|")
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const uniqueCategories = [...new Set(categories)];
+  const items = mappings.map(m => m.item);
+
+  const shuffledItems = items.slice();
+  for (let i = shuffledItems.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledItems[i], shuffledItems[j]] = [shuffledItems[j], shuffledItems[i]];
+  }
+
+  const isMobileMode = window.matchMedia("(max-width: 700px)").matches;
+
+  container.innerHTML = `
+    <div class="practice-question-card">
+
+      <div class="practice-meta">
+        Question ${index + 1} of ${total}
+      </div>
+
+      <div id="practice-stem" class="practice-stem">
+        ${q.stem}
+      </div>
+
+      <button id="practice-stem-toggle" class="practice-stem-toggle" style="display:none;">
+        Expand case
+      </button>
+
+      <div class="practice-categorize-helper">
+        ${isMobileMode
+          ? "Tap an item to select it, then tap a category area to place it."
+          : "Drag each item into the correct category."
+        }
+      </div>
+
+      <div class="practice-categorize-layout">
+        <div class="practice-categorize-pool">
+          <div class="practice-categorize-pool-title">Items to place</div>
+          <div class="practice-categorize-items" id="practice-categorize-pool">
+            ${shuffledItems.map(item => `
+              <div
+                class="practice-categorize-item"
+                draggable="true"
+                data-item="${String(item).replace(/"/g, '&quot;')}"
+                data-location="pool"
+              >
+                ${item}
+              </div>
+            `).join("")}
+          </div>
+          ${isMobileMode ? `<div class="practice-categorize-mobile-hint" id="practice-categorize-selection-hint">No item selected.</div>` : ""}
+        </div>
+
+        <div>
+          ${uniqueCategories.map(category => `
+            <div class="practice-categorize-zone" data-category="${String(category).replace(/"/g, '&quot;')}" style="margin-bottom:12px;">
+              <div class="practice-categorize-zone-title">${category}</div>
+              <div class="practice-categorize-items practice-categorize-dropzone" data-category="${String(category).replace(/"/g, '&quot;')}"></div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+
+      <div class="practice-categorize-controls">
+        <button type="button" class="action-btn secondary" id="practice-categorize-reset">
+          Reset placements
+        </button>
+        <button type="button" class="action-btn" id="practice-categorize-submit">
+          Check Answer
+        </button>
+      </div>
+
+      <div id="practice-feedback" style="margin-top:14px;"></div>
+
+      <div id="practice-next-wrap" style="margin-top:14px; display:none;">
+        <button type="button" class="action-btn" id="practice-next-btn">
+          ${index < total - 1 ? "Next Question" : "Finish"}
+        </button>
+      </div>
+
+    </div>
+  `;
+
+  initializePracticeStemToggle(container);
+  initializeCategorizeInteractions(container, mappings, uniqueCategories, isMobileMode);
+}
+
+function initializeCategorizeInteractions(container, mappings, categories, isMobileMode) {
+  const pool = container.querySelector("#practice-categorize-pool");
+  const dropzones = container.querySelectorAll(".practice-categorize-dropzone");
+  const resetBtn = container.querySelector("#practice-categorize-reset");
+  const submitBtn = container.querySelector("#practice-categorize-submit");
+  const selectionHint = container.querySelector("#practice-categorize-selection-hint");
+
+  let selectedMobileItem = null;
+  let dragItem = null;
+
+  const refreshSelectionHint = () => {
+    if (!selectionHint) return;
+    if (!selectedMobileItem) {
+      selectionHint.textContent = "No item selected.";
+    } else {
+      selectionHint.textContent = `Selected: ${selectedMobileItem.getAttribute("data-item")}`;
+    }
+  };
+
+  const getAllItems = () => container.querySelectorAll(".practice-categorize-item");
+
+  const clearSelectedMobileItem = () => {
+    getAllItems().forEach(item => item.classList.remove("selected"));
+    selectedMobileItem = null;
+    refreshSelectionHint();
+  };
+
+  const makeItemInteractive = (item) => {
+    item.addEventListener("dragstart", () => {
+      if (item.getAttribute("data-locked") === "true") return;
+      dragItem = item;
+    });
+
+    item.addEventListener("dragend", () => {
+      dragItem = null;
+      dropzones.forEach(zone => zone.classList.remove("practice-drop-target-active"));
+    });
+
+    if (isMobileMode) {
+      item.addEventListener("click", () => {
+        if (item.getAttribute("data-locked") === "true") return;
+
+        if (selectedMobileItem === item) {
+          item.classList.remove("selected");
+          selectedMobileItem = null;
+          refreshSelectionHint();
+          return;
+        }
+
+        getAllItems().forEach(node => node.classList.remove("selected"));
+        item.classList.add("selected");
+        selectedMobileItem = item;
+        refreshSelectionHint();
+      });
+    }
+  };
+
+  getAllItems().forEach(makeItemInteractive);
+
+  const moveItemToZone = (item, zone) => {
+    if (!item || !zone) return;
+    zone.appendChild(item);
+    item.setAttribute("data-location", zone.getAttribute("data-category") || "pool");
+    if (item.classList.contains("selected")) {
+      item.classList.remove("selected");
+    }
+    if (selectedMobileItem === item) {
+      selectedMobileItem = null;
+      refreshSelectionHint();
+    }
+  };
+
+  const moveItemToPool = (item) => {
+    if (!item || !pool) return;
+    pool.appendChild(item);
+    item.setAttribute("data-location", "pool");
+    if (item.classList.contains("selected")) {
+      item.classList.remove("selected");
+    }
+    if (selectedMobileItem === item) {
+      selectedMobileItem = null;
+      refreshSelectionHint();
+    }
+  };
+
+  if (pool) {
+    pool.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      pool.classList.add("practice-drop-target-active");
+    });
+
+    pool.addEventListener("dragleave", () => {
+      pool.classList.remove("practice-drop-target-active");
+    });
+
+    pool.addEventListener("drop", (event) => {
+      event.preventDefault();
+      pool.classList.remove("practice-drop-target-active");
+      if (dragItem && dragItem.getAttribute("data-locked") !== "true") {
+        moveItemToPool(dragItem);
+      }
+    });
+
+    if (isMobileMode) {
+      pool.addEventListener("click", () => {
+        if (selectedMobileItem && selectedMobileItem.getAttribute("data-locked") !== "true") {
+          moveItemToPool(selectedMobileItem);
+        }
+      });
+    }
+  }
+
+  dropzones.forEach(zone => {
+    zone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      zone.classList.add("practice-drop-target-active");
+    });
+
+    zone.addEventListener("dragleave", () => {
+      zone.classList.remove("practice-drop-target-active");
+    });
+
+    zone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      zone.classList.remove("practice-drop-target-active");
+      if (dragItem && dragItem.getAttribute("data-locked") !== "true") {
+        moveItemToZone(dragItem, zone);
+      }
+    });
+
+    if (isMobileMode) {
+      zone.addEventListener("click", () => {
+        if (selectedMobileItem && selectedMobileItem.getAttribute("data-locked") !== "true") {
+          moveItemToZone(selectedMobileItem, zone);
+        }
+      });
+    }
+  });
+
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      getAllItems().forEach(item => {
+        if (item.getAttribute("data-locked") === "true") return;
+        moveItemToPool(item);
+        item.classList.remove("correct", "incorrect", "selected");
+        item.style.opacity = "";
+      });
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = "";
+      }
+
+      clearSelectedMobileItem();
+
+      const feedback = container.querySelector("#practice-feedback");
+      if (feedback) feedback.innerHTML = "";
+
+      const nextWrap = container.querySelector("#practice-next-wrap");
+      if (nextWrap) nextWrap.style.display = "none";
+    });
+  }
+
+  if (submitBtn) {
+    submitBtn.addEventListener("click", () => {
+      const placements = [...getAllItems()].map(item => ({
+        item: item.getAttribute("data-item") || "",
+        placedIn: item.parentElement?.getAttribute("data-category") || "pool"
+      }));
+
+      handlePracticeCategorizeAnswer(container, mappings, placements);
+    });
+  }
+
+  refreshSelectionHint();
 }
 
 function handlePracticeAnswer(selected, correct) {
@@ -2397,6 +2741,83 @@ function handlePracticeSATAAnswer(selectedAnswers, correctAnswers) {
         <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#fef2f2; border:1px solid #991b1b; color:#991b1b;">
           <strong>Incorrect ❌</strong><br>
           Correct answer(s): ${correctAnswers.join(", ")}
+        </div>
+      `;
+    }
+  }
+
+  const nextWrap = container.querySelector("#practice-next-wrap");
+  const nextBtn = container.querySelector("#practice-next-btn");
+
+  if (nextWrap) {
+    nextWrap.style.display = "block";
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener("click", advancePracticeQuestion, { once: true });
+  }
+}
+
+function handlePracticeCategorizeAnswer(container, mappings, placements) {
+  const feedback = container.querySelector("#practice-feedback");
+  const submitBtn = container.querySelector("#practice-categorize-submit");
+  const items = container.querySelectorAll(".practice-categorize-item");
+
+  const normalize = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .replace(/[^\w\s]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const answerMap = {};
+  mappings.forEach(mapping => {
+    answerMap[normalize(mapping.item)] = normalize(mapping.category);
+  });
+
+  let allCorrect = true;
+
+  items.forEach(item => {
+    const itemLabel = item.getAttribute("data-item") || "";
+    const itemKey = normalize(itemLabel);
+    const expectedCategory = answerMap[itemKey] || "";
+    const actualCategory = normalize(item.parentElement?.getAttribute("data-category") || "pool");
+
+    item.setAttribute("data-locked", "true");
+    item.setAttribute("draggable", "false");
+    item.classList.remove("selected");
+
+    if (actualCategory === expectedCategory) {
+      item.classList.add("correct");
+      item.classList.remove("incorrect");
+    } else {
+      item.classList.add("incorrect");
+      item.classList.remove("correct");
+      allCorrect = false;
+    }
+  });
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = "0.75";
+  }
+
+  if (feedback) {
+    if (allCorrect) {
+      feedback.innerHTML = `
+        <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#dcfce7; border:1px solid #166534; color:#14532d;">
+          <strong>Correct ✅</strong>
+        </div>
+      `;
+    } else {
+      const answerText = mappings
+        .map(mapping => `${mapping.item} → ${mapping.category}`)
+        .join("<br>");
+
+      feedback.innerHTML = `
+        <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#fef2f2; border:1px solid #991b1b; color:#991b1b;">
+          <strong>Incorrect ❌</strong><br>
+          Correct placement:<br><br>${answerText}
         </div>
       `;
     }
