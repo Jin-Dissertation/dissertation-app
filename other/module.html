@@ -1731,6 +1731,8 @@ let practiceTestState = {
   currentIndex: 0,
   sessionId: "",
   startedAt: null,
+  selectedTopics: ["intro"],
+  requestedQuestionCount: 5,
   results: [],
   resultsSubmitted: false,
   correctCount: 0,
@@ -1914,66 +1916,83 @@ async function postToAppsScript(url, payload) {
 
 async function fetchPracticeQuestionsTest() {
   try {
-    const email = normalizeIdentityValue(currentUserEmail || participantEmail || '');
-
-    if (!email) {
-      throw new Error('No signed-in user email was found.');
-    }
-
-    const payload = {
-      action: 'getPracticeQuestions',
-      email: email,
-      topics: ['intro'],
-      question_count: 5
-    };
-
-    const response = await fetch(PRACTICE_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const text = await response.text();
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (err) {
-      console.error('Raw server response:', text);
-      throw new Error('Server returned invalid JSON.');
-    }
-
-    if (!data.ok) {
-      throw new Error(data.error || 'Practice question request failed.');
-    }
-
-    const questions = data.question_set || [];
-
-    console.log('Practice questions loaded successfully:', questions);
-
-    if (!questions.length) {
-      alert('No practice questions were returned.');
-      return [];
-    }
-
-    practiceTestState.questions = questions;
-    practiceTestState.currentIndex = 0;
-    practiceTestState.sessionId = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    practiceTestState.startedAt = new Date().toISOString();
-    practiceTestState.results = [];
-    practiceTestState.resultsSubmitted = false;
-    practiceTestState.correctCount = 0;
-    practiceTestState.incorrectCount = 0;
-    renderCurrentPracticeQuestion();
-
-    return questions;
+    return await startPracticeSessionWithSettings(["intro"], 5);
   } catch (err) {
     console.error('Practice question test failed:', err);
     alert('Practice question test failed: ' + err.message);
     return [];
   }
+}
+
+function getPracticeSessionSummary() {
+  return {
+    totalQuestions: (practiceTestState.results || []).length,
+    correctCount: practiceTestState.correctCount || 0,
+    incorrectCount: practiceTestState.incorrectCount || 0
+  };
+}
+
+async function startPracticeSessionWithSettings(topics, questionCount) {
+  const email = normalizeIdentityValue(currentUserEmail || participantEmail || '');
+
+  if (!email) {
+    throw new Error('No signed-in user email was found.');
+  }
+
+  const selectedTopics = Array.isArray(topics) && topics.length ? topics : ["intro"];
+  const requestedQuestionCount = Number(questionCount) > 0 ? Number(questionCount) : 5;
+
+  const payload = {
+    action: 'getPracticeQuestions',
+    email,
+    topics: selectedTopics,
+    question_count: requestedQuestionCount
+  };
+
+  const response = await fetch(PRACTICE_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const text = await response.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (err) {
+    console.error('Raw server response:', text);
+    throw new Error('Server returned invalid JSON.');
+  }
+
+  if (!data.ok) {
+    throw new Error(data.error || 'Practice question request failed.');
+  }
+
+  const questions = data.question_set || [];
+
+  console.log('Practice questions loaded successfully:', questions);
+
+  if (!questions.length) {
+    alert('No practice questions were returned.');
+    return [];
+  }
+
+  practiceTestState.questions = questions;
+  practiceTestState.currentIndex = 0;
+  practiceTestState.sessionId = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  practiceTestState.startedAt = new Date().toISOString();
+  practiceTestState.selectedTopics = selectedTopics;
+  practiceTestState.requestedQuestionCount = requestedQuestionCount;
+  practiceTestState.results = [];
+  practiceTestState.resultsSubmitted = false;
+  practiceTestState.correctCount = 0;
+  practiceTestState.incorrectCount = 0;
+  renderCurrentPracticeQuestion();
+
+  return questions;
 }
 
 function renderCurrentPracticeQuestion() {
@@ -3045,56 +3064,42 @@ async function advancePracticeQuestion() {
 
   await submitPracticeResultsToServer();
 
+  const summary = getPracticeSessionSummary();
+  const restartTopics = Array.isArray(practiceTestState.selectedTopics) && practiceTestState.selectedTopics.length
+    ? practiceTestState.selectedTopics
+    : ["intro"];
+  const restartQuestionCount = Number(practiceTestState.requestedQuestionCount) > 0
+    ? Number(practiceTestState.requestedQuestionCount)
+    : 5;
+
   container.innerHTML = `
-    <div style="padding:20px; border:1px solid #ddd; border-radius:10px; background:#fff;">
-      <div style="font-weight:600; margin-bottom:10px;">Practice test complete ✅</div>
-      <div style="color:#5f718f;">You reached the end of the returned practice questions.</div>
+    <div class="practice-question-card">
+      <div style="font-weight:600; margin-bottom:8px;">Practice session complete</div>
+      <div style="color:#5f718f; margin-bottom:4px;">Number correct: ${summary.correctCount}</div>
+      <div style="color:#5f718f; margin-bottom:14px;">Number incorrect: ${summary.incorrectCount}</div>
+      <button type="button" class="action-btn" id="practice-restart-btn">Practice again with same settings</button>
     </div>
   `;
+
+  const restartBtn = container.querySelector("#practice-restart-btn");
+  if (restartBtn) {
+    restartBtn.addEventListener("click", async () => {
+      restartBtn.disabled = true;
+      try {
+        await startPracticeSessionWithSettings(restartTopics, restartQuestionCount);
+      } catch (error) {
+        console.error("Failed to restart practice session:", error);
+        alert("Could not restart practice session: " + (error.message || "Unknown error"));
+      } finally {
+        restartBtn.disabled = false;
+      }
+    });
+  }
 }
 
 
 async function fetchPracticeQuestions() {
-
-  const payload = {
-    action: "getPracticeQuestions",
-    email: currentUserEmail,
-    topics: ["intro"],
-    question_count: 5
-  };
-
-  const response = await fetch(PRACTICE_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "text/plain;charset=utf-8"
-    },
-    body: JSON.stringify(payload)
-  });
-
-  const text = await response.text();
-
-  let data;
-
-  try {
-    data = JSON.parse(text);
-  } catch {
-    throw new Error("Invalid server response");
-  }
-
-  if (!data.ok) {
-    throw new Error(data.error || "Server error");
-  }
-
-  console.log("Practice questions:", data.question_set);
-
-  practiceTestState.sessionId = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-  practiceTestState.startedAt = new Date().toISOString();
-  practiceTestState.results = [];
-  practiceTestState.resultsSubmitted = false;
-  practiceTestState.correctCount = 0;
-  practiceTestState.incorrectCount = 0;
-
-  return data.question_set;
+  return await startPracticeSessionWithSettings(["intro"], 5);
 }
 
 function saveAuthSession() {
