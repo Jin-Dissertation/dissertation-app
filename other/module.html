@@ -339,6 +339,7 @@
       font-size: 0.95rem;
       line-height: 1.55;
       color: #10213d;
+      font-weight: 400;
       max-height: 160px;
       overflow: hidden;
       padding: 12px 14px;
@@ -1791,6 +1792,11 @@ function renderCurrentPracticeQuestion() {
     return;
   }
 
+  if (q.question_type === "fitb") {
+    renderFITBQuestion(q, index, questions.length);
+    return;
+  }
+
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
@@ -1996,6 +2002,97 @@ function renderSBAQuestion(q, index, total) {
   });
 }
 
+function renderFITBQuestion(q, index, total) {
+  const container = document.getElementById("practice-question-container");
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="practice-question-card">
+
+      <div class="practice-meta">
+        Question ${index + 1} of ${total}
+      </div>
+
+      <div id="practice-stem" class="practice-stem">
+        ${q.stem}
+      </div>
+
+      <button id="practice-stem-toggle" class="practice-stem-toggle" style="display:none;">
+        Expand case
+      </button>
+
+      <div style="margin-top:14px;">
+        <input
+          type="text"
+          id="practice-fitb-input"
+          class="gate-input"
+          placeholder="Type your answer"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+        />
+      </div>
+
+      <div style="margin-top:10px;">
+        <button type="button" class="action-btn" id="practice-fitb-submit">
+          Check Answer
+        </button>
+      </div>
+
+      <div id="practice-feedback" style="margin-top:14px;"></div>
+
+      <div id="practice-next-wrap" style="margin-top:14px; display:none;">
+        <button type="button" class="action-btn" id="practice-next-btn">
+          ${index < total - 1 ? "Next Question" : "Finish"}
+        </button>
+      </div>
+
+    </div>
+  `;
+
+  const stem = container.querySelector("#practice-stem");
+  const toggle = container.querySelector("#practice-stem-toggle");
+
+  if (stem && toggle) {
+    requestAnimationFrame(() => {
+      if (stem.scrollHeight > stem.clientHeight + 4) {
+        toggle.style.display = "inline-block";
+      }
+    });
+
+    toggle.addEventListener("click", () => {
+      const expanded = stem.classList.contains("expanded");
+
+      if (expanded) {
+        stem.classList.remove("expanded");
+        toggle.textContent = "Expand case";
+      } else {
+        stem.classList.add("expanded");
+        toggle.textContent = "Collapse case";
+      }
+    });
+  }
+
+  const input = container.querySelector("#practice-fitb-input");
+  const submitBtn = container.querySelector("#practice-fitb-submit");
+
+  if (submitBtn) {
+    submitBtn.addEventListener("click", () => {
+      const selected = input ? input.value.trim() : "";
+      handlePracticeFITBAnswer(selected, String(q.correct_blob || "").trim());
+    });
+  }
+
+  if (input) {
+    input.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        submitBtn?.click();
+      }
+    });
+  }
+}
+
 function handlePracticeAnswer(selected, correct) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
@@ -2034,6 +2131,61 @@ function handlePracticeAnswer(selected, correct) {
         Correct answer: ${correct}
       </div>
     `;
+  }
+
+  const nextWrap = container.querySelector("#practice-next-wrap");
+  const nextBtn = container.querySelector("#practice-next-btn");
+
+  if (nextWrap) {
+    nextWrap.style.display = "block";
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener("click", advancePracticeQuestion, { once: true });
+  }
+}
+
+function handlePracticeFITBAnswer(selected, correct) {
+  const container = document.getElementById("practice-question-container");
+  if (!container) return;
+
+  const feedback = container.querySelector("#practice-feedback");
+  const input = container.querySelector("#practice-fitb-input");
+  const submitBtn = container.querySelector("#practice-fitb-submit");
+
+  const normalize = value =>
+    String(value || "")
+      .trim()
+      .toLowerCase();
+
+  const isCorrect = normalize(selected) === normalize(correct);
+
+  if (input) {
+    input.disabled = true;
+    input.style.opacity = "0.8";
+    input.style.border = isCorrect ? "2px solid #166534" : "2px solid #991b1b";
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = "0.75";
+  }
+
+  if (feedback) {
+    if (isCorrect) {
+      feedback.innerHTML = `
+        <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#dcfce7; border:1px solid #166534; color:#14532d;">
+          <strong>Correct ✅</strong>
+        </div>
+      `;
+    } else {
+      feedback.innerHTML = `
+        <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#fef2f2; border:1px solid #991b1b; color:#991b1b;">
+          <strong>Incorrect ❌</strong><br>
+          Correct answer: ${correct}
+        </div>
+      `;
+    }
   }
 
   const nextWrap = container.querySelector("#practice-next-wrap");
