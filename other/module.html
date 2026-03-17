@@ -268,34 +268,14 @@
       margin-bottom: 8px;
     }
     .dashboard-card h3 { margin: 0 0 8px; font-size: 0.98rem; }
-    .streak-line { font-size: 1rem; font-weight: 600; margin-bottom: 2px; }
-    .streak-subline { font-size: 0.82rem; color: var(--muted); margin-bottom: 8px; }
-    .goal-progress-track { width: 100%; height: 9px; background: var(--cream); border: 1px solid var(--rule); border-radius: 999px; overflow: hidden; margin-bottom: 8px; }
+    #streak-goal-card { padding: 10px 12px 12px; }
+    .streak-line { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+    .goal-progress-track { width: 100%; height: 9px; background: var(--cream); border: 1px solid var(--rule); border-radius: 999px; overflow: hidden; margin-bottom: 6px; }
     .goal-progress-fill { height: 100%; background: var(--gold); transition: width 0.25s ease; }
     .goal-progress-fill.goal-complete { background: #0d8f4d; }
-    .goal-celebration { color: #0d8f4d; font-size: 0.84rem; font-weight: 600; margin-bottom: 6px; }
-    .goal-control-row { display:flex; justify-content:space-between; align-items:flex-end; gap:8px; flex-wrap: wrap; }
-    .goal-inline-status { font-size: 0.84rem; color: var(--navy-mid); }
-    .goal-control { display:flex; align-items:flex-end; gap:6px; }
-    .goal-control-select { min-width: 110px; }
-    .goal-control-select label { font-size: 0.76rem; color: var(--muted); line-height: 1.1; }
-    .goal-control-select .gate-input { min-height: 36px; padding: 7px 10px; }
-    .goal-save-btn {
-      min-height: 36px;
-      font-size: 0.76rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      border: none;
-      border-radius: var(--radius);
-      background: var(--navy);
-      color: var(--cream);
-      padding: 0 14px;
-      cursor: pointer;
-    }
-    .goal-save-btn:hover { background: var(--navy-mid); }
+    .goal-inline-status { font-size: 0.84rem; color: var(--navy-mid); margin-bottom: 6px; }
     .dashboard-primary-btn {
-      margin-top: 8px;
+      margin-top: 2px;
       width: 100%;
       justify-content: center;
       font-size: 0.86rem;
@@ -303,13 +283,6 @@
       background: var(--gold);
     }
     .dashboard-primary-btn:hover { background: var(--gold-lt); }
-    .goal-save-message { font-size: 0.78rem; min-height: 1.1em; color: var(--muted); }
-    .goal-save-message.error { color: var(--red); }
-    .summary-metrics { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-bottom: 10px; }
-    .summary-metric { border:1px solid var(--rule); border-radius:10px; padding:10px; background: var(--cream); }
-    .summary-metric strong { display:block; font-size: 1rem; }
-    .top-modules-list { margin: 0; padding-left: 18px; display:flex; flex-direction:column; gap:4px; }
-    .top-modules-list li { font-size: 0.88rem; }
     .modules-list { display:flex; flex-direction:column; gap:10px; }
     .module-item { border:1px solid var(--rule); border-radius:10px; padding:12px; display:flex; justify-content:space-between; gap:10px; align-items:center; }
     .module-meta p { margin: 2px 0; font-size:0.85rem; color:var(--muted); }
@@ -1503,7 +1476,6 @@
       .gate-form { flex-direction: column; align-items: stretch; width: 100%; max-width: 340px; }
       .gate-input { width: 100%; }
       .gate-btn   { width: 100%; }
-      .summary-metrics { grid-template-columns: 1fr; }
       .module-item { flex-direction: column; align-items: stretch; }
       .module-item .action-btn { width: 100%; justify-content:center; }
       .assignment-entry-row { flex-direction: column; align-items: stretch; }
@@ -1624,10 +1596,6 @@
       <div id="streak-goal-summary"></div>
     </section>
 
-    <section class="dashboard-card" id="practice-summary-card">
-      <h3>Practice Summary</h3>
-      <div id="practice-summary-content"></div>
-    </section>
 
     <section class="dashboard-card" id="assignment-card">
       <h3>Enter Assignment Key</h3>
@@ -4535,8 +4503,7 @@ function renderPracticeModulesForCourse(selectedCourse) {
 
 function normalizeDashboardStats(rawStats) {
   const stats = rawStats || {};
-  const fallbackGoal = Number(stats.daily_goal ?? 20);
-  const dailyGoal = [10, 20, 30, 50].includes(fallbackGoal) ? fallbackGoal : 20;
+  const dailyGoal = 20;
   return {
     ...stats,
     total_modules_completed: Number(stats.total_modules_completed ?? 0),
@@ -4549,53 +4516,23 @@ function normalizeDashboardStats(rawStats) {
   };
 }
 
-function renderDashboardSummary(stats, options = {}) {
+function renderDashboardSummary(stats) {
   const safeStats = normalizeDashboardStats(stats);
   dashboardStats = safeStats;
 
-  const dailyGoal = Math.max(1, safeStats.daily_goal);
+  const dailyGoal = 20;
   const questionsToday = Math.max(0, safeStats.questions_today);
   const remainingQuestions = Math.max(0, dailyGoal - questionsToday);
   const progressPercent = Math.max(0, Math.min(100, (questionsToday / dailyGoal) * 100));
-  const streakSecured = safeStats.streak_secured_today || remainingQuestions <= 0;
-  const saveNotice = options.goalMessage || '';
-
-  const statusSubline = streakSecured ? 'Streak secured for today.' : 'Keep your streak alive';
-
   $('streak-goal-summary').innerHTML = `
     <p class="streak-line">🔥 ${safeStats.streak_days}-day streak</p>
-    <p class="streak-subline">${statusSubline}</p>
     <div class="goal-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="${dailyGoal}" aria-valuenow="${Math.min(questionsToday, dailyGoal)}" aria-label="Daily goal progress">
       <div class="goal-progress-fill ${remainingQuestions === 0 ? 'goal-complete' : ''}" style="width:${progressPercent}%;"></div>
     </div>
-    ${remainingQuestions === 0 ? '<p class="goal-celebration">🎉 Goal achieved today!</p>' : ''}
-    <div class="goal-control-row">
-      <p class="goal-inline-status">${questionsToday} / ${dailyGoal} questions</p>
-      <div class="goal-control">
-        <div class="goal-control-select">
-          <label for="daily-goal-select">Goal</label>
-          <select id="daily-goal-select" class="gate-input">
-            ${[10, 20, 30, 50].map(goal => `<option value="${goal}" ${goal === dailyGoal ? 'selected' : ''}>${goal}</option>`).join('')}
-          </select>
-        </div>
-        <button id="daily-goal-save" class="goal-save-btn" type="button">Save</button>
-      </div>
-    </div>
-    <p id="daily-goal-message" class="goal-save-message" aria-live="polite">${saveNotice}</p>
+    <p class="goal-inline-status">${questionsToday} / ${dailyGoal} questions</p>
     <button id="start-practice-btn" class="action-btn dashboard-primary-btn" type="button">Start Practice</button>
   `;
 
-  $('practice-summary-content').innerHTML = `
-    <div class="summary-metrics">
-      <div class="summary-metric"><strong>${safeStats.total_modules_completed}</strong><span>Modules completed</span></div>
-      <div class="summary-metric"><strong>${safeStats.total_questions_answered}</strong><span>Questions answered</span></div>
-    </div>
-    <h4>Most practiced modules</h4>
-    ${safeStats.top_modules.length ? `<ol class="top-modules-list">${safeStats.top_modules.slice(0, 3).map((mod, idx) => `<li>${idx + 1}. ${mod.module_title || mod.module_key || 'Untitled module'} — ${Number(mod.completion_count ?? 0)} completions</li>`).join('')}</ol>` : '<p class="empty-modules">No completed modules yet.</p>'}
-  `;
-
-  const goalSaveButton = $('daily-goal-save');
-  const goalSelect = $('daily-goal-select');
   const startPracticeBtn = $('start-practice-btn');
 
   if (startPracticeBtn) {
@@ -4606,35 +4543,6 @@ function renderDashboardSummary(stats, options = {}) {
     });
   }
 
-  if (goalSaveButton && goalSelect) {
-    goalSaveButton.addEventListener('click', async () => {
-      const nextGoal = Number(goalSelect.value);
-      const messageEl = $('daily-goal-message');
-      if (messageEl) {
-        messageEl.classList.remove('error');
-        messageEl.textContent = 'Saving goal…';
-      }
-      goalSaveButton.disabled = true;
-      try {
-        const result = await postToAppsScript(LOAD_URL, {
-          action: 'updateDailyGoal',
-          email: currentUserEmail,
-          daily_goal: nextGoal
-        });
-        if (!result || result.ok !== true) {
-          throw new Error(result?.error || 'Unable to update daily goal.');
-        }
-        dashboardStats = { ...safeStats, daily_goal: nextGoal };
-        renderDashboardSummary(dashboardStats, { goalMessage: 'Goal updated.' });
-      } catch (err) {
-        goalSaveButton.disabled = false;
-        if (messageEl) {
-          messageEl.classList.add('error');
-          messageEl.textContent = err.message || 'Unable to save goal right now.';
-        }
-      }
-    });
-  }
 }
 
 function renderDashboard(payload) {
