@@ -253,9 +253,9 @@
     }
 
     #dashboard { display:none; padding-top: 16px; }
-    .dashboard-header {
+    .dashboard-actions {
       display:flex;
-      justify-content:space-between;
+      justify-content:flex-end;
       align-items:center;
       gap:12px;
       margin-bottom: 6px;
@@ -1584,13 +1584,9 @@
 
   <!-- DASHBOARD -->
   <div id="dashboard" style="display:none;">
-    <header class="dashboard-header">
-      <div>
-        <p class="module-label">Dashboard</p>
-        <h2 id="dashboard-greeting">Welcome</h2>
-      </div>
+    <div class="dashboard-actions">
       <button class="action-btn" id="btn-logout" type="button">Sign out</button>
-    </header>
+    </div>
 
     <section class="dashboard-card" id="streak-goal-card">
       <div id="streak-goal-summary"></div>
@@ -4525,7 +4521,7 @@ function renderDashboardSummary(stats) {
   const remainingQuestions = Math.max(0, dailyGoal - questionsToday);
   const progressPercent = Math.max(0, Math.min(100, (questionsToday / dailyGoal) * 100));
   $('streak-goal-summary').innerHTML = `
-    <p class="streak-line">🔥 ${safeStats.streak_days}-day streak</p>
+    <p class="streak-line">${safeStats.streak_days}-day streak</p>
     <div class="goal-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="${dailyGoal}" aria-valuenow="${Math.min(questionsToday, dailyGoal)}" aria-label="Daily goal progress">
       <div class="goal-progress-fill ${remainingQuestions === 0 ? 'goal-complete' : ''}" style="width:${progressPercent}%;"></div>
     </div>
@@ -4555,9 +4551,6 @@ function renderDashboard(payload) {
   assignmentEntryEnabled = payload.assignment_entry_enabled !== false;
   currentUserName = user.name || currentUserName;
   currentUserEmail = normalizeIdentityValue(user.email || currentUserEmail);
-  $('dashboard-greeting').textContent = 'Welcome back 👋';
-
-
   renderDashboardSummary(stats);
 
   $('assignment-card').style.display = assignmentEntryEnabled ? 'block' : 'none';
