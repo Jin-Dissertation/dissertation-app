@@ -1328,6 +1328,9 @@
 
     <section class="dashboard-card">
       <h3>Practice Modules</h3>
+      <button class="action-btn" onclick="fetchPracticeQuestions()">
+        Test Practice Questions
+      </button>
       <select id="practice-course-select" class="gate-input">
         <option value="">Select your course</option>
       </select>
@@ -1437,6 +1440,7 @@
 */
 const LOAD_URL = 'https://script.google.com/macros/s/AKfycbyxevT1EWOj_IgdmL2oFiubBWc3b1BC5BnUuCL5-w0PxLjVPE9xsO_m_3RoIgqZ9mvO_A/exec';
 const SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbyxevT1EWOj_IgdmL2oFiubBWc3b1BC5BnUuCL5-w0PxLjVPE9xsO_m_3RoIgqZ9mvO_A/exec';
+const PRACTICE_API_URL = 'https://script.google.com/macros/s/AKfycbyGXa8KdMd5kYJrkOew56oljtPPNvKpNxMnMf1IsHp2C0XAeth7fP-MDhzPlkhUvPXlpQ/exec';
 const GOOGLE_CLIENT_ID = '534534627380-bd6hjuj4ihbf6i7r2qsjnen6cqhm14ma.apps.googleusercontent.com';
 const ENABLE_DEMO_FALLBACK = false;
 
@@ -1626,6 +1630,42 @@ async function postToAppsScript(url, payload) {
   }
 
   return data;
+}
+
+async function fetchPracticeQuestions() {
+
+  const payload = {
+    action: "getPracticeQuestions",
+    email: currentUserEmail,
+    topics: ["intro"],
+    question_count: 5
+  };
+
+  const response = await fetch(PRACTICE_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const text = await response.text();
+
+  let data;
+
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error("Invalid server response");
+  }
+
+  if (!data.ok) {
+    throw new Error(data.error || "Server error");
+  }
+
+  console.log("Practice questions:", data.question_set);
+
+  return data.question_set;
 }
 
 function saveAuthSession() {
