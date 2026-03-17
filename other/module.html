@@ -1712,6 +1712,7 @@ function renderSBAQuestion(q) {
           </button>
         `).join("")}
       </div>
+      <div id="practice-feedback" style="margin-top:14px;"></div>
     </div>
   `;
 
@@ -1725,10 +1726,43 @@ function renderSBAQuestion(q) {
 }
 
 function handlePracticeAnswer(selected, correct) {
+  const container = document.getElementById("practice-question-container");
+  if (!container) return;
+
+  const feedback = container.querySelector("#practice-feedback");
+  const buttons = container.querySelectorAll(".practice-answer-btn");
+
+  buttons.forEach(button => {
+    button.disabled = true;
+    button.style.opacity = "0.75";
+
+    const answer = button.getAttribute("data-answer") || "";
+    if (answer === correct) {
+      button.style.border = "2px solid #166534";
+      button.style.background = "#166534";
+      button.style.color = "#ffffff";
+    } else if (answer === selected && selected !== correct) {
+      button.style.border = "2px solid #991b1b";
+      button.style.background = "#991b1b";
+      button.style.color = "#ffffff";
+    }
+  });
+
+  if (!feedback) return;
+
   if (selected === correct) {
-    alert("Correct ✅");
+    feedback.innerHTML = `
+      <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#dcfce7; border:1px solid #166534; color:#14532d;">
+        <strong>Correct ✅</strong>
+      </div>
+    `;
   } else {
-    alert("Incorrect ❌\n\nCorrect answer: " + correct);
+    feedback.innerHTML = `
+      <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#fef2f2; border:1px solid #991b1b; color:#991b1b;">
+        <strong>Incorrect ❌</strong><br>
+        Correct answer: ${correct}
+      </div>
+    `;
   }
 }
 
