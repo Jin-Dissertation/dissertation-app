@@ -3282,27 +3282,17 @@ async function fetchPracticeQuestions() {
 function saveAuthSession() {
   try {
     const payload = {
-      email: currentUserEmail,
-      name: currentUserName,
-      authenticated: isAuthenticated,
-      googleAuth: true
+      email: currentUserEmail || '',
+      name: currentUserName || '',
+      isAuthenticated: !!isAuthenticated
     };
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload));
-    localStorage.setItem(CURRENT_USER_EMAIL_KEY, currentUserEmail || '');
-    localStorage.setItem(GOOGLE_AUTH_STORAGE_KEY, isAuthenticated ? 'true' : 'false');
   } catch (_) {}
 }
 
 function loadAuthSession() {
   try {
-    const saved = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY));
-    if (saved && saved.email) return saved;
-  } catch (_) {}
-
-  try {
-    const email = normalizeIdentityValue(localStorage.getItem(CURRENT_USER_EMAIL_KEY));
-    const googleAuth = localStorage.getItem(GOOGLE_AUTH_STORAGE_KEY) === 'true';
-    if (email && googleAuth) return { email, authenticated: true, googleAuth: true };
+    return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY));
   } catch (_) {}
 
   return null;
@@ -3311,8 +3301,6 @@ function loadAuthSession() {
 function clearAuthSession() {
   try {
     localStorage.removeItem(AUTH_STORAGE_KEY);
-    localStorage.removeItem(CURRENT_USER_EMAIL_KEY);
-    localStorage.removeItem(GOOGLE_AUTH_STORAGE_KEY);
   } catch (_) {}
 }
 
@@ -3382,9 +3370,7 @@ async function loadTrainingByAssignmentKey(email, assignmentKey) {
 // PROGRESS PERSISTENCE
 // ─────────────────────────────────────────────
 const STORAGE_KEY = 'training_progress_v1';
-const AUTH_STORAGE_KEY = 'training_auth_session_v1';
-const GOOGLE_AUTH_STORAGE_KEY = 'googleAuth';
-const CURRENT_USER_EMAIL_KEY = 'currentUserEmail';
+const AUTH_STORAGE_KEY = 'practice_auth_session_v1';
 
 function saveLocalProgress() {
   if (!participantEmail || !moduleKey) return;
@@ -4822,7 +4808,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   const savedAuth = loadAuthSession();
-  if (savedAuth?.authenticated && savedAuth.email) {
+  if (savedAuth?.isAuthenticated && savedAuth.email) {
     currentUserEmail = normalizeIdentityValue(savedAuth.email);
     currentUserName = String(savedAuth.name || '').trim();
     isAuthenticated = true;
