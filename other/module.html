@@ -1585,11 +1585,6 @@
       <button class="action-btn" id="btn-logout" type="button">Sign out</button>
     </div>
 
-    <section class="dashboard-card" id="streak-goal-card">
-      <div id="streak-goal-summary"></div>
-    </section>
-
-
     <section class="dashboard-card" id="assignment-card">
       <h3>Enter Assignment Key</h3>
       <div class="assignment-entry-row">
@@ -4573,11 +4568,14 @@ function renderDashboardSummary(stats) {
   const safeStats = normalizeDashboardStats(stats);
   dashboardStats = safeStats;
 
+  const streakSummary = $('streak-goal-summary');
+  if (!streakSummary) return;
+
   const dailyGoal = 20;
   const questionsToday = Math.max(0, safeStats.questions_today);
   const remainingQuestions = Math.max(0, dailyGoal - questionsToday);
   const progressPercent = Math.max(0, Math.min(100, (questionsToday / dailyGoal) * 100));
-  $('streak-goal-summary').innerHTML = `
+  streakSummary.innerHTML = `
     <p class="streak-line">${safeStats.streak_days}-day streak</p>
     <div class="goal-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="${dailyGoal}" aria-valuenow="${Math.min(questionsToday, dailyGoal)}" aria-label="Daily goal progress">
       <div class="goal-progress-fill ${remainingQuestions === 0 ? 'goal-complete' : ''}" style="width:${progressPercent}%;"></div>
