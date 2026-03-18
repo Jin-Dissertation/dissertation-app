@@ -1850,7 +1850,7 @@
             <option value="30">30</option>
             <option value="40">40</option>
           </select>
-          <button class="action-btn" type="button" id="practice-start-btn" disabled>Start practice</button>
+          <button class="action-btn" type="button" id="practice-start-btn" disabled>Start Practice</button>
         </div>
         <p class="practice-setup-note" id="practice-setup-message"></p>
       </div>
@@ -2322,19 +2322,33 @@ function getSelectedPracticeTopicKeys() {
 
 function updatePracticeStartButtonState() {
   const startBtn = $('practice-start-btn');
+  const courseSelect = $('practice-course-select');
   if (!startBtn) return;
 
-  if (!practiceTestState.practiceTopicsLoaded) {
-    startBtn.disabled = true;
-    startBtn.textContent = 'Loading...';
-    return;
+  const selectedCourse = String(courseSelect?.value || '').trim();
+
+  const selectedTopics = Array.from(
+    document.querySelectorAll('input[name="practice-topic"]:checked')
+  )
+    .map(el => String(el.value || '').trim())
+    .filter(Boolean);
+
+  const hasCourse = Boolean(selectedCourse);
+  const hasTopics = selectedTopics.length > 0;
+  const isReady = hasCourse && hasTopics;
+
+  startBtn.disabled = !isReady;
+  startBtn.textContent = 'Start Practice';
+
+  if (isReady) {
+    startBtn.classList.remove('disabled');
+    startBtn.style.opacity = '1';
+    startBtn.style.cursor = 'pointer';
+  } else {
+    startBtn.classList.add('disabled');
+    startBtn.style.opacity = '0.55';
+    startBtn.style.cursor = 'not-allowed';
   }
-
-  const hasCourse = Boolean(String(practiceTestState.selectedCourse || '').trim());
-  const hasTopics = Array.isArray(practiceTestState.selectedTopics) && practiceTestState.selectedTopics.length > 0;
-
-  startBtn.disabled = !(hasCourse && hasTopics);
-  startBtn.textContent = hasTopics ? 'Practice again with same settings' : 'Start practice';
 }
 
 function disableButton(btn) {
@@ -2735,6 +2749,10 @@ function renderPracticeSetupTopics(topics) {
   if (messageEl) messageEl.textContent = '';
 }
 
+function updatePracticeTopicOptions() {
+  renderPracticeSetupTopics(practiceTopics);
+}
+
 function populatePracticeCourseDropdown(topics) {
   const courseSelect = $('practice-course-select');
   if (!courseSelect) return;
@@ -2767,14 +2785,25 @@ function populatePracticeCourseDropdown(topics) {
 }
 
 async function initializePracticeSetup() {
+  const startBtn = $('practice-start-btn');
+  if (startBtn) {
+    startBtn.disabled = true;
+    startBtn.textContent = 'Start Practice';
+    startBtn.classList.add('disabled');
+    startBtn.style.opacity = '0.55';
+    startBtn.style.cursor = 'not-allowed';
+  }
+
   const topics = await fetchPracticeTopics();
   if (topics === null) {
     practiceTopics = [];
     renderPracticeSetupTopics([]);
+    updatePracticeStartButtonState();
     return;
   }
   populatePracticeCourseDropdown(topics);
   renderPracticeSetupTopics(topics);
+  updatePracticeStartButtonState();
 }
 
 async function handleStartPracticeClick(event) {
@@ -2790,7 +2819,7 @@ async function handleStartPracticeClick(event) {
     if (btn) {
       btn.disabled = true;
       btn.classList.add('disabled');
-      btn.style.opacity = 0.55;
+      btn.style.opacity = '0.55';
       btn.style.cursor = 'not-allowed';
       btn.textContent = 'Loading...';
     }
@@ -2803,7 +2832,7 @@ async function handleStartPracticeClick(event) {
     practiceTestState.correctCount = 0;
     practiceTestState.incorrectCount = 0;
 
-    const selectedCourse = String($('practice-course-select')?.value || practiceTestState.selectedCourse || '').trim();
+    const selectedCourse = String($('practice-course-select')?.value || '').trim();
     if (!selectedCourse) {
       throw new Error('Please select a course and at least one topic.');
     }
@@ -2825,15 +2854,60 @@ async function handleStartPracticeClick(event) {
     if (messageEl) messageEl.textContent = getFriendlyNetworkMessage(err);
     alert(getFriendlyNetworkMessage(err));
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.classList.remove('disabled');
-      btn.style.opacity = 1;
-      btn.style.cursor = 'pointer';
-      btn.textContent = 'Practice again with same settings';
-    }
     updatePracticeStartButtonState();
   }
+}
+
+function resetPracticeDashboardStateFromUI() {
+  const topicCheckboxes = document.querySelectorAll('input[name="practice-topic"]');
+
+  topicCheckboxes.forEach(cb => {
+    cb.checked = false;
+  });
+}
+
+function returnToDashboard() {
+  hidePracticeQuestionOverlay();
+  clearPracticeSessionFromLocal();
+  submitPracticeResults(practiceTestState.results);
+
+  resetPracticeDashboardStateFromUI();
+
+  const courseSelect = $('practice-course-select');
+  if (courseSelect) {
+    courseSelect.value = '';
+  }
+
+  if (practiceTestState) {
+    practiceTestState.selectedCourse = '';
+    practiceTestState.selectedTopics = [];
+    practiceTestState.currentIndex = 0;
+    practiceTestState.questions = [];
+    practiceTestState.feedbackSubmitted = false;
+    practiceTestState.results = [];
+    practiceTestState.correctCount = 0;
+    practiceTestState.incorrectCount = 0;
+    practiceTestState.requestedQuestionCount = 10;
+    practiceTestState.practiceTopicsLoaded = false;
+    practiceTestState.practiceTopicsLoading = false;
+    practiceTestState.resultsSubmitted = false;
+    practiceTestState.sessionComplete = false;
+    practiceTestState.answers = {};
+    practiceTestState.answerState = {};
+    practiceTestState.feedbackByQuestionId = {};
+    practiceTestState.sessionId = "";
+    practiceTestState.startedAt = null;
+  }
+
+  if ($('practice-topic-list')) $('practice-topic-list').innerHTML = '';
+  if ($('practice-controls-row')) $('practice-controls-row').hidden = true;
+
+  $('dashboard').style.display = 'block';
+  $('training').style.display = 'none';
+
+  updatePracticeTopicOptions();
+  updatePracticeStartButtonState();
+  initializePracticeSetup();
 }
 
 function getPracticeSessionSummary() {
@@ -5935,7 +6009,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const selectedCourse = String(e.target.value || '').trim();
     practiceTestState.selectedCourse = selectedCourse;
     practiceTestState.selectedTopics = [];
-    renderPracticeSetupTopics(practiceTopics);
+    updatePracticeTopicOptions();
     updatePracticeStartButtonState();
   });
   $('practice-question-count').addEventListener('change', e => {
@@ -6032,46 +6106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   $('practice-start-btn').addEventListener('click', handleStartPracticeClick);
 
-  $('return-dashboard-btn').addEventListener('click', () => {
-    hidePracticeQuestionOverlay();
-    clearPracticeSessionFromLocal();
-
-    // Submit completed questions
-    submitPracticeResults(practiceTestState.results);
-
-    // Fully reset state
-    practiceTestState.questions = [];
-    practiceTestState.currentIndex = 0;
-    practiceTestState.feedbackSubmitted = false;
-    practiceTestState.feedbackByQuestionId = {};
-    practiceTestState.sessionId = "";
-    practiceTestState.startedAt = null;
-    practiceTestState.selectedCourse = '';
-    practiceTestState.selectedTopics = [];
-    practiceTestState.requestedQuestionCount = 10;
-    practiceTestState.practiceTopicsLoaded = false;
-    practiceTestState.practiceTopicsLoading = false;
-    practiceTestState.results = [];
-    practiceTestState.correctCount = 0;
-    practiceTestState.incorrectCount = 0;
-    practiceTestState.resultsSubmitted = false;
-    practiceTestState.sessionComplete = false;
-    practiceTestState.answers = {};
-    practiceTestState.answerState = {};
-    practiceTestState.feedbackByQuestionId = {};
-
-    // Reset dropdowns and topic list
-    if ($('practice-course-select')) $('practice-course-select').value = '';
-    if ($('practice-topic-list')) $('practice-topic-list').innerHTML = '';
-    if ($('practice-controls-row')) $('practice-controls-row').hidden = true;
-
-    // Show dashboard
-    $('dashboard').style.display = 'block';
-    $('training').style.display = 'none';
-
-    // Re-initialize the practice setup so a new quiz can start
-    initializePracticeSetup();
-  });
+  $('return-dashboard-btn').addEventListener('click', returnToDashboard);
   $('btn-save-exit').addEventListener('click', () => { handleSaveAndExit(); });
   $('btn-back-dashboard').addEventListener('click', async () => {
     trainingActive = false;
