@@ -2504,27 +2504,48 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
     throw new Error(data?.error || 'Unable to load practice questions.');
   }
 
-  const questions = Array.isArray(data.question_set) ? data.question_set : [];
-  if (!questions.length) {
-    throw new Error('No practice questions were returned for the selected topics.');
-  }
-
-  practiceTestState.questions = questions;
-  practiceTestState.currentIndex = 0;
-  practiceTestState.feedbackSubmitted = false;
   practiceTestState.sessionId = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   practiceTestState.startedAt = new Date().toISOString();
   practiceTestState.selectedCourse = String(practiceTestState.selectedCourse || '').trim();
   practiceTestState.selectedTopics = [...topics];
   practiceTestState.requestedQuestionCount = count;
+  initializePracticeSession(data.question_set);
+  showPracticeQuestionOverlay();
+
+  return practiceTestState.questions;
+}
+
+function renderPracticeEmptyState(message) {
+  const practiceBody = document.getElementById('practice-question-container');
+  if (!practiceBody) return;
+
+  practiceBody.innerHTML = `
+    <div class="practice-empty-state">
+      <p>${html(message)}</p>
+    </div>
+  `;
+}
+
+function initializePracticeSession(questionSet) {
+  practiceTestState.questions = Array.isArray(questionSet) ? questionSet : [];
+  practiceTestState.currentIndex = 0;
   practiceTestState.results = [];
+  practiceTestState.feedbackSubmitted = false;
   practiceTestState.resultsSubmitted = false;
   practiceTestState.correctCount = 0;
   practiceTestState.incorrectCount = 0;
-  renderCurrentPracticeQuestion();
-  showPracticeQuestionOverlay();
 
-  return questions;
+  const practiceBody = document.getElementById('practice-question-container');
+  if (practiceBody) {
+    practiceBody.innerHTML = '';
+  }
+
+  if (!practiceTestState.questions.length) {
+    renderPracticeEmptyState('No questions were returned.');
+    return;
+  }
+
+  renderCurrentPracticeQuestion();
 }
 
 function renderCurrentPracticeQuestion() {
