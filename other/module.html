@@ -587,7 +587,9 @@
     }
 
     .practice-submitting-state,
-    .practice-submit-error {
+    .practice-submit-error,
+    .practice-restart-loading-state,
+    .practice-restart-error-state {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -599,12 +601,16 @@
     }
 
     .practice-submitting-state h2,
-    .practice-submit-error h2 {
+    .practice-submit-error h2,
+    .practice-restart-loading-state h2,
+    .practice-restart-error-state h2 {
       margin: 0;
     }
 
     .practice-submitting-state p,
-    .practice-submit-error p {
+    .practice-submit-error p,
+    .practice-restart-loading-state p,
+    .practice-restart-error-state p {
       margin: 0;
       max-width: 420px;
     }
@@ -2914,9 +2920,10 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
     practiceQuestionContainer.innerHTML = '';
   }
 
-  let data;
   try {
-    data = await postToAppsScript(PRACTICE_API_URL, {
+    renderPracticeRestartLoadingState();
+
+    const data = await postToAppsScript(PRACTICE_API_URL, {
       action: 'getPracticeQuestions',
       email,
       course: String(practiceTestState.selectedCourse || '').trim(),
@@ -2927,28 +2934,28 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
       retryDelayMs: 1000,
       timeoutMs: 15000
     });
+    if (!data || data.ok !== true) {
+      throw new Error(data?.error || 'Unable to load practice questions.');
+    }
+
+    practiceTestState.sessionId = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    practiceTestState.startedAt = new Date().toISOString();
+    practiceTestState.selectedCourse = String(practiceTestState.selectedCourse || '').trim();
+    practiceTestState.selectedTopics = [...topics];
+    practiceTestState.requestedQuestionCount = count;
+    practiceTestState.questionCount = count;
+    initializePracticeSession(data.question_set);
+    showPracticeQuestionOverlay();
+    savePracticeSessionToLocal();
+
+    return practiceTestState.questions;
   } catch (err) {
     if (err?.message === 'Failed to fetch' || err?.name === 'AbortError') {
-      throw new Error('Connection hiccup. Please try again.');
+      err = new Error('Connection hiccup. Please try again.');
     }
+    renderPracticeRestartErrorState(err?.message || 'Failed to load practice questions.');
     throw err;
   }
-
-  if (!data || data.ok !== true) {
-    throw new Error(data?.error || 'Unable to load practice questions.');
-  }
-
-  practiceTestState.sessionId = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-  practiceTestState.startedAt = new Date().toISOString();
-  practiceTestState.selectedCourse = String(practiceTestState.selectedCourse || '').trim();
-  practiceTestState.selectedTopics = [...topics];
-  practiceTestState.requestedQuestionCount = count;
-  practiceTestState.questionCount = count;
-  initializePracticeSession(data.question_set);
-  showPracticeQuestionOverlay();
-  savePracticeSessionToLocal();
-
-  return practiceTestState.questions;
 }
 
 function renderPracticeEmptyState(message) {
@@ -2971,6 +2978,31 @@ function renderPracticeSubmittingState() {
       <div class="practice-spinner" aria-hidden="true"></div>
       <h2>Submitting your results...</h2>
       <p>Please wait. Do not close this page.</p>
+    </div>
+  `;
+}
+
+function renderPracticeRestartLoadingState() {
+  const practiceQuestionContainer = $('practice-question-container');
+  if (!practiceQuestionContainer) return;
+
+  practiceQuestionContainer.innerHTML = `
+    <div class="practice-restart-loading-state">
+      <div class="practice-spinner" aria-hidden="true"></div>
+      <h2>Starting a new practice set...</h2>
+      <p>Please wait while your questions load.</p>
+    </div>
+  `;
+}
+
+function renderPracticeRestartErrorState(message) {
+  const practiceQuestionContainer = $('practice-question-container');
+  if (!practiceQuestionContainer) return;
+
+  practiceQuestionContainer.innerHTML = `
+    <div class="practice-restart-error-state">
+      <h2>Unable to start a new practice set</h2>
+      <p>${message || 'Something went wrong while loading your questions.'}</p>
     </div>
   `;
 }
