@@ -2323,13 +2323,18 @@ function getSelectedPracticeTopicKeys() {
 function updatePracticeStartButtonState() {
   const startBtn = $('practice-start-btn');
   if (!startBtn) return;
+
   if (!practiceTestState.practiceTopicsLoaded) {
     startBtn.disabled = true;
+    startBtn.textContent = 'Loading...';
     return;
   }
+
   const hasCourse = Boolean(String(practiceTestState.selectedCourse || '').trim());
   const hasTopics = Array.isArray(practiceTestState.selectedTopics) && practiceTestState.selectedTopics.length > 0;
+
   startBtn.disabled = !(hasCourse && hasTopics);
+  startBtn.textContent = hasTopics ? 'Practice again with same settings' : 'Start practice';
 }
 
 function disableButton(btn) {
@@ -2774,7 +2779,6 @@ async function initializePracticeSetup() {
 
 async function handleStartPracticeClick(event) {
   const btn = event?.currentTarget || $('practice-start-btn');
-  const originalText = btn ? btn.textContent : '';
   const messageEl = $('practice-setup-message');
 
   if (!practiceTestState.practiceTopicsLoaded) {
@@ -2820,12 +2824,13 @@ async function handleStartPracticeClick(event) {
     console.error('Error starting practice session:', err);
     if (messageEl) messageEl.textContent = getFriendlyNetworkMessage(err);
     alert(getFriendlyNetworkMessage(err));
+  } finally {
     if (btn) {
       btn.disabled = false;
       btn.classList.remove('disabled');
       btn.style.opacity = 1;
       btn.style.cursor = 'pointer';
-      btn.textContent = originalText || 'Start practice';
+      btn.textContent = 'Practice again with same settings';
     }
     updatePracticeStartButtonState();
   }
@@ -2839,7 +2844,7 @@ function getPracticeSessionSummary() {
   };
 }
 
-function showPracticeQuestionOverlay() {
+function showPracticeQuestionOverlay({ moveQuestionContainer = true } = {}) {
   const fullscreen = $('full-screen-question');
   const questionHost = $('full-question-content');
   const questionContainer = $('practice-question-container');
@@ -2850,11 +2855,13 @@ function showPracticeQuestionOverlay() {
     practiceQuestionContainerHome.nextSibling = questionContainer.nextSibling;
   }
 
-  if (questionContainer.parentElement !== questionHost) {
-    questionHost.appendChild(questionContainer);
+  if (moveQuestionContainer) {
+    if (questionContainer.parentElement !== questionHost) {
+      questionHost.appendChild(questionContainer);
+    }
+    questionContainer.style.display = 'block';
   }
 
-  questionContainer.style.display = 'block';
   fullscreen.style.display = 'flex';
 }
 
@@ -2864,17 +2871,18 @@ function hidePracticeQuestionOverlay() {
   const questionContainer = $('practice-question-container');
   if (!fullscreen || !questionHost || !questionContainer) return;
 
-  // Move the container back to its original parent
   if (practiceQuestionContainerHome.parent) {
-    if (practiceQuestionContainerHome.nextSibling) {
-      practiceQuestionContainerHome.parent.insertBefore(questionContainer, practiceQuestionContainerHome.nextSibling);
-    } else {
-      practiceQuestionContainerHome.parent.appendChild(questionContainer);
+    if (questionContainer.parentElement !== practiceQuestionContainerHome.parent) {
+      if (practiceQuestionContainerHome.nextSibling) {
+        practiceQuestionContainerHome.parent.insertBefore(questionContainer, practiceQuestionContainerHome.nextSibling);
+      } else {
+        practiceQuestionContainerHome.parent.appendChild(questionContainer);
+      }
     }
   }
 
-  // Reset styles and clear content for a fresh session
   fullscreen.style.display = 'none';
+  questionHost.innerHTML = '';
   questionContainer.style.display = 'block';
   questionContainer.innerHTML = '';
 }
@@ -2928,8 +2936,14 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
     practiceQuestionContainer.innerHTML = '';
   }
 
+  if (overlayQuestionHost) {
+    overlayQuestionHost.innerHTML = '';
+  }
+
+  showPracticeQuestionOverlay({ moveQuestionContainer: false });
+
   try {
-    renderPracticeRestartLoadingState();
+    renderPracticeOverlayLoadingState();
 
     const data = await postToAppsScript(PRACTICE_API_URL, {
       action: 'getPracticeQuestions',
@@ -2953,15 +2967,20 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
     practiceTestState.requestedQuestionCount = count;
     practiceTestState.questionCount = count;
     initializePracticeSession(data.question_set);
-    showPracticeQuestionOverlay();
+
+    if (overlayQuestionHost) {
+      overlayQuestionHost.innerHTML = '';
+    }
+
+    showPracticeQuestionOverlay({ moveQuestionContainer: true });
     savePracticeSessionToLocal();
 
     return practiceTestState.questions;
   } catch (err) {
-    if (err?.message === 'Failed to fetch' || err?.name === 'AbortError') {
-      err = new Error('Connection hiccup. Please try again.');
-    }
-    renderPracticeRestartErrorState(err?.message || 'Failed to load practice questions.');
+    hidePracticeQuestionOverlay();
+    const questionHost = $('full-question-content');
+    if (questionHost) questionHost.innerHTML = '';
+    renderPracticeRestartErrorState(getFriendlyNetworkMessage(err));
     throw err;
   }
 }
@@ -2995,6 +3014,19 @@ function renderPracticeRestartLoadingState() {
   if (!practiceQuestionContainer) return;
 
   practiceQuestionContainer.innerHTML = `
+    <div class="practice-restart-loading-state">
+      <div class="practice-spinner" aria-hidden="true"></div>
+      <h2>Starting a new practice set...</h2>
+      <p>Please wait while your questions load.</p>
+    </div>
+  `;
+}
+
+function renderPracticeOverlayLoadingState() {
+  const questionHost = $('full-question-content');
+  if (!questionHost) return;
+
+  questionHost.innerHTML = `
     <div class="practice-restart-loading-state">
       <div class="practice-spinner" aria-hidden="true"></div>
       <h2>Starting a new practice set...</h2>
