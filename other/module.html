@@ -1588,6 +1588,12 @@
       align-self: flex-end;
       margin-bottom: 4px;
     }
+
+    .action-btn.disabled {
+      background-color: #dbe9ff !important;
+      border-color: #c8d8f0 !important;
+      color: #5f718f !important;
+    }
   </style>
 </head>
 <body>
@@ -2048,6 +2054,14 @@ function updatePracticeStartButtonState() {
   startBtn.disabled = !(hasCourse && hasTopics);
 }
 
+function disableButton(btn) {
+  if (!btn) return;
+  btn.disabled = true;
+  btn.classList.add('disabled');
+  btn.style.opacity = 0.55;
+  btn.style.cursor = 'not-allowed';
+}
+
 function renderPracticeSetupTopics(topics) {
   const topicList = $('practice-topic-list');
   const messageEl = $('practice-setup-message');
@@ -2142,6 +2156,9 @@ async function initializePracticeSetup() {
 }
 
 async function handleStartPracticeClick() {
+  const btn = $('practice-start-btn');
+  disableButton(btn);
+
   const messageEl = $('practice-setup-message');
   const selectedCourse = String(practiceTestState.selectedCourse || '').trim();
   const topics = Array.isArray(practiceTestState.selectedTopics) ? practiceTestState.selectedTopics : [];
@@ -2149,6 +2166,12 @@ async function handleStartPracticeClick() {
 
   if (!selectedCourse || !topics.length) {
     if (messageEl) messageEl.textContent = 'Select a course and at least one topic to start practice.';
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('disabled');
+      btn.style.opacity = 1;
+      btn.style.cursor = 'pointer';
+    }
     updatePracticeStartButtonState();
     return;
   }
@@ -2157,9 +2180,16 @@ async function handleStartPracticeClick() {
 
   try {
     await startPracticeSessionWithSettings(topics, questionCount);
+    if (btn) btn.classList.add('active');
   } catch (error) {
     console.error('Failed to start practice session:', error);
     if (messageEl) messageEl.textContent = error.message || 'Unable to start practice right now.';
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('disabled');
+      btn.style.opacity = 1;
+      btn.style.cursor = 'pointer';
+    }
   }
 }
 
@@ -4961,38 +4991,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     e.target.value = String(practiceTestState.requestedQuestionCount);
   });
   $('practice-start-btn').addEventListener('click', handleStartPracticeClick);
-  $('feedback-btn').addEventListener('click', () => {
-    const menu = $('feedback-menu');
-    if (!menu) return;
-    menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
-  });
-  document.querySelectorAll('.feedback-option').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const value = btn.dataset.value;
-      const questionId = practiceTestState.questions[practiceTestState.currentIndex]?.question_id || null;
+  $('return-dashboard-btn').addEventListener('click', async () => {
+    const btn = $('return-dashboard-btn');
+    disableButton(btn);
 
-      if (questionId) {
-        console.log(`Feedback submitted for question ${questionId}: ${value}`);
-        // TODO: send to Apps Script if needed
-        // postToAppsScript(FEEDBACK_URL, { questionId, feedback: value });
-      }
-
-      const menu = $('feedback-menu');
-      if (menu) {
-        menu.style.display = 'none';
-      }
-
-      btn.textContent = `✔ ${btn.textContent.replace('✔ ', '')}`;
-      setTimeout(() => {
-        btn.textContent = btn.textContent.replace('✔ ', '');
-      }, 1200);
-    });
-  });
-  $('return-dashboard-btn').addEventListener('click', () => {
     hidePracticeQuestionOverlay();
 
     // Submit completed questions
-    submitPracticeResults(practiceTestState.results);
+    try {
+      await submitPracticeResults(practiceTestState.results);
+    } catch (err) {
+      console.error('Error submitting results:', err);
+    }
 
     // Fully reset state
     practiceTestState = {
