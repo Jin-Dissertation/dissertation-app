@@ -2159,13 +2159,20 @@ async function handleStartPracticeClick() {
   const btn = $('practice-start-btn');
   disableButton(btn);
 
+  // Fully reset question results and session state for a fresh practice run.
+  practiceTestState.questions = [];
+  practiceTestState.currentIndex = 0;
+  practiceTestState.results = [];
+  practiceTestState.correctCount = 0;
+  practiceTestState.incorrectCount = 0;
+
   const messageEl = $('practice-setup-message');
-  const selectedCourse = String(practiceTestState.selectedCourse || '').trim();
+  const selectedCourse = practiceTestState.selectedCourse;
   const topics = Array.isArray(practiceTestState.selectedTopics) ? practiceTestState.selectedTopics : [];
-  const questionCount = Number(practiceTestState.requestedQuestionCount || $('practice-question-count')?.value || 10);
+  const questionCount = Number(practiceTestState.requestedQuestionCount || 10);
 
   if (!selectedCourse || !topics.length) {
-    if (messageEl) messageEl.textContent = 'Select a course and at least one topic to start practice.';
+    alert('Please select a course and at least one topic');
     if (btn) {
       btn.disabled = false;
       btn.classList.remove('disabled');
@@ -2250,6 +2257,9 @@ async function submitPracticeResults(results) {
 }
 
 async function startPracticeSessionWithSettings(topics, questionCount) {
+  // Reset question results for this session immediately.
+  practiceTestState.results = [];
+
   const email = normalizeIdentityValue(currentUserEmail || participantEmail || '');
 
   if (!email) {
