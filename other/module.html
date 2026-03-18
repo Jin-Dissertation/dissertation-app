@@ -1681,8 +1681,8 @@
       <h3>Practice Quizzes</h3>
       <div id="practice-setup-card" class="practice-setup-card">
         <p class="module-label">Select a Course</p>
-        <select id="practice-course-select" class="gate-input">
-          <option value="">Select a course</option>
+        <select id="practice-course-select" class="gate-input" disabled>
+          <option value="">Loading courses...</option>
         </select>
         <div id="practice-topic-list" class="practice-topic-list"></div>
         <div class="practice-setup-row" id="practice-controls-row" hidden>
@@ -1693,7 +1693,7 @@
             <option value="30">30</option>
             <option value="40">40</option>
           </select>
-          <button class="action-btn" type="button" id="practice-start-btn">Start practice</button>
+          <button class="action-btn" type="button" id="practice-start-btn" disabled>Start practice</button>
         </div>
         <p class="practice-setup-note" id="practice-setup-message"></p>
       </div>
@@ -1852,6 +1852,8 @@ let practiceTestState = {
   selectedCourse: '',
   selectedTopics: [],
   requestedQuestionCount: 10,
+  practiceTopicsLoaded: false,
+  practiceTopicsLoading: false,
   feedbackSubmitted: false,
   results: [],
   resultsSubmitted: false,
@@ -2098,6 +2100,18 @@ async function fetchPracticeQuestionsTest() {
 }
 
 async function fetchPracticeTopics() {
+  const courseSelect = $('practice-course-select');
+  const startBtn = $('practice-start-btn');
+
+  practiceTestState.practiceTopicsLoading = true;
+  practiceTestState.practiceTopicsLoaded = false;
+
+  if (courseSelect) {
+    courseSelect.innerHTML = '<option value="">Loading courses...</option>';
+    courseSelect.disabled = true;
+  }
+  if (startBtn) startBtn.disabled = true;
+
   try {
     const data = await postToAppsScript(PRACTICE_API_URL, { action: 'getPracticeTopics' }, {
       retries: 1,
@@ -2106,14 +2120,30 @@ async function fetchPracticeTopics() {
     });
 
     if (data?.ok) {
+      practiceTestState.practiceTopicsLoading = false;
+      practiceTestState.practiceTopicsLoaded = true;
       return data.practice_topics || [];
     }
 
     console.error('Failed to fetch practice topics:', data);
-    return [];
+    practiceTestState.practiceTopicsLoading = false;
+    practiceTestState.practiceTopicsLoaded = false;
+    if (courseSelect) {
+      courseSelect.innerHTML = '<option value="">Unable to load courses</option>';
+      courseSelect.disabled = true;
+    }
+    if (startBtn) startBtn.disabled = true;
+    return null;
   } catch (error) {
     console.error('Failed to fetch practice topics:', error);
-    return [];
+    practiceTestState.practiceTopicsLoading = false;
+    practiceTestState.practiceTopicsLoaded = false;
+    if (courseSelect) {
+      courseSelect.innerHTML = '<option value="">Unable to load courses</option>';
+      courseSelect.disabled = true;
+    }
+    if (startBtn) startBtn.disabled = true;
+    return null;
   }
 }
 
@@ -2126,6 +2156,10 @@ function getSelectedPracticeTopicKeys() {
 function updatePracticeStartButtonState() {
   const startBtn = $('practice-start-btn');
   if (!startBtn) return;
+  if (!practiceTestState.practiceTopicsLoaded) {
+    startBtn.disabled = true;
+    return;
+  }
   const hasCourse = Boolean(String(practiceTestState.selectedCourse || '').trim());
   const hasTopics = Array.isArray(practiceTestState.selectedTopics) && practiceTestState.selectedTopics.length > 0;
   startBtn.disabled = !(hasCourse && hasTopics);
@@ -2233,6 +2267,13 @@ function populatePracticeCourseDropdown(topics) {
       .filter(Boolean)
   )).sort((a, b) => a.localeCompare(b));
 
+  if (!courses.length) {
+    courseSelect.innerHTML = '<option value="">No courses available</option>';
+    courseSelect.disabled = true;
+    practiceTestState.selectedCourse = '';
+    return;
+  }
+
   courseSelect.innerHTML = '<option value="">Select a course</option>';
   courses.forEach(course => {
     const option = document.createElement('option');
@@ -2243,10 +2284,16 @@ function populatePracticeCourseDropdown(topics) {
 
   practiceTestState.selectedCourse = courses.includes(priorSelectedCourse) ? priorSelectedCourse : '';
   courseSelect.value = practiceTestState.selectedCourse;
+  courseSelect.disabled = false;
 }
 
 async function initializePracticeSetup() {
   const topics = await fetchPracticeTopics();
+  if (topics === null) {
+    practiceTopics = [];
+    renderPracticeSetupTopics([]);
+    return;
+  }
   populatePracticeCourseDropdown(topics);
   renderPracticeSetupTopics(topics);
 }
@@ -2255,6 +2302,11 @@ async function handleStartPracticeClick(event) {
   const btn = event?.currentTarget || $('practice-start-btn');
   const originalText = btn ? btn.textContent : '';
   const messageEl = $('practice-setup-message');
+
+  if (!practiceTestState.practiceTopicsLoaded) {
+    alert('Courses are still loading.');
+    return;
+  }
 
   try {
     if (btn) {
@@ -4889,6 +4941,8 @@ function renderDashboard(payload) {
   practiceTestState.selectedCourse = '';
   practiceTestState.selectedTopics = [];
   practiceTestState.requestedQuestionCount = 10;
+  practiceTestState.practiceTopicsLoaded = false;
+  practiceTestState.practiceTopicsLoading = false;
   $('practice-question-count').value = '10';
   $('practice-setup-message').textContent = '';
   updatePracticeStartButtonState();
@@ -5108,6 +5162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('btn-logout').addEventListener('click', logoutToAuth);
   $('assignment-key-btn').addEventListener('click', startModuleByAssignmentKey);
   $('practice-course-select').addEventListener('change', e => {
+    if (!practiceTestState.practiceTopicsLoaded) return;
     const selectedCourse = String(e.target.value || '').trim();
     practiceTestState.selectedCourse = selectedCourse;
     practiceTestState.selectedTopics = [];
@@ -5200,6 +5255,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     practiceTestState.selectedCourse = '';
     practiceTestState.selectedTopics = [];
     practiceTestState.requestedQuestionCount = 10;
+    practiceTestState.practiceTopicsLoaded = false;
+    practiceTestState.practiceTopicsLoading = false;
     practiceTestState.results = [];
     practiceTestState.correctCount = 0;
     practiceTestState.incorrectCount = 0;
