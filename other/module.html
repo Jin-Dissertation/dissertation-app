@@ -401,13 +401,13 @@
     /* === Case stem (THIS is the key change) === */
     .practice-stem {
       font-family: var(--sans);
-      font-size: 0.96rem;
-      line-height: 1.5;
+      font-size: 1.1rem;
+      line-height: 1.65;
       color: #10213d;
       font-weight: 400;
       max-height: 210px;
       overflow: hidden;
-      padding: 11px 13px;
+      padding: 14px 16px;
       background: #f8fafc;
       border-radius: 10px;
       border: 1px solid #e3e8f0;
@@ -438,11 +438,11 @@
       justify-content: space-between;
       align-items: center;
       width: 100%;
-      margin-bottom: 7px;
-      padding: 11px 14px;
-      font-size: 0.92rem;
-      line-height: 1.4;
-      min-height: 46px;
+      margin-bottom: 8px;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      line-height: 1.42;
+      min-height: 50px;
     }
 
     .practice-rationale {
@@ -469,19 +469,19 @@
       justify-content: space-between;
       align-items: center;
 
-      margin-bottom: 7px;
-      padding: 11px 14px;
+      margin-bottom: 8px;
+      padding: 12px 14px;
 
       font-family: var(--sans);
-      font-size: 0.92rem;
-      line-height: 1.4;
+      font-size: 0.95rem;
+      line-height: 1.42;
       font-weight: 500;
       letter-spacing: 0;
       text-transform: none;
 
-      background: var(--white);
-      color: var(--navy);
-      border: 1px solid var(--rule);
+      background: #f7faff;
+      color: #10213d;
+      border: 1px solid #c6d5ea;
       border-radius: 12px;
       cursor: pointer;
 
@@ -1352,29 +1352,36 @@
     .action-btn:active { transform: translateY(0); }
 
 
-    .action-btn.practice-answer-btn {
-      justify-content: space-between;
+    .action-btn.practice-answer-btn,
+    .practice-sata-btn {
+      display: block;
       width: 100%;
-      margin-bottom: 7px;
-      padding: 11px 14px;
+      text-align: left;
+      white-space: normal;
+      word-break: normal;
+      overflow-wrap: break-word;
+      min-height: 50px;
+      margin-bottom: 8px;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      line-height: 1.42;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+      border-radius: 12px;
+      box-shadow: none;
+    }
+
+    .action-btn.practice-answer-btn {
       background: #f7faff;
       color: #10213d;
       border: 1px solid #c6d5ea;
-      border-radius: 12px;
-      box-shadow: none;
-      font-family: var(--sans);
-      font-size: 0.92rem;
-      font-weight: 500;
-      line-height: 1.4;
-      letter-spacing: 0;
-      text-transform: none;
-      transition: background 0.18s, border-color 0.18s, color 0.18s;
     }
 
     .action-btn.practice-answer-btn:hover:not(:disabled) {
-      background: #edf4ff;
+      background: #eef5ff;
       color: #10213d;
-      border-color: #9fbce3;
+      border-color: #a9c2e6;
       transform: none;
     }
 
@@ -1388,30 +1395,36 @@
     }
 
     .practice-sata-btn {
-      width: 100%;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 7px;
-      padding: 11px 14px;
+      justify-content: flex-start;
+      align-items: flex-start;
+      gap: 10px;
       background: #f7faff;
       color: #10213d;
       border: 1px solid #c6d5ea;
-      border-radius: 12px;
-      box-shadow: none;
-      font-family: var(--sans);
-      font-size: 0.92rem;
-      font-weight: 500;
-      line-height: 1.4;
-      letter-spacing: 0;
-      text-transform: none;
-      transition: background 0.18s, border-color 0.18s, color 0.18s;
     }
 
     .practice-sata-btn:hover:not(:disabled) {
-      background: #edf4ff;
+      background: #eef5ff;
       color: #10213d;
-      border-color: #9fbce3;
+      border-color: #a9c2e6;
+    }
+
+    .practice-answer-text {
+      display: block;
+      flex: 1 1 auto;
+      width: 100%;
+      text-align: left;
+      white-space: normal;
+      word-break: normal;
+      overflow-wrap: break-word;
+      line-height: 1.42;
+    }
+
+    .sata-check {
+      flex: 0 0 auto;
+      align-self: center;
+      margin-left: 0;
     }
 
     .practice-sata-btn.selected {
@@ -1421,30 +1434,9 @@
     }
 
     .practice-stem {
-      font-size: 0.96rem;
-      line-height: 1.5;
-    }
-
-    .practice-answer-btn,
-    .practice-sata-btn {
-      min-height: 46px;
-    }
-
-    .practice-answer-btn:hover:not(:disabled) {
-      background: #f7faff;
-      border-color: var(--gold);
-      color: var(--navy);
-      transform: none;
-    }
-
-    .practice-answer-btn:active {
-      transform: none;
-    }
-
-    .practice-sata-btn:hover:not(:disabled) {
-      background: #f7faff;
-      border-color: var(--gold);
-      color: var(--navy);
+      font-size: 1.1rem;
+      line-height: 1.65;
+      padding: 14px 16px;
     }
 
     .action-btn svg { flex: 0 0 14px; }
@@ -1922,9 +1914,9 @@
 
       .practice-stem {
         font-family: var(--sans);
-        font-size: 0.92rem;
-        line-height: 1.42;
-        padding: 10px 11px;
+        font-size: 1.1rem;
+        line-height: 1.65;
+        padding: 14px 16px;
         max-height: 180px;
       }
 
@@ -1935,11 +1927,11 @@
 
       .practice-answer-btn,
       .practice-sata-btn {
-        font-size: 0.9rem;
-        line-height: 1.35;
-        padding: 10px 12px;
-        min-height: 44px;
-        margin-bottom: 6px;
+        font-size: 0.95rem;
+        line-height: 1.42;
+        padding: 12px 14px;
+        min-height: 50px;
+        margin-bottom: 8px;
       }
 
       .practice-rationale {
@@ -3756,7 +3748,7 @@ function renderSBAImageQuestion(q, index, total) {
             class="action-btn practice-answer-btn"
             data-answer="${String(answer).replace(/"/g, '&quot;')}"
           >
-            ${answer}
+            <span class="practice-answer-text">${answer}</span>
           </button>
         `).join("")}
       </div>
@@ -3834,7 +3826,7 @@ function renderSBAQuestion(q, index, total) {
             class="action-btn practice-answer-btn"
             data-answer="${String(answer).replace(/"/g, '&quot;')}"
           >
-            ${answer}
+            <span class="practice-answer-text">${answer}</span>
           </button>
         `).join("")}
       </div>
@@ -4015,7 +4007,7 @@ function renderSATAQuestion(q, index, total) {
             class="practice-sata-btn"
             data-answer="${String(answer).replace(/"/g, '&quot;')}"
           >
-            <span class="sata-label">${answer}</span>
+            <span class="practice-answer-text">${answer}</span>
             <span class="sata-check">✓</span>
           </button>
         `).join("")}
