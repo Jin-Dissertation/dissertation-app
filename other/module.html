@@ -1594,6 +1594,8 @@
 
     .feedback-wrap {
       position: relative;
+      display: flex;
+      align-items: stretch;
     }
 
     #feedback-menu {
@@ -1633,6 +1635,38 @@
     #return-dashboard-btn {
       align-self: flex-end;
       margin-bottom: 4px;
+    }
+
+    @media (max-width: 640px) {
+      .practice-topbar {
+        gap: 8px;
+        align-items: stretch;
+      }
+
+      .practice-topbar .action-btn,
+      #return-dashboard-btn,
+      #feedback-btn {
+        min-height: 44px;
+        height: 44px;
+        padding: 0 14px;
+        font-size: 0.9rem;
+        letter-spacing: 0.08em;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+      }
+
+      #return-dashboard-btn {
+        flex: 1 1 auto;
+        align-self: auto;
+        margin-bottom: 0;
+      }
+
+      #feedback-btn {
+        flex: 0 0 auto;
+        min-width: 120px;
+      }
     }
 
     .action-btn.disabled {
@@ -5119,6 +5153,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     practiceTestState.requestedQuestionCount = [10, 20, 30, 40].includes(value) ? value : 10;
     e.target.value = String(practiceTestState.requestedQuestionCount);
   });
+  const returnDashboardBtn = $('return-dashboard-btn');
+  const setReturnDashboardLabel = () => {
+    if (!returnDashboardBtn) return;
+    returnDashboardBtn.textContent = window.matchMedia('(max-width: 640px)').matches
+      ? 'Dashboard'
+      : 'Return to Dashboard';
+  };
+  setReturnDashboardLabel();
+  window.addEventListener('resize', setReturnDashboardLabel);
+
   const feedbackBtn = $('feedback-btn');
   const feedbackMenu = $('feedback-menu');
   if (feedbackBtn && feedbackMenu) {
