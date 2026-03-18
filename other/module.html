@@ -2884,6 +2884,9 @@ function resetPracticeDashboardStateFromUI() {
 }
 
 async function returnToDashboard() {
+  if (practiceTestState.returningToDashboard) return;
+  practiceTestState.returningToDashboard = true;
+
   const pendingResults = Array.isArray(practiceTestState?.results)
     ? JSON.parse(JSON.stringify(practiceTestState.results))
     : [];
@@ -2894,66 +2897,76 @@ async function returnToDashboard() {
 
   const pendingSessionId = String(practiceTestState?.sessionId || '');
 
-  hidePracticeQuestionOverlay();
+  try {
+    hidePracticeQuestionOverlay();
 
-  if (pendingResults.length && !practiceTestState.resultsSubmitted) {
-    const originalResults = practiceTestState.results;
-    const originalFeedback = practiceTestState.feedbackByQuestionId;
-    const originalSessionId = practiceTestState.sessionId;
+    if (pendingResults.length && !practiceTestState.resultsSubmitted) {
+      const originalResults = practiceTestState.results;
+      const originalFeedback = practiceTestState.feedbackByQuestionId;
+      const originalSessionId = practiceTestState.sessionId;
 
-    try {
-      practiceTestState.results = pendingResults;
-      practiceTestState.feedbackByQuestionId = pendingFeedbackByQuestionId;
-      practiceTestState.sessionId = pendingSessionId;
+      try {
+        practiceTestState.results = pendingResults;
+        practiceTestState.feedbackByQuestionId = pendingFeedbackByQuestionId;
+        practiceTestState.sessionId = pendingSessionId;
 
-      await submitPracticeResultsAndUpdateDashboard({ showAlertOnError: false });
-    } catch (err) {
-      console.error('Failed to submit partial practice results before returning to dashboard:', err);
-    } finally {
-      practiceTestState.results = originalResults;
-      practiceTestState.feedbackByQuestionId = originalFeedback;
-      practiceTestState.sessionId = originalSessionId;
+        console.log('[practice dashboard exit] submitting partial progress', {
+          pendingResults,
+          pendingFeedbackByQuestionId,
+          pendingSessionId
+        });
+
+        await submitPracticeResultsAndUpdateDashboard({ showAlertOnError: false });
+      } catch (err) {
+        console.error('Failed to submit partial practice results before returning to dashboard:', err);
+      } finally {
+        practiceTestState.results = originalResults;
+        practiceTestState.feedbackByQuestionId = originalFeedback;
+        practiceTestState.sessionId = originalSessionId;
+      }
     }
+
+    clearPracticeSessionFromLocal();
+
+    resetPracticeDashboardStateFromUI();
+
+    const courseSelect = $('practice-course-select');
+    if (courseSelect) {
+      courseSelect.value = '';
+    }
+
+    if (practiceTestState) {
+      practiceTestState.selectedCourse = '';
+      practiceTestState.selectedTopics = [];
+      practiceTestState.currentIndex = 0;
+      practiceTestState.questions = [];
+      practiceTestState.results = [];
+      practiceTestState.correctCount = 0;
+      practiceTestState.incorrectCount = 0;
+      practiceTestState.requestedQuestionCount = 10;
+      practiceTestState.practiceTopicsLoaded = false;
+      practiceTestState.practiceTopicsLoading = false;
+      practiceTestState.resultsSubmitted = false;
+      practiceTestState.sessionComplete = false;
+      practiceTestState.answers = {};
+      practiceTestState.answerState = {};
+      practiceTestState.feedbackByQuestionId = {};
+      practiceTestState.sessionId = "";
+      practiceTestState.startedAt = null;
+    }
+
+    if ($('practice-topic-list')) $('practice-topic-list').innerHTML = '';
+    if ($('practice-controls-row')) $('practice-controls-row').hidden = true;
+
+    $('dashboard').style.display = 'block';
+    $('training').style.display = 'none';
+
+    updatePracticeTopicOptions();
+    updatePracticeStartButtonState();
+    initializePracticeSetup();
+  } finally {
+    practiceTestState.returningToDashboard = false;
   }
-
-  clearPracticeSessionFromLocal();
-
-  resetPracticeDashboardStateFromUI();
-
-  const courseSelect = $('practice-course-select');
-  if (courseSelect) {
-    courseSelect.value = '';
-  }
-
-  if (practiceTestState) {
-    practiceTestState.selectedCourse = '';
-    practiceTestState.selectedTopics = [];
-    practiceTestState.currentIndex = 0;
-    practiceTestState.questions = [];
-    practiceTestState.results = [];
-    practiceTestState.correctCount = 0;
-    practiceTestState.incorrectCount = 0;
-    practiceTestState.requestedQuestionCount = 10;
-    practiceTestState.practiceTopicsLoaded = false;
-    practiceTestState.practiceTopicsLoading = false;
-    practiceTestState.resultsSubmitted = false;
-    practiceTestState.sessionComplete = false;
-    practiceTestState.answers = {};
-    practiceTestState.answerState = {};
-    practiceTestState.feedbackByQuestionId = {};
-    practiceTestState.sessionId = "";
-    practiceTestState.startedAt = null;
-  }
-
-  if ($('practice-topic-list')) $('practice-topic-list').innerHTML = '';
-  if ($('practice-controls-row')) $('practice-controls-row').hidden = true;
-
-  $('dashboard').style.display = 'block';
-  $('training').style.display = 'none';
-
-  updatePracticeTopicOptions();
-  updatePracticeStartButtonState();
-  initializePracticeSetup();
 }
 
 function getPracticeSessionSummary() {
