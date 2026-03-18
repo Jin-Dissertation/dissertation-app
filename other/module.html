@@ -437,15 +437,15 @@
       align-items: center;
       width: 100%;
       margin-bottom: 8px;
-      padding: 14px 16px;
+      padding: 15px 18px;
       background: var(--white);
       color: var(--navy);
       border: 1px solid var(--rule);
       border-radius: 12px;
       font-family: var(--sans);
-      font-size: 0.98rem;
+      font-size: 1rem;
       font-weight: 400;
-      line-height: 1.55;
+      line-height: 1.5;
       letter-spacing: 0;
       text-transform: none;
       box-shadow: none;
@@ -1356,6 +1356,85 @@
     .action-btn:hover { background: var(--navy-mid); transform: translateY(-1px); }
     .action-btn:active { transform: translateY(0); }
 
+
+    .action-btn.practice-answer-btn {
+      justify-content: flex-start;
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 15px 18px;
+      background: #f7faff;
+      color: #10213d;
+      border: 1px solid #c6d5ea;
+      border-radius: 12px;
+      box-shadow: none;
+      font-family: var(--sans);
+      font-size: 1rem;
+      font-weight: 500;
+      line-height: 1.5;
+      letter-spacing: 0;
+      text-transform: none;
+      transition: background 0.18s, border-color 0.18s, color 0.18s;
+    }
+
+    .action-btn.practice-answer-btn:hover:not(:disabled) {
+      background: #edf4ff;
+      color: #10213d;
+      border-color: #9fbce3;
+      transform: none;
+    }
+
+    .action-btn.practice-answer-btn:active {
+      transform: none;
+    }
+
+    .action-btn.practice-answer-btn:disabled {
+      opacity: 1;
+      cursor: default;
+    }
+
+    .practice-sata-btn {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 15px 18px;
+      background: #f7faff;
+      color: #10213d;
+      border: 1px solid #c6d5ea;
+      border-radius: 12px;
+      box-shadow: none;
+      font-family: var(--sans);
+      font-size: 1rem;
+      font-weight: 500;
+      line-height: 1.5;
+      letter-spacing: 0;
+      text-transform: none;
+      transition: background 0.18s, border-color 0.18s, color 0.18s;
+    }
+
+    .practice-sata-btn:hover:not(:disabled) {
+      background: #edf4ff;
+      color: #10213d;
+      border-color: #9fbce3;
+    }
+
+    .practice-sata-btn.selected {
+      background: #e7f0ff;
+      border-color: #2f6edc;
+      color: #10213d;
+    }
+
+    .practice-stem {
+      font-size: 1.16rem;
+      line-height: 1.75;
+    }
+
+    .practice-answer-btn,
+    .practice-sata-btn {
+      min-height: 54px;
+    }
+
     .practice-answer-btn:hover:not(:disabled) {
       background: #f7faff;
       border-color: var(--gold);
@@ -1869,7 +1948,7 @@
       <h3>Enter Module Code</h3>
       <div class="assignment-entry-row">
         <input class="gate-input" id="assignment-key-input" type="text" placeholder="Enter module code" autocomplete="off" autocapitalize="none" spellcheck="false" />
-        <button class="action-btn" type="button" id="assignment-key-btn">OPEN MODULE</button>
+        <button class="action-btn" type="button" id="assignment-key-btn">Open module</button>
       </div>
     </section>
 
@@ -2470,6 +2549,10 @@ function getCurrentPracticeQuestionId() {
   ).trim();
 }
 
+function getPracticeQuestionStateKey(question) {
+  return String(question?._stateKey || '').trim();
+}
+
 function hasFeedbackForCurrentPracticeQuestion() {
   const questionId = getCurrentPracticeQuestionId();
   if (!questionId) return false;
@@ -2578,9 +2661,12 @@ function renderPracticeFeedbackAnswerStateForCurrentQuestion() {
   const questions = practiceTestState.questions || [];
   const index = Number(practiceTestState.currentIndex || 0);
   const question = questions[index];
-  if (!question || !question.question_id) return;
+  if (!question) return;
 
-  const answerState = practiceTestState.answerState?.[question.question_id];
+  const stateKey = getPracticeQuestionStateKey(question);
+  if (!stateKey) return;
+
+  const answerState = practiceTestState.answerState?.[stateKey];
   if (!answerState || !answerState.feedbackShown) return;
 
   if (question.question_type === 'sba' || question.question_type === 'sba_image') {
@@ -3271,7 +3357,16 @@ function renderPracticeSubmitError(message) {
 }
 
 function initializePracticeSession(questionSet) {
-  practiceTestState.questions = Array.isArray(questionSet) ? questionSet : [];
+  practiceTestState.questions = Array.isArray(questionSet)
+  ? questionSet.map((q, index) => ({
+      ...q,
+      _stateKey: [
+        String(q?.topic || '').trim(),
+        String(q?.question_id || q?.id || q?.questionId || 'q').trim() || 'q',
+        String(index)
+      ].join('::')
+    }))
+  : [];
   practiceTestState.questionCount = practiceTestState.questions.length;
   practiceTestState.currentIndex = 0;
   practiceTestState.results = [];
@@ -3409,14 +3504,17 @@ function recordPracticeQuestionResult(question, isCorrect) {
   if (!practiceTestState) return;
   if (!question || !question.question_id) return;
 
+  const stateKey = getPracticeQuestionStateKey(question);
+
   if (!Array.isArray(practiceTestState.results)) {
     practiceTestState.results = [];
   }
 
-  const alreadyRecorded = practiceTestState.results.some(result => result.question_id === question.question_id);
+  const alreadyRecorded = practiceTestState.results.some(result => result._stateKey === stateKey);
   if (alreadyRecorded) return;
 
   practiceTestState.results.push({
+    _stateKey: stateKey,
     question_id: question.question_id,
     topic: question.topic || "",
     question_type: question.question_type || "",
@@ -3581,6 +3679,7 @@ function renderSBAImageQuestion(q, index, total) {
   const correct = q.correct_blob || "";
   const distractors = (q.distractors_blob || "").split("|").filter(Boolean);
   const answers = [correct, ...distractors].sort(() => Math.random() - 0.5);
+  const stateKey = getPracticeQuestionStateKey(q);
 
   const imageHtml = q.media_url
     ? `
@@ -3639,14 +3738,14 @@ function renderSBAImageQuestion(q, index, total) {
   buttons.forEach(button => {
     button.addEventListener("click", () => {
       const selected = button.getAttribute("data-answer") || "";
-      practiceTestState.answers[q.question_id] = selected;
+      practiceTestState.answers[stateKey] = selected;
       savePracticeSessionToLocal();
       handlePracticeAnswer(q, selected, correct, q.rationale || "");
     });
   });
 
-  const savedAnswer = q.question_id ? practiceTestState.answers?.[q.question_id] : '';
-  if (savedAnswer && !practiceTestState.answerState?.[q.question_id]?.feedbackShown) {
+  const savedAnswer = stateKey ? practiceTestState.answers?.[stateKey] : '';
+  if (savedAnswer && !practiceTestState.answerState?.[stateKey]?.feedbackShown) {
     const match = [...buttons].find(btn => (btn.getAttribute("data-answer") || '') === savedAnswer);
     if (match) {
       match.style.border = "2px solid #2f6edc";
@@ -3668,6 +3767,7 @@ function renderSBAQuestion(q, index, total) {
     : [];
 
   const answers = [correct, ...distractors];
+  const stateKey = getPracticeQuestionStateKey(q);
 
   for (let i = answers.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -3717,14 +3817,14 @@ function renderSBAQuestion(q, index, total) {
   buttons.forEach(button => {
     button.addEventListener("click", () => {
       const selected = button.getAttribute("data-answer") || "";
-      practiceTestState.answers[q.question_id] = selected;
+      practiceTestState.answers[stateKey] = selected;
       savePracticeSessionToLocal();
       handlePracticeAnswer(q, selected, correct, q.rationale || "");
     });
   });
 
-  const savedAnswer = q.question_id ? practiceTestState.answers?.[q.question_id] : '';
-  if (savedAnswer && !practiceTestState.answerState?.[q.question_id]?.feedbackShown) {
+  const savedAnswer = stateKey ? practiceTestState.answers?.[stateKey] : '';
+  if (savedAnswer && !practiceTestState.answerState?.[stateKey]?.feedbackShown) {
     const match = [...buttons].find(btn => (btn.getAttribute("data-answer") || '') === savedAnswer);
     if (match) {
       match.style.border = "2px solid #2f6edc";
@@ -3737,6 +3837,8 @@ function renderSBAQuestion(q, index, total) {
 function renderFITBQuestion(q, index, total) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
+
+  const stateKey = getPracticeQuestionStateKey(q);
 
   container.innerHTML = `
     <div class="practice-question-card">
@@ -3787,14 +3889,14 @@ function renderFITBQuestion(q, index, total) {
   const input = container.querySelector("#practice-fitb-input");  const submitBtn = container.querySelector("#practice-fitb-submit");
 
   if (input) {
-    const savedAnswer = q.question_id ? practiceTestState.answers?.[q.question_id] : '';
+    const savedAnswer = stateKey ? practiceTestState.answers?.[stateKey] : '';
     if (typeof savedAnswer === 'string' && savedAnswer) {
       input.value = savedAnswer;
     }
     input.addEventListener("blur", () => {
       input.value = input.value.trim();
-      if (q.question_id) {
-        practiceTestState.answers[q.question_id] = input.value;
+      if (stateKey) {
+        practiceTestState.answers[stateKey] = input.value;
         savePracticeSessionToLocal();
       }
     });
@@ -3803,7 +3905,7 @@ function renderFITBQuestion(q, index, total) {
   if (submitBtn) {
     submitBtn.addEventListener("click", () => {
       const selected = input ? input.value.trim() : "";
-      practiceTestState.answers[q.question_id] = selected;
+      practiceTestState.answers[stateKey] = selected;
       savePracticeSessionToLocal();
       handlePracticeFITBAnswer(
         q,
@@ -3827,6 +3929,8 @@ function renderFITBQuestion(q, index, total) {
 function renderSATAQuestion(q, index, total) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
+
+  const stateKey = getPracticeQuestionStateKey(q);
 
   const correctAnswers = String(q.correct_blob || "")
     .split("|")
@@ -3898,10 +4002,10 @@ function renderSATAQuestion(q, index, total) {
   initializePracticeStemToggle(container);
 
   const optionButtons = container.querySelectorAll(".practice-sata-btn");
-  const savedAnswers = Array.isArray(practiceTestState.answers?.[q.question_id])
-    ? practiceTestState.answers[q.question_id]
+  const savedAnswers = Array.isArray(practiceTestState.answers?.[stateKey])
+    ? practiceTestState.answers[stateKey]
     : [];
-  if (savedAnswers.length && !practiceTestState.answerState?.[q.question_id]?.feedbackShown) {
+  if (savedAnswers.length && !practiceTestState.answerState?.[stateKey]?.feedbackShown) {
     optionButtons.forEach(button => {
       const answer = button.getAttribute("data-answer") || "";
       if (savedAnswers.includes(answer)) {
@@ -3918,7 +4022,7 @@ function renderSATAQuestion(q, index, total) {
       button.classList.toggle("selected");
       const selectedAnswers = [...container.querySelectorAll(".practice-sata-btn.selected")]
         .map(btn => btn.getAttribute("data-answer") || "");
-      practiceTestState.answers[q.question_id] = selectedAnswers;
+      practiceTestState.answers[stateKey] = selectedAnswers;
       savePracticeSessionToLocal();
       button.blur();
     });
@@ -4034,6 +4138,7 @@ function renderCategorizeQuestion(q, index, total) {
 }
 
 function initializeCategorizeInteractions(container, question, mappings, categories, isMobileMode, rationale) {
+  const stateKey = getPracticeQuestionStateKey(question);
   const pool = container.querySelector("#practice-categorize-pool");
   const poolItems = container.querySelector("#practice-categorize-pool-items");
   const dropzones = container.querySelectorAll(".practice-categorize-zone.practice-categorize-dropzone");
@@ -4055,12 +4160,12 @@ function initializeCategorizeInteractions(container, question, mappings, categor
 
   const getAllItems = () => container.querySelectorAll(".practice-categorize-item");
   const snapshotCategorizePlacements = () => {
-    if (!question?.question_id) return;
+    if (!stateKey) return;
     const placements = [...getAllItems()].map(item => ({
       item: item.getAttribute("data-item") || "",
       placedIn: item.parentElement?.getAttribute("data-category") || "pool"
     }));
-    practiceTestState.answers[question.question_id] = placements;
+    practiceTestState.answers[stateKey] = placements;
     savePracticeSessionToLocal();
   };
 
@@ -4104,8 +4209,8 @@ function initializeCategorizeInteractions(container, question, mappings, categor
   };
 
   getAllItems().forEach(makeItemInteractive);
-  const initialSavedPlacements = Array.isArray(practiceTestState.answers?.[question?.question_id])
-    ? practiceTestState.answers[question.question_id]
+  const initialSavedPlacements = Array.isArray(practiceTestState.answers?.[stateKey])
+    ? practiceTestState.answers[stateKey]
     : [];
 
   const moveItemToZone = (item, zone) => {
@@ -4244,6 +4349,8 @@ function handlePracticeAnswer(question, selected, correct, rationale) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
+  const stateKey = getPracticeQuestionStateKey(question);
+
   const feedback = container.querySelector("#practice-feedback");
   const buttons = container.querySelectorAll(".practice-answer-btn");
 
@@ -4290,8 +4397,8 @@ function handlePracticeAnswer(question, selected, correct, rationale) {
   }
 
   recordPracticeQuestionResult(question, selected === correct);
-  if (question?.question_id) {
-    practiceTestState.answerState[question.question_id] = {
+  if (stateKey) {
+    practiceTestState.answerState[stateKey] = {
       type: question.question_type || 'sba',
       selected,
       correct,
@@ -4309,6 +4416,8 @@ function handlePracticeAnswer(question, selected, correct, rationale) {
 function handlePracticeFITBAnswer(question, selected, correct, rationale) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
+
+  const stateKey = getPracticeQuestionStateKey(question);
 
   const feedback = container.querySelector("#practice-feedback");
   const input = container.querySelector("#practice-fitb-input");
@@ -4364,8 +4473,8 @@ function handlePracticeFITBAnswer(question, selected, correct, rationale) {
   }
 
   recordPracticeQuestionResult(question, isCorrect);
-  if (question?.question_id) {
-    practiceTestState.answerState[question.question_id] = {
+  if (stateKey) {
+    practiceTestState.answerState[stateKey] = {
       type: question.question_type || 'fitb',
       selected,
       correct,
@@ -4383,6 +4492,8 @@ function handlePracticeFITBAnswer(question, selected, correct, rationale) {
 function handlePracticeSATAAnswer(question, selectedAnswers, correctAnswers, rationale) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
+
+  const stateKey = getPracticeQuestionStateKey(question);
 
   const feedback = container.querySelector("#practice-feedback");
   const buttons = container.querySelectorAll(".practice-sata-btn");
@@ -4450,8 +4561,8 @@ function handlePracticeSATAAnswer(question, selectedAnswers, correctAnswers, rat
   }
 
   recordPracticeQuestionResult(question, isCorrect);
-  if (question?.question_id) {
-    practiceTestState.answerState[question.question_id] = {
+  if (stateKey) {
+    practiceTestState.answerState[stateKey] = {
       type: question.question_type || 'sata',
       selectedAnswers: Array.isArray(selectedAnswers) ? selectedAnswers : [],
       correctAnswers: Array.isArray(correctAnswers) ? correctAnswers : [],
@@ -4467,6 +4578,7 @@ function handlePracticeSATAAnswer(question, selectedAnswers, correctAnswers, rat
 }
 
 function handlePracticeCategorizeAnswer(question, container, mappings, placements, rationale) {
+  const stateKey = getPracticeQuestionStateKey(question);
   const feedback = container.querySelector("#practice-feedback");
   const submitBtn = container.querySelector("#practice-categorize-submit");
   const items = container.querySelectorAll(".practice-categorize-item");
@@ -4541,8 +4653,8 @@ function handlePracticeCategorizeAnswer(question, container, mappings, placement
   }
 
   recordPracticeQuestionResult(question, allCorrect);
-  if (question?.question_id) {
-    practiceTestState.answerState[question.question_id] = {
+  if (stateKey) {
+    practiceTestState.answerState[stateKey] = {
       type: question.question_type || 'categorize',
       placements: Array.isArray(placements) ? placements : [],
       rationale: rationale || '',
