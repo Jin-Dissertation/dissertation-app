@@ -2281,8 +2281,11 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
     throw new Error('No signed-in user email was found.');
   }
 
-  // Reset question results for this session immediately.
+  // Reset session state immediately before loading fresh questions.
   practiceTestState.results = [];
+  practiceTestState.correctCount = 0;
+  practiceTestState.incorrectCount = 0;
+  practiceTestState.resultsSubmitted = false;
 
   // Always start from a clean question DOM tree for each new session.
   const overlayQuestionHost = $('full-question-content');
@@ -5046,19 +5049,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     submitPracticeResults(practiceTestState.results);
 
     // Fully reset state
-    practiceTestState = {
-      questions: [],
-      currentIndex: 0,
-      sessionId: "",
-      startedAt: null,
-      selectedCourse: '',
-      selectedTopics: [],
-      requestedQuestionCount: 10,
-      results: [],
-      resultsSubmitted: false,
-      correctCount: 0,
-      incorrectCount: 0
-    };
+    practiceTestState.questions = [];
+    practiceTestState.currentIndex = 0;
+    practiceTestState.sessionId = "";
+    practiceTestState.startedAt = null;
+    practiceTestState.selectedCourse = '';
+    practiceTestState.selectedTopics = [];
+    practiceTestState.requestedQuestionCount = 10;
+    practiceTestState.results = [];
+    practiceTestState.correctCount = 0;
+    practiceTestState.incorrectCount = 0;
+    practiceTestState.resultsSubmitted = false;
 
     // Reset dropdowns and topic list
     if ($('practice-course-select')) $('practice-course-select').value = '';
