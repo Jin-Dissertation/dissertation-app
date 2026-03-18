@@ -1852,6 +1852,7 @@ let practiceTestState = {
   selectedCourse: '',
   selectedTopics: [],
   requestedQuestionCount: 10,
+  feedbackSubmitted: false,
   results: [],
   resultsSubmitted: false,
   correctCount: 0,
@@ -2138,6 +2139,25 @@ function disableButton(btn) {
   btn.style.cursor = 'not-allowed';
 }
 
+function resetFeedbackUiForNewQuestion() {
+  const feedbackMenu = document.getElementById('feedback-menu');
+  const feedbackOptions = document.querySelectorAll('#feedback-menu .feedback-option');
+
+  if (feedbackMenu) {
+    feedbackMenu.classList.remove('show');
+  }
+
+  feedbackOptions.forEach(btn => {
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.pointerEvents = '';
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.classList.remove('selected', 'submitted', 'used', 'is-selected', 'is-submitted');
+    btn.removeAttribute('aria-disabled');
+  });
+}
+
 function renderPracticeSetupTopics(topics) {
   const topicList = $('practice-topic-list');
   const messageEl = $('practice-setup-message');
@@ -2248,6 +2268,7 @@ async function handleStartPracticeClick(event) {
     // Fully reset question results and session state for a fresh practice run.
     practiceTestState.questions = [];
     practiceTestState.currentIndex = 0;
+    practiceTestState.feedbackSubmitted = false;
     practiceTestState.results = [];
     practiceTestState.correctCount = 0;
     practiceTestState.incorrectCount = 0;
@@ -2361,6 +2382,7 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
   // Reset session state immediately before loading fresh questions.
   practiceTestState.questions = [];
   practiceTestState.currentIndex = 0;
+  practiceTestState.feedbackSubmitted = false;
   practiceTestState.results = [];
   practiceTestState.correctCount = 0;
   practiceTestState.incorrectCount = 0;
@@ -2403,6 +2425,7 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
 
   practiceTestState.questions = questions;
   practiceTestState.currentIndex = 0;
+  practiceTestState.feedbackSubmitted = false;
   practiceTestState.sessionId = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   practiceTestState.startedAt = new Date().toISOString();
   practiceTestState.selectedCourse = String(practiceTestState.selectedCourse || '').trim();
@@ -2432,6 +2455,8 @@ function renderCurrentPracticeQuestion() {
 
   const q = questions[index];
   if (!q) return;
+  resetFeedbackUiForNewQuestion();
+  practiceTestState.feedbackSubmitted = false;
 
   if (q.question_type === "sba") {
     renderSBAQuestion(q, index, questions.length);
@@ -5109,6 +5134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.disabled = true;
       btn.style.opacity = 0.55;
       btn.style.cursor = 'not-allowed';
+      practiceTestState.feedbackSubmitted = true;
 
       let value = btn.dataset.value;
       const questionId = practiceTestState.questions[practiceTestState.currentIndex]?.question_id;
@@ -5168,6 +5194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Fully reset state
     practiceTestState.questions = [];
     practiceTestState.currentIndex = 0;
+    practiceTestState.feedbackSubmitted = false;
     practiceTestState.sessionId = "";
     practiceTestState.startedAt = null;
     practiceTestState.selectedCourse = '';
