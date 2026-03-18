@@ -2282,6 +2282,8 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
   }
 
   // Reset session state immediately before loading fresh questions.
+  practiceTestState.questions = [];
+  practiceTestState.currentIndex = 0;
   practiceTestState.results = [];
   practiceTestState.correctCount = 0;
   practiceTestState.incorrectCount = 0;
