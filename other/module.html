@@ -1708,6 +1708,16 @@
       border-bottom-right-radius: 10px;
     }
 
+    #feedback-menu .feedback-option.selected {
+      background: #10213d;
+      color: #ffffff;
+    }
+
+    #feedback-menu .feedback-option[aria-pressed="true"] {
+      background: #10213d;
+      color: #ffffff;
+    }
+
     #return-dashboard-btn {
       align-self: flex-end;
       margin-bottom: 4px;
@@ -1971,6 +1981,7 @@ let practiceTestState = {
   practiceTopicsLoaded: false,
   practiceTopicsLoading: false,
   feedbackSubmitted: false,
+  feedbackByQuestionId: {},
   results: [],
   resultsSubmitted: false,
   correctCount: 0,
@@ -2291,21 +2302,130 @@ function disableButton(btn) {
 
 function resetFeedbackUiForNewQuestion() {
   const feedbackMenu = document.getElementById('feedback-menu');
-  const feedbackOptions = document.querySelectorAll('#feedback-menu .feedback-option');
 
   if (feedbackMenu) {
     feedbackMenu.classList.remove('show');
   }
+}
+
+function getCurrentPracticeQuestion() {
+  return practiceTestState.questions?.[practiceTestState.currentIndex] || null;
+}
+
+function ensureFeedbackStateForQuestion(questionId) {
+  if (!questionId) return null;
+
+  if (!practiceTestState.feedbackByQuestionId[questionId]) {
+    practiceTestState.feedbackByQuestionId[questionId] = {
+      confusing: false,
+      two_correct: false,
+      none_correct: false,
+      outside_scope: false,
+      comment: ""
+    };
+  }
+
+  return practiceTestState.feedbackByQuestionId[questionId];
+}
+
+function toggleFeedbackFlag(questionId, key) {
+  const state = ensureFeedbackStateForQuestion(questionId);
+  if (!state || !Object.prototype.hasOwnProperty.call(state, key)) return;
+  if (key === "comment") return;
+  state[key] = !state[key];
+}
+
+function setFeedbackComment(questionId, comment) {
+  const state = ensureFeedbackStateForQuestion(questionId);
+  if (!state) return;
+  state.comment = String(comment || "").trim();
+}
+
+function clearFeedbackComment(questionId) {
+  const state = ensureFeedbackStateForQuestion(questionId);
+  if (!state) return;
+  state.comment = "";
+}
+
+function getFeedbackStateForCurrentQuestion() {
+  const question = getCurrentPracticeQuestion();
+  if (!question?.question_id) return null;
+  return ensureFeedbackStateForQuestion(question.question_id);
+}
+
+function getAllQuestionFeedbackForSubmit() {
+  const results = [];
+
+  Object.entries(practiceTestState.feedbackByQuestionId || {}).forEach(([questionId, feedback]) => {
+    const question = (practiceTestState.questions || []).find(q => q.question_id === questionId);
+    if (!question) return;
+
+    const hasAnyFlag =
+      !!feedback.confusing ||
+      !!feedback.two_correct ||
+      !!feedback.none_correct ||
+      !!feedback.outside_scope;
+
+    const comment = String(feedback.comment || "").trim();
+
+    if (!hasAnyFlag && !comment) return;
+
+    results.push({
+      topic: String(question.topic || "").trim(),
+      question_id: String(question.question_id || "").trim(),
+      confusing: !!feedback.confusing,
+      two_correct: !!feedback.two_correct,
+      none_correct: !!feedback.none_correct,
+      outside_scope: !!feedback.outside_scope,
+      comment
+    });
+  });
+
+  return results;
+}
+
+function renderFeedbackUiForCurrentQuestion() {
+  const question = getCurrentPracticeQuestion();
+  const feedbackMenu = document.getElementById('feedback-menu');
+  const feedbackOptions = document.querySelectorAll('#feedback-menu .feedback-option');
+
+  if (!question?.question_id) {
+    feedbackOptions.forEach(btn => {
+      btn.classList.remove('selected');
+      btn.removeAttribute('aria-pressed');
+    });
+    return;
+  }
+
+  const state = ensureFeedbackStateForQuestion(question.question_id);
 
   feedbackOptions.forEach(btn => {
+    const rawValue = String(btn.dataset.value || "").trim();
+    let key = rawValue;
+
+    if (key === "two-correct") key = "two_correct";
+    if (key === "none-correct") key = "none_correct";
+    if (key === "outside-scope") key = "outside_scope";
+    if (key === "other") key = "comment";
+
+    let selected = false;
+
+    if (key === "comment") {
+      selected = !!String(state.comment || "").trim();
+    } else {
+      selected = !!state[key];
+    }
+
+    btn.classList.toggle('selected', selected);
+    btn.setAttribute('aria-pressed', selected ? 'true' : 'false');
     btn.disabled = false;
     btn.style.opacity = '';
     btn.style.pointerEvents = '';
-    btn.style.background = '';
-    btn.style.color = '';
-    btn.classList.remove('selected', 'submitted', 'used', 'is-selected', 'is-submitted');
-    btn.removeAttribute('aria-disabled');
   });
+
+  if (feedbackMenu) {
+    feedbackMenu.classList.remove('show');
+  }
 }
 
 function buildPracticeSessionSnapshot() {
@@ -2751,6 +2871,7 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
   practiceTestState.questions = [];
   practiceTestState.currentIndex = 0;
   practiceTestState.feedbackSubmitted = false;
+  practiceTestState.feedbackByQuestionId = {};
   practiceTestState.results = [];
   practiceTestState.correctCount = 0;
   practiceTestState.incorrectCount = 0;
@@ -2855,6 +2976,7 @@ function initializePracticeSession(questionSet) {
   practiceTestState.currentIndex = 0;
   practiceTestState.results = [];
   practiceTestState.feedbackSubmitted = false;
+  practiceTestState.feedbackByQuestionId = {};
   practiceTestState.resultsSubmitted = false;
   practiceTestState.correctCount = 0;
   practiceTestState.incorrectCount = 0;
@@ -2896,26 +3018,31 @@ function renderCurrentPracticeQuestion() {
 
   if (q.question_type === "sba") {
     renderSBAQuestion(q, index, questions.length);
+    renderFeedbackUiForCurrentQuestion();
     return;
   }
 
   if (q.question_type === "sba_image") {
     renderSBAImageQuestion(q, index, questions.length);
+    renderFeedbackUiForCurrentQuestion();
     return;
   }
 
   if (q.question_type === "fitb") {
     renderFITBQuestion(q, index, questions.length);
+    renderFeedbackUiForCurrentQuestion();
     return;
   }
 
   if (q.question_type === "sata") {
     renderSATAQuestion(q, index, questions.length);
+    renderFeedbackUiForCurrentQuestion();
     return;
   }
 
   if (q.question_type === "categorize") {
     renderCategorizeQuestion(q, index, questions.length);
+    renderFeedbackUiForCurrentQuestion();
     return;
   }
 
@@ -2943,6 +3070,7 @@ function renderCurrentPracticeQuestion() {
   if (nextBtn) {
     nextBtn.addEventListener("click", advancePracticeQuestion);
   }
+  renderFeedbackUiForCurrentQuestion();
 }
 
 function parseCategorizeMappings(blob) {
@@ -3079,7 +3207,8 @@ async function submitPracticeResultsAndUpdateDashboard(options = {}) {
     action: 'submitPracticeResults',
     email,
     session_id: practiceTestState.sessionId || '',
-    question_results: results || []
+    question_results: results || [],
+    question_feedback: getAllQuestionFeedbackForSubmit()
   };
 
   try {
@@ -5781,9 +5910,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) {
           console.error('Failed to submit feedback:', err);
         }
+      } else {
+        toggleFeedbackFlag(questionId, key);
       }
 
-      // Close the menu
+      practiceTestState.feedbackSubmitted = true;
+      renderFeedbackUiForCurrentQuestion();
       feedbackMenu.classList.remove('show');
 
       // Optional: show acknowledgment
@@ -5812,6 +5944,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     practiceTestState.questions = [];
     practiceTestState.currentIndex = 0;
     practiceTestState.feedbackSubmitted = false;
+    practiceTestState.feedbackByQuestionId = {};
     practiceTestState.sessionId = "";
     practiceTestState.startedAt = null;
     practiceTestState.selectedCourse = '';
