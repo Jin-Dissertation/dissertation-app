@@ -1572,6 +1572,7 @@
       max-width: 800px;
       width: 100%;
       height: 100%;
+      position: relative;
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
@@ -1653,6 +1654,38 @@
       <div id="practice-question-container" style="margin-top:20px;"></div>
       <div id="full-screen-question" style="display:none;">
         <div class="full-screen-question-card">
+          <button id="feedback-btn" class="action-btn secondary" style="
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border-radius: 50%;
+            font-size: 18px;
+            text-align: center;
+            line-height: 1;
+          ">!</button>
+
+          <div id="feedback-menu" style="
+            position: absolute;
+            top: 52px;
+            right: 12px;
+            background: #ffffff;
+            border: 1px solid #c8d8f0;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(16,33,61,0.15);
+            display: none;
+            flex-direction: column;
+            z-index: 10001;
+          ">
+            <button class="feedback-option action-btn secondary" data-value="two-correct">Two answers seem correct</button>
+            <button class="feedback-option action-btn secondary" data-value="none-correct">None of the answers seem correct</button>
+            <button class="feedback-option action-btn secondary" data-value="confusing">Question is confusing</button>
+            <button class="feedback-option action-btn secondary" data-value="outside-scope">Outside class scope</button>
+            <button class="feedback-option action-btn secondary" data-value="other">Other / comment</button>
+          </div>
+
           <button id="return-dashboard-btn" class="action-btn secondary" style="margin-bottom:4px;">Return to Dashboard</button>
           <div id="full-question-content"></div>
         </div>
