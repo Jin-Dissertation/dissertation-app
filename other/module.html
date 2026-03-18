@@ -2203,7 +2203,7 @@ function showPracticeQuestionOverlay() {
 
   if (!practiceQuestionContainerHome.parent) {
     practiceQuestionContainerHome.parent = questionContainer.parentElement;
-    practiceQuestionContainerHome.nextSibling = questionContainer.nextElementSibling;
+    practiceQuestionContainerHome.nextSibling = questionContainer.nextSibling;
   }
 
   if (questionContainer.parentElement !== questionHost) {
@@ -2246,6 +2246,12 @@ async function submitPracticeResults(results) {
 async function startPracticeSessionWithSettings(topics, questionCount) {
   // Reset question results for this session immediately.
   practiceTestState.results = [];
+
+  // Always start from a clean question DOM tree for each new session.
+  const overlayQuestionHost = $('full-question-content');
+  const practiceQuestionContainer = $('practice-question-container');
+  if (overlayQuestionHost) overlayQuestionHost.innerHTML = '';
+  if (practiceQuestionContainer) practiceQuestionContainer.innerHTML = '';
 
   const email = normalizeIdentityValue(currentUserEmail || participantEmail || '');
 
@@ -2296,11 +2302,6 @@ async function startPracticeSessionWithSettings(topics, questionCount) {
   if (!questions.length) {
     alert('No practice questions were returned.');
     return [];
-  }
-
-  const questionContainer = $('practice-question-container');
-  if (questionContainer) {
-    questionContainer.innerHTML = '';
   }
 
   practiceTestState.questions = questions;
@@ -5051,20 +5052,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  $('return-dashboard-btn').addEventListener('click', async () => {
-    const btn = $('return-dashboard-btn');
-    btn.disabled = true;
-    btn.style.opacity = 0.55;
-    btn.style.cursor = 'not-allowed';
+  $('return-dashboard-btn').addEventListener('click', () => {
+    hidePracticeQuestionOverlay();
 
-    try {
-      hidePracticeQuestionOverlay();
-      await submitPracticeResults(practiceTestState.results);
-    } catch (err) {
-      console.error(err);
-    }
+    // Submit completed questions
+    submitPracticeResults(practiceTestState.results);
 
-    // Reset state
+    // Fully reset state
     practiceTestState = {
       questions: [],
       currentIndex: 0,
@@ -5079,14 +5073,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       incorrectCount: 0
     };
 
-    // Reset dropdowns / topic list
+    // Reset dropdowns and topic list
     if ($('practice-course-select')) $('practice-course-select').value = '';
     if ($('practice-topic-list')) $('practice-topic-list').innerHTML = '';
     if ($('practice-controls-row')) $('practice-controls-row').hidden = true;
 
+    // Show dashboard
     $('dashboard').style.display = 'block';
     $('training').style.display = 'none';
 
+    // Re-initialize the practice setup so a new quiz can start
     initializePracticeSetup();
   });
   $('btn-save-exit').addEventListener('click', () => { handleSaveAndExit(); });
