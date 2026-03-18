@@ -585,6 +585,34 @@
       margin: 0;
       max-width: 420px;
     }
+    .practice-recovery-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 280px;
+      text-align: center;
+      padding: 32px 20px;
+      gap: 12px;
+    }
+    .practice-recovery-state h2 {
+      margin: 0;
+    }
+    .practice-recovery-state p {
+      margin: 0;
+      max-width: 460px;
+    }
+    .practice-recovery-meta {
+      opacity: 0.8;
+      font-size: 0.95rem;
+    }
+    .practice-recovery-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 8px;
+    }
 
     .practice-spinner {
       width: 36px;
@@ -630,6 +658,16 @@
 
       .practice-categorize-items {
         min-height: 40px;
+      }
+    }
+    @media (max-width: 640px) {
+      .practice-recovery-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .practice-recovery-actions .action-btn {
+        width: 100%;
       }
     }
 
@@ -1896,6 +1934,7 @@
 const LOAD_URL = 'https://script.google.com/macros/s/AKfycbyxevT1EWOj_IgdmL2oFiubBWc3b1BC5BnUuCL5-w0PxLjVPE9xsO_m_3RoIgqZ9mvO_A/exec';
 const SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbyxevT1EWOj_IgdmL2oFiubBWc3b1BC5BnUuCL5-w0PxLjVPE9xsO_m_3RoIgqZ9mvO_A/exec';
 const PRACTICE_API_URL = 'https://script.google.com/macros/s/AKfycbyGXa8KdMd5kYJrkOew56oljtPPNvKpNxMnMf1IsHp2C0XAeth7fP-MDhzPlkhUvPXlpQ/exec';
+const PRACTICE_SESSION_STORAGE_KEY = 'inProgressPracticeSession';
 const GOOGLE_CLIENT_ID = '534534627380-bd6hjuj4ihbf6i7r2qsjnen6cqhm14ma.apps.googleusercontent.com';
 const ENABLE_DEMO_FALLBACK = false;
 
@@ -1918,12 +1957,17 @@ let practiceQuestionContainerHome = {
 };
 let practiceTestState = {
   questions: [],
+  questionCount: 0,
   currentIndex: 0,
   sessionId: "",
   startedAt: null,
   selectedCourse: '',
   selectedTopics: [],
   requestedQuestionCount: 10,
+  answers: {},
+  answerState: {},
+  feedbackByQuestionId: {},
+  sessionComplete: false,
   practiceTopicsLoaded: false,
   practiceTopicsLoading: false,
   feedbackSubmitted: false,
@@ -2264,6 +2308,204 @@ function resetFeedbackUiForNewQuestion() {
   });
 }
 
+function buildPracticeSessionSnapshot() {
+  return {
+    savedAt: Date.now(),
+    participantEmail: typeof participantEmail !== 'undefined' ? participantEmail : '',
+    selectedCourse: practiceTestState.selectedCourse || '',
+    selectedTopics: Array.isArray(practiceTestState.selectedTopics) ? practiceTestState.selectedTopics : [],
+    questionCount: Number(practiceTestState.questionCount || practiceTestState.requestedQuestionCount || 0),
+    questions: Array.isArray(practiceTestState.questions) ? practiceTestState.questions : [],
+    currentIndex: Number(practiceTestState.currentIndex || 0),
+    answers: practiceTestState.answers || {},
+    answerState: practiceTestState.answerState || {},
+    results: Array.isArray(practiceTestState.results) ? practiceTestState.results : [],
+    feedbackByQuestionId: practiceTestState.feedbackByQuestionId || {},
+    sessionComplete: !!practiceTestState.sessionComplete
+  };
+}
+
+function savePracticeSessionToLocal() {
+  try {
+    const hasActiveQuestions =
+      Array.isArray(practiceTestState.questions) &&
+      practiceTestState.questions.length > 0 &&
+      !practiceTestState.sessionComplete;
+
+    if (!hasActiveQuestions) {
+      return;
+    }
+
+    const snapshot = buildPracticeSessionSnapshot();
+    localStorage.setItem(PRACTICE_SESSION_STORAGE_KEY, JSON.stringify(snapshot));
+  } catch (err) {
+    console.warn('Unable to save practice session locally:', err);
+  }
+}
+
+function loadPracticeSessionFromLocal() {
+  try {
+    const raw = localStorage.getItem(PRACTICE_SESSION_STORAGE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+
+    return parsed;
+  } catch (err) {
+    console.warn('Unable to load saved practice session:', err);
+    return null;
+  }
+}
+
+function clearPracticeSessionFromLocal() {
+  try {
+    localStorage.removeItem(PRACTICE_SESSION_STORAGE_KEY);
+  } catch (err) {
+    console.warn('Unable to clear saved practice session:', err);
+  }
+}
+
+function isRecoverablePracticeSession(snapshot) {
+  if (!snapshot) return false;
+  if (!Array.isArray(snapshot.questions) || !snapshot.questions.length) return false;
+  if (snapshot.sessionComplete) return false;
+
+  const savedAt = Number(snapshot.savedAt || 0);
+  if (!savedAt) return false;
+
+  const ageMs = Date.now() - savedAt;
+  const maxAgeMs = 6 * 60 * 60 * 1000;
+
+  if (ageMs < 0 || ageMs > maxAgeMs) return false;
+
+  return true;
+}
+
+function restorePracticeSessionFromSnapshot(snapshot) {
+  practiceTestState.selectedCourse = snapshot.selectedCourse || '';
+  practiceTestState.selectedTopics = Array.isArray(snapshot.selectedTopics) ? snapshot.selectedTopics : [];
+  practiceTestState.questionCount = Number(snapshot.questionCount || 0);
+  practiceTestState.requestedQuestionCount = Number(snapshot.questionCount || snapshot.requestedQuestionCount || 10);
+  practiceTestState.questions = Array.isArray(snapshot.questions) ? snapshot.questions : [];
+  practiceTestState.currentIndex = Number(snapshot.currentIndex || 0);
+  practiceTestState.answers = snapshot.answers || {};
+  practiceTestState.answerState = snapshot.answerState || {};
+  practiceTestState.results = Array.isArray(snapshot.results) ? snapshot.results : [];
+  practiceTestState.feedbackByQuestionId = snapshot.feedbackByQuestionId || {};
+  practiceTestState.correctCount = Array.isArray(practiceTestState.results)
+    ? practiceTestState.results.filter(result => !!result?.is_correct).length
+    : 0;
+  practiceTestState.incorrectCount = Array.isArray(practiceTestState.results)
+    ? practiceTestState.results.length - practiceTestState.correctCount
+    : 0;
+  practiceTestState.sessionComplete = false;
+  practiceTestState.resultsSubmitted = false;
+  if (practiceTestState.questions.length) {
+    const maxIndex = practiceTestState.questions.length - 1;
+    practiceTestState.currentIndex = Math.max(0, Math.min(maxIndex, practiceTestState.currentIndex));
+  }
+}
+
+function renderFeedbackUiForCurrentQuestion() {
+  const questions = practiceTestState.questions || [];
+  const index = Number(practiceTestState.currentIndex || 0);
+  const question = questions[index];
+  if (!question || !question.question_id) return;
+
+  const answerState = practiceTestState.answerState?.[question.question_id];
+  if (!answerState || !answerState.feedbackShown) return;
+
+  if (question.question_type === 'sba' || question.question_type === 'sba_image') {
+    handlePracticeAnswer(question, answerState.selected || '', answerState.correct || '', answerState.rationale || '');
+    return;
+  }
+
+  if (question.question_type === 'fitb') {
+    handlePracticeFITBAnswer(question, answerState.selected || '', answerState.correct || '', answerState.rationale || '');
+    return;
+  }
+
+  if (question.question_type === 'sata') {
+    handlePracticeSATAAnswer(
+      question,
+      Array.isArray(answerState.selectedAnswers) ? answerState.selectedAnswers : [],
+      Array.isArray(answerState.correctAnswers) ? answerState.correctAnswers : [],
+      answerState.rationale || ''
+    );
+    return;
+  }
+
+  if (question.question_type === 'categorize') {
+    const container = document.getElementById("practice-question-container");
+    if (!container) return;
+    const mappings = parseCategorizeMappings(question.correct_blob);
+    const placements = Array.isArray(answerState.placements) ? answerState.placements : [];
+    if (!placements.length) return;
+    handlePracticeCategorizeAnswer(question, container, mappings, placements, answerState.rationale || '');
+  }
+}
+
+function renderPracticeRecoveryPrompt(snapshot) {
+  const practiceBody = document.getElementById('practice-question-container');
+  if (!practiceBody) return;
+
+  const savedDate = new Date(Number(snapshot.savedAt || Date.now()));
+  const savedLabel = savedDate.toLocaleString();
+
+  practiceBody.innerHTML = `
+    <div class="practice-recovery-state">
+      <h2>Resume practice quiz?</h2>
+      <p>You have an unfinished practice quiz saved on this device.</p>
+      <p class="practice-recovery-meta">Last saved: ${savedLabel}</p>
+      <div class="practice-recovery-actions">
+        <button id="resume-practice-btn" class="action-btn primary" type="button">Resume Quiz</button>
+        <button id="restart-practice-btn" class="action-btn secondary" type="button">Start Over</button>
+      </div>
+    </div>
+  `;
+
+  const resumeBtn = document.getElementById('resume-practice-btn');
+  const restartBtn = document.getElementById('restart-practice-btn');
+
+  if (resumeBtn) {
+    resumeBtn.addEventListener('click', () => {
+      restorePracticeSessionFromSnapshot(snapshot);
+      showPracticeQuestionOverlay();
+      renderCurrentPracticeQuestion();
+      renderFeedbackUiForCurrentQuestion();
+      savePracticeSessionToLocal();
+    });
+  }
+
+  if (restartBtn) {
+    restartBtn.addEventListener('click', () => {
+      clearPracticeSessionFromLocal();
+      hidePracticeQuestionOverlay();
+      $('dashboard').style.display = 'block';
+      $('training').style.display = 'none';
+      if (typeof initializePracticeSetup === 'function') {
+        initializePracticeSetup();
+      }
+    });
+  }
+}
+
+function hasActivePracticeSession() {
+  return (
+    Array.isArray(practiceTestState.questions) &&
+    practiceTestState.questions.length > 0 &&
+    !practiceTestState.sessionComplete
+  );
+}
+
+function maybePromptPracticeRecovery() {
+  const savedPracticeSnapshot = loadPracticeSessionFromLocal();
+  if (!isRecoverablePracticeSession(savedPracticeSnapshot)) return;
+  showPracticeQuestionOverlay();
+  renderPracticeRecoveryPrompt(savedPracticeSnapshot);
+}
+
 function renderPracticeSetupTopics(topics) {
   const topicList = $('practice-topic-list');
   const messageEl = $('practice-setup-message');
@@ -2503,6 +2745,8 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
     throw new Error('No signed-in user email was found.');
   }
 
+  clearPracticeSessionFromLocal();
+
   // Reset session state immediately before loading fresh questions.
   practiceTestState.questions = [];
   practiceTestState.currentIndex = 0;
@@ -2511,6 +2755,10 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
   practiceTestState.correctCount = 0;
   practiceTestState.incorrectCount = 0;
   practiceTestState.resultsSubmitted = false;
+  practiceTestState.sessionComplete = false;
+  practiceTestState.answers = {};
+  practiceTestState.answerState = {};
+  practiceTestState.feedbackByQuestionId = {};
 
   // Always start from a clean question DOM tree for each new session.
   const overlayQuestionHost = $('full-question-content');
@@ -2547,8 +2795,10 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
   practiceTestState.selectedCourse = String(practiceTestState.selectedCourse || '').trim();
   practiceTestState.selectedTopics = [...topics];
   practiceTestState.requestedQuestionCount = count;
+  practiceTestState.questionCount = count;
   initializePracticeSession(data.question_set);
   showPracticeQuestionOverlay();
+  savePracticeSessionToLocal();
 
   return practiceTestState.questions;
 }
@@ -2601,12 +2851,17 @@ function renderPracticeSubmitError(message) {
 
 function initializePracticeSession(questionSet) {
   practiceTestState.questions = Array.isArray(questionSet) ? questionSet : [];
+  practiceTestState.questionCount = practiceTestState.questions.length;
   practiceTestState.currentIndex = 0;
   practiceTestState.results = [];
   practiceTestState.feedbackSubmitted = false;
   practiceTestState.resultsSubmitted = false;
   practiceTestState.correctCount = 0;
   practiceTestState.incorrectCount = 0;
+  practiceTestState.answers = {};
+  practiceTestState.answerState = {};
+  practiceTestState.feedbackByQuestionId = {};
+  practiceTestState.sessionComplete = false;
 
   const practiceBody = document.getElementById('practice-question-container');
   if (practiceBody) {
@@ -2619,6 +2874,7 @@ function initializePracticeSession(questionSet) {
   }
 
   renderCurrentPracticeQuestion();
+  savePracticeSessionToLocal();
 }
 
 function renderCurrentPracticeQuestion() {
@@ -2766,6 +3022,7 @@ function recordPracticeQuestionResult(question, isCorrect) {
   }
 
   console.log("practice results", practiceTestState.results);
+  savePracticeSessionToLocal();
 }
 
 function updateDashboardStreakAndProgress(questionsToday) {
@@ -2896,6 +3153,8 @@ async function submitFinalPracticeResults() {
   const response = await submitPracticeResultsAndUpdateDashboard({ showAlertOnError: false });
 
   if (response?.ok) {
+    practiceTestState.sessionComplete = true;
+    clearPracticeSessionFromLocal();
     renderPracticeResultsSummary();
     return;
   }
@@ -2970,9 +3229,21 @@ function renderSBAImageQuestion(q, index, total) {
   buttons.forEach(button => {
     button.addEventListener("click", () => {
       const selected = button.getAttribute("data-answer") || "";
+      practiceTestState.answers[q.question_id] = selected;
+      savePracticeSessionToLocal();
       handlePracticeAnswer(q, selected, correct, q.rationale || "");
     });
   });
+
+  const savedAnswer = q.question_id ? practiceTestState.answers?.[q.question_id] : '';
+  if (savedAnswer && !practiceTestState.answerState?.[q.question_id]?.feedbackShown) {
+    const match = [...buttons].find(btn => (btn.getAttribute("data-answer") || '') === savedAnswer);
+    if (match) {
+      match.style.border = "2px solid #2f6edc";
+      match.style.background = "#e7f0ff";
+      match.style.color = "#10213d";
+    }
+  }
 
   initializePracticeStemToggle(container);
 }
@@ -3036,9 +3307,21 @@ function renderSBAQuestion(q, index, total) {
   buttons.forEach(button => {
     button.addEventListener("click", () => {
       const selected = button.getAttribute("data-answer") || "";
+      practiceTestState.answers[q.question_id] = selected;
+      savePracticeSessionToLocal();
       handlePracticeAnswer(q, selected, correct, q.rationale || "");
     });
   });
+
+  const savedAnswer = q.question_id ? practiceTestState.answers?.[q.question_id] : '';
+  if (savedAnswer && !practiceTestState.answerState?.[q.question_id]?.feedbackShown) {
+    const match = [...buttons].find(btn => (btn.getAttribute("data-answer") || '') === savedAnswer);
+    if (match) {
+      match.style.border = "2px solid #2f6edc";
+      match.style.background = "#e7f0ff";
+      match.style.color = "#10213d";
+    }
+  }
 }
 
 function renderFITBQuestion(q, index, total) {
@@ -3094,14 +3377,24 @@ function renderFITBQuestion(q, index, total) {
   const input = container.querySelector("#practice-fitb-input");  const submitBtn = container.querySelector("#practice-fitb-submit");
 
   if (input) {
+    const savedAnswer = q.question_id ? practiceTestState.answers?.[q.question_id] : '';
+    if (typeof savedAnswer === 'string' && savedAnswer) {
+      input.value = savedAnswer;
+    }
     input.addEventListener("blur", () => {
       input.value = input.value.trim();
+      if (q.question_id) {
+        practiceTestState.answers[q.question_id] = input.value;
+        savePracticeSessionToLocal();
+      }
     });
   }
 
   if (submitBtn) {
     submitBtn.addEventListener("click", () => {
       const selected = input ? input.value.trim() : "";
+      practiceTestState.answers[q.question_id] = selected;
+      savePracticeSessionToLocal();
       handlePracticeFITBAnswer(
         q,
         selected,
@@ -3195,6 +3488,17 @@ function renderSATAQuestion(q, index, total) {
   initializePracticeStemToggle(container);
 
   const optionButtons = container.querySelectorAll(".practice-sata-btn");
+  const savedAnswers = Array.isArray(practiceTestState.answers?.[q.question_id])
+    ? practiceTestState.answers[q.question_id]
+    : [];
+  if (savedAnswers.length && !practiceTestState.answerState?.[q.question_id]?.feedbackShown) {
+    optionButtons.forEach(button => {
+      const answer = button.getAttribute("data-answer") || "";
+      if (savedAnswers.includes(answer)) {
+        button.classList.add("selected");
+      }
+    });
+  }
   optionButtons.forEach(button => {
     button.addEventListener("click", (event) => {
       event.preventDefault();
@@ -3202,6 +3506,10 @@ function renderSATAQuestion(q, index, total) {
       if (button.disabled) return;
 
       button.classList.toggle("selected");
+      const selectedAnswers = [...container.querySelectorAll(".practice-sata-btn.selected")]
+        .map(btn => btn.getAttribute("data-answer") || "");
+      practiceTestState.answers[q.question_id] = selectedAnswers;
+      savePracticeSessionToLocal();
       button.blur();
     });
   });
@@ -3336,6 +3644,15 @@ function initializeCategorizeInteractions(container, question, mappings, categor
   };
 
   const getAllItems = () => container.querySelectorAll(".practice-categorize-item");
+  const snapshotCategorizePlacements = () => {
+    if (!question?.question_id) return;
+    const placements = [...getAllItems()].map(item => ({
+      item: item.getAttribute("data-item") || "",
+      placedIn: item.parentElement?.getAttribute("data-category") || "pool"
+    }));
+    practiceTestState.answers[question.question_id] = placements;
+    savePracticeSessionToLocal();
+  };
 
   const clearSelectedMobileItem = () => {
     getAllItems().forEach(item => item.classList.remove("selected"));
@@ -3377,6 +3694,9 @@ function initializeCategorizeInteractions(container, question, mappings, categor
   };
 
   getAllItems().forEach(makeItemInteractive);
+  const initialSavedPlacements = Array.isArray(practiceTestState.answers?.[question?.question_id])
+    ? practiceTestState.answers[question.question_id]
+    : [];
 
   const moveItemToZone = (item, zone) => {
     if (!item || !zone) return;
@@ -3387,6 +3707,7 @@ function initializeCategorizeInteractions(container, question, mappings, categor
       selectedMobileItem = null;
       refreshSelectionHint();
     }
+    snapshotCategorizePlacements();
   };
 
   const moveItemToPool = (item) => {
@@ -3398,6 +3719,7 @@ function initializeCategorizeInteractions(container, question, mappings, categor
       selectedMobileItem = null;
       refreshSelectionHint();
     }
+    snapshotCategorizePlacements();
   };
 
   if (pool) {
@@ -3454,6 +3776,21 @@ function initializeCategorizeInteractions(container, question, mappings, categor
     }
   });
 
+  if (initialSavedPlacements.length) {
+    initialSavedPlacements.forEach(({ item, placedIn }) => {
+      const match = [...getAllItems()].find(node => (node.getAttribute('data-item') || '') === item);
+      if (!match) return;
+      if (placedIn === 'pool') {
+        moveItemToPool(match);
+        return;
+      }
+      const targetZone = [...dropzones].find(zone => (zone.getAttribute('data-category') || '') === placedIn);
+      if (targetZone) {
+        moveItemToZone(match, targetZone);
+      }
+    });
+  }
+
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
       getAllItems().forEach(item => {
@@ -3475,6 +3812,7 @@ function initializeCategorizeInteractions(container, question, mappings, categor
 
       const nextWrap = container.querySelector("#practice-next-wrap");
       if (nextWrap) nextWrap.style.display = "none";
+      snapshotCategorizePlacements();
     });
   }
 
@@ -3542,6 +3880,16 @@ function handlePracticeAnswer(question, selected, correct, rationale) {
   }
 
   recordPracticeQuestionResult(question, selected === correct);
+  if (question?.question_id) {
+    practiceTestState.answerState[question.question_id] = {
+      type: question.question_type || 'sba',
+      selected,
+      correct,
+      rationale: rationale || '',
+      feedbackShown: true
+    };
+  }
+  savePracticeSessionToLocal();
 
   if (nextBtn) {
     nextBtn.addEventListener("click", advancePracticeQuestion, { once: true });
@@ -3606,6 +3954,16 @@ function handlePracticeFITBAnswer(question, selected, correct, rationale) {
   }
 
   recordPracticeQuestionResult(question, isCorrect);
+  if (question?.question_id) {
+    practiceTestState.answerState[question.question_id] = {
+      type: question.question_type || 'fitb',
+      selected,
+      correct,
+      rationale: rationale || '',
+      feedbackShown: true
+    };
+  }
+  savePracticeSessionToLocal();
 
   if (nextBtn) {
     nextBtn.addEventListener("click", advancePracticeQuestion, { once: true });
@@ -3682,6 +4040,16 @@ function handlePracticeSATAAnswer(question, selectedAnswers, correctAnswers, rat
   }
 
   recordPracticeQuestionResult(question, isCorrect);
+  if (question?.question_id) {
+    practiceTestState.answerState[question.question_id] = {
+      type: question.question_type || 'sata',
+      selectedAnswers: Array.isArray(selectedAnswers) ? selectedAnswers : [],
+      correctAnswers: Array.isArray(correctAnswers) ? correctAnswers : [],
+      rationale: rationale || '',
+      feedbackShown: true
+    };
+  }
+  savePracticeSessionToLocal();
 
   if (nextBtn) {
     nextBtn.addEventListener("click", advancePracticeQuestion, { once: true });
@@ -3763,6 +4131,15 @@ function handlePracticeCategorizeAnswer(question, container, mappings, placement
   }
 
   recordPracticeQuestionResult(question, allCorrect);
+  if (question?.question_id) {
+    practiceTestState.answerState[question.question_id] = {
+      type: question.question_type || 'categorize',
+      placements: Array.isArray(placements) ? placements : [],
+      rationale: rationale || '',
+      feedbackShown: true
+    };
+  }
+  savePracticeSessionToLocal();
 
   if (nextBtn) {
     nextBtn.addEventListener("click", advancePracticeQuestion, { once: true });
@@ -3775,6 +4152,7 @@ async function advancePracticeQuestion(event) {
 
   if (practiceTestState.currentIndex < questions.length - 1) {
     practiceTestState.currentIndex += 1;
+    savePracticeSessionToLocal();
     renderCurrentPracticeQuestion();
     return;
   }
@@ -4526,6 +4904,12 @@ function renderCardByType(item, sectionIndex, onComplete) {
 
 // Warn before leaving while training is active
 window.addEventListener('beforeunload', e => {
+  if (hasActivePracticeSession()) {
+    savePracticeSessionToLocal();
+    e.preventDefault();
+    e.returnValue = '';
+    return;
+  }
   if (trainingActive && !hasSuccessfulSubmission) {
     e.preventDefault();
     e.returnValue = '';
@@ -5119,6 +5503,7 @@ async function loadDashboard() {
 
   renderDashboard(data);
   showScreen('dashboard');
+  maybePromptPracticeRecovery();
 }
 
 function askResumeChoice() {
@@ -5372,6 +5757,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         comment = prompt("Enter your comment:") || "";
       }
 
+      if (questionId) {
+        practiceTestState.feedbackByQuestionId[questionId] = {
+          type: value,
+          comment,
+          updatedAt: Date.now()
+        };
+        savePracticeSessionToLocal();
+      }
+
       if (questionId && topic) {
         try {
           await postToAppsScript(PRACTICE_API_URL, {
@@ -5395,6 +5789,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Optional: show acknowledgment
       btn.textContent = '✔ ' + btn.textContent;
       setTimeout(() => { btn.textContent = btn.textContent.replace('✔ ', ''); }, 1200);
+      savePracticeSessionToLocal();
     });
   });
 
@@ -5408,6 +5803,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   $('return-dashboard-btn').addEventListener('click', () => {
     hidePracticeQuestionOverlay();
+    clearPracticeSessionFromLocal();
 
     // Submit completed questions
     submitPracticeResults(practiceTestState.results);
@@ -5427,6 +5823,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     practiceTestState.correctCount = 0;
     practiceTestState.incorrectCount = 0;
     practiceTestState.resultsSubmitted = false;
+    practiceTestState.sessionComplete = false;
+    practiceTestState.answers = {};
+    practiceTestState.answerState = {};
+    practiceTestState.feedbackByQuestionId = {};
 
     // Reset dropdowns and topic list
     if ($('practice-course-select')) $('practice-course-select').value = '';
