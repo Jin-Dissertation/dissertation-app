@@ -621,6 +621,7 @@ function getPracticeQuestions_(data) {
 function submitPracticeResults_(data) {
   const email = normalizeEmail_(data.email);
   const questionResults = Array.isArray(data.question_results) ? data.question_results : [];
+  const questionFeedback = Array.isArray(data.question_feedback) ? data.question_feedback : [];
 
   if (!email) return fail_("Missing email.");
   if (!questionResults.length) return fail_("No question results were provided.");
@@ -707,6 +708,8 @@ function submitPracticeResults_(data) {
     if (appendedRows.length) {
       sheet.getRange(sheet.getLastRow() + 1, 1, appendedRows.length, headers.length).setValues(appendedRows);
     }
+
+    applyQuestionFeedbackBatch_(bankSs, questionFeedback);
 
 // Use processedCount (number of questions submitted) instead
 const dailyTotalsResult = upsertDailyPracticeTotal_(email, processedCount);
@@ -1539,6 +1542,104 @@ function simulatePracticeSubmission() {
     questions_today: questionsToday,
     streakData: streakData
   }, null, 2));
+}
+
+function applyQuestionFeedbackBatch_(ss, questionFeedback) {
+  if (!Array.isArray(questionFeedback) || !questionFeedback.length) return;
+
+  const groupedByTopic = {};
+
+  questionFeedback.forEach(item => {
+    const topic = String(item.topic || "").trim();
+    const questionId = String(item.question_id || "").trim();
+    if (!topic || !questionId) return;
+
+    if (!groupedByTopic[topic]) groupedByTopic[topic] = [];
+    groupedByTopic[topic].push({
+      topic,
+      question_id: questionId,
+      confusing: !!item.confusing,
+      two_correct: !!item.two_correct,
+      none_correct: !!item.none_correct,
+      outside_scope: !!item.outside_scope,
+      comment: String(item.comment || "").trim()
+    });
+  });
+
+  Object.keys(groupedByTopic).forEach(topic => {
+    const sheet = ss.getSheetByName(topic);
+    if (!sheet) {
+      throw new Error("Topic sheet not found: " + topic);
+    }
+
+    const values = sheet.getDataRange().getValues();
+    if (!values || values.length < 2) return;
+
+    const headers = values[0].map(h => String(h || "").trim());
+
+    const questionIdIndex = headers.indexOf("question_id");
+    const confusingIndex = headers.indexOf("confusing");
+    const twoCorrectIndex = headers.indexOf("two_correct");
+    const noneCorrectIndex = headers.indexOf("none_correct");
+    const outsideScopeIndex = headers.indexOf("outside_scope");
+    const commentsIndex = headers.indexOf("student_comments");
+
+    if (questionIdIndex === -1) throw new Error('question_id column not found in topic sheet: ' + topic);
+    if (confusingIndex === -1) throw new Error('confusing column not found in topic sheet: ' + topic);
+    if (twoCorrectIndex === -1) throw new Error('two_correct column not found in topic sheet: ' + topic);
+    if (noneCorrectIndex === -1) throw new Error('none_correct column not found in topic sheet: ' + topic);
+    if (outsideScopeIndex === -1) throw new Error('outside_scope column not found in topic sheet: ' + topic);
+    if (commentsIndex === -1) throw new Error('student_comments column not found in topic sheet: ' + topic);
+
+    const rowMap = {};
+    for (let i = 1; i < values.length; i++) {
+      const qid = String(values[i][questionIdIndex] || "").trim();
+      if (!qid) continue;
+      rowMap[qid] = i;
+    }
+
+    const updatesNeeded = {};
+
+    groupedByTopic[topic].forEach(item => {
+      const rowIdx = rowMap[item.question_id];
+      if (rowIdx == null) return;
+
+      if (!updatesNeeded[rowIdx]) {
+        updatesNeeded[rowIdx] = values[rowIdx].slice();
+      }
+
+      const row = updatesNeeded[rowIdx];
+
+      if (item.confusing) {
+        row[confusingIndex] = (parseInt(row[confusingIndex], 10) || 0) + 1;
+      }
+
+      if (item.two_correct) {
+        row[twoCorrectIndex] = (parseInt(row[twoCorrectIndex], 10) || 0) + 1;
+      }
+
+      if (item.none_correct) {
+        row[noneCorrectIndex] = (parseInt(row[noneCorrectIndex], 10) || 0) + 1;
+      }
+
+      if (item.outside_scope) {
+        row[outsideScopeIndex] = (parseInt(row[outsideScopeIndex], 10) || 0) + 1;
+      }
+
+      if (item.comment) {
+        const quotedComment = '"' + String(item.comment).replace(/"/g, '\\"') + '"';
+        const existingComments = String(row[commentsIndex] || "").trim();
+        row[commentsIndex] = existingComments
+          ? existingComments + "||" + quotedComment
+          : quotedComment;
+      }
+    });
+
+    Object.keys(updatesNeeded).forEach(rowIdxStr => {
+      const rowIdx = Number(rowIdxStr);
+      sheet.getRange(rowIdx + 1, 1, 1, updatesNeeded[rowIdx].length).setValues([updatesNeeded[rowIdx]]);
+    });
+  });
 }
 
 /**
