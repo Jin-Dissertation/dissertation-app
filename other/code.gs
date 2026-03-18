@@ -67,6 +67,9 @@ function doPost(e) {
       case "getPracticeTopics":
         return json_(getPracticeTopics_(data));
 
+      case "submitQuestionFeedback":
+        return json_(submitQuestionFeedback(data));
+
       default:
         return json_({
           ok: false,
@@ -1546,36 +1549,61 @@ function simulatePracticeSubmission() {
  *   { email, topic, question_id, type, comment (optional) }
  */
 function submitQuestionFeedback(feedback) {
-  // Replace with your content spreadsheet ID
   const ss = SpreadsheetApp.openById(QUESTION_BANK_SPREADSHEET_ID);
-  const sheet = ss.getSheetByName(feedback.topic);
-  if (!sheet) throw new Error('Topic sheet not found: ' + feedback.topic);
+  const sheet = ss.getSheetByName(String(feedback.topic || "").trim());
+  if (!sheet) {
+    throw new Error("Topic sheet not found: " + feedback.topic);
+  }
 
   const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  const typeIndex = headers.indexOf(feedback.type); // e.g., confusing
-  const commentsIndex = headers.indexOf('student_comments');
-  if (typeIndex === -1) throw new Error('Feedback type not found: ' + feedback.type);
+  if (!data || !data.length) {
+    throw new Error("Topic sheet is empty: " + feedback.topic);
+  }
 
-  // Find row by question_id
+  const headers = data[0].map(h => String(h).trim());
+  const questionId = String(feedback.question_id || "").trim();
+  const type = String(feedback.type || "").trim();
+  const rawComment = String(feedback.comment || "").trim();
+
+  const commentsIndex = headers.indexOf("student_comments");
+  if (commentsIndex === -1) {
+    throw new Error("student_comments column not found.");
+  }
+
+  let typeIndex = -1;
+  if (type && type !== "student_comments") {
+    typeIndex = headers.indexOf(type);
+    if (typeIndex === -1) {
+      throw new Error("Feedback type not found: " + type);
+    }
+  }
+
   let rowIndex = -1;
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]).trim() === String(feedback.question_id).trim()) {
-      rowIndex = i + 1; // Apps Script is 1-indexed
+    const rowQuestionId = String(data[i][0] || "").trim();
+    if (rowQuestionId === questionId) {
+      rowIndex = i + 1;
       break;
     }
   }
-  if (rowIndex === -1) throw new Error('Question not found: ' + feedback.question_id);
+  if (rowIndex === -1) {
+    throw new Error("Question not found: " + questionId);
+  }
 
-  // Increment numeric counter
-  const currentVal = parseInt(sheet.getRange(rowIndex, typeIndex + 1).getValue()) || 0;
-  sheet.getRange(rowIndex, typeIndex + 1).setValue(currentVal + 1);
+  if (typeIndex !== -1) {
+    const cell = sheet.getRange(rowIndex, typeIndex + 1);
+    const currentVal = parseInt(cell.getValue(), 10) || 0;
+    cell.setValue(currentVal + 1);
+  }
 
-  // Append free-text comment
-  if (feedback.comment) {
-    const existingComments = sheet.getRange(rowIndex, commentsIndex + 1).getValue() || '';
-    const newComments = existingComments ? existingComments + '||' + feedback.comment : feedback.comment;
-    sheet.getRange(rowIndex, commentsIndex + 1).setValue(newComments);
+  if (rawComment) {
+    const quotedComment = '"' + rawComment.replace(/"/g, '\\"') + '"';
+    const commentsCell = sheet.getRange(rowIndex, commentsIndex + 1);
+    const existingComments = String(commentsCell.getValue() || "").trim();
+    const newComments = existingComments
+      ? existingComments + "||" + quotedComment
+      : quotedComment;
+    commentsCell.setValue(newComments);
   }
 
   return { ok: true };

@@ -1630,6 +1630,11 @@
       border-bottom-right-radius: 10px;
     }
 
+    #return-dashboard-btn {
+      align-self: flex-end;
+      margin-bottom: 4px;
+    }
+
     .action-btn.disabled {
       background-color: #dbe9ff !important;
       border-color: #c8d8f0 !important;
@@ -5092,8 +5097,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const feedbackBtn = $('feedback-btn');
   const feedbackMenu = $('feedback-menu');
   if (feedbackBtn && feedbackMenu) {
-    feedbackBtn.addEventListener('click', () => {
-      feedbackMenu.style.display = feedbackMenu.style.display === 'flex' ? 'none' : 'flex';
+    feedbackBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      feedbackMenu.classList.toggle('show');
     });
   }
 
@@ -5104,10 +5110,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.style.opacity = 0.55;
       btn.style.cursor = 'not-allowed';
 
-      const value = btn.dataset.value; // e.g., confusing, two_correct
+      let value = btn.dataset.value;
       const questionId = practiceTestState.questions[practiceTestState.currentIndex]?.question_id;
       const topic = practiceTestState.questions[practiceTestState.currentIndex]?.topic;
-      const comment = value === 'other' ? prompt('Enter your comment:') : '';
+
+      let comment = "";
+
+      if (value === "two-correct") value = "two_correct";
+      if (value === "none-correct") value = "none_correct";
+      if (value === "outside-scope") value = "outside_scope";
+
+      if (btn.dataset.value === "other") {
+        value = "student_comments";
+        comment = prompt("Enter your comment:") || "";
+      }
 
       if (questionId && topic) {
         try {
@@ -5127,12 +5143,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // Close the menu
-      $('feedback-menu').style.display = 'none';
+      feedbackMenu.classList.remove('show');
 
       // Optional: show acknowledgment
       btn.textContent = '✔ ' + btn.textContent;
       setTimeout(() => { btn.textContent = btn.textContent.replace('✔ ', ''); }, 1200);
     });
+  });
+
+  document.addEventListener('click', e => {
+    if (!feedbackMenu || !feedbackBtn) return;
+    if (feedbackMenu.contains(e.target) || feedbackBtn.contains(e.target)) return;
+    feedbackMenu.classList.remove('show');
   });
 
   $('practice-start-btn').addEventListener('click', handleStartPracticeClick);
