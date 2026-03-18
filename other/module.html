@@ -6060,22 +6060,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const questionId = String(question?.question_id || '').trim();
       if (!questionId) return;
 
-      let rawValue = String(btn.dataset.value || '').trim();
-      let comment = '';
-
-      if (rawValue === 'other') {
-        comment = (prompt('Enter your comment:') || '').trim();
-        if (!comment) {
-          if (typeof feedbackMenu !== 'undefined' && feedbackMenu) {
-            feedbackMenu.classList.remove('show');
-          }
-          return;
-        }
-      }
-
+      const rawValue = String(btn.dataset.value || '').trim();
       practiceTestState.feedbackByQuestionId = practiceTestState.feedbackByQuestionId || {};
 
-      const nextState = {
+      const existingState = practiceTestState.feedbackByQuestionId[questionId] || {
         confusing: false,
         two_correct: false,
         none_correct: false,
@@ -6083,11 +6071,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         comment: ''
       };
 
-      if (rawValue === 'confusing') nextState.confusing = true;
-      if (rawValue === 'two-correct') nextState.two_correct = true;
-      if (rawValue === 'none-correct') nextState.none_correct = true;
-      if (rawValue === 'outside-scope') nextState.outside_scope = true;
-      if (rawValue === 'other') nextState.comment = comment;
+      const nextState = {
+        confusing: Boolean(existingState.confusing),
+        two_correct: Boolean(existingState.two_correct),
+        none_correct: Boolean(existingState.none_correct),
+        outside_scope: Boolean(existingState.outside_scope),
+        comment: String(existingState.comment || '')
+      };
+
+      if (rawValue === 'confusing') {
+        nextState.confusing = !nextState.confusing;
+      }
+
+      if (rawValue === 'two-correct') {
+        nextState.two_correct = !nextState.two_correct;
+      }
+
+      if (rawValue === 'none-correct') {
+        nextState.none_correct = !nextState.none_correct;
+      }
+
+      if (rawValue === 'outside-scope') {
+        nextState.outside_scope = !nextState.outside_scope;
+      }
+
+      if (rawValue === 'other') {
+        const existingComment = String(nextState.comment || '').trim();
+        const comment = (prompt('Enter your comment:', existingComment) || '').trim();
+
+        if (comment) {
+          nextState.comment = comment;
+        } else if (existingComment) {
+          const shouldRemove = confirm('Remove your existing comment for this question?');
+          if (shouldRemove) nextState.comment = '';
+        } else {
+          if (typeof feedbackMenu !== 'undefined' && feedbackMenu) {
+            feedbackMenu.classList.remove('show');
+          }
+          return;
+        }
+      }
 
       practiceTestState.feedbackByQuestionId[questionId] = nextState;
 
@@ -6109,9 +6132,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       const originalText = btn.textContent;
-      btn.textContent = '✔ ' + originalText;
+      btn.textContent = btn.classList.contains('selected')
+        ? '✔ ' + originalText.replace(/^✔\s*/, '')
+        : originalText.replace(/^✔\s*/, '');
       setTimeout(() => {
-        btn.textContent = originalText;
+        btn.textContent = originalText.replace(/^✔\s*/, '');
       }, 1200);
     });
   });
