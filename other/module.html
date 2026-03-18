@@ -2315,7 +2315,44 @@ function recordPracticeQuestionResult(question, isCorrect) {
   console.log("practice results", practiceTestState.results);
 }
 
-async function submitPracticeResultsToServer() {
+function updateDashboardStreakAndProgress(questionsToday) {
+  const streakSummaryEl = document.getElementById('streak-goal-summary');
+  if (!streakSummaryEl) return;
+
+  const dailyGoal = Number(dashboardStats?.daily_goal) > 0 ? Number(dashboardStats.daily_goal) : 20;
+  const safeQuestionsToday = Math.max(0, Number(questionsToday) || 0);
+  const streakPercent = Math.min(100, (safeQuestionsToday / dailyGoal) * 100);
+
+  const goalProgressFill = streakSummaryEl.querySelector('.goal-progress-fill') || document.querySelector('.goal-progress-fill');
+  if (goalProgressFill) {
+    goalProgressFill.style.width = `${streakPercent}%`;
+    if (safeQuestionsToday >= dailyGoal) {
+      goalProgressFill.classList.add('goal-complete');
+    } else {
+      goalProgressFill.classList.remove('goal-complete');
+    }
+  }
+
+  const inlineStatus = streakSummaryEl.querySelector('.goal-inline-status');
+  if (inlineStatus) {
+    inlineStatus.textContent = `${safeQuestionsToday} / ${dailyGoal} questions`;
+  } else {
+    streakSummaryEl.textContent = `${safeQuestionsToday} / ${dailyGoal} questions`;
+  }
+
+  const progressTrack = streakSummaryEl.querySelector('.goal-progress-track');
+  if (progressTrack) {
+    progressTrack.setAttribute('aria-valuenow', String(Math.min(safeQuestionsToday, dailyGoal)));
+  }
+
+  dashboardStats = {
+    ...(dashboardStats || {}),
+    daily_goal: dailyGoal,
+    questions_today: safeQuestionsToday
+  };
+}
+
+async function submitPracticeResultsAndUpdateDashboard() {
   const email = normalizeIdentityValue(currentUserEmail || participantEmail || '');
   const results = practiceTestState?.results;
 
@@ -2328,35 +2365,33 @@ async function submitPracticeResultsToServer() {
   }
 
   const payload = {
-    action: "submitPracticeResults",
+    action: 'submitPracticeResults',
     email,
-    session_id: practiceTestState.sessionId || "",
+    session_id: practiceTestState.sessionId || '',
     question_results: results || []
   };
 
   try {
-    const response = await fetch(PRACTICE_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const text = await response.text();
-    const data = JSON.parse(text);
+    const data = await postToAppsScript(PRACTICE_API_URL, payload);
 
     if (data.ok) {
       practiceTestState.resultsSubmitted = true;
+
+      if (data.daily_total_updated) {
+        updateDashboardStreakAndProgress(data.questions_today);
+      }
+
       console.log("Practice results submitted successfully:", data);
     } else {
       console.log("Practice results submission failed:", data);
+      alert('Error submitting practice results: ' + (data.error || 'Unknown error'));
     }
 
     return data;
-  } catch (error) {
-    console.error("Practice results submission error:", error);
-    return { ok: false, error: error.message || "Failed to submit practice results." };
+  } catch (err) {
+    console.error('Failed to submit practice results:', err);
+    alert('Failed to submit practice results.');
+    return { ok: false, error: err.message || 'Failed to submit practice results.' };
   }
 }
 
@@ -3237,7 +3272,7 @@ async function advancePracticeQuestion() {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
-  await submitPracticeResultsToServer();
+  await submitPracticeResultsAndUpdateDashboard();
 
   const summary = getPracticeSessionSummary();
   const restartTopics = Array.isArray(practiceTestState.selectedTopics) && practiceTestState.selectedTopics.length
