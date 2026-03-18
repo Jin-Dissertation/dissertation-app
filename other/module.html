@@ -2835,7 +2835,6 @@ function hidePracticeQuestionOverlay() {
 
   // Reset styles and clear content for a fresh session
   fullscreen.style.display = 'none';
-  questionHost.innerHTML = '';
   questionContainer.style.display = 'block';
   questionContainer.innerHTML = '';
 }
@@ -2884,8 +2883,10 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
   // Always start from a clean question DOM tree for each new session.
   const overlayQuestionHost = $('full-question-content');
   const practiceQuestionContainer = $('practice-question-container');
-  if (overlayQuestionHost) overlayQuestionHost.innerHTML = '';
-  if (practiceQuestionContainer) practiceQuestionContainer.innerHTML = '';
+
+  if (practiceQuestionContainer) {
+    practiceQuestionContainer.innerHTML = '';
+  }
 
   let data;
   try {
