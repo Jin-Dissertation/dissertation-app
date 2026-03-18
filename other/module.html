@@ -2410,35 +2410,32 @@ function ensureFeedbackStateForQuestion(questionId) {
 
 function getAllQuestionFeedbackForSubmit() {
   const feedbackMap = practiceTestState.feedbackByQuestionId || {};
+  const questions = Array.isArray(practiceTestState.questions) ? practiceTestState.questions : [];
+
+  const questionById = {};
+  questions.forEach(q => {
+    const qid = String(q?.question_id || '').trim();
+    if (qid) questionById[qid] = q;
+  });
+
   const results = Object.entries(feedbackMap)
-    .map(([key, value]) => {
-      const questionId = String(key || '').trim();
-      if (!questionId || !value || typeof value !== 'object') return null;
-
-      const state = ensureFeedbackStateForQuestion(questionId);
-      const hasFeedback = Boolean(
-        state.confusing ||
-        state.two_correct ||
-        state.none_correct ||
-        state.outside_scope ||
-        String(state.comment || '').trim()
-      );
-      if (!hasFeedback) return null;
-
-      const question = (practiceTestState.questions || []).find(q =>
-        String(q?.question_id || q?.id || q?.questionId || '').trim() === questionId
-      );
+    .map(([questionId, entry]) => {
+      const question = questionById[questionId] || {};
       return {
-        question_id: questionId,
-        confusing: state.confusing,
-        two_correct: state.two_correct,
-        none_correct: state.none_correct,
-        outside_scope: state.outside_scope,
-        comment: String(state.comment || '').trim(),
-        topic: String(question?.topic || '').trim()
+        topic: String(question.topic || '').trim(),
+        question_id: String(questionId || '').trim(),
+        confusing: Boolean(entry?.confusing),
+        two_correct: Boolean(entry?.two_correct),
+        none_correct: Boolean(entry?.none_correct),
+        outside_scope: Boolean(entry?.outside_scope),
+        comment: String(entry?.comment || '').trim()
       };
     })
-    .filter(Boolean);
+    .filter(item =>
+      item.question_id &&
+      item.topic &&
+      (item.confusing || item.two_correct || item.none_correct || item.outside_scope || item.comment)
+    );
 
   console.log('[practice feedback] final feedback payload', results);
   return results;
@@ -6069,43 +6066,52 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (rawValue === 'other') {
         comment = (prompt('Enter your comment:') || '').trim();
         if (!comment) {
-          feedbackMenu.classList.remove('show');
+          if (typeof feedbackMenu !== 'undefined' && feedbackMenu) {
+            feedbackMenu.classList.remove('show');
+          }
           return;
         }
       }
 
-      const state = ensureFeedbackStateForQuestion(questionId);
+      practiceTestState.feedbackByQuestionId = practiceTestState.feedbackByQuestionId || {};
 
-      // Reset mutually exclusive flag options before applying the new one
-      state.confusing = false;
-      state.two_correct = false;
-      state.none_correct = false;
-      state.outside_scope = false;
+      const nextState = {
+        confusing: false,
+        two_correct: false,
+        none_correct: false,
+        outside_scope: false,
+        comment: ''
+      };
 
-      if (rawValue === 'two-correct') state.two_correct = true;
-      if (rawValue === 'none-correct') state.none_correct = true;
-      if (rawValue === 'confusing') state.confusing = true;
-      if (rawValue === 'outside-scope') state.outside_scope = true;
+      if (rawValue === 'confusing') nextState.confusing = true;
+      if (rawValue === 'two-correct') nextState.two_correct = true;
+      if (rawValue === 'none-correct') nextState.none_correct = true;
+      if (rawValue === 'outside-scope') nextState.outside_scope = true;
+      if (rawValue === 'other') nextState.comment = comment;
 
-      if (rawValue === 'other') {
-        state.comment = comment;
-      } else {
-        state.comment = '';
-      }
-
-      practiceTestState.feedbackSubmitted = false;
-      renderFeedbackUiForCurrentQuestion();
-      feedbackMenu.classList.remove('show');
-      savePracticeSessionToLocal();
+      practiceTestState.feedbackByQuestionId[questionId] = nextState;
 
       console.log('[practice feedback] saved locally', {
         questionId,
-        state: practiceTestState.feedbackByQuestionId[questionId]
+        feedback: practiceTestState.feedbackByQuestionId[questionId]
       });
 
-      btn.textContent = '✔ ' + btn.textContent;
+      if (typeof renderFeedbackUiForCurrentQuestion === 'function') {
+        renderFeedbackUiForCurrentQuestion();
+      }
+
+      if (typeof feedbackMenu !== 'undefined' && feedbackMenu) {
+        feedbackMenu.classList.remove('show');
+      }
+
+      if (typeof savePracticeSessionToLocal === 'function') {
+        savePracticeSessionToLocal();
+      }
+
+      const originalText = btn.textContent;
+      btn.textContent = '✔ ' + originalText;
       setTimeout(() => {
-        btn.textContent = btn.textContent.replace('✔ ', '');
+        btn.textContent = originalText;
       }, 1200);
     });
   });
