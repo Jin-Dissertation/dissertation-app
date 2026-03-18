@@ -2184,20 +2184,7 @@ async function handleStartPracticeClick() {
   }
 
   if (messageEl) messageEl.textContent = '';
-
-  try {
-    await startPracticeSessionWithSettings(topics, questionCount);
-    if (btn) btn.classList.add('active');
-  } catch (error) {
-    console.error('Failed to start practice session:', error);
-    if (messageEl) messageEl.textContent = error.message || 'Unable to start practice right now.';
-    if (btn) {
-      btn.disabled = false;
-      btn.classList.remove('disabled');
-      btn.style.opacity = 1;
-      btn.style.cursor = 'pointer';
-    }
-  }
+  await startPracticeSessionWithSettings(topics, questionCount);
 }
 
 function getPracticeSessionSummary() {
@@ -5000,21 +4987,84 @@ document.addEventListener('DOMContentLoaded', async () => {
     practiceTestState.requestedQuestionCount = [10, 20, 30, 40].includes(value) ? value : 10;
     e.target.value = String(practiceTestState.requestedQuestionCount);
   });
-  $('practice-start-btn').addEventListener('click', handleStartPracticeClick);
+  const feedbackBtn = $('feedback-btn');
+  const feedbackMenu = $('feedback-menu');
+  if (feedbackBtn && feedbackMenu) {
+    feedbackBtn.addEventListener('click', () => {
+      feedbackMenu.style.display = feedbackMenu.style.display === 'flex' ? 'none' : 'flex';
+    });
+  }
+
+  document.querySelectorAll('.feedback-option').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      // Disable the button immediately to prevent spamming
+      btn.disabled = true;
+      btn.style.opacity = 0.55;
+      btn.style.cursor = 'not-allowed';
+
+      const value = btn.dataset.value; // e.g., confusing, two_correct
+      const questionId = practiceTestState.questions[practiceTestState.currentIndex]?.question_id;
+      const topic = practiceTestState.questions[practiceTestState.currentIndex]?.topic;
+      const comment = value === 'other' ? prompt('Enter your comment:') : '';
+
+      if (questionId && topic) {
+        try {
+          await postToAppsScript(PRACTICE_API_URL, {
+            action: 'submitQuestionFeedback',
+            email: participantEmail,
+            topic,
+            question_id: questionId,
+            type: value,
+            comment
+          });
+
+          console.log(`Feedback submitted for ${questionId}: ${value}`);
+        } catch (err) {
+          console.error('Failed to submit feedback:', err);
+        }
+      }
+
+      // Close the menu
+      $('feedback-menu').style.display = 'none';
+
+      // Optional: show acknowledgment
+      btn.textContent = '✔ ' + btn.textContent;
+      setTimeout(() => { btn.textContent = btn.textContent.replace('✔ ', ''); }, 1200);
+    });
+  });
+
+  $('practice-start-btn').addEventListener('click', async () => {
+    const btn = $('practice-start-btn');
+    btn.disabled = true;
+    btn.style.opacity = 0.55;
+    btn.style.cursor = 'not-allowed';
+
+    try {
+      await handleStartPracticeClick();
+      btn.classList.add('active'); // visual feedback like “Practice Again”
+    } catch (err) {
+      console.error(err);
+      btn.disabled = false;
+      btn.style.opacity = 1;
+      btn.style.cursor = 'pointer';
+      updatePracticeStartButtonState();
+    }
+  });
+
   $('return-dashboard-btn').addEventListener('click', async () => {
     const btn = $('return-dashboard-btn');
-    disableButton(btn);
+    btn.disabled = true;
+    btn.style.opacity = 0.55;
+    btn.style.cursor = 'not-allowed';
 
-    hidePracticeQuestionOverlay();
-
-    // Submit completed questions
     try {
+      hidePracticeQuestionOverlay();
       await submitPracticeResults(practiceTestState.results);
     } catch (err) {
-      console.error('Error submitting results:', err);
+      console.error(err);
     }
 
-    // Fully reset state
+    // Reset state
     practiceTestState = {
       questions: [],
       currentIndex: 0,
@@ -5029,16 +5079,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       incorrectCount: 0
     };
 
-    // Reset dropdowns and topic list
+    // Reset dropdowns / topic list
     if ($('practice-course-select')) $('practice-course-select').value = '';
     if ($('practice-topic-list')) $('practice-topic-list').innerHTML = '';
     if ($('practice-controls-row')) $('practice-controls-row').hidden = true;
 
-    // Show dashboard
     $('dashboard').style.display = 'block';
     $('training').style.display = 'none';
 
-    // Re-initialize the practice setup so a new quiz can start
     initializePracticeSetup();
   });
   $('btn-save-exit').addEventListener('click', () => { handleSaveAndExit(); });
