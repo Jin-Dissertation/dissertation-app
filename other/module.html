@@ -2866,10 +2866,40 @@ function resetPracticeDashboardStateFromUI() {
   });
 }
 
-function returnToDashboard() {
+async function returnToDashboard() {
+  const pendingResults = Array.isArray(practiceTestState?.results)
+    ? JSON.parse(JSON.stringify(practiceTestState.results))
+    : [];
+
+  const pendingFeedbackByQuestionId = practiceTestState?.feedbackByQuestionId
+    ? JSON.parse(JSON.stringify(practiceTestState.feedbackByQuestionId))
+    : {};
+
+  const pendingSessionId = String(practiceTestState?.sessionId || '');
+
   hidePracticeQuestionOverlay();
+
+  if (pendingResults.length && !practiceTestState.resultsSubmitted) {
+    const originalResults = practiceTestState.results;
+    const originalFeedback = practiceTestState.feedbackByQuestionId;
+    const originalSessionId = practiceTestState.sessionId;
+
+    try {
+      practiceTestState.results = pendingResults;
+      practiceTestState.feedbackByQuestionId = pendingFeedbackByQuestionId;
+      practiceTestState.sessionId = pendingSessionId;
+
+      await submitPracticeResultsAndUpdateDashboard({ showAlertOnError: false });
+    } catch (err) {
+      console.error('Failed to submit partial practice results before returning to dashboard:', err);
+    } finally {
+      practiceTestState.results = originalResults;
+      practiceTestState.feedbackByQuestionId = originalFeedback;
+      practiceTestState.sessionId = originalSessionId;
+    }
+  }
+
   clearPracticeSessionFromLocal();
-  submitPracticeResults(practiceTestState.results);
 
   resetPracticeDashboardStateFromUI();
 
@@ -6087,7 +6117,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   $('practice-start-btn').addEventListener('click', handleStartPracticeClick);
 
-  $('return-dashboard-btn').addEventListener('click', returnToDashboard);
+  $('return-dashboard-btn').addEventListener('click', async () => {
+    await returnToDashboard();
+  });
   $('btn-save-exit').addEventListener('click', () => { handleSaveAndExit(); });
   $('btn-back-dashboard').addEventListener('click', async () => {
     trainingActive = false;
