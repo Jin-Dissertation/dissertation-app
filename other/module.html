@@ -333,30 +333,38 @@
       color: var(--muted);
       font-size: 0.85rem;
       margin-top: 6px;
-      min-height: 1.1em;
+      min-height: 0;
+    }
+    .practice-setup-note:empty { display: none; }
+
+    #practice-question-container:empty,
+    #dashboard-error:empty {
+      display: none;
     }
 
     .module-help-link-wrap {
       display: flex;
       justify-content: center;
       align-items: center;
-      margin-top: 24px;
-      padding: 12px 0 8px;
+      margin: 24px 0 8px;
     }
 
     .module-help-link {
-      display: inline-block;
-      padding: 8px 6px;
-      font-size: 0.95rem;
-      color: #5b6b84;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #3f516d;
       text-decoration: none;
-      border-bottom: 1px solid transparent;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
     }
 
     .module-help-link:hover,
     .module-help-link:focus {
       color: #10213d;
-      border-bottom-color: currentColor;
+      background: rgba(16, 33, 61, 0.05);
+      border-color: rgba(16, 33, 61, 0.12);
     }
 
     .action-btn:disabled {
@@ -1870,7 +1878,7 @@
       <p class="dashboard-error" id="dashboard-error"></p>
     </section>
     <div class="module-help-link-wrap">
-      <a href="module_faq.html" class="module-help-link">Module FAQ</a>
+      <a href="about_modules.html" class="module-help-link">About</a>
     </div>
   </div>
 
