@@ -1584,9 +1584,50 @@
       box-shadow: 0 8px 24px rgba(16, 33, 61, 0.12);
     }
 
-    #return-dashboard-btn {
-      align-self: flex-end;
-      margin-bottom: 4px;
+    .practice-topbar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .feedback-wrap {
+      position: relative;
+    }
+
+    #feedback-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: #ffffff;
+      border: 1px solid #c8d8f0;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(16,33,61,0.15);
+      display: none;
+      flex-direction: column;
+      z-index: 10001;
+      min-width: 240px;
+    }
+
+    #feedback-menu.show {
+      display: flex;
+    }
+
+    #feedback-menu .feedback-option {
+      width: 100%;
+      justify-content: flex-start;
+      border-radius: 0;
+    }
+
+    #feedback-menu .feedback-option:first-child {
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
+    }
+
+    #feedback-menu .feedback-option:last-child {
+      border-bottom-left-radius: 10px;
+      border-bottom-right-radius: 10px;
     }
 
     .action-btn.disabled {
@@ -1654,39 +1695,21 @@
       <div id="practice-question-container" style="margin-top:20px;"></div>
       <div id="full-screen-question" style="display:none;">
         <div class="full-screen-question-card">
-          <button id="feedback-btn" class="action-btn secondary" style="
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            width: 36px;
-            height: 36px;
-            padding: 0;
-            border-radius: 50%;
-            font-size: 18px;
-            text-align: center;
-            line-height: 1;
-          ">!</button>
+          <div class="practice-topbar">
+            <button id="return-dashboard-btn" class="action-btn secondary" type="button">Return to Dashboard</button>
 
-          <div id="feedback-menu" style="
-            position: absolute;
-            top: 52px;
-            right: 12px;
-            background: #ffffff;
-            border: 1px solid #c8d8f0;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(16,33,61,0.15);
-            display: none;
-            flex-direction: column;
-            z-index: 10001;
-          ">
-            <button class="feedback-option action-btn secondary" data-value="two-correct">Two answers seem correct</button>
-            <button class="feedback-option action-btn secondary" data-value="none-correct">None of the answers seem correct</button>
-            <button class="feedback-option action-btn secondary" data-value="confusing">Question is confusing</button>
-            <button class="feedback-option action-btn secondary" data-value="outside-scope">Outside class scope</button>
-            <button class="feedback-option action-btn secondary" data-value="other">Other / comment</button>
+            <div class="feedback-wrap">
+              <button id="feedback-btn" class="action-btn secondary" type="button">Feedback</button>
+
+              <div id="feedback-menu">
+                <button class="feedback-option action-btn secondary" data-value="two-correct">Two answers seem correct</button>
+                <button class="feedback-option action-btn secondary" data-value="none-correct">None of the answers seem correct</button>
+                <button class="feedback-option action-btn secondary" data-value="confusing">Question is confusing</button>
+                <button class="feedback-option action-btn secondary" data-value="outside-scope">Outside class scope</button>
+                <button class="feedback-option action-btn secondary" data-value="other">Other / comment</button>
+              </div>
+            </div>
           </div>
-
-          <button id="return-dashboard-btn" class="action-btn secondary" style="margin-bottom:4px;">Return to Dashboard</button>
           <div id="full-question-content"></div>
         </div>
       </div>
