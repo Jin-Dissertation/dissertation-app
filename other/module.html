@@ -2155,36 +2155,56 @@ async function initializePracticeSetup() {
   renderPracticeSetupTopics(topics);
 }
 
-async function handleStartPracticeClick() {
-  const btn = $('practice-start-btn');
-  disableButton(btn);
-
-  // Fully reset question results and session state for a fresh practice run.
-  practiceTestState.questions = [];
-  practiceTestState.currentIndex = 0;
-  practiceTestState.results = [];
-  practiceTestState.correctCount = 0;
-  practiceTestState.incorrectCount = 0;
-
+async function handleStartPracticeClick(event) {
+  const btn = event?.currentTarget || $('practice-start-btn');
+  const originalText = btn ? btn.textContent : '';
   const messageEl = $('practice-setup-message');
-  const selectedCourse = practiceTestState.selectedCourse;
-  const topics = Array.isArray(practiceTestState.selectedTopics) ? practiceTestState.selectedTopics : [];
-  const questionCount = Number(practiceTestState.requestedQuestionCount || 10);
 
-  if (!selectedCourse || !topics.length) {
-    alert('Please select a course and at least one topic');
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add('disabled');
+      btn.style.opacity = 0.55;
+      btn.style.cursor = 'not-allowed';
+      btn.textContent = 'Loading...';
+    }
+
+    // Fully reset question results and session state for a fresh practice run.
+    practiceTestState.questions = [];
+    practiceTestState.currentIndex = 0;
+    practiceTestState.results = [];
+    practiceTestState.correctCount = 0;
+    practiceTestState.incorrectCount = 0;
+
+    const selectedCourse = String($('practice-course-select')?.value || practiceTestState.selectedCourse || '').trim();
+    if (!selectedCourse) {
+      throw new Error('Please select a course and at least one topic.');
+    }
+
+    const selectedTopics = Array.from(document.querySelectorAll('input[name="practice-topic"]:checked'))
+      .map(el => String(el.value || '').trim())
+      .filter(Boolean);
+    const questionCount = Number($('practice-question-count')?.value || 0);
+
+    if (messageEl) messageEl.textContent = '';
+    practiceTestState.selectedCourse = selectedCourse;
+    practiceTestState.selectedTopics = selectedTopics;
+    practiceTestState.requestedQuestionCount = questionCount;
+
+    await startPracticeSessionWithSettings(selectedTopics, questionCount);
+    if (btn) btn.classList.add('active');
+  } catch (err) {
+    console.error('Error starting practice session:', err);
+    alert(err.message || 'Unable to start practice right now.');
     if (btn) {
       btn.disabled = false;
       btn.classList.remove('disabled');
       btn.style.opacity = 1;
       btn.style.cursor = 'pointer';
+      btn.textContent = originalText || 'Start practice';
     }
     updatePracticeStartButtonState();
-    return;
   }
-
-  if (messageEl) messageEl.textContent = '';
-  await startPracticeSessionWithSettings(topics, questionCount);
 }
 
 function getPracticeSessionSummary() {
@@ -2243,7 +2263,24 @@ async function submitPracticeResults(results) {
   return await submitPracticeResultsAndUpdateDashboard();
 }
 
-async function startPracticeSessionWithSettings(topics, questionCount) {
+async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
+  const topics = Array.isArray(selectedTopics)
+    ? selectedTopics.map(topic => String(topic || '').trim()).filter(Boolean)
+    : [];
+  if (!topics.length) {
+    throw new Error('Please select at least one topic.');
+  }
+
+  const count = Number(questionCount || 0);
+  if (!count || count < 1) {
+    throw new Error('Please select a valid question count.');
+  }
+
+  const email = normalizeIdentityValue(currentUserEmail || participantEmail || '');
+  if (!email) {
+    throw new Error('No signed-in user email was found.');
+  }
+
   // Reset question results for this session immediately.
   practiceTestState.results = [];
 
@@ -2253,55 +2290,21 @@ async function startPracticeSessionWithSettings(topics, questionCount) {
   if (overlayQuestionHost) overlayQuestionHost.innerHTML = '';
   if (practiceQuestionContainer) practiceQuestionContainer.innerHTML = '';
 
-  const email = normalizeIdentityValue(currentUserEmail || participantEmail || '');
-
-  if (!email) {
-    throw new Error('No signed-in user email was found.');
-  }
-
-  const selectedTopics = Array.isArray(topics) ? topics.map(topic => String(topic || '').trim()).filter(Boolean) : [];
-  if (!selectedTopics.length) {
-    throw new Error('Please select at least one practice topic.');
-  }
-  const requestedQuestionCount = [10, 20, 30, 40].includes(Number(questionCount)) ? Number(questionCount) : 10;
-
-  const payload = {
+  const data = await postToAppsScript(PRACTICE_API_URL, {
     action: 'getPracticeQuestions',
     email,
     course: String(practiceTestState.selectedCourse || '').trim(),
-    topics: selectedTopics,
-    question_count: requestedQuestionCount
-  };
-
-  const response = await fetch(PRACTICE_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'text/plain;charset=utf-8'
-    },
-    body: JSON.stringify(payload)
+    topics,
+    question_count: count
   });
 
-  const text = await response.text();
-
-  let data;
-  try {
-    data = JSON.parse(text);
-  } catch (err) {
-    console.error('Raw server response:', text);
-    throw new Error('Server returned invalid JSON.');
+  if (!data || data.ok !== true) {
+    throw new Error(data?.error || 'Unable to load practice questions.');
   }
 
-  if (!data.ok) {
-    throw new Error(data.error || 'Practice question request failed.');
-  }
-
-  const questions = data.question_set || [];
-
-  console.log('Practice questions loaded successfully:', questions);
-
+  const questions = Array.isArray(data.question_set) ? data.question_set : [];
   if (!questions.length) {
-    alert('No practice questions were returned.');
-    return [];
+    throw new Error('No practice questions were returned for the selected topics.');
   }
 
   practiceTestState.questions = questions;
@@ -2309,8 +2312,8 @@ async function startPracticeSessionWithSettings(topics, questionCount) {
   practiceTestState.sessionId = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   practiceTestState.startedAt = new Date().toISOString();
   practiceTestState.selectedCourse = String(practiceTestState.selectedCourse || '').trim();
-  practiceTestState.selectedTopics = selectedTopics;
-  practiceTestState.requestedQuestionCount = requestedQuestionCount;
+  practiceTestState.selectedTopics = [...topics];
+  practiceTestState.requestedQuestionCount = count;
   practiceTestState.results = [];
   practiceTestState.resultsSubmitted = false;
   practiceTestState.correctCount = 0;
@@ -5034,23 +5037,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  $('practice-start-btn').addEventListener('click', async () => {
-    const btn = $('practice-start-btn');
-    btn.disabled = true;
-    btn.style.opacity = 0.55;
-    btn.style.cursor = 'not-allowed';
-
-    try {
-      await handleStartPracticeClick();
-      btn.classList.add('active'); // visual feedback like “Practice Again”
-    } catch (err) {
-      console.error(err);
-      btn.disabled = false;
-      btn.style.opacity = 1;
-      btn.style.cursor = 'pointer';
-      updatePracticeStartButtonState();
-    }
-  });
+  $('practice-start-btn').addEventListener('click', handleStartPracticeClick);
 
   $('return-dashboard-btn').addEventListener('click', () => {
     hidePracticeQuestionOverlay();
