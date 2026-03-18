@@ -1585,7 +1585,7 @@
 
     #return-dashboard-btn {
       align-self: flex-end;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
   </style>
 </head>
@@ -1647,7 +1647,7 @@
       <div id="practice-question-container" style="margin-top:20px;"></div>
       <div id="full-screen-question" style="display:none;">
         <div class="full-screen-question-card">
-          <button id="return-dashboard-btn" class="action-btn secondary">Return to Dashboard</button>
+          <button id="return-dashboard-btn" class="action-btn secondary" style="margin-bottom:4px;">Return to Dashboard</button>
           <div id="full-question-content"></div>
         </div>
       </div>
@@ -4926,23 +4926,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     e.target.value = String(practiceTestState.requestedQuestionCount);
   });
   $('practice-start-btn').addEventListener('click', handleStartPracticeClick);
-  $('return-dashboard-btn').addEventListener('click', async () => {
+  $('return-dashboard-btn').addEventListener('click', () => {
+    // Hide the full-screen question overlay
     $('full-screen-question').style.display = 'none';
+
+    // Clear the full-screen and practice question containers
     $('full-question-content').innerHTML = '';
     $('practice-question-container').innerHTML = '';
 
-    await submitPracticeResults(practiceTestState.results);
+    // Submit only completed questions
+    submitPracticeResults(practiceTestState.results);
 
-    practiceTestState.questions = [];
-    practiceTestState.currentIndex = 0;
-    practiceTestState.selectedTopics = [];
-    practiceTestState.results = [];
-    practiceTestState.correctCount = 0;
-    practiceTestState.incorrectCount = 0;
-    practiceTestState.resultsSubmitted = false;
+    // Fully reset the practiceTestState
+    practiceTestState = {
+      questions: [],
+      currentIndex: 0,
+      sessionId: "",
+      startedAt: null,
+      selectedCourse: '',
+      selectedTopics: [],
+      requestedQuestionCount: 10,
+      results: [],
+      resultsSubmitted: false,
+      correctCount: 0,
+      incorrectCount: 0
+    };
 
+    // Reset course selection dropdown and topic checkboxes
+    if ($('practice-course-select')) $('practice-course-select').value = '';
+    if ($('practice-topic-list')) $('practice-topic-list').innerHTML = '';
+    if ($('practice-controls-row')) $('practice-controls-row').hidden = true;
+
+    // Show the dashboard and hide training content
     $('dashboard').style.display = 'block';
     $('training').style.display = 'none';
+
+    // Optional: re-initialize the topics dropdown
+    initializePracticeSetup();
   });
   $('btn-save-exit').addEventListener('click', () => { handleSaveAndExit(); });
   $('btn-back-dashboard').addEventListener('click', async () => {
