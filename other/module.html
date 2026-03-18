@@ -2027,6 +2027,7 @@ let practiceTestState = {
   correctCount: 0,
   incorrectCount: 0
 };
+window.practiceState = practiceTestState;
 let assignmentEntryEnabled = true;
 let dashboardStats = null;
 let currentModuleMeta = null;
@@ -2320,16 +2321,42 @@ function getSelectedPracticeTopicKeys() {
     .filter(Boolean);
 }
 
-function updatePracticeStartButtonState() {
-  const startBtn = $('practice-start-btn');
-  if (!startBtn) return;
-  if (!practiceTestState.practiceTopicsLoaded) {
-    startBtn.disabled = true;
-    return;
+function renderPracticeButton() {
+  const btn = document.getElementById('start-practice-btn') || $('practice-start-btn');
+  if (!btn) return;
+
+  const canStartPractice = window.practiceState?.canStartPractice !== false;
+
+  if (window.practiceState?.isLoading) {
+    btn.disabled = true;
+    btn.textContent = 'Loading...';
+    btn.classList.add('is-loading');
+  } else if (window.practiceState?.lastQuizSettings) {
+    btn.disabled = !canStartPractice;
+    btn.textContent = 'Practice again with same settings';
+    btn.classList.remove('is-loading');
+  } else {
+    btn.disabled = !canStartPractice;
+    btn.textContent = 'Start practice';
+    btn.classList.remove('is-loading');
   }
+}
+
+function resetPracticeButton() {
+  const btn = document.getElementById('start-practice-btn') || $('practice-start-btn');
+  if (!btn) return;
+
+  btn.disabled = false;
+  btn.textContent = 'Practice again';
+  btn.classList.remove('is-loading');
+}
+
+function updatePracticeStartButtonState() {
+  const hasTopicsLoaded = Boolean(practiceTestState.practiceTopicsLoaded);
   const hasCourse = Boolean(String(practiceTestState.selectedCourse || '').trim());
   const hasTopics = Array.isArray(practiceTestState.selectedTopics) && practiceTestState.selectedTopics.length > 0;
-  startBtn.disabled = !(hasCourse && hasTopics);
+  window.practiceState.canStartPractice = hasTopicsLoaded && hasCourse && hasTopics;
+  renderPracticeButton();
 }
 
 function disableButton(btn) {
@@ -2774,7 +2801,6 @@ async function initializePracticeSetup() {
 
 async function handleStartPracticeClick(event) {
   const btn = event?.currentTarget || $('practice-start-btn');
-  const originalText = btn ? btn.textContent : '';
   const messageEl = $('practice-setup-message');
 
   if (!practiceTestState.practiceTopicsLoaded) {
@@ -2782,15 +2808,11 @@ async function handleStartPracticeClick(event) {
     return;
   }
 
-  try {
-    if (btn) {
-      btn.disabled = true;
-      btn.classList.add('disabled');
-      btn.style.opacity = 0.55;
-      btn.style.cursor = 'not-allowed';
-      btn.textContent = 'Loading...';
-    }
+  window.practiceState = window.practiceState || {};
+  window.practiceState.isLoading = true;
+  renderPracticeButton();
 
+  try {
     // Fully reset question results and session state for a fresh practice run.
     practiceTestState.questions = [];
     practiceTestState.currentIndex = 0;
@@ -2813,6 +2835,11 @@ async function handleStartPracticeClick(event) {
     practiceTestState.selectedCourse = selectedCourse;
     practiceTestState.selectedTopics = selectedTopics;
     practiceTestState.requestedQuestionCount = questionCount;
+    window.practiceState.lastQuizSettings = {
+      selectedCourse,
+      selectedTopics: [...selectedTopics],
+      questionCount
+    };
 
     await startPracticeSessionWithSettings(selectedTopics, questionCount);
     if (btn) btn.classList.add('active');
@@ -2820,14 +2847,10 @@ async function handleStartPracticeClick(event) {
     console.error('Error starting practice session:', err);
     if (messageEl) messageEl.textContent = getFriendlyNetworkMessage(err);
     alert(getFriendlyNetworkMessage(err));
-    if (btn) {
-      btn.disabled = false;
-      btn.classList.remove('disabled');
-      btn.style.opacity = 1;
-      btn.style.cursor = 'pointer';
-      btn.textContent = originalText || 'Start practice';
-    }
     updatePracticeStartButtonState();
+  } finally {
+    window.practiceState.isLoading = false;
+    renderPracticeButton();
   }
 }
 
@@ -5624,6 +5647,22 @@ function showScreen(name) {
   $('app').classList.toggle('auth-mode', name === 'auth');
 }
 
+function showDashboard() {
+  const quizScreen = document.getElementById('quiz-screen');
+  const dashboardScreen = document.getElementById('dashboard-screen');
+  if (quizScreen && dashboardScreen) {
+    quizScreen.hidden = true;
+    dashboardScreen.hidden = false;
+  }
+
+  showScreen('dashboard');
+
+  window.practiceState = window.practiceState || {};
+  window.practiceState.isLoading = false;
+
+  renderPracticeButton();
+}
+
 function normalizeDashboardStats(rawStats) {
   const stats = rawStats || {};
   const dailyGoal = 20;
@@ -6034,8 +6073,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if ($('practice-controls-row')) $('practice-controls-row').hidden = true;
 
     // Show dashboard
-    $('dashboard').style.display = 'block';
-    $('training').style.display = 'none';
+    showDashboard();
+    resetPracticeButton();
 
     // Re-initialize the practice setup so a new quiz can start
     initializePracticeSetup();
