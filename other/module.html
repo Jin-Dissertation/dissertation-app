@@ -336,6 +336,29 @@
       min-height: 1.1em;
     }
 
+    .module-help-link-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 24px;
+      padding: 12px 0 8px;
+    }
+
+    .module-help-link {
+      display: inline-block;
+      padding: 8px 6px;
+      font-size: 0.95rem;
+      color: #5b6b84;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+    }
+
+    .module-help-link:hover,
+    .module-help-link:focus {
+      color: #10213d;
+      border-bottom-color: currentColor;
+    }
+
     .action-btn:disabled {
       opacity: 0.55;
       cursor: not-allowed;
@@ -1793,7 +1816,7 @@
       <h3>Enter Assignment Key</h3>
       <div class="assignment-entry-row">
         <input class="gate-input" id="assignment-key-input" type="text" placeholder="Enter assignment key" autocomplete="off" autocapitalize="none" spellcheck="false" />
-        <button class="action-btn" type="button" id="assignment-key-btn">Continue</button>
+        <button class="action-btn" type="button" id="assignment-key-btn">OPEN MODULE</button>
       </div>
     </section>
 
@@ -1840,6 +1863,9 @@
       </div>
       <p class="dashboard-error" id="dashboard-error"></p>
     </section>
+    <div class="module-help-link-wrap">
+      <a href="module_faq.html" class="module-help-link">Module FAQ</a>
+    </div>
   </div>
 
   <!-- LOADING -->
