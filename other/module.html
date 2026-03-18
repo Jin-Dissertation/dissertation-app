@@ -2266,9 +2266,60 @@ async function fetchPracticeQuestionsTest() {
   }
 }
 
-async function fetchPracticeTopics() {
+const PRACTICE_TOPICS_CACHE_KEY = 'practice_topics_cache_v1';
+const PRACTICE_TOPICS_CACHE_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+
+function loadCachedPracticeTopics() {
+  try {
+    const raw = localStorage.getItem(PRACTICE_TOPICS_CACHE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    const savedAt = Number(parsed?.savedAt || 0);
+    const topics = Array.isArray(parsed?.topics) ? parsed.topics : null;
+
+    if (!savedAt || !topics) return null;
+
+    const ageMs = Date.now() - savedAt;
+    if (ageMs < 0 || ageMs > PRACTICE_TOPICS_CACHE_MAX_AGE_MS) return null;
+
+    return topics;
+  } catch (err) {
+    console.warn('Failed to read practice topics cache:', err);
+    return null;
+  }
+}
+
+function saveCachedPracticeTopics(topics) {
+  try {
+    const safeTopics = Array.isArray(topics) ? topics : [];
+    localStorage.setItem(PRACTICE_TOPICS_CACHE_KEY, JSON.stringify({
+      savedAt: Date.now(),
+      topics: safeTopics
+    }));
+  } catch (err) {
+    console.warn('Failed to save practice topics cache:', err);
+  }
+}
+
+function clearCachedPracticeTopics() {
+  try {
+    localStorage.removeItem(PRACTICE_TOPICS_CACHE_KEY);
+  } catch (err) {
+    console.warn('Failed to clear practice topics cache:', err);
+  }
+}
+
+async function fetchPracticeTopics(forceRefresh = false) {
   const courseSelect = $('practice-course-select');
   const startBtn = $('practice-start-btn');
+
+  const cachedTopics = !forceRefresh ? loadCachedPracticeTopics() : null;
+  if (cachedTopics && cachedTopics.length) {
+    practiceTestState.practiceTopicsLoading = false;
+    practiceTestState.practiceTopicsLoaded = true;
+    return cachedTopics;
+  }
 
   practiceTestState.practiceTopicsLoading = true;
   practiceTestState.practiceTopicsLoaded = false;
@@ -2287,9 +2338,11 @@ async function fetchPracticeTopics() {
     });
 
     if (data?.ok) {
+      const topics = Array.isArray(data.practice_topics) ? data.practice_topics : [];
+      saveCachedPracticeTopics(topics);
       practiceTestState.practiceTopicsLoading = false;
       practiceTestState.practiceTopicsLoaded = true;
-      return data.practice_topics || [];
+      return topics;
     }
 
     console.error('Failed to fetch practice topics:', data);
@@ -5998,6 +6051,7 @@ async function handleSaveAndExit() {
 
 function logoutToAuth() {
 
+  clearCachedPracticeTopics();
   clearAuthSession();
   currentUserEmail = '';
   currentUserName = '';
