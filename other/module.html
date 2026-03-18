@@ -2918,7 +2918,7 @@ function getPracticeSessionSummary() {
   };
 }
 
-function showPracticeQuestionOverlay({ moveQuestionContainer = true } = {}) {
+function showPracticeQuestionOverlay() {
   const fullscreen = $('full-screen-question');
   const questionHost = $('full-question-content');
   const questionContainer = $('practice-question-container');
@@ -2929,13 +2929,11 @@ function showPracticeQuestionOverlay({ moveQuestionContainer = true } = {}) {
     practiceQuestionContainerHome.nextSibling = questionContainer.nextSibling;
   }
 
-  if (moveQuestionContainer) {
-    if (questionContainer.parentElement !== questionHost) {
-      questionHost.appendChild(questionContainer);
-    }
-    questionContainer.style.display = 'block';
+  if (questionContainer.parentElement !== questionHost) {
+    questionHost.appendChild(questionContainer);
   }
 
+  questionContainer.style.display = 'block';
   fullscreen.style.display = 'flex';
 }
 
@@ -2956,7 +2954,6 @@ function hidePracticeQuestionOverlay() {
   }
 
   fullscreen.style.display = 'none';
-  questionHost.innerHTML = '';
   questionContainer.style.display = 'block';
   questionContainer.innerHTML = '';
 }
@@ -3003,21 +3000,18 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
   practiceTestState.feedbackByQuestionId = {};
 
   // Always start from a clean question DOM tree for each new session.
-  const overlayQuestionHost = $('full-question-content');
   const practiceQuestionContainer = $('practice-question-container');
 
   if (practiceQuestionContainer) {
     practiceQuestionContainer.innerHTML = '';
   }
 
-  if (overlayQuestionHost) {
-    overlayQuestionHost.innerHTML = '';
-  }
-
-  showPracticeQuestionOverlay({ moveQuestionContainer: false });
+  // Always mount the real question container into the overlay first.
+  showPracticeQuestionOverlay();
 
   try {
-    renderPracticeOverlayLoadingState();
+    // Render loading state directly into the real question container.
+    renderPracticeRestartLoadingState();
 
     const data = await postToAppsScript(PRACTICE_API_URL, {
       action: 'getPracticeQuestions',
@@ -3044,12 +3038,8 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
       throw new Error('No practice questions were returned.');
     }
 
-    if (overlayQuestionHost) {
-      overlayQuestionHost.innerHTML = '';
-    }
-
-    showPracticeQuestionOverlay({ moveQuestionContainer: true });
     initializePracticeSession(data.question_set);
+
     if (practiceQuestionContainer && !practiceQuestionContainer.innerHTML.trim()) {
       console.warn('Question container was empty after initializePracticeSession; forcing first render.');
       renderCurrentPracticeQuestion();
@@ -3059,9 +3049,6 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
     return practiceTestState.questions;
   } catch (err) {
     hidePracticeQuestionOverlay();
-    if (overlayQuestionHost) {
-      overlayQuestionHost.innerHTML = '';
-    }
     renderPracticeRestartErrorState(getFriendlyNetworkMessage(err));
     throw err;
   }
@@ -3096,19 +3083,6 @@ function renderPracticeRestartLoadingState() {
   if (!practiceQuestionContainer) return;
 
   practiceQuestionContainer.innerHTML = `
-    <div class="practice-restart-loading-state">
-      <div class="practice-spinner" aria-hidden="true"></div>
-      <h2>Starting a new practice set...</h2>
-      <p>Please wait while your questions load.</p>
-    </div>
-  `;
-}
-
-function renderPracticeOverlayLoadingState() {
-  const questionHost = $('full-question-content');
-  if (!questionHost) return;
-
-  questionHost.innerHTML = `
     <div class="practice-restart-loading-state">
       <div class="practice-spinner" aria-hidden="true"></div>
       <h2>Starting a new practice set...</h2>
