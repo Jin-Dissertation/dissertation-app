@@ -6047,7 +6047,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('.feedback-option').forEach(btn => {
     btn.addEventListener('click', () => {
       const question = practiceTestState.questions?.[practiceTestState.currentIndex];
-      const questionId = question?.question_id;
+      const questionId = String(question?.question_id || '').trim();
       if (!questionId) return;
 
       let rawValue = String(btn.dataset.value || '').trim();
@@ -6063,6 +6063,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const state = ensureFeedbackStateForQuestion(questionId);
 
+      // Reset mutually exclusive flag options before applying the new one
       state.confusing = false;
       state.two_correct = false;
       state.none_correct = false;
@@ -6081,7 +6082,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       practiceTestState.feedbackSubmitted = false;
       renderFeedbackUiForCurrentQuestion();
-      closePracticeFeedbackMenu();
+      feedbackMenu.classList.remove('show');
       savePracticeSessionToLocal();
 
       console.log('[practice feedback] saved locally', {
