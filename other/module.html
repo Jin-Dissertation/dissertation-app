@@ -1577,14 +1577,15 @@
       justify-content: flex-start;
       background: #ffffff;
       border-radius: 14px;
-      padding: 20px;
+      padding: 16px 20px;
+      max-height: 90vh;
       overflow-y: auto;
       box-shadow: 0 8px 24px rgba(16, 33, 61, 0.12);
     }
 
-    #end-session-btn {
+    #return-dashboard-btn {
       align-self: flex-end;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
   </style>
 </head>
@@ -1646,7 +1647,7 @@
       <div id="practice-question-container" style="margin-top:20px;"></div>
       <div id="full-screen-question" style="display:none;">
         <div class="full-screen-question-card">
-          <button id="end-session-btn" class="action-btn secondary">End Session Early</button>
+          <button id="return-dashboard-btn" class="action-btn secondary">Return to Dashboard</button>
           <div id="full-question-content"></div>
         </div>
       </div>
@@ -4925,8 +4926,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     e.target.value = String(practiceTestState.requestedQuestionCount);
   });
   $('practice-start-btn').addEventListener('click', handleStartPracticeClick);
-  $('end-session-btn').addEventListener('click', async () => {
-    hidePracticeQuestionOverlay();
+  $('return-dashboard-btn').addEventListener('click', async () => {
+    $('full-screen-question').style.display = 'none';
+    $('full-question-content').innerHTML = '';
+    $('practice-question-container').innerHTML = '';
 
     await submitPracticeResults(practiceTestState.results);
 
