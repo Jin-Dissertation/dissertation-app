@@ -1985,24 +1985,77 @@ function normalizeIdentityValue(value) {
   return String(value || '').trim().toLowerCase();
 }
 
-async function postToAppsScript(url, payload) {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload),
-    redirect: 'follow'
-  });
+async function postToAppsScript(url, payload, options = {}) {
+  const {
+    retries = 1,
+    retryDelayMs = 800,
+    timeoutMs = 15000,
+    onRetry = null
+  } = options;
 
-  const text = await response.text();
-  let data = null;
-  try { data = JSON.parse(text); }
-  catch (_) { throw new Error('invalid_json_response'); }
+  let lastError = null;
 
-  if (!response.ok) {
-    throw new Error(data?.error || `HTTP ${response.status}`);
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload),
+        redirect: 'follow',
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      const text = await response.text();
+      let data = null;
+
+      try {
+        data = JSON.parse(text);
+      } catch (_) {
+        throw new Error('invalid_json_response');
+      }
+
+      if (!response.ok) {
+        throw new Error(data?.error || `HTTP ${response.status}`);
+      }
+
+      return data;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      lastError = err;
+
+      const isLastAttempt = attempt === retries;
+      const isNetworkLikeError =
+        err?.name === 'AbortError' ||
+        err?.message === 'Failed to fetch' ||
+        err?.message === 'NetworkError when attempting to fetch resource.';
+
+      if (isLastAttempt || !isNetworkLikeError) {
+        throw lastError;
+      }
+
+      if (typeof onRetry === 'function') {
+        onRetry({ attempt: attempt + 1, retries, error: err });
+      }
+
+      await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+    }
   }
 
-  return data;
+  throw lastError || new Error('unknown_fetch_error');
+}
+
+function getFriendlyNetworkMessage(error) {
+  if (!error) return 'Something went wrong. Please try again.';
+  if (error.name === 'AbortError') return 'Connection timed out. Please try again.';
+  if (String(error.message || '').includes('Failed to fetch')) {
+    return 'Connection hiccup. Please try again.';
+  }
+  return error.message || 'Something went wrong. Please try again.';
 }
 
 async function fetchPracticeQuestionsTest() {
@@ -2017,18 +2070,13 @@ async function fetchPracticeQuestionsTest() {
 
 async function fetchPracticeTopics() {
   try {
-    const response = await fetch(PRACTICE_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8'
-      },
-      body: JSON.stringify({ action: 'getPracticeTopics' })
+    const data = await postToAppsScript(PRACTICE_API_URL, { action: 'getPracticeTopics' }, {
+      retries: 1,
+      retryDelayMs: 1000,
+      timeoutMs: 15000
     });
 
-    const text = await response.text();
-    const data = JSON.parse(text);
-
-    if (response.ok && data?.ok) {
+    if (data?.ok) {
       return data.practice_topics || [];
     }
 
@@ -2195,7 +2243,8 @@ async function handleStartPracticeClick(event) {
     if (btn) btn.classList.add('active');
   } catch (err) {
     console.error('Error starting practice session:', err);
-    alert(err.message || 'Unable to start practice right now.');
+    if (messageEl) messageEl.textContent = getFriendlyNetworkMessage(err);
+    alert(getFriendlyNetworkMessage(err));
     if (btn) {
       btn.disabled = false;
       btn.classList.remove('disabled');
@@ -2295,13 +2344,25 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
   if (overlayQuestionHost) overlayQuestionHost.innerHTML = '';
   if (practiceQuestionContainer) practiceQuestionContainer.innerHTML = '';
 
-  const data = await postToAppsScript(PRACTICE_API_URL, {
-    action: 'getPracticeQuestions',
-    email,
-    course: String(practiceTestState.selectedCourse || '').trim(),
-    topics,
-    question_count: count
-  });
+  let data;
+  try {
+    data = await postToAppsScript(PRACTICE_API_URL, {
+      action: 'getPracticeQuestions',
+      email,
+      course: String(practiceTestState.selectedCourse || '').trim(),
+      topics,
+      question_count: count
+    }, {
+      retries: 1,
+      retryDelayMs: 1000,
+      timeoutMs: 15000
+    });
+  } catch (err) {
+    if (err?.message === 'Failed to fetch' || err?.name === 'AbortError') {
+      throw new Error('Connection hiccup. Please try again.');
+    }
+    throw err;
+  }
 
   if (!data || data.ok !== true) {
     throw new Error(data?.error || 'Unable to load practice questions.');
@@ -4628,6 +4689,11 @@ async function handleGoogleCredentialResponse(response) {
     const data = await postToAppsScript(LOAD_URL, {
       action: 'verifyGoogleLogin',
       id_token: idToken
+    }, {
+      retries: 1,
+      retryDelayMs: 1000,
+      timeoutMs: 15000,
+      onRetry: () => setAuthStatus('Connection hiccup. Retrying…')
     });
 
     if (!data || data.ok !== true) {
@@ -4643,14 +4709,18 @@ async function handleGoogleCredentialResponse(response) {
     setAuthStatus('');
     await loadDashboard();
   } catch (err) {
-  isAuthenticated = false;
-  clearAuthSession();
-  currentUserEmail = '';
-  currentUserName = '';
-  showScreen('auth');
-  initializeGoogleSignIn();
-  setAuthStatus(err.message || 'Sign in failed. Please try again.', true);
-}
+    isAuthenticated = false;
+    clearAuthSession();
+    currentUserEmail = '';
+    currentUserName = '';
+    showScreen('auth');
+    initializeGoogleSignIn();
+    if (err?.message === 'Failed to fetch' || err?.name === 'AbortError') {
+      setAuthStatus('Could not reach the server. Please try again.', true);
+    } else {
+      setAuthStatus(err.message || 'Sign in failed. Please try again.', true);
+    }
+  }
 }
 
 let googleSignInInitAttempts = 0;
