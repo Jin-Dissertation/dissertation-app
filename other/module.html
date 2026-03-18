@@ -563,6 +563,44 @@
       gap: 10px;
     }
 
+    .practice-submitting-state,
+    .practice-submit-error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 280px;
+      text-align: center;
+      padding: 32px 20px;
+      gap: 12px;
+    }
+
+    .practice-submitting-state h2,
+    .practice-submit-error h2 {
+      margin: 0;
+    }
+
+    .practice-submitting-state p,
+    .practice-submit-error p {
+      margin: 0;
+      max-width: 420px;
+    }
+
+    .practice-spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(16, 33, 61, 0.15);
+      border-top-color: rgba(16, 33, 61, 0.85);
+      border-radius: 50%;
+      animation: practiceSpin 0.8s linear infinite;
+    }
+
+    @keyframes practiceSpin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     .practice-categorize-mobile-hint {
       font-size: 0.82rem;
       color: #5f718f;
@@ -2526,6 +2564,41 @@ function renderPracticeEmptyState(message) {
   `;
 }
 
+function renderPracticeSubmittingState() {
+  const practiceBody = document.getElementById('practice-question-container');
+  if (!practiceBody) return;
+
+  practiceBody.innerHTML = `
+    <div class="practice-submitting-state">
+      <div class="practice-spinner" aria-hidden="true"></div>
+      <h2>Submitting your results...</h2>
+      <p>Please wait. Do not close this page.</p>
+    </div>
+  `;
+}
+
+function renderPracticeSubmitError(message) {
+  const practiceBody = document.getElementById('practice-question-container');
+  if (!practiceBody) return;
+
+  practiceBody.innerHTML = `
+    <div class="practice-submit-error">
+      <h2>Submission problem</h2>
+      <p>${html(message || 'There was a problem submitting your results.')}</p>
+      <button id="retry-submit-results-btn" class="action-btn primary" type="button">
+        Try Again
+      </button>
+    </div>
+  `;
+
+  const retryBtn = document.getElementById('retry-submit-results-btn');
+  if (retryBtn) {
+    retryBtn.addEventListener('click', () => {
+      submitFinalPracticeResults();
+    });
+  }
+}
+
 function initializePracticeSession(questionSet) {
   practiceTestState.questions = Array.isArray(questionSet) ? questionSet : [];
   practiceTestState.currentIndex = 0;
@@ -2732,7 +2805,8 @@ function updateDashboardStreakAndProgress(questionsToday) {
   };
 }
 
-async function submitPracticeResultsAndUpdateDashboard() {
+async function submitPracticeResultsAndUpdateDashboard(options = {}) {
+  const { showAlertOnError = true } = options;
   const email = normalizeIdentityValue(currentUserEmail || participantEmail || '');
   const results = practiceTestState?.results;
 
@@ -2764,15 +2838,71 @@ async function submitPracticeResultsAndUpdateDashboard() {
       console.log("Practice results submitted successfully:", data);
     } else {
       console.log("Practice results submission failed:", data);
-      alert('Error submitting practice results: ' + (data.error || 'Unknown error'));
+      if (showAlertOnError) {
+        alert('Error submitting practice results: ' + (data.error || 'Unknown error'));
+      }
     }
 
     return data;
   } catch (err) {
     console.error('Failed to submit practice results:', err);
-    alert('Failed to submit practice results.');
+    if (showAlertOnError) {
+      alert('Failed to submit practice results.');
+    }
     return { ok: false, error: err.message || 'Failed to submit practice results.' };
   }
+}
+
+function renderPracticeResultsSummary() {
+  const container = document.getElementById("practice-question-container");
+  if (!container) return;
+
+  const summary = getPracticeSessionSummary();
+  const restartTopics = Array.isArray(practiceTestState.selectedTopics) && practiceTestState.selectedTopics.length
+    ? practiceTestState.selectedTopics
+    : getSelectedPracticeTopicKeys();
+  const restartQuestionCount = Number(practiceTestState.requestedQuestionCount) > 0
+    ? Number(practiceTestState.requestedQuestionCount)
+    : Number(($('practice-question-count')?.value || 10));
+
+  container.innerHTML = `
+    <div class="practice-question-card">
+      <div style="font-weight:600; margin-bottom:8px;">Practice session complete</div>
+      <div style="color:#5f718f; margin-bottom:4px;">Number correct: ${summary.correctCount}</div>
+      <div style="color:#5f718f; margin-bottom:14px;">Number incorrect: ${summary.incorrectCount}</div>
+      <button type="button" class="action-btn" id="practice-restart-btn">Practice again with same settings</button>
+    </div>
+  `;
+
+  const restartBtn = container.querySelector("#practice-restart-btn");
+  if (restartBtn) {
+    restartBtn.addEventListener("click", async () => {
+      restartBtn.disabled = true;
+      try {
+        await startPracticeSessionWithSettings(restartTopics, restartQuestionCount);
+      } catch (error) {
+        console.error("Failed to restart practice session:", error);
+        alert("Could not restart practice session: " + (error.message || "Unknown error"));
+      } finally {
+        restartBtn.disabled = false;
+      }
+    });
+  }
+}
+
+async function submitFinalPracticeResults() {
+  renderPracticeSubmittingState();
+
+  const response = await submitPracticeResultsAndUpdateDashboard({ showAlertOnError: false });
+
+  if (response?.ok) {
+    renderPracticeResultsSummary();
+    return;
+  }
+
+  const errorMessage = response?.error || 'Failed to submit your results.';
+  console.error('Final practice submission failed:', errorMessage);
+  renderPracticeSubmitError(errorMessage);
 }
 
 function renderSBAImageQuestion(q, index, total) {
@@ -3639,7 +3769,7 @@ function handlePracticeCategorizeAnswer(question, container, mappings, placement
   }
 }
 
-async function advancePracticeQuestion() {
+async function advancePracticeQuestion(event) {
   const questions = practiceTestState.questions || [];
   if (!questions.length) return;
 
@@ -3649,42 +3779,13 @@ async function advancePracticeQuestion() {
     return;
   }
 
-  const container = document.getElementById("practice-question-container");
-  if (!container) return;
-
-  await submitPracticeResultsAndUpdateDashboard();
-
-  const summary = getPracticeSessionSummary();
-  const restartTopics = Array.isArray(practiceTestState.selectedTopics) && practiceTestState.selectedTopics.length
-    ? practiceTestState.selectedTopics
-    : getSelectedPracticeTopicKeys();
-  const restartQuestionCount = Number(practiceTestState.requestedQuestionCount) > 0
-    ? Number(practiceTestState.requestedQuestionCount)
-    : Number(($('practice-question-count')?.value || 10));
-
-  container.innerHTML = `
-    <div class="practice-question-card">
-      <div style="font-weight:600; margin-bottom:8px;">Practice session complete</div>
-      <div style="color:#5f718f; margin-bottom:4px;">Number correct: ${summary.correctCount}</div>
-      <div style="color:#5f718f; margin-bottom:14px;">Number incorrect: ${summary.incorrectCount}</div>
-      <button type="button" class="action-btn" id="practice-restart-btn">Practice again with same settings</button>
-    </div>
-  `;
-
-  const restartBtn = container.querySelector("#practice-restart-btn");
-  if (restartBtn) {
-    restartBtn.addEventListener("click", async () => {
-      restartBtn.disabled = true;
-      try {
-        await startPracticeSessionWithSettings(restartTopics, restartQuestionCount);
-      } catch (error) {
-        console.error("Failed to restart practice session:", error);
-        alert("Could not restart practice session: " + (error.message || "Unknown error"));
-      } finally {
-        restartBtn.disabled = false;
-      }
-    });
+  const finishButton = event?.currentTarget;
+  if (finishButton) {
+    finishButton.disabled = true;
   }
+
+  await submitFinalPracticeResults();
+  return;
 }
 
 
