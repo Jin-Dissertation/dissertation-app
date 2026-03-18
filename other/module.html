@@ -2573,6 +2573,7 @@ function getCurrentPracticeQuestion() {
 function getCurrentPracticeQuestionId() {
   const currentQuestion = getCurrentPracticeQuestion();
   return String(
+    currentQuestion?.item_id ||
     currentQuestion?.question_id ||
     currentQuestion?.id ||
     currentQuestion?.questionId ||
@@ -2618,7 +2619,7 @@ function getAllQuestionFeedbackForSubmit() {
 
   const questionById = {};
   questions.forEach(q => {
-    const qid = String(q?.question_id || '').trim();
+    const qid = String(q?.item_id || q?.question_id || '').trim();
     if (qid) questionById[qid] = q;
   });
 
@@ -2627,7 +2628,7 @@ function getAllQuestionFeedbackForSubmit() {
       const question = questionById[questionId] || {};
       return {
         topic: String(question.topic || '').trim(),
-        question_id: String(questionId || '').trim(),
+        item_id: String(questionId || '').trim(),
         confusing: Boolean(entry?.confusing),
         two_correct: Boolean(entry?.two_correct),
         none_correct: Boolean(entry?.none_correct),
@@ -2636,7 +2637,7 @@ function getAllQuestionFeedbackForSubmit() {
       };
     })
     .filter(item =>
-      item.question_id &&
+      item.item_id &&
       item.topic &&
       (item.confusing || item.two_correct || item.none_correct || item.outside_scope || item.comment)
     );
@@ -2700,17 +2701,19 @@ function renderPracticeFeedbackAnswerStateForCurrentQuestion() {
   const answerState = practiceTestState.answerState?.[stateKey];
   if (!answerState || !answerState.feedbackShown) return;
 
-  if (question.question_type === 'sba' || question.question_type === 'sba_image') {
+  const questionType = String(question.item_type || question.question_type || '').trim();
+
+  if (questionType === 'sba' || questionType === 'sba_image') {
     handlePracticeAnswer(question, answerState.selected || '', answerState.correct || '', answerState.rationale || '');
     return;
   }
 
-  if (question.question_type === 'fitb') {
+  if (questionType === 'fitb') {
     handlePracticeFITBAnswer(question, answerState.selected || '', answerState.correct || '', answerState.rationale || '');
     return;
   }
 
-  if (question.question_type === 'sata') {
+  if (questionType === 'sata') {
     handlePracticeSATAAnswer(
       question,
       Array.isArray(answerState.selectedAnswers) ? answerState.selectedAnswers : [],
@@ -2720,7 +2723,7 @@ function renderPracticeFeedbackAnswerStateForCurrentQuestion() {
     return;
   }
 
-  if (question.question_type === 'categorize') {
+  if (questionType === 'categorize') {
     const container = document.getElementById("practice-question-container");
     if (!container) return;
     const mappings = parseCategorizeMappings(question.correct_blob);
@@ -3393,7 +3396,7 @@ function initializePracticeSession(questionSet) {
       ...q,
       _stateKey: [
         String(q?.topic || '').trim(),
-        String(q?.question_id || q?.id || q?.questionId || 'q').trim() || 'q',
+        String(q?.item_id || q?.question_id || q?.id || q?.questionId || 'q').trim() || 'q',
         String(index)
       ].join('::')
     }))
@@ -3440,15 +3443,17 @@ function renderCurrentPracticeQuestion() {
   if (!q) return;
   resetFeedbackUiForNewQuestion();
 
-  if (q.question_type === "sba") {
+    const itemType = String(q.item_type || q.question_type || "").trim();
+
+  if (itemType === "sba") {
     renderSBAQuestion(q, index, questions.length);
-  } else if (q.question_type === "sba_image") {
+  } else if (itemType === "sba_image") {
     renderSBAImageQuestion(q, index, questions.length);
-  } else if (q.question_type === "fitb") {
+  } else if (itemType === "fitb") {
     renderFITBQuestion(q, index, questions.length);
-  } else if (q.question_type === "sata") {
+  } else if (itemType === "sata") {
     renderSATAQuestion(q, index, questions.length);
-  } else if (q.question_type === "categorize") {
+  } else if (itemType === "categorize") {
     renderCategorizeQuestion(q, index, questions.length);
   } else {
     if (!container) return;
@@ -3462,7 +3467,7 @@ function renderCurrentPracticeQuestion() {
           This temporary renderer only supports SBA right now.
         </div>
         <div style="margin-bottom:14px;">
-          Unsupported question type: <strong>${q.question_type || "(blank)"}</strong>
+          Unsupported question type: <strong>${itemType || "(blank)"}</strong>
         </div>
         <button type="button" class="action-btn" id="practice-next-btn">
           ${index < questions.length - 1 ? "Next Question" : "Finish"}
@@ -3533,7 +3538,7 @@ function initializePracticeStemToggle(container) {
 
 function recordPracticeQuestionResult(question, isCorrect) {
   if (!practiceTestState) return;
-  if (!question || !question.question_id) return;
+  if (!question || !(question.item_id || question.question_id)) return;
 
   const stateKey = getPracticeQuestionStateKey(question);
 
@@ -3546,9 +3551,9 @@ function recordPracticeQuestionResult(question, isCorrect) {
 
   practiceTestState.results.push({
     _stateKey: stateKey,
-    question_id: question.question_id,
+    item_id: question.item_id || question.question_id,
     topic: question.topic || "",
-    question_type: question.question_type || "",
+    item_type: question.item_type || question.question_type || "",
     is_correct: !!isCorrect
   });
 
@@ -4430,7 +4435,7 @@ function handlePracticeAnswer(question, selected, correct, rationale) {
   recordPracticeQuestionResult(question, selected === correct);
   if (stateKey) {
     practiceTestState.answerState[stateKey] = {
-      type: question.question_type || 'sba',
+      type: question.item_type || question.question_type || 'sba',
       selected,
       correct,
       rationale: rationale || '',
@@ -4506,7 +4511,7 @@ function handlePracticeFITBAnswer(question, selected, correct, rationale) {
   recordPracticeQuestionResult(question, isCorrect);
   if (stateKey) {
     practiceTestState.answerState[stateKey] = {
-      type: question.question_type || 'fitb',
+      type: question.item_type || question.question_type || 'fitb',
       selected,
       correct,
       rationale: rationale || '',
@@ -4594,7 +4599,7 @@ function handlePracticeSATAAnswer(question, selectedAnswers, correctAnswers, rat
   recordPracticeQuestionResult(question, isCorrect);
   if (stateKey) {
     practiceTestState.answerState[stateKey] = {
-      type: question.question_type || 'sata',
+      type: question.item_type || question.question_type || 'sata',
       selectedAnswers: Array.isArray(selectedAnswers) ? selectedAnswers : [],
       correctAnswers: Array.isArray(correctAnswers) ? correctAnswers : [],
       rationale: rationale || '',
@@ -4686,7 +4691,7 @@ function handlePracticeCategorizeAnswer(question, container, mappings, placement
   recordPracticeQuestionResult(question, allCorrect);
   if (stateKey) {
     practiceTestState.answerState[stateKey] = {
-      type: question.question_type || 'categorize',
+      type: question.item_type || question.question_type || 'categorize',
       placements: Array.isArray(placements) ? placements : [],
       rationale: rationale || '',
       feedbackShown: true
@@ -6291,7 +6296,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('.feedback-option').forEach(btn => {
     btn.addEventListener('click', () => {
       const question = practiceTestState.questions?.[practiceTestState.currentIndex];
-      const questionId = String(question?.question_id || '').trim();
+      const questionId = String(question?.item_id || question?.question_id || '').trim();
       if (!questionId) return;
 
       const rawValue = String(btn.dataset.value || '').trim();
