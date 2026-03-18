@@ -2016,11 +2016,9 @@ let practiceTestState = {
   requestedQuestionCount: 10,
   answers: {},
   answerState: {},
-  feedbackByQuestionId: {},
   sessionComplete: false,
   practiceTopicsLoaded: false,
   practiceTopicsLoading: false,
-  feedbackSubmitted: false,
   feedbackByQuestionId: {},
   results: [],
   resultsSubmitted: false,
@@ -2359,9 +2357,8 @@ function disableButton(btn) {
   btn.style.cursor = 'not-allowed';
 }
 
-function resetFeedbackUiForNewQuestion() {
+function closePracticeFeedbackMenu() {
   const feedbackMenu = document.getElementById('feedback-menu');
-
   if (feedbackMenu) {
     feedbackMenu.classList.remove('show');
   }
@@ -2371,120 +2368,148 @@ function getCurrentPracticeQuestion() {
   return practiceTestState.questions?.[practiceTestState.currentIndex] || null;
 }
 
-function ensureFeedbackStateForQuestion(questionId) {
-  if (!questionId) return null;
-
-  if (!practiceTestState.feedbackByQuestionId[questionId]) {
-    practiceTestState.feedbackByQuestionId[questionId] = {
-      confusing: false,
-      two_correct: false,
-      none_correct: false,
-      outside_scope: false,
-      comment: ""
-    };
-  }
-
-  return practiceTestState.feedbackByQuestionId[questionId];
+function getCurrentPracticeQuestionId() {
+  const currentQuestion = getCurrentPracticeQuestion();
+  return String(
+    currentQuestion?.question_id ||
+    currentQuestion?.id ||
+    currentQuestion?.questionId ||
+    ''
+  ).trim();
 }
 
-function toggleFeedbackFlag(questionId, key) {
-  const state = ensureFeedbackStateForQuestion(questionId);
-  if (!state || !Object.prototype.hasOwnProperty.call(state, key)) return;
-  if (key === "comment") return;
-  state[key] = !state[key];
+function hasFeedbackForCurrentPracticeQuestion() {
+  const questionId = getCurrentPracticeQuestionId();
+  if (!questionId) return false;
+  return Boolean(practiceTestState.feedbackByQuestionId?.[questionId]);
 }
 
-function setFeedbackComment(questionId, comment) {
-  const state = ensureFeedbackStateForQuestion(questionId);
-  if (!state) return;
-  state.comment = String(comment || "").trim();
-}
+function saveFeedbackForCurrentPracticeQuestion(feedbackType, commentText = '') {
+  const currentQuestion = getCurrentPracticeQuestion();
+  if (!currentQuestion) return;
 
-function clearFeedbackComment(questionId) {
-  const state = ensureFeedbackStateForQuestion(questionId);
-  if (!state) return;
-  state.comment = "";
-}
+  const questionId = getCurrentPracticeQuestionId();
+  if (!questionId) return;
 
-function getFeedbackStateForCurrentQuestion() {
-  const question = getCurrentPracticeQuestion();
-  if (!question?.question_id) return null;
-  return ensureFeedbackStateForQuestion(question.question_id);
+  practiceTestState.feedbackByQuestionId = practiceTestState.feedbackByQuestionId || {};
+  practiceTestState.feedbackByQuestionId[questionId] = {
+    question_id: questionId,
+    feedback_type: String(feedbackType || '').trim(),
+    comment: String(commentText || '').trim()
+  };
 }
 
 function getAllQuestionFeedbackForSubmit() {
-  const results = [];
-
-  Object.entries(practiceTestState.feedbackByQuestionId || {}).forEach(([questionId, feedback]) => {
-    const question = (practiceTestState.questions || []).find(q => q.question_id === questionId);
-    if (!question) return;
-
-    const hasAnyFlag =
-      !!feedback.confusing ||
-      !!feedback.two_correct ||
-      !!feedback.none_correct ||
-      !!feedback.outside_scope;
-
-    const comment = String(feedback.comment || "").trim();
-
-    if (!hasAnyFlag && !comment) return;
-
-    results.push({
-      topic: String(question.topic || "").trim(),
-      question_id: String(question.question_id || "").trim(),
-      confusing: !!feedback.confusing,
-      two_correct: !!feedback.two_correct,
-      none_correct: !!feedback.none_correct,
-      outside_scope: !!feedback.outside_scope,
-      comment
+  const feedbackMap = practiceTestState.feedbackByQuestionId || {};
+  return Object.values(feedbackMap)
+    .filter(item =>
+      item &&
+      String(item.question_id || '').trim() &&
+      String(item.feedback_type || '').trim()
+    )
+    .map(item => {
+      const questionId = String(item.question_id || '').trim();
+      const question = (practiceTestState.questions || []).find(q =>
+        String(q?.question_id || q?.id || q?.questionId || '').trim() === questionId
+      );
+      return {
+        question_id: questionId,
+        feedback_type: String(item.feedback_type || '').trim(),
+        comment: String(item.comment || '').trim(),
+        topic: String(question?.topic || '').trim()
+      };
     });
-  });
-
-  return results;
 }
 
-function renderFeedbackUiForCurrentQuestion() {
-  const question = getCurrentPracticeQuestion();
+function renderPracticeFeedbackStateForCurrentQuestion() {
+  const questionId = getCurrentPracticeQuestionId();
+  const savedFeedback = questionId
+    ? practiceTestState.feedbackByQuestionId?.[questionId]
+    : null;
+  const hasFeedback = hasFeedbackForCurrentPracticeQuestion();
+
+  const feedbackButton = $('feedback-btn');
   const feedbackMenu = document.getElementById('feedback-menu');
   const feedbackOptions = document.querySelectorAll('#feedback-menu .feedback-option');
 
-  if (!question?.question_id) {
-    feedbackOptions.forEach(btn => {
-      btn.classList.remove('selected');
-      btn.removeAttribute('aria-pressed');
-    });
-    return;
+  if (feedbackButton) {
+    feedbackButton.classList.remove('feedback-saved', 'feedback-empty');
+    feedbackButton.classList.add(hasFeedback ? 'feedback-saved' : 'feedback-empty');
+    feedbackButton.disabled = false;
   }
 
-  const state = ensureFeedbackStateForQuestion(question.question_id);
-
   feedbackOptions.forEach(btn => {
-    const rawValue = String(btn.dataset.value || "").trim();
-    let key = rawValue;
-
-    if (key === "two-correct") key = "two_correct";
-    if (key === "none-correct") key = "none_correct";
-    if (key === "outside-scope") key = "outside_scope";
-    if (key === "other") key = "comment";
-
-    let selected = false;
-
-    if (key === "comment") {
-      selected = !!String(state.comment || "").trim();
-    } else {
-      selected = !!state[key];
-    }
-
-    btn.classList.toggle('selected', selected);
-    btn.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    const optionType = String(btn.dataset.value || '').trim();
+    const isSelected = Boolean(savedFeedback && savedFeedback.feedback_type === optionType);
+    btn.classList.remove('disabled');
     btn.disabled = false;
     btn.style.opacity = '';
     btn.style.pointerEvents = '';
+    btn.style.cursor = '';
+    btn.classList.toggle('selected', isSelected);
+    btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
   });
 
   if (feedbackMenu) {
-    feedbackMenu.classList.remove('show');
+    feedbackMenu.classList.remove('is-locked');
   }
+}
+
+function renderPracticeFeedbackAnswerStateForCurrentQuestion() {
+  const questions = practiceTestState.questions || [];
+  const index = Number(practiceTestState.currentIndex || 0);
+  const question = questions[index];
+  if (!question || !question.question_id) return;
+
+  const answerState = practiceTestState.answerState?.[question.question_id];
+  if (!answerState || !answerState.feedbackShown) return;
+
+  if (question.question_type === 'sba' || question.question_type === 'sba_image') {
+    handlePracticeAnswer(question, answerState.selected || '', answerState.correct || '', answerState.rationale || '');
+    return;
+  }
+
+  if (question.question_type === 'fitb') {
+    handlePracticeFITBAnswer(question, answerState.selected || '', answerState.correct || '', answerState.rationale || '');
+    return;
+  }
+
+  if (question.question_type === 'sata') {
+    handlePracticeSATAAnswer(
+      question,
+      Array.isArray(answerState.selectedAnswers) ? answerState.selectedAnswers : [],
+      Array.isArray(answerState.correctAnswers) ? answerState.correctAnswers : [],
+      answerState.rationale || ''
+    );
+    return;
+  }
+
+  if (question.question_type === 'categorize') {
+    const container = document.getElementById("practice-question-container");
+    if (!container) return;
+    const mappings = parseCategorizeMappings(question.correct_blob);
+    const placements = Array.isArray(answerState.placements) ? answerState.placements : [];
+    if (!placements.length) return;
+    handlePracticeCategorizeAnswer(question, container, mappings, placements, answerState.rationale || '');
+  }
+}
+
+function renderFeedbackUiForCurrentQuestion() {
+  renderPracticeFeedbackStateForCurrentQuestion();
+  renderPracticeFeedbackAnswerStateForCurrentQuestion();
+}
+
+function resetFeedbackUiForNewQuestion() {
+  closePracticeFeedbackMenu();
+  const feedbackOptions = document.querySelectorAll('#feedback-menu .feedback-option');
+  feedbackOptions.forEach(btn => {
+    btn.classList.remove('selected');
+    btn.setAttribute('aria-pressed', 'false');
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.pointerEvents = '';
+    btn.style.cursor = '';
+  });
 }
 
 function buildPracticeSessionSnapshot() {
@@ -2583,45 +2608,6 @@ function restorePracticeSessionFromSnapshot(snapshot) {
   if (practiceTestState.questions.length) {
     const maxIndex = practiceTestState.questions.length - 1;
     practiceTestState.currentIndex = Math.max(0, Math.min(maxIndex, practiceTestState.currentIndex));
-  }
-}
-
-function renderFeedbackUiForCurrentQuestion() {
-  const questions = practiceTestState.questions || [];
-  const index = Number(practiceTestState.currentIndex || 0);
-  const question = questions[index];
-  if (!question || !question.question_id) return;
-
-  const answerState = practiceTestState.answerState?.[question.question_id];
-  if (!answerState || !answerState.feedbackShown) return;
-
-  if (question.question_type === 'sba' || question.question_type === 'sba_image') {
-    handlePracticeAnswer(question, answerState.selected || '', answerState.correct || '', answerState.rationale || '');
-    return;
-  }
-
-  if (question.question_type === 'fitb') {
-    handlePracticeFITBAnswer(question, answerState.selected || '', answerState.correct || '', answerState.rationale || '');
-    return;
-  }
-
-  if (question.question_type === 'sata') {
-    handlePracticeSATAAnswer(
-      question,
-      Array.isArray(answerState.selectedAnswers) ? answerState.selectedAnswers : [],
-      Array.isArray(answerState.correctAnswers) ? answerState.correctAnswers : [],
-      answerState.rationale || ''
-    );
-    return;
-  }
-
-  if (question.question_type === 'categorize') {
-    const container = document.getElementById("practice-question-container");
-    if (!container) return;
-    const mappings = parseCategorizeMappings(question.correct_blob);
-    const placements = Array.isArray(answerState.placements) ? answerState.placements : [];
-    if (!placements.length) return;
-    handlePracticeCategorizeAnswer(question, container, mappings, placements, answerState.rationale || '');
   }
 }
 
@@ -2827,7 +2813,6 @@ async function handleStartPracticeClick(event) {
     // Fully reset question results and session state for a fresh practice run.
     practiceTestState.questions = [];
     practiceTestState.currentIndex = 0;
-    practiceTestState.feedbackSubmitted = false;
     practiceTestState.results = [];
     practiceTestState.correctCount = 0;
     practiceTestState.incorrectCount = 0;
@@ -2913,7 +2898,6 @@ async function returnToDashboard() {
     practiceTestState.selectedTopics = [];
     practiceTestState.currentIndex = 0;
     practiceTestState.questions = [];
-    practiceTestState.feedbackSubmitted = false;
     practiceTestState.results = [];
     practiceTestState.correctCount = 0;
     practiceTestState.incorrectCount = 0;
@@ -3018,7 +3002,6 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
   // Reset session state immediately before loading fresh questions.
   practiceTestState.questions = [];
   practiceTestState.currentIndex = 0;
-  practiceTestState.feedbackSubmitted = false;
   practiceTestState.feedbackByQuestionId = {};
   practiceTestState.results = [];
   practiceTestState.correctCount = 0;
@@ -3160,7 +3143,6 @@ function initializePracticeSession(questionSet) {
   practiceTestState.questionCount = practiceTestState.questions.length;
   practiceTestState.currentIndex = 0;
   practiceTestState.results = [];
-  practiceTestState.feedbackSubmitted = false;
   practiceTestState.feedbackByQuestionId = {};
   practiceTestState.resultsSubmitted = false;
   practiceTestState.correctCount = 0;
@@ -3199,61 +3181,43 @@ function renderCurrentPracticeQuestion() {
   const q = questions[index];
   if (!q) return;
   resetFeedbackUiForNewQuestion();
-  practiceTestState.feedbackSubmitted = false;
 
   if (q.question_type === "sba") {
     renderSBAQuestion(q, index, questions.length);
-    renderFeedbackUiForCurrentQuestion();
-    return;
-  }
-
-  if (q.question_type === "sba_image") {
+  } else if (q.question_type === "sba_image") {
     renderSBAImageQuestion(q, index, questions.length);
-    renderFeedbackUiForCurrentQuestion();
-    return;
-  }
-
-  if (q.question_type === "fitb") {
+  } else if (q.question_type === "fitb") {
     renderFITBQuestion(q, index, questions.length);
-    renderFeedbackUiForCurrentQuestion();
-    return;
-  }
-
-  if (q.question_type === "sata") {
+  } else if (q.question_type === "sata") {
     renderSATAQuestion(q, index, questions.length);
-    renderFeedbackUiForCurrentQuestion();
-    return;
-  }
-
-  if (q.question_type === "categorize") {
+  } else if (q.question_type === "categorize") {
     renderCategorizeQuestion(q, index, questions.length);
-    renderFeedbackUiForCurrentQuestion();
-    return;
+  } else {
+    if (!container) return;
+
+    container.innerHTML = `
+      <div style="padding:20px; border:1px solid #ddd; border-radius:10px; background:#fff;">
+        <div style="font-size:0.9rem; color:#5f718f; margin-bottom:10px;">
+          Question ${index + 1} of ${questions.length}
+        </div>
+        <div style="font-weight:600; margin-bottom:15px;">
+          This temporary renderer only supports SBA right now.
+        </div>
+        <div style="margin-bottom:14px;">
+          Unsupported question type: <strong>${q.question_type || "(blank)"}</strong>
+        </div>
+        <button type="button" class="action-btn" id="practice-next-btn">
+          ${index < questions.length - 1 ? "Next Question" : "Finish"}
+        </button>
+      </div>
+    `;
+
+    const nextBtn = container.querySelector("#practice-next-btn");
+    if (nextBtn) {
+      nextBtn.addEventListener("click", advancePracticeQuestion);
+    }
   }
 
-  if (!container) return;
-
-  container.innerHTML = `
-    <div style="padding:20px; border:1px solid #ddd; border-radius:10px; background:#fff;">
-      <div style="font-size:0.9rem; color:#5f718f; margin-bottom:10px;">
-        Question ${index + 1} of ${questions.length}
-      </div>
-      <div style="font-weight:600; margin-bottom:15px;">
-        This temporary renderer only supports SBA right now.
-      </div>
-      <div style="margin-bottom:14px;">
-        Unsupported question type: <strong>${q.question_type || "(blank)"}</strong>
-      </div>
-      <button type="button" class="action-btn" id="practice-next-btn">
-        ${index < questions.length - 1 ? "Next Question" : "Finish"}
-      </button>
-    </div>
-  `;
-
-  const nextBtn = container.querySelector("#practice-next-btn");
-  if (nextBtn) {
-    nextBtn.addEventListener("click", advancePracticeQuestion);
-  }
   renderFeedbackUiForCurrentQuestion();
 }
 
@@ -6048,64 +6012,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.querySelectorAll('.feedback-option').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      // Disable the button immediately to prevent spamming
-      btn.disabled = true;
-      btn.style.opacity = 0.55;
-      btn.style.cursor = 'not-allowed';
-      practiceTestState.feedbackSubmitted = true;
+    btn.addEventListener('click', () => {
+      const selectedFeedbackType = String(btn.dataset.value || '').trim();
+      let optionalComment = '';
 
-      let value = btn.dataset.value;
-      const questionId = practiceTestState.questions[practiceTestState.currentIndex]?.question_id;
-      const topic = practiceTestState.questions[practiceTestState.currentIndex]?.topic;
-
-      let comment = "";
-
-      if (value === "two-correct") value = "two_correct";
-      if (value === "none-correct") value = "none_correct";
-      if (value === "outside-scope") value = "outside_scope";
-
-      if (btn.dataset.value === "other") {
-        value = "student_comments";
-        comment = prompt("Enter your comment:") || "";
+      if (selectedFeedbackType === 'other') {
+        optionalComment = prompt('Enter your comment:') || '';
       }
 
-      if (questionId) {
-        practiceTestState.feedbackByQuestionId[questionId] = {
-          type: value,
-          comment,
-          updatedAt: Date.now()
-        };
+      saveFeedbackForCurrentPracticeQuestion(selectedFeedbackType, optionalComment);
+      if (typeof savePracticeSessionToLocal === 'function') {
         savePracticeSessionToLocal();
       }
-
-      if (questionId && topic) {
-        try {
-          await postToAppsScript(PRACTICE_API_URL, {
-            action: 'submitQuestionFeedback',
-            email: participantEmail,
-            topic,
-            question_id: questionId,
-            type: value,
-            comment
-          });
-
-          console.log(`Feedback submitted for ${questionId}: ${value}`);
-        } catch (err) {
-          console.error('Failed to submit feedback:', err);
-        }
-      } else {
-        toggleFeedbackFlag(questionId, key);
-      }
-
-      practiceTestState.feedbackSubmitted = true;
-      renderFeedbackUiForCurrentQuestion();
-      feedbackMenu.classList.remove('show');
-
-      // Optional: show acknowledgment
-      btn.textContent = '✔ ' + btn.textContent;
-      setTimeout(() => { btn.textContent = btn.textContent.replace('✔ ', ''); }, 1200);
-      savePracticeSessionToLocal();
+      renderPracticeFeedbackStateForCurrentQuestion();
+      closePracticeFeedbackMenu();
     });
   });
 
