@@ -2383,44 +2383,65 @@ function getCurrentPracticeQuestionId() {
 function hasFeedbackForCurrentPracticeQuestion() {
   const questionId = getCurrentPracticeQuestionId();
   if (!questionId) return false;
-  return Boolean(practiceTestState.feedbackByQuestionId?.[questionId]);
+  const state = practiceTestState.feedbackByQuestionId?.[questionId];
+  if (!state) return false;
+  return Boolean(
+    state.confusing ||
+    state.two_correct ||
+    state.none_correct ||
+    state.outside_scope ||
+    String(state.comment || '').trim()
+  );
 }
 
-function saveFeedbackForCurrentPracticeQuestion(feedbackType, commentText = '') {
-  const currentQuestion = getCurrentPracticeQuestion();
-  if (!currentQuestion) return;
-
-  const questionId = getCurrentPracticeQuestionId();
-  if (!questionId) return;
-
+function ensureFeedbackStateForQuestion(questionId) {
   practiceTestState.feedbackByQuestionId = practiceTestState.feedbackByQuestionId || {};
-  practiceTestState.feedbackByQuestionId[questionId] = {
-    question_id: questionId,
-    feedback_type: String(feedbackType || '').trim(),
-    comment: String(commentText || '').trim()
+  const existing = practiceTestState.feedbackByQuestionId[questionId] || {};
+  const normalized = {
+    confusing: Boolean(existing.confusing),
+    two_correct: Boolean(existing.two_correct),
+    none_correct: Boolean(existing.none_correct),
+    outside_scope: Boolean(existing.outside_scope),
+    comment: String(existing.comment || '').trim()
   };
+  practiceTestState.feedbackByQuestionId[questionId] = normalized;
+  return normalized;
 }
 
 function getAllQuestionFeedbackForSubmit() {
   const feedbackMap = practiceTestState.feedbackByQuestionId || {};
-  return Object.values(feedbackMap)
-    .filter(item =>
-      item &&
-      String(item.question_id || '').trim() &&
-      String(item.feedback_type || '').trim()
-    )
-    .map(item => {
-      const questionId = String(item.question_id || '').trim();
+  const results = Object.entries(feedbackMap)
+    .map(([key, value]) => {
+      const questionId = String(key || '').trim();
+      if (!questionId || !value || typeof value !== 'object') return null;
+
+      const state = ensureFeedbackStateForQuestion(questionId);
+      const hasFeedback = Boolean(
+        state.confusing ||
+        state.two_correct ||
+        state.none_correct ||
+        state.outside_scope ||
+        String(state.comment || '').trim()
+      );
+      if (!hasFeedback) return null;
+
       const question = (practiceTestState.questions || []).find(q =>
         String(q?.question_id || q?.id || q?.questionId || '').trim() === questionId
       );
       return {
         question_id: questionId,
-        feedback_type: String(item.feedback_type || '').trim(),
-        comment: String(item.comment || '').trim(),
+        confusing: state.confusing,
+        two_correct: state.two_correct,
+        none_correct: state.none_correct,
+        outside_scope: state.outside_scope,
+        comment: String(state.comment || '').trim(),
         topic: String(question?.topic || '').trim()
       };
-    });
+    })
+    .filter(Boolean);
+
+  console.log('[practice feedback] final feedback payload', results);
+  return results;
 }
 
 function renderPracticeFeedbackStateForCurrentQuestion() {
@@ -2442,7 +2463,16 @@ function renderPracticeFeedbackStateForCurrentQuestion() {
 
   feedbackOptions.forEach(btn => {
     const optionType = String(btn.dataset.value || '').trim();
-    const isSelected = Boolean(savedFeedback && savedFeedback.feedback_type === optionType);
+    const isSelected = Boolean(
+      savedFeedback &&
+      (
+        (optionType === 'confusing' && savedFeedback.confusing) ||
+        (optionType === 'two-correct' && savedFeedback.two_correct) ||
+        (optionType === 'none-correct' && savedFeedback.none_correct) ||
+        (optionType === 'outside-scope' && savedFeedback.outside_scope) ||
+        (optionType === 'other' && String(savedFeedback.comment || '').trim())
+      )
+    );
     btn.classList.remove('disabled');
     btn.disabled = false;
     btn.style.opacity = '';
@@ -3360,6 +3390,7 @@ async function submitPracticeResultsAndUpdateDashboard(options = {}) {
     question_results: results || [],
     question_feedback: getAllQuestionFeedbackForSubmit()
   };
+  console.log('[practice submit] payload', payload);
 
   try {
     const data = await postToAppsScript(PRACTICE_API_URL, payload);
@@ -6015,19 +6046,53 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.querySelectorAll('.feedback-option').forEach(btn => {
     btn.addEventListener('click', () => {
-      const selectedFeedbackType = String(btn.dataset.value || '').trim();
-      let optionalComment = '';
+      const question = practiceTestState.questions?.[practiceTestState.currentIndex];
+      const questionId = question?.question_id;
+      if (!questionId) return;
 
-      if (selectedFeedbackType === 'other') {
-        optionalComment = prompt('Enter your comment:') || '';
+      let rawValue = String(btn.dataset.value || '').trim();
+      let comment = '';
+
+      if (rawValue === 'other') {
+        comment = (prompt('Enter your comment:') || '').trim();
+        if (!comment) {
+          feedbackMenu.classList.remove('show');
+          return;
+        }
       }
 
-      saveFeedbackForCurrentPracticeQuestion(selectedFeedbackType, optionalComment);
-      if (typeof savePracticeSessionToLocal === 'function') {
-        savePracticeSessionToLocal();
+      const state = ensureFeedbackStateForQuestion(questionId);
+
+      state.confusing = false;
+      state.two_correct = false;
+      state.none_correct = false;
+      state.outside_scope = false;
+
+      if (rawValue === 'two-correct') state.two_correct = true;
+      if (rawValue === 'none-correct') state.none_correct = true;
+      if (rawValue === 'confusing') state.confusing = true;
+      if (rawValue === 'outside-scope') state.outside_scope = true;
+
+      if (rawValue === 'other') {
+        state.comment = comment;
+      } else {
+        state.comment = '';
       }
-      renderPracticeFeedbackStateForCurrentQuestion();
+
+      practiceTestState.feedbackSubmitted = false;
+      renderFeedbackUiForCurrentQuestion();
       closePracticeFeedbackMenu();
+      savePracticeSessionToLocal();
+
+      console.log('[practice feedback] saved locally', {
+        questionId,
+        state: practiceTestState.feedbackByQuestionId[questionId]
+      });
+
+      btn.textContent = '✔ ' + btn.textContent;
+      setTimeout(() => {
+        btn.textContent = btn.textContent.replace('✔ ', '');
+      }, 1200);
     });
   });
 
