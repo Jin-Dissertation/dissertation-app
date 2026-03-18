@@ -3040,20 +3040,28 @@ async function startPracticeSessionWithSettings(selectedTopics, questionCount) {
     practiceTestState.selectedTopics = [...topics];
     practiceTestState.requestedQuestionCount = count;
     practiceTestState.questionCount = count;
-    initializePracticeSession(data.question_set);
+    if (!data || !Array.isArray(data.question_set) || data.question_set.length === 0) {
+      throw new Error('No practice questions were returned.');
+    }
 
     if (overlayQuestionHost) {
       overlayQuestionHost.innerHTML = '';
     }
 
     showPracticeQuestionOverlay({ moveQuestionContainer: true });
+    initializePracticeSession(data.question_set);
+    if (practiceQuestionContainer && !practiceQuestionContainer.innerHTML.trim()) {
+      console.warn('Question container was empty after initializePracticeSession; forcing first render.');
+      renderCurrentPracticeQuestion();
+    }
     savePracticeSessionToLocal();
 
     return practiceTestState.questions;
   } catch (err) {
     hidePracticeQuestionOverlay();
-    const questionHost = $('full-question-content');
-    if (questionHost) questionHost.innerHTML = '';
+    if (overlayQuestionHost) {
+      overlayQuestionHost.innerHTML = '';
+    }
     renderPracticeRestartErrorState(getFriendlyNetworkMessage(err));
     throw err;
   }
@@ -3175,9 +3183,9 @@ function initializePracticeSession(questionSet) {
 function renderCurrentPracticeQuestion() {
   const questions = practiceTestState.questions || [];
   const index = practiceTestState.currentIndex || 0;
+  const container = $('practice-question-container');
 
   if (!questions.length) {
-    const container = document.getElementById("practice-question-container");
     if (container) {
       container.innerHTML = "";
     }
@@ -3219,7 +3227,6 @@ function renderCurrentPracticeQuestion() {
     return;
   }
 
-  const container = document.getElementById("practice-question-container");
   if (!container) return;
 
   container.innerHTML = `
