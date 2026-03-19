@@ -433,15 +433,37 @@
         height: clamp(414px, 64vh, 598px);
       }
     }
-    .promptSections { display:grid; gap:6px; min-width: 0; }
+    .promptSections { display:grid; gap:12px; min-width: 0; }
     .promptSection {
-      border:1px solid var(--border);
+      border:1px solid #bdcde5;
+      border-left: 4px solid #9ab7e8;
       border-radius:10px;
-      background:#f8fbff;
-      padding:5px;
+      background:#f3f8ff;
+      padding:10px;
       min-width: 0;
     }
-    .promptSectionTitle { margin:0 0 4px; font-size:13px; font-weight:700; }
+    .promptSectionTitle {
+      margin:0 0 8px;
+      font-size:14px;
+      font-weight:800;
+      color:#0f1f39;
+      letter-spacing: 0.005em;
+    }
+    .promptSection.section-accept {
+      background: #f2f7ff;
+      border-color: #c4d5ee;
+      border-left-color: #7da1d9;
+    }
+    .promptSection.section-refine {
+      background: #f2faf7;
+      border-color: #c2ddd2;
+      border-left-color: #6ea989;
+    }
+    .promptSection.section-audit {
+      background: #fff8ef;
+      border-color: #e5d3b6;
+      border-left-color: #c39854;
+    }
     .promptListCompact { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:8px; min-width: 0; }
     .promptListSingle { display:block; min-width: 0; width: 100%; max-width: 100%; overflow-x: hidden; }
     .promptListSingle .promptCard { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
@@ -449,7 +471,7 @@
     .promptCard {
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #fff;
+      background: #ffffff;
       padding: 8px 10px;
       min-height: 0;
       min-width: 0;
@@ -458,9 +480,9 @@
       transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
     }
     .promptCard:hover {
-      border-color: var(--accent);
-      box-shadow: 0 4px 10px rgba(16,33,61,0.08);
-      background: #fbfdff;
+      border-color: #a9bfdc;
+      box-shadow: 0 2px 8px rgba(16,33,61,0.07);
+      background: #fcfdff;
     }
     .promptCard:focus-visible {
       outline: 2px solid var(--accent);
@@ -791,8 +813,8 @@
       .card { padding: 12px; }
       .subBand { padding: 12px 14px; margin-top: 10px; }
       .groupCard { padding: 11px; }
-      .promptSection { padding: 4px; }
-      .promptSections { gap: 5px; }
+      .promptSection { padding: 9px; }
+      .promptSections { gap: 10px; }
       .promptListCompact { gap: 6px; }
       .promptHeader { gap: 6px; }
       .promptActions { gap: 5px; }
@@ -1023,12 +1045,12 @@
 
               <div class="promptArea" style="margin-top:8px;">
                 <div class="promptSections">
-                  <div class="promptSection">
+                  <div class="promptSection section-accept">
                     <h4 class="promptSectionTitle">Accept or Replace Question</h4>
                     <div id="promptGroupAcceptReplace" class="promptListCompact"></div>
                   </div>
 
-                  <div class="promptSection">
+                  <div class="promptSection section-refine">
                     <h4 class="promptSectionTitle">Refine Options</h4>
                     <div id="promptGroupRefine" class="promptListCompact"></div>
                   </div>
@@ -1037,7 +1059,7 @@
                     <div id="promptGroupReview" class="promptListSingle"></div>
                   </div>
 
-                  <div class="promptSection">
+                  <div class="promptSection section-audit">
                     <h4 class="promptSectionTitle">Audit Options</h4>
                     <div id="promptGroupAudit" class="promptListCompact"></div>
                   </div>
