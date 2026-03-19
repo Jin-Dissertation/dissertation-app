@@ -538,6 +538,29 @@
       line-height: 1;
       flex: 0 0 30px;
     }
+    @media (min-width: 900px) {
+      /* Desktop prompt card vertical centering */
+      .promptCard[role="button"] .promptHeader {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+      }
+      .promptCard[role="button"] .promptTitle {
+        margin: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        text-align: left;
+        line-height: 1.25;
+        align-self: center;
+        justify-self: start;
+      }
+      .promptCard[role="button"] .promptActions {
+        align-self: center;
+      }
+      .promptCard[role="button"] .promptChevronBtn {
+        align-self: center;
+      }
+    }
     .promptChevronBtn:hover {
       background: var(--accent-soft);
       border-color: var(--accent);
