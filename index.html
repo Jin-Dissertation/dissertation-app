@@ -517,12 +517,6 @@
       flex-wrap: wrap;
       justify-content: flex-end;
     }
-    @media (max-width: 820px) {
-      .promptTopRowActions {
-        width: 100%;
-        justify-content: flex-start;
-      }
-    }
     .promptHeader { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; min-width: 0; box-sizing: border-box; }
     .promptHeaderText {
       min-width: 0;
@@ -865,10 +859,144 @@
       }
     }
 
-    @media (max-width: 820px) {
-      .promptDesc { font-size: 13px; }
-      .btn { padding: 6px 8px; }
-      .promptArea { max-height: calc(100vh - 260px); overflow:auto; padding-right:4px; min-width: 0; overflow-x: hidden; }
+    /* Mobile-only layout overrides (phones / touch-first small screens only). */
+    @media (max-width: 820px) and (hover: none) and (pointer: coarse) {
+      body { font-size: 15px; }
+      .pageShell { padding: 12px 12px 16px; }
+      .layoutGrid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+      }
+      .main {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+      .sidebar { display: none; }
+
+      .appHeaderBar {
+        padding: 4px 0;
+        margin-bottom: 8px;
+      }
+      .row {
+        width: 100%;
+        min-width: 0;
+        gap: 8px;
+      }
+      .row > * {
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      .card,
+      .subBand,
+      .groupCard,
+      .promptSection,
+      .promptCard,
+      .modalCard,
+      .timerCard,
+      .finalActionRow {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
+      .card + .card,
+      .subBand + .subBand,
+      .promptSection + .promptSection {
+        margin-top: 4px;
+      }
+
+      .twoCol,
+      .promptGroups,
+      .promptListCompact,
+      .modelGrid,
+      .product-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+      }
+
+      .promptArea {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
+        overflow-x: hidden;
+        box-sizing: border-box;
+      }
+      #promptsInner,
+      .promptListSingle,
+      .promptCard,
+      .promptDetails,
+      .promptDetailsText {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      .promptHeader {
+        gap: 10px;
+      }
+      .promptTopRowActions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+      .promptActions {
+        gap: 8px;
+      }
+      .copyPromptRow {
+        align-items: flex-start;
+      }
+
+      .btn,
+      .copyIconBtn,
+      .promptChevronBtn,
+      .accessBtn,
+      #btnPauseTimer {
+        min-height: 44px;
+      }
+      .copyIconBtn,
+      .promptChevronBtn {
+        width: 44px;
+        height: 44px;
+        flex: 0 0 44px;
+      }
+      .btn {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.2;
+        padding: 10px 12px;
+      }
+      .tag,
+      .pill {
+        white-space: normal;
+      }
+      .summaryLeft {
+        min-width: 0;
+      }
+
+      .accessRow {
+        flex-wrap: wrap;
+      }
+      .accessInput,
+      .accessBtn {
+        width: 100%;
+      }
+      .accessBtn {
+        justify-content: center;
+      }
+
+      .timerHeaderRow,
+      .timerInlineControls {
+        flex-wrap: wrap;
+      }
+      .timerInlineControls {
+        width: 100%;
+        justify-content: space-between;
+      }
     }
 
   </style>
@@ -2868,7 +2996,7 @@ Place the correct answer first and bold it.`
       if (copied) {
         toast("Copied ✅");
       } else {
-        toast("Clipboard blocked — text saved in panel");
+        toast("Clipboard blocked — please copy manually");
       }
 
       return true;
