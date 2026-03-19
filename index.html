@@ -449,16 +449,94 @@
     .promptListSingle .promptCard { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
     .promptReviewBlock { min-width: 0; width: 100%; max-width: 100%; overflow-x: hidden; box-sizing: border-box; margin: 0; padding: 0; }
     .promptCard {
-      border:1px solid var(--border);
-      border-radius:8px;
-      background:#fff;
-      padding:6px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      padding: 8px;
       min-height: 40px;
       min-width: 0;
       box-sizing: border-box;
+      cursor: pointer;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, transform 0.12s ease;
     }
-    .promptHeader { display:flex; justify-content:space-between; align-items:center; gap:8px; min-width: 0; box-sizing: border-box; }
-    .promptActions { display:flex; align-items:center; gap:6px; min-width: 0; }
+    .promptCard:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 10px rgba(16,33,61,0.08);
+      background: #fbfdff;
+    }
+    .promptCard:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .promptCard.is-active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+    .promptHeader { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; min-width: 0; box-sizing: border-box; }
+    .promptHeaderText {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .promptActions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+    .promptChevronBtn {
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      flex: 0 0 30px;
+    }
+    .promptChevronBtn:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: #1f4ca4;
+    }
+    .promptChevronIcon {
+      display: inline-block;
+      font-size: 14px;
+      line-height: 1;
+      transition: transform 0.18s ease;
+    }
+    .promptCard.is-expanded .promptChevronIcon {
+      transform: rotate(90deg);
+    }
+    .promptDetails {
+      display: none;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .promptCard.is-expanded .promptDetails {
+      display: block;
+    }
+    .promptDetailsHelp {
+      margin: 0 0 8px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .promptDetailsText {
+      margin: 0;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fbff;
+      font-size: 12px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      max-height: 220px;
+      overflow: auto;
+      box-sizing: border-box;
+    }
     .copyIconBtn {
       width: 30px;
       height: 30px;
@@ -703,7 +781,6 @@
       .subBand { padding: 12px 14px; margin-top: 10px; }
       .groupCard { padding: 11px; }
       .promptSection { padding: 4px; }
-      .promptCard { padding: 5px; min-height: 35px; }
       .promptSections { gap: 5px; }
       .promptListCompact { gap: 6px; }
       .promptHeader { gap: 6px; }
@@ -743,7 +820,6 @@
     }
 
     @media (max-width: 820px) {
-      .promptCard { padding: 6px; }
       .promptDesc { font-size: 12px; }
       .btn { padding: 6px 8px; }
       .promptArea { max-height: calc(100vh - 260px); overflow:auto; padding-right:4px; min-width: 0; overflow-x: hidden; }
@@ -2947,33 +3023,66 @@ Place the correct answer first and bold it.`
       const makePromptCard = (prompt) => {
         const card = document.createElement("div");
         card.className = "promptCard";
+        card.dataset.action = "copy";
+        card.dataset.id = prompt.id;
+        card.tabIndex = 0;
+        card.setAttribute("role", "button");
+        card.setAttribute("aria-label", `Copy ${prompt.title}`);
 
         const header = document.createElement("div");
         header.className = "promptHeader";
 
+        const headerText = document.createElement("div");
+        headerText.className = "promptHeaderText";
+
         const title = document.createElement("div");
         title.className = "promptTitle";
         title.textContent = prompt.title;
-        header.appendChild(title);
-
-        const actions = document.createElement("div");
-        actions.className = "promptActions";
-
-        const btn = makeCopyIconButton({ label: "Copy prompt", title: "Copy prompt" });
-        btn.dataset.action = "copy";
-        btn.dataset.id = prompt.id;
-
-        actions.appendChild(btn);
-
-        header.appendChild(actions);
-        card.appendChild(header);
+        headerText.appendChild(title);
 
         if (prompt.description) {
           const desc = document.createElement("p");
           desc.className = "promptDesc";
           desc.textContent = prompt.description;
-          card.appendChild(desc);
+          headerText.appendChild(desc);
         }
+
+        header.appendChild(headerText);
+
+        const actions = document.createElement("div");
+        actions.className = "promptActions";
+
+        const chevronBtn = document.createElement("button");
+        chevronBtn.type = "button";
+        chevronBtn.className = "promptChevronBtn";
+        chevronBtn.dataset.action = "toggle-details";
+        chevronBtn.dataset.id = prompt.id;
+        chevronBtn.setAttribute("aria-label", `Show details for ${prompt.title}`);
+        chevronBtn.setAttribute("aria-expanded", "false");
+        chevronBtn.innerHTML = `<span class="promptChevronIcon" aria-hidden="true">›</span>`;
+
+        actions.appendChild(chevronBtn);
+
+        header.appendChild(actions);
+        card.appendChild(header);
+
+        const details = document.createElement("div");
+        details.className = "promptDetails";
+        details.id = `promptDetails_${prompt.id}`;
+
+        const help = document.createElement("p");
+        help.className = "promptDetailsHelp";
+        help.textContent = "Click anywhere on this card to copy this prompt.";
+
+        const fullText = document.createElement("pre");
+        fullText.className = "promptDetailsText";
+        fullText.textContent = fillTemplate(getPromptText(prompt.id));
+
+        details.appendChild(help);
+        details.appendChild(fullText);
+        card.appendChild(details);
+
+        chevronBtn.setAttribute("aria-controls", details.id);
 
         return card;
       };
@@ -2988,31 +3097,74 @@ Place the correct answer first and bold it.`
       });
 
       const wrapper = $("promptsInner");
-      wrapper.onclick = async (e) => {
-        const btn = e.target.closest("button");
-        if (btn) e.preventDefault();
-        if (!btn) return;
+      const togglePromptDetails = (chevron) => {
+        if (!chevron) return;
+        const card = chevron.closest(".promptCard");
+        if (!card) return;
+        const isExpanded = card.classList.toggle("is-expanded");
+        chevron.setAttribute("aria-expanded", String(isExpanded));
+        chevron.setAttribute(
+          "aria-label",
+          `${isExpanded ? "Hide" : "Show"} details for ${card.querySelector(".promptTitle")?.textContent || "prompt"}`
+        );
+      };
 
-        const action = btn.dataset.action;
-        const id = btn.dataset.id;
-        if (action !== "copy" || !id) return;
+      const copyPromptFromCard = async (card) => {
+        if (!card) return;
+        const id = card.dataset.id;
+        if (!id) return;
 
         const prompt = PROMPT_META.find((x) => x.id === id);
         if (!prompt) return;
 
         const promptText = fillTemplate(getPromptText(id));
-        showCopiedState(btn);
         const ok = await copyToClipboard(promptText, prompt.title);
+
         if (ok) {
           logEvent("prompt_copied", { promptId: id });
-          sendAutosave(buildAutosave("prompt_copied", { promptName: id, details: { promptId: id, promptTitle: prompt.title } }));
-          btn.classList.add("isActive");
-          if (btn._activeTimer) clearTimeout(btn._activeTimer);
-          btn._activeTimer = setTimeout(() => {
-            btn.classList.remove("isActive");
+          sendAutosave(buildAutosave("prompt_copied", {
+            promptName: id,
+            details: { promptId: id, promptTitle: prompt.title }
+          }));
+
+          card.classList.add("is-active");
+          if (card._activeTimer) clearTimeout(card._activeTimer);
+          card._activeTimer = setTimeout(() => {
+            card.classList.remove("is-active");
           }, 400);
         }
-        btn.blur();
+
+        card.blur?.();
+      };
+
+      wrapper.onclick = async (e) => {
+        const chevron = e.target.closest(".promptChevronBtn");
+        if (chevron) {
+          e.preventDefault();
+          e.stopPropagation();
+          togglePromptDetails(chevron);
+          return;
+        }
+
+        const card = e.target.closest(".promptCard[data-action='copy']");
+        if (!card) return;
+        await copyPromptFromCard(card);
+      };
+
+      wrapper.onkeydown = async (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        const chevron = e.target.closest(".promptChevronBtn");
+        if (chevron) {
+          e.preventDefault();
+          e.stopPropagation();
+          togglePromptDetails(chevron);
+          return;
+        }
+
+        const card = e.target.closest(".promptCard[data-action='copy']");
+        if (!card) return;
+        e.preventDefault();
+        await copyPromptFromCard(card);
       };
     }
 
