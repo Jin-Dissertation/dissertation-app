@@ -397,16 +397,25 @@
       color: #4b5563;
       line-height: 1.3;
     }
-    .copiedText.recentTextarea {
+    .copiedText.recentPreview {
       width: 100%;
       flex: 1 1 auto;
       min-height: 0;
       height: auto;
       overflow: auto;
       white-space: pre-wrap;
-      resize: none;
+      word-break: break-word;
+      font-family: inherit;
       font-size: 14px;
       line-height: 1.45;
+      color: inherit;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .copiedText.recentPreview.is-empty {
+      color: var(--muted);
     }
     @media (min-width: 900px) {
       .layoutGrid {
@@ -1031,7 +1040,7 @@
         <aside class="sidebar">
           <div class="card stickySidebar recentCard">
             <h3 style="margin:0 0 8px; font-size:16px;">Most Recently Copied</h3>
-            <textarea id="recentCopiedText" class="copiedText recentTextarea" readonly placeholder="Nothing copied yet. Click any Copy button to see it here."></textarea>
+            <div id="recentCopiedText" class="copiedText recentPreview" aria-live="polite"></div>
           </div>
           <div class="card timerCard" id="sessionTimerCard">
             <div class="timerHeaderRow">
@@ -2895,7 +2904,12 @@ Place the correct answer first and bold it.`
       const text = $("recentCopiedText");
       if (!text) return;
 
-      text.value = lastCopiedText.trim() ? lastCopiedText : "";
+      const hasText = !!lastCopiedText.trim();
+      text.textContent = hasText
+        ? lastCopiedText
+        : "Nothing copied yet. Click any Copy button to see it here.";
+
+      text.classList.toggle("is-empty", !hasText);
     }
 
     function renderPromptList() {
