@@ -47,25 +47,28 @@
       color: var(--text);
       font-weight: 600;
     }
-    .accessMeta {
-      max-width: 640px;
-      margin: 16px auto 0;
-      padding: 0 4px;
+    .pageFooter {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
       text-align: left;
+      gap: 4px;
+    }
+    .pageFooterMeta {
+      margin: 0;
+      padding: 0;
       font-size: 12px;
       line-height: 1.4;
-      color: #6b7d99;
-    }
-    .accessMeta footer {
-      padding: 0;
-      margin: 0;
-      display: block;
+      color: var(--muted);
       white-space: normal;
       overflow-wrap: anywhere;
       word-break: normal;
     }
-    .accessMetaLinks {
-      margin-top: 6px;
+    .pageFooterLink {
+      margin-top: 4px;
+      font-size: 12px;
+      line-height: 1.4;
     }
     .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
     @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
@@ -214,10 +217,7 @@
         margin-top: 14px;
         padding: 18px 18px;
       }
-      .accessMeta {
-        max-width: 100%;
-        margin-top: 10px;
-      }
+      .pageFooter { margin-top: 12px; }
     }
     @media (max-width: 680px) {
       .modelGrid, .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -1160,6 +1160,19 @@
           </div>
         </div>
       </details>
+      <div class="pageFooter">
+        <footer id="buildInfo" class="pageFooterMeta"><span id="lastUpdated"></span></footer>
+        <div id="helpLinkRow" class="pageFooterLink">
+          <a
+            href="https://jin-dissertation.github.io/dissertation-app/help.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="helpFaqLink"
+          >
+            Help / FAQ
+          </a>
+        </div>
+      </div>
         </div>
 
         <aside class="sidebar">
@@ -1210,20 +1223,6 @@
   <div id="trainingEndFallback" class="card training-tip" style="display:none; margin: 8px 24px 12px;">
     <span class="training-tip-label">Training tip</span>
     Training activity complete. You can now close this window and return to the training.
-  </div>
-
-  <div class="accessMeta">
-    <footer id="buildInfo"><span id="lastUpdated"></span></footer>
-    <div id="helpLinkRow" class="accessMetaLinks">
-      <a
-        href="https://jin-dissertation.github.io/dissertation-app/help.html"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="helpFaqLink"
-      >
-        Help / FAQ
-      </a>
-    </div>
   </div>
 
   <div class="toast" id="toast"></div>
