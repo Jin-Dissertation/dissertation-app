@@ -356,26 +356,25 @@
     .modalCard { width:min(460px, calc(100vw - 24px)); background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; }
     .layoutGrid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 320px;
-      gap: 18px;
+      grid-template-columns: minmax(0, 1fr) 240px;
+      gap: 16px;
       align-items: start;
     }
     .main { min-width: 0; }
     .sidebar {
-      width: 320px;
+      width: 240px;
       position: sticky;
       top: 18px;
       align-self: start;
-      max-height: calc(100vh - 36px);
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
     .stickySidebar.recentCard {
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 36px);
-      max-height: calc(100vh - 36px);
+      height: clamp(360px, 56vh, 520px);
+      max-height: clamp(360px, 56vh, 520px);
       overflow: hidden;
     }
     .recentCard h3 {
@@ -421,15 +420,14 @@
     }
     @media (min-width: 900px) {
       .layoutGrid {
-        grid-template-columns: minmax(0, 1fr) 320px;
+        grid-template-columns: minmax(0, 1fr) 240px;
       }
       .sidebar {
-        width: 320px;
+        width: 240px;
         top: 18px;
-        max-height: calc(100vh - 36px);
       }
       .stickySidebar.recentCard {
-        height: calc(100vh - 36px);
+        height: clamp(360px, 56vh, 520px);
       }
     }
     .promptSections { display:grid; gap:6px; min-width: 0; }
