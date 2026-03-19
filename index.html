@@ -938,14 +938,35 @@
       }
 
       .promptHeader {
-        gap: 10px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 12px;
+      }
+      .promptCard {
+        padding: 14px 16px;
+        min-height: 78px;
+      }
+      .promptHeaderText {
+        min-width: 0;
+        display: flex;
+        justify-content: flex-start;
+        align-self: center;
+      }
+      .promptTitle {
+        margin: 0;
+        text-align: left;
+        justify-content: flex-start;
+        align-self: center;
+        line-height: 1.25;
       }
       .promptTopRowActions {
         width: 100%;
         justify-content: flex-start;
       }
       .promptActions {
-        gap: 8px;
+        gap: 0;
+        align-items: center;
       }
       .copyPromptRow {
         align-items: flex-start;
@@ -960,9 +981,21 @@
       }
       .copyIconBtn,
       .promptChevronBtn {
-        width: 44px;
-        height: 44px;
-        flex: 0 0 44px;
+        width: 50px;
+        height: 50px;
+        flex: 0 0 50px;
+      }
+      .promptChevronBtn {
+        padding: 0;
+      }
+      .promptSections {
+        gap: 8px;
+      }
+      .promptListCompact {
+        gap: 8px;
+      }
+      .promptListSingle .promptCard + .promptCard {
+        margin-top: 8px;
       }
       .btn {
         white-space: normal;
