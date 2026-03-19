@@ -8,9 +8,9 @@
     @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap");
     :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; }
     body { margin:0; font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); letter-spacing: .01em; }
-    .pageShell { max-width: 1240px; margin: 0 auto; padding: 22px; }
-    h1 { font-family: inherit; font-size: 30px; font-weight:700; margin: 0 0 16px; letter-spacing: .01em; }
-    .sub { color: var(--muted); margin: 0 0 18px; }
+    .pageShell { max-width: 1440px; margin: 0 auto; padding: 18px 24px 20px; }
+    h1 { font-family: inherit; font-size: 28px; font-weight:700; margin: 0 0 10px; letter-spacing: .01em; }
+    .sub { color: var(--muted); margin: 0 0 10px; font-size: 14px; }
     .landingHeader {
       max-width: 660px;
       margin: 10px auto 0;
@@ -61,7 +61,7 @@
     }
     .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
     @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
-    .card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(16,33,61,0.05); }
+    .card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 12px; box-shadow: 0 4px 10px rgba(16,33,61,0.05); }
     .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     label { font-size: 12px; color: var(--muted); display:block; margin-bottom:4px; }
     input, select, textarea {
@@ -111,14 +111,14 @@
     }
 
     /* Accordion */
-    details.band { margin-top: 18px; }
+    details.band { margin-top: 14px; }
     details.band:first-of-type { margin-top: 0; }
     details.band > summary {
       list-style: none;
       cursor: pointer;
       user-select: none;
       display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding: 10px 12px;
+      padding: 8px 12px;
       border-radius: 10px;
       border: 1px solid var(--border);
       background: #f3f8ff;
@@ -134,7 +134,7 @@
     }
     .tag.ok { border-color: rgba(47,110,220,.45); color: #1f4ca4; background: var(--accent-soft); }
     .tag.lock { border-color: rgba(245,158,11,.5); color: #9a5800; background:#fff7e8; }
-    .bandBody { padding: 16px 6px 6px; min-width: 0; }
+    .bandBody { padding: 12px 4px 4px; min-width: 0; }
     #promptsInner { min-width: 0; overflow-x: hidden; }
     .lockMsg { border:1px dashed var(--border); border-radius: 10px; padding:10px; color: var(--muted); background: #f7faff; }
     .hidden { display:none; }
@@ -214,7 +214,7 @@
     @media (max-width: 680px) {
       .modelGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
-    .subBand { border:1px solid var(--border); border-radius: 10px; background:rgba(16,33,61,0.02); padding:16px 18px; margin-top:14px; }
+    .subBand { border:1px solid var(--border); border-radius: 10px; background:rgba(16,33,61,0.02); padding:12px 14px; margin-top:10px; }
     .llmConfirmIntro { margin:10px 0 8px; }
     .llmImageRow {
       margin-top: 8px;
@@ -354,17 +354,17 @@
     .modalCard { width:min(460px, calc(100vw - 24px)); background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; }
     .layoutGrid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 248px;
-      gap: 16px;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 18px;
       align-items: start;
     }
     .main { min-width: 0; }
     .sidebar {
-      width: 248px;
+      width: 320px;
       position: sticky;
-      top: 14px;
+      top: 18px;
       align-self: start;
-      max-height: calc(100vh - 28px);
+      max-height: calc(100vh - 36px);
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -372,9 +372,8 @@
     .stickySidebar.recentCard {
       display: flex;
       flex-direction: column;
-      flex: 1 1 auto;
-      min-height: 0;
-      max-height: inherit;
+      height: calc(100vh - 36px);
+      max-height: calc(100vh - 36px);
       overflow: hidden;
     }
     .recentCard h3 {
@@ -402,30 +401,24 @@
       width: 100%;
       flex: 1 1 auto;
       min-height: 0;
-      resize: none;
+      height: auto;
       overflow: auto;
-      margin: 0;
       white-space: pre-wrap;
-      word-break: break-word;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      font-size: 0.9rem;
+      resize: none;
+      font-size: 14px;
       line-height: 1.45;
-      background: #f8fbff;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 8px;
     }
     @media (min-width: 900px) {
       .layoutGrid {
-        grid-template-columns: minmax(0, 1fr) minmax(360px, 36vw);
+        grid-template-columns: minmax(0, 1fr) 320px;
       }
       .sidebar {
-        width: auto;
+        width: 320px;
         top: 18px;
         max-height: calc(100vh - 36px);
       }
       .stickySidebar.recentCard {
-        min-height: calc(100vh - 154px);
+        height: calc(100vh - 36px);
       }
     }
     .promptSections { display:grid; gap:6px; min-width: 0; }
@@ -689,11 +682,11 @@
       text-transform: uppercase;
     }
     @media (min-width: 1100px) {
-      .pageShell { max-width: 1380px; padding: 16px 18px; }
+      .pageShell { max-width: 1440px; padding: 18px 24px 20px; }
       h1 { font-size: 28px; margin-bottom: 10px; }
-      .sub { margin-bottom: 12px; }
-      .card { padding: 11px; }
-      .subBand { padding: 11px 13px; margin-top: 9px; }
+      .sub { margin-bottom: 10px; font-size: 14px; }
+      .card { padding: 12px; }
+      .subBand { padding: 12px 14px; margin-top: 10px; }
       .groupCard { padding: 11px; }
       .promptSection { padding: 4px; }
       .promptCard { padding: 5px; min-height: 35px; }
@@ -702,9 +695,9 @@
       .promptHeader { gap: 6px; }
       .promptActions { gap: 5px; }
       .promptDesc { margin-top: 1px; }
-      details.band { margin-top: 12px; }
-      details.band > summary { padding: 8px 10px; }
-      .bandBody { padding: 10px 4px 4px; }
+      details.band { margin-top: 14px; }
+      details.band > summary { padding: 8px 12px; }
+      .bandBody { padding: 12px 4px 4px; }
       input, select, textarea {
         padding: 8px 9px;
         font-size: 14px;
@@ -727,6 +720,14 @@
       .promptGroups { gap: 10px; }
       .finalActionRow { margin-top: 18px; padding-top: 12px; }
     }
+    @media (min-width: 1100px) {
+      .promptArea {
+        max-height: none !important;
+        overflow: visible !important;
+        padding-right: 0 !important;
+      }
+    }
+
     @media (max-width: 820px) {
       .promptCard { padding: 6px; }
       .promptDesc { font-size: 12px; }
