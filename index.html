@@ -8,8 +8,8 @@
     @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap");
     :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; }
     body { margin:0; font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); letter-spacing: .01em; }
-    .pageShell { max-width: 1240px; margin: 0 auto; padding: 24px; }
-    h1 { font-family: inherit; font-size: 30px; font-weight:700; margin: 0 0 18px; letter-spacing: .01em; }
+    .pageShell { max-width: 1240px; margin: 0 auto; padding: 22px; }
+    h1 { font-family: inherit; font-size: 30px; font-weight:700; margin: 0 0 16px; letter-spacing: .01em; }
     .sub { color: var(--muted); margin: 0 0 18px; }
     .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
     @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
@@ -358,7 +358,7 @@
     }
     @media (min-width: 900px) {
       .layoutGrid {
-        grid-template-columns: minmax(0, 1fr) minmax(320px, 34vw);
+        grid-template-columns: minmax(0, 1fr) minmax(360px, 36vw);
       }
       .sidebar {
         width: auto;
@@ -630,27 +630,27 @@
       text-transform: uppercase;
     }
     @media (min-width: 1100px) {
-      .pageShell { padding: 18px 20px; }
-      h1 { font-size: 28px; margin-bottom: 12px; }
-      .sub { margin-bottom: 14px; }
-      .card { padding: 12px; }
-      .subBand { padding: 12px 14px; margin-top: 10px; }
-      .groupCard { padding: 12px; }
+      .pageShell { max-width: 1380px; padding: 16px 18px; }
+      h1 { font-size: 28px; margin-bottom: 10px; }
+      .sub { margin-bottom: 12px; }
+      .card { padding: 11px; }
+      .subBand { padding: 11px 13px; margin-top: 9px; }
+      .groupCard { padding: 11px; }
       .promptSection { padding: 4px; }
-      .promptCard { padding: 5px; min-height: 36px; }
+      .promptCard { padding: 5px; min-height: 35px; }
       .promptSections { gap: 5px; }
       .promptListCompact { gap: 6px; }
       .promptHeader { gap: 6px; }
       .promptActions { gap: 5px; }
       .promptDesc { margin-top: 1px; }
-      details.band { margin-top: 14px; }
+      details.band { margin-top: 12px; }
       details.band > summary { padding: 8px 10px; }
-      .bandBody { padding: 12px 4px 4px; }
+      .bandBody { padding: 10px 4px 4px; }
       input, select, textarea {
-        padding: 9px;
+        padding: 8px 9px;
         font-size: 14px;
       }
-      .btn { padding: 8px 11px; font-size: 14px; }
+      .btn { padding: 7px 10px; font-size: 14px; }
       .modelGrid, .product-grid { gap: 10px; }
       .modelOption, .product-card {
         min-height: 68px;
@@ -668,7 +668,7 @@
       .promptGroups { gap: 10px; }
       .finalActionRow { margin-top: 18px; padding-top: 12px; }
     }
-    @media (max-width: 960px) {
+    @media (max-width: 820px) {
       .promptCard { padding: 6px; }
       .promptDesc { font-size: 12px; }
       .btn { padding: 6px 8px; }
