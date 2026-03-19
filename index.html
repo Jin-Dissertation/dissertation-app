@@ -584,6 +584,59 @@
     .promptCard.is-expanded .promptDetails {
       display: block;
     }
+    .copyCard {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 8px 10px;
+      min-width: 0;
+      box-sizing: border-box;
+      cursor: pointer;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    .copyCard:hover {
+      border-color: #a9bfdc;
+      box-shadow: 0 2px 8px rgba(16,33,61,0.07);
+      background: #fcfdff;
+    }
+    .copyCard:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .copyCard.is-active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+    .copyCardHeader {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .copyCardTitle {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.25;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .copyCardDetails {
+      display: none;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .copyCard.is-expanded .copyCardDetails {
+      display: block;
+    }
+    .copyCard.is-expanded .promptChevronIcon {
+      transform: rotate(90deg);
+    }
+    .copyCardPreview {
+      margin: 8px 0 0;
+      max-height: 180px;
+    }
     .promptDetailsText {
       margin: 8px 0 0;
       padding: 10px;
@@ -599,76 +652,6 @@
       max-height: 220px;
       overflow: auto;
       box-sizing: border-box;
-    }
-    .copyIconBtn {
-      width: 30px;
-      height: 30px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: transparent;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text);
-      cursor: pointer;
-      padding: 0;
-      line-height: 1;
-      flex: 0 0 30px;
-    }
-    .copyIconBtn svg { width: 14px; height: 14px; }
-    .copyIconImage {
-      width: 18px;
-      height: 18px;
-      object-fit: contain;
-      display: block;
-    }
-    .tooltipWrapper { position: relative; }
-    .tooltipBubble {
-      position: absolute;
-      bottom: 130%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #1f2937;
-      color: #ffffff;
-      font-size: 12px;
-      line-height: 1;
-      padding: 6px 8px;
-      border-radius: 8px;
-      white-space: nowrap;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.15s ease;
-      z-index: 20;
-    }
-    .tooltipBubble::after {
-      content: "";
-      position: absolute;
-      top: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      border-width: 5px;
-      border-style: solid;
-      border-color: #1f2937 transparent transparent transparent;
-    }
-    .tooltipWrapper:hover .tooltipBubble,
-    .copyIconBtn.copiedState .tooltipBubble {
-      opacity: 1;
-    }
-    .copyIconBtn.isActive { background: var(--accent-soft); border-color: var(--accent); color: #1f4ca4; }
-    .starterCopyControl { display:flex; align-items:center; gap:8px; }
-    .copyPromptRow { display:flex; align-items:center; gap:10px; }
-    .copyPromptLabel {
-      font-weight: 600;
-      font-size: 15px;
-      color: var(--text);
-      line-height: 1.2;
-    }
-    .copyPromptLabel::before {
-      content: "↳ ";
-      opacity: 0.6;
-    }
-    .copyPromptRow:hover .copyPromptLabel {
-      color: var(--accent);
     }
     .promptArea { min-width: 0; overflow-x: hidden; }
     .finalizeNotice { margin:10px 0 0; display:none; }
@@ -1002,12 +985,7 @@
         gap: 0;
         align-items: center;
       }
-      .copyPromptRow {
-        align-items: flex-start;
-      }
-
       .btn,
-      .copyIconBtn,
       .promptChevronBtn,
       .accessBtn,
       #btnPauseTimer {
@@ -1025,11 +1003,6 @@
         justify-content: center;
         flex: 0 0 40px;
         border-radius: 10px;
-      }
-      .copyIconBtn {
-        width: 44px;
-        height: 44px;
-        flex: 0 0 44px;
       }
       .promptSections {
         gap: 8px;
@@ -1223,13 +1196,21 @@
             </div>
 
             <p class="muted small" style="margin:10px 0 0;">
-              Click the icon to copy the starter prompt, paste it into your selected LLM, then click the button below to continue.
+              Copy the starter prompt, paste it into your selected LLM, then click the button below to continue.
             </p>
 
             <div class="row" style="margin-top:12px;">
-              <div class="starterCopyControl copyPromptRow">
-                <span class="small copyPromptLabel">Copy starter prompt</span>
-                <button class="copyIconBtn" id="btnCopyStarter" aria-label="Copy starter prompt" type="button"></button>
+              <div class="copyCard" id="starterCopyCard" role="button" tabindex="0" aria-label="Copy starter prompt">
+                <div class="copyCardHeader">
+                  <div class="copyCardTitle">Copy starter prompt</div>
+                  <button type="button" class="promptChevronBtn" id="starterCopyChevron" aria-expanded="false" aria-controls="starterCopyDetails" aria-label="Show details for starter prompt">
+                    <span class="promptChevronIcon" aria-hidden="true">›</span>
+                  </button>
+                </div>
+                <div class="copyCardDetails" id="starterCopyDetails">
+                  <p class="promptDesc">Paste this into your selected LLM to begin generating questions.</p>
+                  <pre class="promptDetailsText copyCardPreview" id="starterCopyPreview"></pre>
+                </div>
               </div>
             </div>
 
@@ -1314,7 +1295,18 @@
           <div id="finalizeInner" style="display:none;">
             <div class="card">
               <div class="row" style="justify-content: space-between;">
-                <div class="starterCopyControl copyPromptRow"><span class="small copyPromptLabel">Copy final prompt</span><button class="copyIconBtn" id="btnCopyFinal" aria-label="Copy final prompt" type="button"></button></div>
+                <div class="copyCard" id="finalCopyCard" role="button" tabindex="0" aria-label="Copy final prompt">
+                  <div class="copyCardHeader">
+                    <div class="copyCardTitle">Copy final prompt</div>
+                    <button type="button" class="promptChevronBtn" id="finalCopyChevron" aria-expanded="false" aria-controls="finalCopyDetails" aria-label="Show details for final prompt">
+                      <span class="promptChevronIcon" aria-hidden="true">›</span>
+                    </button>
+                  </div>
+                  <div class="copyCardDetails" id="finalCopyDetails">
+                    <p class="promptDesc">Paste this into your selected LLM after refining questions to generate your final output.</p>
+                    <pre class="promptDetailsText copyCardPreview" id="finalCopyPreview"></pre>
+                  </div>
+                </div>
                 <button class="btn" id="btnBackToPrompts">Go back to making questions</button>
               </div>
 
@@ -3005,41 +2997,61 @@ Place the correct answer first and bold it.`
       });
     }
 
-    function makeCopyIconButton({ id = "", label = "Copy prompt", title = "Copy prompt", className = "copyIconBtn" } = {}) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      if (id) btn.id = id;
-      btn.className = className;
-      btn.setAttribute("aria-label", label);
-      btn.dataset.copyAriaLabel = label;
-      btn.innerHTML = `<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>`;
-      btn.classList.add("tooltipWrapper");
-      return btn;
+    function showCopyCardActiveState(card) {
+      if (!card) return;
+      card.classList.add("is-active");
+      if (card._activeTimer) clearTimeout(card._activeTimer);
+      card._activeTimer = setTimeout(() => {
+        card.classList.remove("is-active");
+      }, 400);
     }
 
-    function hydrateCopyIconButton(btn, { label = "Copy prompt", title = "Copy prompt" } = {}) {
-      if (!btn) return;
-      btn.classList.add("copyIconBtn");
-      btn.classList.add("tooltipWrapper");
-      btn.setAttribute("aria-label", label);
-      btn.dataset.copyAriaLabel = label;
-      btn.removeAttribute("title");
-      btn.type = "button";
-      btn.innerHTML = `<img src="images/copyicon.png" alt="Copy" class="copyIconImage" /><span class="tooltipBubble">Copy</span>`;
+    function setCopyCardExpanded(card, chevron, expanded, cardLabel) {
+      if (!card || !chevron) return;
+      card.classList.toggle("is-expanded", expanded);
+      chevron.setAttribute("aria-expanded", String(expanded));
+      chevron.setAttribute("aria-label", `${expanded ? "Hide" : "Show"} details for ${cardLabel}`);
     }
 
-    function showCopiedState(btn) {
-      if (!btn) return;
-      const tooltip = btn.querySelector(".tooltipBubble");
-      btn.classList.add("copiedState");
-      btn.setAttribute("aria-label", "Copied");
-      if (tooltip) tooltip.textContent = "Copied!";
-      if (btn._copiedTimer) clearTimeout(btn._copiedTimer);
-      btn._copiedTimer = setTimeout(() => {
-        btn.classList.remove("copiedState");
-        if (tooltip) tooltip.textContent = "Copy";
-        btn.setAttribute("aria-label", btn.dataset.copyAriaLabel || "Copy");
-      }, 800);
+    function bindCopyCardInteractions({
+      cardId,
+      chevronId,
+      cardLabel,
+      onCopy
+    }) {
+      const card = $(cardId);
+      const chevron = $(chevronId);
+      if (!card || !chevron || typeof onCopy !== "function") return;
+
+      const toggleDetails = () => {
+        const isExpanded = !card.classList.contains("is-expanded");
+        setCopyCardExpanded(card, chevron, isExpanded, cardLabel);
+      };
+
+      chevron.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleDetails();
+      });
+
+      chevron.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        e.stopPropagation();
+        toggleDetails();
+      });
+
+      card.addEventListener("click", async (e) => {
+        if (e.target.closest(".promptChevronBtn")) return;
+        await onCopy();
+      });
+
+      card.addEventListener("keydown", async (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        if (e.target.closest(".promptChevronBtn")) return;
+        e.preventDefault();
+        await onCopy();
+      });
     }
 
     // -----------------------------
@@ -3182,6 +3194,8 @@ Place the correct answer first and bold it.`
       updateEndSessionVisibility();
       updateFinalizeContentUI();
       refreshFooterInfo();
+      if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
+      if ($("finalCopyPreview")) $("finalCopyPreview").textContent = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
       const copied = localStorage.getItem(KEYS.starterCopied) === "true";
       const canProceedToPrompts = copied && isSetupComplete();
       $("btnGoPrompts").disabled = !canProceedToPrompts;
@@ -3682,11 +3696,6 @@ Place the correct answer first and bold it.`
       renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "chatgpt");
       updateSetupSubbandVisibility();
 
-      // Hydrate reusable copy icon buttons
-      hydrateCopyIconButton($("btnCopyStarter"), { label: "Copy starter prompt", title: "Copy starter prompt" });
-      hydrateCopyIconButton($("btnCopyFinal"), { label: "Copy final prompt", title: "Copy final prompt" });
-
-
       const llmExpectedChoiceEl = $("llmExpectedChoice");
       const llmMismatchDescriptionEl = $("llmMismatchDescription");
 
@@ -3817,12 +3826,21 @@ Place the correct answer first and bold it.`
         $(id).addEventListener("input", () => {
           localStorage.setItem(KEYS.starterCopied, "false");
           applyStageUI();
+          if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
         });
       });
 
+      function refreshCopyCardPreviews() {
+        const starterPreview = $("starterCopyPreview");
+        if (starterPreview) starterPreview.textContent = buildStarterPrompt();
+        const finalPreview = $("finalCopyPreview");
+        if (finalPreview) {
+          finalPreview.textContent = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+        }
+      }
+
       // Setup: Copy starter prompt only
-      $("btnCopyStarter").addEventListener("click", async (e) => {
-        e.preventDefault();
+      const copyStarterPrompt = async () => {
         // Validate required items
         const model = ($("modelUsed").value || "").trim();
         const course = ($("ctxCourse").value || "").trim();
@@ -3866,13 +3884,11 @@ Place the correct answer first and bold it.`
 
         // Log + copy only
         logEvent("starter_prepared", { accessCode: code, sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
-        const starterBtn = $("btnCopyStarter");
-        showCopiedState(starterBtn);
-        starterBtn.classList.add("isActive");
-        if (starterBtn._activeTimer) clearTimeout(starterBtn._activeTimer);
-        starterBtn._activeTimer = setTimeout(() => starterBtn?.classList.remove("isActive"), 400);
+        refreshCopyCardPreviews();
+        const starterCard = $("starterCopyCard");
+        showCopyCardActiveState(starterCard);
         const ok = await copyToClipboard(buildStarterPrompt(), "Starter prompt");
-        starterBtn.blur();
+        starterCard?.blur();
         if (ok) {
           logEvent("starter_copied", {});
           const autosavePayload = buildAutosave("starter_prompt_copied", { promptName: "starter" });
@@ -3884,6 +3900,13 @@ Place the correct answer first and bold it.`
         }
 
         applyStageUI();
+      };
+
+      bindCopyCardInteractions({
+        cardId: "starterCopyCard",
+        chevronId: "starterCopyChevron",
+        cardLabel: "starter prompt",
+        onCopy: copyStarterPrompt
       });
 
       $("btnGoPrompts").addEventListener("click", () => {
@@ -3912,6 +3935,7 @@ Place the correct answer first and bold it.`
         sendAutosave(buildAutosave("question_making_completed", { details: { toStage: "finalize" } }));
         const fp = buildFinalPrompt();
         localStorage.setItem(KEYS.finalPrompt, fp);
+        if ($("finalCopyPreview")) $("finalCopyPreview").textContent = fp;
         localStorage.setItem(KEYS.finalPromptCopied, "false");
         logEvent("final_prompt_ready", {});
         setStage("finalize");
@@ -3925,22 +3949,27 @@ Place the correct answer first and bold it.`
         setStage("prompts");
       });
 
-      $("btnCopyFinal").addEventListener("click", async (e) => {
-        e.preventDefault();
+      const copyFinalPrompt = async () => {
+        refreshCopyCardPreviews();
         const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
-        const finalBtn = $("btnCopyFinal");
-        showCopiedState(finalBtn);
-        finalBtn.classList.add("isActive");
-        if (finalBtn._activeTimer) clearTimeout(finalBtn._activeTimer);
-        finalBtn._activeTimer = setTimeout(() => finalBtn?.classList.remove("isActive"), 400);
+        const finalCard = $("finalCopyCard");
+        showCopyCardActiveState(finalCard);
         const ok = await copyToClipboard(fp, "Final prompt");
-        finalBtn.blur();
+        finalCard?.blur();
         if (!ok) return;
         localStorage.setItem(KEYS.finalPromptCopied, "true");
         logEvent("final_prompt_copied", {});
         sendAutosave(buildAutosave("final_prompt_copied", { promptName: "final_prompt" }));
         updateFinalizeContentUI();
+      };
+
+      bindCopyCardInteractions({
+        cardId: "finalCopyCard",
+        chevronId: "finalCopyChevron",
+        cardLabel: "final prompt",
+        onCopy: copyFinalPrompt
       });
+      refreshCopyCardPreviews();
 
       $("llmResponse").addEventListener("input", () => {
         updateFinalizeContentUI();
