@@ -937,28 +937,39 @@
         box-sizing: border-box;
       }
 
+      /* Mobile override for actual prompt button selector (.promptCard is the clickable row via role="button"). */
+      .promptCard[role="button"] {
+        height: auto;
+        min-height: 60px;
+        padding: 10px 15px;
+      }
       .promptHeader {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
-        gap: 12px;
-      }
-      .promptCard {
-        padding: 14px 16px;
-        min-height: 78px;
+        column-gap: 12px;
+        width: 100%;
+        box-sizing: border-box;
       }
       .promptHeaderText {
         min-width: 0;
-        display: flex;
-        justify-content: flex-start;
+        margin: 0;
+        line-height: 1.2;
+        text-align: left;
         align-self: center;
+        justify-self: start;
       }
       .promptTitle {
         margin: 0;
+        font-size: 14px;
         text-align: left;
-        justify-content: flex-start;
         align-self: center;
-        line-height: 1.25;
+        line-height: 1.2;
+      }
+      .promptDesc {
+        margin: 6px 0 0;
+        line-height: 1.2;
+        text-align: left;
       }
       .promptTopRowActions {
         width: 100%;
@@ -979,23 +990,38 @@
       #btnPauseTimer {
         min-height: 44px;
       }
-      .copyIconBtn,
+      /* Mobile override for actual chevron button selector (.promptChevronBtn inside each prompt card). */
       .promptChevronBtn {
-        width: 50px;
-        height: 50px;
-        flex: 0 0 50px;
-      }
-      .promptChevronBtn {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
         padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 40px;
+        border-radius: 10px;
+      }
+      .copyIconBtn {
+        width: 44px;
+        height: 44px;
+        flex: 0 0 44px;
       }
       .promptSections {
         gap: 8px;
       }
       .promptListCompact {
-        gap: 8px;
+        gap: 10px;
       }
       .promptListSingle .promptCard + .promptCard {
-        margin-top: 8px;
+        margin-top: 10px;
+      }
+      .promptSection {
+        padding: 8px 9px;
+      }
+      .promptSectionTitle {
+        margin: 0 0 6px;
       }
       .btn {
         white-space: normal;
