@@ -380,36 +380,36 @@
 
     /* === Practice Question Card === */
     .practice-question-card {
-      padding: 18px 18px 16px;
+      padding: 14px 14px 12px;
       border: 1px solid #e3e8f0;
-      border-radius: 16px;
+      border-radius: 14px;
       background: #ffffff;
       box-shadow: var(--shadow);
     }
 
     /* === Question meta (Question 1 of 4) === */
     .practice-meta {
-      font-size: 0.82rem;
+      font-size: 0.76rem;
       font-weight: 600;
       line-height: 1.2;
       letter-spacing: 0.02em;
       text-transform: none;
       color: #6b7a90;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     /* === Case stem (THIS is the key change) === */
     .practice-stem {
       font-family: var(--sans);
-      font-size: 1.1rem;
-      line-height: 1.65;
+      font-size: 0.96rem;
+      line-height: 1.45;
       color: #10213d;
       font-weight: 400;
-      max-height: 210px;
+      max-height: 320px;
       overflow: hidden;
-      padding: 14px 16px;
+      padding: 10px 12px;
       background: #f8fafc;
-      border-radius: 10px;
+      border-radius: 9px;
       border: 1px solid #e3e8f0;
     }
 
@@ -420,11 +420,11 @@
 
     /* Expand button */
     .practice-stem-toggle {
-      margin-top: 4px;
+      margin-top: 2px;
       background: none;
       border: none;
       color: #1a3560;
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       font-weight: 600;
       text-decoration: underline;
       cursor: pointer;
@@ -438,22 +438,22 @@
       justify-content: space-between;
       align-items: center;
       width: 100%;
-      margin-bottom: 8px;
-      padding: 12px 14px;
-      font-size: 0.95rem;
-      line-height: 1.42;
-      min-height: 50px;
+      margin-bottom: 6px;
+      padding: 9px 12px;
+      font-size: 0.88rem;
+      line-height: 1.32;
+      min-height: 0;
     }
 
     .practice-rationale {
-      margin-top: 10px;
-      padding: 10px 12px;
+      margin-top: 8px;
+      padding: 9px 11px;
       border-radius: 10px;
       background: #f8fafc;
       border: 1px solid #dbe5f0;
       color: #10213d;
-      font-size: 0.88rem;
-      line-height: 1.45;
+      font-size: 0.82rem;
+      line-height: 1.38;
     }
 
     .practice-rationale strong {
@@ -469,12 +469,12 @@
       justify-content: space-between;
       align-items: center;
 
-      margin-bottom: 8px;
-      padding: 12px 14px;
+      margin-bottom: 6px;
+      padding: 9px 12px;
 
       font-family: var(--sans);
-      font-size: 0.95rem;
-      line-height: 1.42;
+      font-size: 0.88rem;
+      line-height: 1.32;
       font-weight: 500;
       letter-spacing: 0;
       text-transform: none;
@@ -1360,11 +1360,11 @@
       white-space: normal;
       word-break: normal;
       overflow-wrap: break-word;
-      min-height: 50px;
-      margin-bottom: 8px;
-      padding: 12px 14px;
-      font-size: 0.95rem;
-      line-height: 1.42;
+      min-height: 0;
+      margin-bottom: 6px;
+      padding: 9px 12px;
+      font-size: 0.88rem;
+      line-height: 1.32;
       font-weight: 500;
       letter-spacing: 0;
       text-transform: none;
@@ -1418,7 +1418,7 @@
       white-space: normal;
       word-break: normal;
       overflow-wrap: break-word;
-      line-height: 1.42;
+      line-height: 1.32;
     }
 
     .sata-check {
@@ -1434,9 +1434,9 @@
     }
 
     .practice-stem {
-      font-size: 1.1rem;
-      line-height: 1.65;
-      padding: 14px 16px;
+      font-size: 0.96rem;
+      line-height: 1.45;
+      padding: 10px 12px;
     }
 
     .action-btn svg { flex: 0 0 14px; }
@@ -1902,42 +1902,36 @@
       #app {
         padding: 0 14px 72px;
       }
+    }
 
+    @media (max-width: 700px) {
       .practice-question-card {
-        padding: 14px 14px 12px;
+        padding: 12px 12px 10px;
       }
 
       .practice-meta {
-        font-size: 0.8rem;
-        margin-bottom: 8px;
+        font-size: 0.72rem;
+        margin-bottom: 7px;
       }
 
       .practice-stem {
-        font-family: var(--sans);
-        font-size: 1.1rem;
-        line-height: 1.65;
-        padding: 14px 16px;
-        max-height: 180px;
-      }
-
-      .practice-stem-toggle {
-        font-size: 0.76rem;
-        margin-top: 3px;
-      }
-
-      .practice-answer-btn,
-      .practice-sata-btn {
-        font-size: 0.95rem;
-        line-height: 1.42;
-        padding: 12px 14px;
-        min-height: 50px;
-        margin-bottom: 8px;
-      }
-
-      .practice-rationale {
-        font-size: 0.85rem;
-        line-height: 1.4;
+        font-size: 0.92rem;
+        line-height: 1.38;
         padding: 9px 11px;
+        max-height: 340px;
+      }
+
+      .action-btn.practice-answer-btn,
+      .practice-sata-btn {
+        font-size: 0.84rem;
+        line-height: 1.28;
+        padding: 8px 11px;
+        margin-bottom: 5px;
+        border-radius: 10px;
+      }
+
+      .practice-answer-text {
+        line-height: 1.28;
       }
     }
 
@@ -3856,9 +3850,9 @@ function renderSBAImageQuestion(q, index, total) {
         `).join("")}
       </div>
 
-      <div id="practice-feedback" style="margin-top:10px;"></div>
+      <div id="practice-feedback" style="margin-top:8px;"></div>
 
-      <div id="practice-next-wrap" style="margin-top:10px; display:none;">
+      <div id="practice-next-wrap" style="margin-top:8px; display:none;">
         <button type="button" class="action-btn" id="practice-next-btn">
           ${index < total - 1 ? "Next Question" : "Finish"}
         </button>
@@ -3934,9 +3928,9 @@ function renderSBAQuestion(q, index, total) {
         `).join("")}
       </div>
 
-      <div id="practice-feedback" style="margin-top:10px;"></div>
+      <div id="practice-feedback" style="margin-top:8px;"></div>
 
-      <div id="practice-next-wrap" style="margin-top:10px; display:none;">
+      <div id="practice-next-wrap" style="margin-top:8px; display:none;">
         <button type="button" class="action-btn" id="practice-next-btn">
           ${index < total - 1 ? "Next Question" : "Finish"}
         </button>
@@ -4007,9 +4001,9 @@ function renderFITBQuestion(q, index, total) {
         </button>
       </div>
 
-      <div id="practice-feedback" style="margin-top:10px;"></div>
+      <div id="practice-feedback" style="margin-top:8px;"></div>
 
-      <div id="practice-next-wrap" style="margin-top:10px; display:none;">
+      <div id="practice-next-wrap" style="margin-top:8px; display:none;">
         <button type="button" class="action-btn" id="practice-next-btn">
           ${index < total - 1 ? "Next Question" : "Finish"}
         </button>
@@ -4122,9 +4116,9 @@ function renderSATAQuestion(q, index, total) {
         </button>
       </div>
 
-      <div id="practice-feedback" style="margin-top:10px;"></div>
+      <div id="practice-feedback" style="margin-top:8px;"></div>
 
-      <div id="practice-next-wrap" style="margin-top:10px; display:none;">
+      <div id="practice-next-wrap" style="margin-top:8px; display:none;">
         <button type="button" class="action-btn" id="practice-next-btn">
           ${index < total - 1 ? "Next Question" : "Finish"}
         </button>
@@ -4256,9 +4250,9 @@ function renderCategorizeQuestion(q, index, total) {
         </button>
       </div>
 
-      <div id="practice-feedback" style="margin-top:10px;"></div>
+      <div id="practice-feedback" style="margin-top:8px;"></div>
 
-      <div id="practice-next-wrap" style="margin-top:10px; display:none;">
+      <div id="practice-next-wrap" style="margin-top:8px; display:none;">
         <button type="button" class="action-btn" id="practice-next-btn">
           ${index < total - 1 ? "Next Question" : "Finish"}
         </button>
