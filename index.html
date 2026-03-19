@@ -11,6 +11,54 @@
     .pageShell { max-width: 1240px; margin: 0 auto; padding: 24px; }
     h1 { font-family: inherit; font-size: 30px; font-weight:700; margin: 0 0 18px; letter-spacing: .01em; }
     .sub { color: var(--muted); margin: 0 0 18px; }
+    .landingHeader {
+      max-width: 660px;
+      margin: 10px auto 0;
+      text-align: left;
+    }
+    .landingSubtitle {
+      margin: -8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .accessCard {
+      max-width: 640px;
+      margin: 18px auto 0;
+      padding: 22px 24px;
+    }
+    .accessIntro {
+      margin: 0;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #f8fbff;
+    }
+    .accessIntro p { margin: 0; }
+    .accessIntro p + p { margin-top: 8px; }
+    .accessAction {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .accessActionTitle {
+      margin: 0 0 10px;
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 600;
+    }
+    .accessMeta {
+      max-width: 640px;
+      margin: 12px auto 0;
+      padding: 0 4px;
+    }
+    .accessMeta footer {
+      padding: 0;
+      margin: 0;
+    }
+    .accessMetaLinks {
+      margin-top: 4px;
+    }
     .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
     @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
     .card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(16,33,61,0.05); }
@@ -122,23 +170,22 @@
     .logo-other{ background:#64748b; }
     .disabledBtn { opacity:.55; cursor:not-allowed; }
     .accessPrompt { font-size: 18px; font-weight: 700; color: var(--text); margin:0 0 10px; line-height:1.3; }
-    .accessCard { max-width: 520px; margin: 28px 0; padding: 16px 18px; }
-    .accessCard p { margin-bottom: 10px; }
-    .accessRow { display:flex; gap:10px; align-items:center; flex-wrap:nowrap; }
+    .accessRow { display:flex; gap:12px; align-items:stretch; flex-wrap:nowrap; }
     .accessInput {
-      width: 180px;
+      width: 220px;
       font-size: 20px;
       font-weight:700;
       letter-spacing:.3px;
       text-align:center;
       padding: 12px 10px;
-      flex: 0 0 auto;
+      flex: 1 1 240px;
+      min-width: 0;
     }
     .accessBtn {
       margin-top:0 !important;
       font-size: 17px;
       font-weight: 700;
-      padding: 12px 20px;
+      padding: 12px 22px;
       align-self: stretch;
       display: inline-flex;
       align-items: center;
@@ -151,6 +198,18 @@
     @media (max-width: 560px) {
       .accessRow { flex-wrap: wrap; }
       .accessInput, .accessBtn { width: 100%; }
+    }
+    @media (max-width: 900px) {
+      .landingHeader { margin-top: 0; }
+      .accessCard {
+        max-width: 100%;
+        margin-top: 14px;
+        padding: 18px 18px;
+      }
+      .accessMeta {
+        max-width: 100%;
+        margin-top: 10px;
+      }
     }
     @media (max-width: 680px) {
       .modelGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -679,23 +738,29 @@
 </head>
 <body>
   <div class="pageShell">
-    <h1>Dissertation Prompt App</h1>
+    <div class="landingHeader">
+      <h1>Dissertation Prompt App</h1>
+      <p class="landingSubtitle">Prompt workflow screen for study participants completing this session.</p>
+    </div>
     <div id="trainingTopNote" class="training-tip">
       <span class="training-tip-label">Training tip</span>
       Training mode: The “Training tip” boxes on this page provide guidance for this tutorial and are not part of the normal app interface.
     </div>
     <!-- Access gate -->
     <div class="card accessCard" id="accessGate">
-      <p class="muted small" style="margin:0 0 8px;">This tool is part of a research study conducted by Taemin Jin. Questions about this study may be directed to tjin@crimson.ua.edu.</p>
-      <p class="muted small" style="margin:0 0 14px;">This research study has been approved by the [UNIVERSITY NAME] Institutional Review Board (IRB), protocol ID #[NUMBER].</p>
-      <p class="muted small" style="margin:0 0 10px;">If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
-      <br>
-      <p class="muted small" style="margin:0 0 10px;">Enter your participant code to begin this session.</p>
+      <div class="accessIntro muted small">
+        <p>This tool is part of a research study conducted by Taemin Jin. Questions about this study may be directed to tjin@crimson.ua.edu.</p>
+        <p>This research study has been approved by the [UNIVERSITY NAME] Institutional Review Board (IRB), protocol ID #[NUMBER].</p>
+        <p>If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
+      </div>
 
-      <form class="accessRow" id="accessForm">
-        <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" />
-        <button class="btn primary accessBtn" id="btnVerifyAccess" type="submit">Continue</button>
-      </form>
+      <div class="accessAction">
+        <p class="accessActionTitle">Enter your participant code to begin this session.</p>
+        <form class="accessRow" id="accessForm">
+          <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" />
+          <button class="btn primary accessBtn" id="btnVerifyAccess" type="submit">Continue</button>
+        </form>
+      </div>
 
       <p id="accessMsg" class="muted small accessError" style="margin:8px 0 0;"></p>
     </div>
@@ -1012,16 +1077,18 @@
     Training activity complete. You can now close this window and return to the training.
   </div>
 
-  <footer class="small muted" style="padding: 8px 24px 20px;" id="buildInfo"><span id="lastUpdated"></span></footer>
-  <div id="helpLinkRow" class="small" style="padding: 0 24px 24px;">
-    <a
-      href="https://jin-dissertation.github.io/dissertation-app/help.html"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="helpFaqLink"
-    >
-      Help / FAQ
-    </a>
+  <div class="accessMeta">
+    <footer class="small muted" id="buildInfo"><span id="lastUpdated"></span></footer>
+    <div id="helpLinkRow" class="small accessMetaLinks">
+      <a
+        href="https://jin-dissertation.github.io/dissertation-app/help.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="helpFaqLink"
+      >
+        Help / FAQ
+      </a>
+    </div>
   </div>
 
   <div class="toast" id="toast"></div>
