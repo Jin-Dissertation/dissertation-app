@@ -743,6 +743,29 @@
         width: 100%;
         max-width: 100%;
       }
+
+      .promptTopRowActions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+      }
+
+      #btnEditContext {
+        order: 1;
+      }
+
+      #btnExpandAllPrompts {
+        order: 2;
+      }
+
+      #btnCollapseAllPrompts {
+        order: 3;
+      }
+
+      #btnExpandAllPrompts,
+      #btnCollapseAllPrompts {
+        flex: 0 0 auto;
+      }
     }
     .promptDetailsText {
       margin: 8px 0 0;
@@ -1086,20 +1109,8 @@
       }
       .promptTopRowActions {
         width: 100%;
-        display: flex;
-        flex-wrap: wrap;
         gap: 8px;
-        justify-content: flex-start;
         align-items: flex-start;
-      }
-      #btnEditContext {
-        order: 1;
-      }
-      #btnExpandAllPrompts {
-        order: 2;
-      }
-      #btnCollapseAllPrompts {
-        order: 3;
       }
       .promptActions {
         gap: 0;
