@@ -664,6 +664,17 @@
       flex: 0 0 32px;
       box-sizing: border-box;
     }
+    .copyCard.is-disabled,
+    #starterCopyCard.is-disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+      filter: grayscale(0.1);
+    }
+    .copyCard.is-disabled .promptChevronBtn,
+    #starterCopyCard.is-disabled .promptChevronBtn {
+      pointer-events: none;
+    }
     .copyCardWrap,
     .copyPromptRow {
       display: block;
@@ -2203,6 +2214,7 @@ Place the correct answer first and bold it.`
       modelUsed: "dissertation.modelUsed",
       context: "dissertation.context",
       starterCopied: "dissertation.starterCopied",
+      starterCopiedSetupSignature: "dissertation.starterCopiedSetupSignature",
       stage: "dissertation.stage", // "setup" | "prompts" | "finalize"
       events: "dissertation.events",
       finalPrompt: "dissertation.finalPrompt",
@@ -2341,6 +2353,9 @@ Place the correct answer first and bold it.`
     let sessionTimerIntervalId = null;
     let llmMismatchReported = false;
     let llmMismatchAlertAttempted = false;
+    let starterPromptCopied = localStorage.getItem(KEYS.starterCopied) === "true";
+    let starterCopiedSetupSignature = localStorage.getItem(KEYS.starterCopiedSetupSignature) || "";
+    let lastRequiredSetupSignature = "";
 
     // Optional audio feedback recorder state (kept centralized for easy end-session integration later).
     let currentAudioStream = null;
@@ -2396,6 +2411,47 @@ Place the correct answer first and bold it.`
         hideToast();
       }, duration);
     };
+
+    function showExistingErrorToast(message) {
+      toast(message);
+    }
+
+    function getStarterSetupSignature() {
+      const course = ($("ctxCourse")?.value || "").trim();
+      const area = ($("ctxArea")?.value || "").trim();
+      return `${course}||${area}`;
+    }
+
+    function isStarterSetupValid() {
+      const course = ($("ctxCourse")?.value || "").trim();
+      const area = ($("ctxArea")?.value || "").trim();
+      return !!course && !!area;
+    }
+
+    function updateStarterCopyAvailability() {
+      const card = $("starterCopyCard");
+      if (!card) return;
+
+      const enabled = isStarterSetupValid();
+
+      card.classList.toggle("is-disabled", !enabled);
+      card.setAttribute("aria-disabled", String(!enabled));
+      card.tabIndex = enabled ? 0 : -1;
+    }
+
+    function invalidateStarterCopyState() {
+      if (!starterPromptCopied) return;
+      starterPromptCopied = false;
+      starterCopiedSetupSignature = "";
+      localStorage.setItem(KEYS.starterCopied, "false");
+      localStorage.removeItem(KEYS.starterCopiedSetupSignature);
+
+      const setupMsg = $("setupMsg");
+      if (setupMsg && (setupMsg.textContent || "").includes("Starter prompt copied.")) {
+        setupMsg.textContent = "";
+        setupMsg.style.display = "none";
+      }
+    }
 
     function normalizeCode(s) {
       return (s || "").trim().toLowerCase();
@@ -3457,6 +3513,7 @@ Place the correct answer first and bold it.`
       if (!card || !chevron || typeof onCopy !== "function") return;
 
       const toggleDetails = () => {
+        if (card.classList.contains("is-disabled")) return;
         const isExpanded = !card.classList.contains("is-expanded");
         setCopyCardExpanded(card, chevron, isExpanded, cardLabel);
       };
@@ -3475,12 +3532,14 @@ Place the correct answer first and bold it.`
       });
 
       card.addEventListener("click", async (e) => {
+        if (card.classList.contains("is-disabled")) return;
         if (e.target.closest(".promptChevronBtn")) return;
         await onCopy();
       });
 
       card.addEventListener("keydown", async (e) => {
         if (e.key !== "Enter" && e.key !== " ") return;
+        if (card.classList.contains("is-disabled")) return;
         if (e.target.closest(".promptChevronBtn")) return;
         e.preventDefault();
         await onCopy();
@@ -3545,7 +3604,7 @@ Place the correct answer first and bold it.`
 
     function isPromptsUnlocked() {
       const stage = getStage();
-      const copied = localStorage.getItem(KEYS.starterCopied) === "true";
+      const copied = starterPromptCopied;
       return (stage === "prompts" || stage === "finalize") && isSetupComplete() && copied;
     }
 
@@ -3630,10 +3689,10 @@ Place the correct answer first and bold it.`
       renderCopyCardPromptText();
       if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
       if ($("finalCopyPreview")) $("finalCopyPreview").textContent = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
-      const copied = localStorage.getItem(KEYS.starterCopied) === "true";
-      const canProceedToPrompts = copied && isSetupComplete();
-      $("btnGoPrompts").disabled = !canProceedToPrompts;
-      $("btnGoPrompts").classList.toggle("disabledBtn", !canProceedToPrompts);
+      updateStarterCopyAvailability();
+      const canAttemptProceedToPrompts = isStarterSetupValid();
+      $("btnGoPrompts").disabled = !canAttemptProceedToPrompts;
+      $("btnGoPrompts").classList.toggle("disabledBtn", !canAttemptProceedToPrompts);
     }
 
     // -----------------------------
@@ -4107,6 +4166,15 @@ Place the correct answer first and bold it.`
       $("ctxArea").value = ctx.area || "";
       $("ctxNotes").value = ctx.notes || "";
       $("ctxQuestionCount").value = ctx.questionCount || "10";
+      const restoredRequiredSignature = getStarterSetupSignature();
+      if (starterPromptCopied) {
+        if (starterCopiedSetupSignature && starterCopiedSetupSignature !== restoredRequiredSignature) {
+          invalidateStarterCopyState();
+        } else if (!starterCopiedSetupSignature) {
+          starterCopiedSetupSignature = restoredRequiredSignature;
+          localStorage.setItem(KEYS.starterCopiedSetupSignature, starterCopiedSetupSignature);
+        }
+      }
 
       const selectModel = (model, { logSelection = true } = {}) => {
         const llmProduct = normalizeLlmProduct(model) || "chatgpt";
@@ -4133,7 +4201,7 @@ Place the correct answer first and bold it.`
         btn.addEventListener("click", (e) => {
           e.preventDefault();
           selectModel(btn.dataset.model || "", { logSelection: true });
-          localStorage.setItem(KEYS.starterCopied, "false");
+          invalidateStarterCopyState();
           applyStageUI();
         });
       });
@@ -4268,9 +4336,25 @@ Place the correct answer first and bold it.`
         $("setupMsg").style.display = "none";
       }
 
-      ["ctxCourse", "ctxArea", "ctxNotes", "ctxQuestionCount"].forEach((id) => {
+      const handleRequiredSetupFieldChange = () => {
+        const currentSignature = getStarterSetupSignature();
+        if (currentSignature !== lastRequiredSetupSignature) {
+          if (starterPromptCopied && currentSignature !== starterCopiedSetupSignature) {
+            invalidateStarterCopyState();
+          }
+          lastRequiredSetupSignature = currentSignature;
+        }
+        updateStarterCopyAvailability();
+        applyStageUI();
+        if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
+      };
+
+      ["ctxCourse", "ctxArea"].forEach((id) => {
+        $(id).addEventListener("input", handleRequiredSetupFieldChange);
+      });
+
+      ["ctxNotes", "ctxQuestionCount"].forEach((id) => {
         $(id).addEventListener("input", () => {
-          localStorage.setItem(KEYS.starterCopied, "false");
           applyStageUI();
           if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
         });
@@ -4298,17 +4382,17 @@ Place the correct answer first and bold it.`
         $("setupMsg").textContent = "";
         $("setupMsg").style.display = "none";
 
-        if (!model || !course || !area) {
+        if (!model || !isStarterSetupValid()) {
           $("setupMsg").textContent = "Please select a model and fill in course + content area before continuing.";
           $("setupMsg").style.display = "block";
-          toast("Complete required fields");
+          showExistingErrorToast("Complete required fields");
           return;
         }
 
         if (!isLlmConfirmationComplete() || localStorage.getItem(KEYS.productVersionConfirmed) !== "true") {
           $("setupMsg").textContent = "Please confirm product version before continuing.";
           $("setupMsg").style.display = "block";
-          toast("Complete required fields");
+          showExistingErrorToast("Complete required fields");
           return;
         }
 
@@ -4341,7 +4425,10 @@ Place the correct answer first and bold it.`
           const autosavePayload = buildAutosave("starter_prompt_copied", { promptName: "starter" });
           console.log("Starter prompt autosave extraInstructions:", autosavePayload?.extraInstructions);
           if (autosavePayload) sendAutosave(autosavePayload);
+          starterPromptCopied = true;
           localStorage.setItem(KEYS.starterCopied, "true");
+          starterCopiedSetupSignature = getStarterSetupSignature();
+          localStorage.setItem(KEYS.starterCopiedSetupSignature, starterCopiedSetupSignature);
           $("setupMsg").textContent = "Starter prompt copied. Paste it into your selected LLM, then click Proceed to 2) Making questions.";
           $("setupMsg").style.display = "block";
         }
@@ -4358,12 +4445,16 @@ Place the correct answer first and bold it.`
 
       $("btnGoPrompts").addEventListener("click", () => {
         logEvent("go_prompts_clicked");
-        if (localStorage.getItem(KEYS.starterCopied) !== "true") {
-          toast("Copy starter prompt first");
+        if (!isStarterSetupValid()) {
+          showExistingErrorToast("Please complete the required setup fields before copying the starter prompt.");
+          return;
+        }
+        if (!starterPromptCopied) {
+          showExistingErrorToast("Please copy the starter prompt before proceeding to Making questions.");
           return;
         }
         if (!isSetupComplete()) {
-          toast("Complete required fields");
+          showExistingErrorToast("Complete required fields");
           return;
         }
         $("bandSetup").open = false;
@@ -4417,6 +4508,8 @@ Place the correct answer first and bold it.`
         onCopy: copyFinalPrompt
       });
       refreshCopyCardPreviews();
+      updateStarterCopyAvailability();
+      lastRequiredSetupSignature = getStarterSetupSignature();
 
       $("llmResponse").addEventListener("input", () => {
         updateFinalizeContentUI();
