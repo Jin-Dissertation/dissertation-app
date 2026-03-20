@@ -2460,15 +2460,6 @@ Place the correct answer first and bold it.`
     const nowIso = () => new Date().toISOString();
     const currentUrl = new URL(window.location.href);
     const isTrainingMode = currentUrl.searchParams.get("mode") === "training";
-    const trainingComplete = currentUrl.searchParams.get("trainingComplete") === "1";
-
-    function buildTrainingCompletionUrl() {
-      const url = new URL(window.location.href);
-      url.searchParams.set("mode", "training");
-      url.searchParams.set("trainingComplete", "1");
-      return url.toString();
-    }
-
     function getSelectedLlmKey() {
       const selectedProduct = (typeof window !== "undefined" && window.selectedProduct) ? window.selectedProduct : "";
       const modelUsed = (typeof window !== "undefined" && window.modelUsed) ? window.modelUsed : "";
@@ -4436,16 +4427,6 @@ Place the correct answer first and bold it.`
         setLockedState(true);
       }
 
-      const landingBanner = $("landingTrainingCompleteBanner");
-      if (isTrainingMode && trainingComplete && landingBanner) {
-        landingBanner.hidden = false;
-      }
-      if (isTrainingMode && trainingComplete) {
-        const cleanUrl = new URL(window.location.href);
-        cleanUrl.searchParams.delete("trainingComplete");
-        window.history.replaceState({}, "", cleanUrl.toString());
-      }
-
       requestAnimationFrame(() => {
         if ($("accessGate")?.style.display !== "none") {
           $("accessCodeInput")?.focus();
@@ -4902,8 +4883,7 @@ Place the correct answer first and bold it.`
             location.reload();
             return;
           }
-          const targetUrl = buildTrainingCompletionUrl();
-          window.location.href = targetUrl;
+          window.location.href = "training-complete.html";
         };
 
         if (autosavePayload) {
