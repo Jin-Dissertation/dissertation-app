@@ -2697,7 +2697,12 @@ Place the correct answer first and bold it.`
       const starterCard = $("starterCopyCard");
       if (!starterCard) return;
 
-      const canCopy = isStarterSetupValid();
+      const modelSelected = !!(($("modelUsed")?.value || "").trim());
+      const isProductVersionConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
+      const canCopy = modelSelected
+        && isStarterSetupValid()
+        && isLlmConfirmationComplete()
+        && isProductVersionConfirmed;
 
       starterCard.classList.toggle("is-disabled", !canCopy);
       starterCard.setAttribute("aria-disabled", String(!canCopy));
@@ -2708,7 +2713,13 @@ Place the correct answer first and bold it.`
       const btn = $("btnGoPrompts");
       if (!btn) return;
 
-      const canProceed = isStarterSetupValid() && !!starterPromptCopied;
+      const modelSelected = !!(($("modelUsed")?.value || "").trim());
+      const isProductVersionConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
+      const setupReady = modelSelected
+        && isStarterSetupValid()
+        && isLlmConfirmationComplete()
+        && isProductVersionConfirmed;
+      const canProceed = setupReady && !!starterPromptCopied;
       btn.disabled = !canProceed;
       btn.classList.toggle("primary", canProceed);
     }
@@ -4588,18 +4599,19 @@ Place the correct answer first and bold it.`
 
       // Hydrate fields
       const modelLabelByProduct = { chatgpt: "ChatGPT", gemini: "Gemini", copilot: "Copilot" };
-      $("modelUsed").value = "";
-      localStorage.removeItem(KEYS.modelUsed);
-      localStorage.removeItem(KEYS.llmProduct);
-      localStorage.removeItem(KEYS.llmExpectedChoice);
-      localStorage.removeItem(KEYS.llmMismatchDescription);
-      setProductVersionConfirmedState(false);
+      const storedModelUsed = localStorage.getItem(KEYS.modelUsed) || "";
+      $("modelUsed").value = storedModelUsed;
       const ctx = getContext();
       $("ctxCourse").value = ctx.course || "";
       $("ctxArea").value = ctx.area || "";
       $("ctxNotes").value = ctx.notes || "";
       $("ctxQuestionCount").value = ctx.questionCount || "10";
-      localStorage.setItem(KEYS.starterCopied, "false");
+      if (!localStorage.getItem(KEYS.productVersionConfirmed)) {
+        localStorage.setItem(KEYS.productVersionConfirmed, "false");
+      }
+      if (!localStorage.getItem(KEYS.starterCopied)) {
+        localStorage.setItem(KEYS.starterCopied, "false");
+      }
 
       const selectModel = (model, { logSelection = true } = {}) => {
         const llmProduct = normalizeLlmProduct(model) || "";
@@ -4636,13 +4648,24 @@ Place the correct answer first and bold it.`
           e.preventDefault();
           selectModel(btn.dataset.model || "", { logSelection: true });
           invalidateStarterPromptCopied();
+          updateStarterCopyAvailability();
+          updateProceedToPromptsAvailability();
+          updateSetupSubbandVisibility();
           applyStageUI();
         });
       });
-      selectModel("", { logSelection: false });
-      renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "");
+      const storedLlmProduct = localStorage.getItem(KEYS.llmProduct) || "";
+      const restoredModel = storedLlmProduct || storedModelUsed;
+      if (restoredModel) {
+        selectModel(restoredModel, { logSelection: false });
+      } else {
+        renderLlmConfirmPanel("");
+      }
       renderModelMismatchTrainingTip();
       updateSetupSubbandVisibility();
+      updateStarterCopyAvailability();
+      updateProceedToPromptsAvailability();
+      applyStageUI();
 
       const llmExpectedChoiceEl = $("llmExpectedChoice");
       const llmMismatchDescriptionEl = $("llmMismatchDescription");
@@ -4659,6 +4682,7 @@ Place the correct answer first and bold it.`
 
           logEvent("llm_expected_choice_selected", { llmProduct, expectedChoice });
           setProductVersionConfirmedState(false);
+          invalidateStarterPromptCopied();
 
           if (expectedChoice === "different") {
             setLlmMismatchVisibility(true, true);
@@ -4669,7 +4693,10 @@ Place the correct answer first and bold it.`
             llmMismatchReported = false;
             llmMismatchAlertAttempted = false;
           }
+          updateStarterCopyAvailability();
+          updateProceedToPromptsAvailability();
           updateSetupSubbandVisibility();
+          applyStageUI();
         });
       }
 
@@ -4678,7 +4705,11 @@ Place the correct answer first and bold it.`
           const mismatchDescription = llmMismatchDescriptionEl.value || "";
           localStorage.setItem(KEYS.llmMismatchDescription, mismatchDescription);
           setProductVersionConfirmedState(false);
+          invalidateStarterPromptCopied();
+          updateStarterCopyAvailability();
+          updateProceedToPromptsAvailability();
           updateSetupSubbandVisibility();
+          applyStageUI();
 
           const trimmed = mismatchDescription.trim();
           const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
@@ -4717,9 +4748,6 @@ Place the correct answer first and bold it.`
 
       const confirmProductVersionBtn = $("btnConfirmProductVersion");
       const productVersionSummary = $("productVersionSummary");
-      if (!localStorage.getItem(KEYS.productVersionConfirmed)) {
-        localStorage.setItem(KEYS.productVersionConfirmed, "false");
-      }
 
       if (confirmProductVersionBtn) {
         confirmProductVersionBtn.addEventListener("click", () => {
@@ -4732,15 +4760,22 @@ Place the correct answer first and bold it.`
           logEvent("product_version_confirm_clicked");
           sendAutosave(buildAutosave("product_version_confirmed"));
           console.log("Confirm product/version autosave call completed");
+          updateStarterCopyAvailability();
+          updateProceedToPromptsAvailability();
           updateSetupSubbandVisibility();
+          applyStageUI();
           console.log("Confirm product/version completed");
         });
       }
 
       const reopenProductVersion = () => {
         setProductVersionConfirmedState(false);
+        invalidateStarterPromptCopied();
         logEvent("product_version_reopened");
+        updateStarterCopyAvailability();
+        updateProceedToPromptsAvailability();
         updateSetupSubbandVisibility();
+        applyStageUI();
       };
 
       if (productVersionSummary) {
@@ -4781,6 +4816,7 @@ Place the correct answer first and bold it.`
           invalidateStarterPromptCopied();
           updateStarterCopyAvailability();
           updateProceedToPromptsAvailability();
+          updateSetupSubbandVisibility();
           applyStageUI();
           if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
         });
@@ -4965,16 +5001,7 @@ Place the correct answer first and bold it.`
       const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
 
       $("btnResetSession").addEventListener("click", () => {
-        try { logEvent("reset_opened"); } catch (err) { console.warn("Reset log failed", err); }
-        openModal("modalReset");
-      });
-      $("btnResetCancel").addEventListener("click", () => {
-        try { logEvent("reset_cancelled"); } catch (err) { console.warn("Reset log failed", err); }
-        closeModal("modalReset");
-      });
-      $("btnResetConfirm").addEventListener("click", () => {
         try { logEvent("reset_confirmed"); } catch (err) { console.warn("Reset log failed", err); }
-        closeModal("modalReset");
         hardResetApp();
       });
 
