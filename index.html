@@ -2522,16 +2522,56 @@ Place the correct answer first and bold it.`
       return getPromptBody(promptId, PROMPTS[promptId]?.[modelKey] || "");
     }
 
-    async function loadRemoteConfig() {
-      const res = await fetch(REMOTE_CONFIG_URL, { cache: "no-store" });
+    async function loadRemoteConfig(timeoutMs = 8000) {
+      let res;
+
+      if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+        try {
+          res = await fetch(REMOTE_CONFIG_URL, {
+            cache: "no-store",
+            signal: AbortSignal.timeout(timeoutMs)
+          });
+        } catch (err) {
+          if (err && err.name === "TimeoutError") {
+            throw new Error("Remote config timeout");
+          }
+          throw new Error("Config fetch failed");
+        }
+      } else {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          res = await fetch(REMOTE_CONFIG_URL, {
+            cache: "no-store",
+            signal: controller.signal
+          });
+        } catch (err) {
+          if (err && err.name === "AbortError") {
+            throw new Error("Remote config timeout");
+          }
+          throw new Error("Config fetch failed");
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      }
+
       if (!res.ok) throw new Error(`Config fetch failed: ${res.status}`);
-      const data = await res.json();
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (err) {
+        throw new Error("Remote config returned invalid JSON");
+      }
+
       if (!data || !data.ok) throw new Error("Config response was not ok");
 
       remoteConfig = {
         llmOptions: data.llmOptions || {},
         prompts: data.prompts || {}
       };
+
+      return remoteConfig;
     }
 
     function getLlmOptionList(productKey) {
@@ -3356,10 +3396,48 @@ Place the correct answer first and bold it.`
     }
 
     function clearSessionData() {
-      Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+      Object.values(KEYS).forEach((k) => {
+        try { localStorage.removeItem(k); } catch (_) {}
+      });
+
+      try {
+        Object.keys(localStorage).forEach((key) => {
+          if (key && key.startsWith("dissertation.")) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (_) {}
+
+      try {
+        sessionStorage.removeItem("dissertation.ended");
+        Object.keys(sessionStorage).forEach((key) => {
+          if (key && key.startsWith("dissertation.")) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      } catch (_) {}
+
       lastCopiedText = "";
       lastCopiedLabel = "";
       lastCopiedAt = null;
+      starterPromptCopied = false;
+    }
+
+    function hardResetApp() {
+      clearSessionData();
+
+      const msg = $("accessMsg");
+      if (msg) {
+        msg.textContent = "";
+        msg.style.display = "none";
+      }
+
+      setLockedState(true);
+      setAccessLoadingState(false, "");
+      appBootLoading = false;
+      appBootReady = true;
+
+      window.location.replace(window.location.pathname + window.location.search);
     }
 
     // -----------------------------
@@ -4421,6 +4499,7 @@ Place the correct answer first and bold it.`
     // Init
     // -----------------------------
     async function init() {
+      console.log("init start");
       updatePageMode();
       updateFooterMode();
       configureTrainingTipsUI();
@@ -4429,33 +4508,42 @@ Place the correct answer first and bold it.`
       setAccessLoadingState(true, "Loading, please wait…");
       try {
         await loadRemoteConfig();
+        console.log("remote config loaded");
         renderModelMismatchTrainingTip();
         appBootLoading = false;
         appBootReady = true;
         setAccessLoadingState(false, "");
       } catch (err) {
         console.error("Remote config failed to load", err);
+        console.warn("remote config failed", err);
+
+        remoteConfig = remoteConfig || { llmOptions: {}, prompts: {} };
+
         appBootLoading = false;
-        appBootReady = false;
+        appBootReady = true;
         setAccessLoadingState(false, "");
         const msg = $("accessMsg");
         if (msg) {
-          msg.textContent = "The app is still loading or could not reach the configuration service. Please wait a moment and try again.";
+          msg.textContent = "The configuration service could not be reached. You can continue with fallback defaults.";
           msg.style.display = "block";
         }
       }
       // Gate
       const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
+      const hasSessionId = !!localStorage.getItem(KEYS.sessionId);
+      const canRestoreSession = appBootReady && alreadyVerified && hasSessionId;
 
       const endedFlag = sessionStorage.getItem("dissertation.ended");
       if (endedFlag === "true") {
         sessionStorage.removeItem("dissertation.ended");
         toast("Session ended. Data cleared on this device.");
       }
-      if (alreadyVerified) {
+      if (canRestoreSession) {
+        console.log("restoring previous session");
         setLockedState(false);
         initializeSessionTimerIfNeeded();
       } else {
+        console.log("starting locked state");
         setLockedState(true);
       }
 
@@ -4886,9 +4974,8 @@ Place the correct answer first and bold it.`
       });
       $("btnResetConfirm").addEventListener("click", () => {
         try { logEvent("reset_confirmed"); } catch (err) { console.warn("Reset log failed", err); }
-        clearSessionData();
         closeModal("modalReset");
-        location.reload();
+        hardResetApp();
       });
 
       $("btnEndSession").addEventListener("click", () => {
