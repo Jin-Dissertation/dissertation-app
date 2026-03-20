@@ -3168,11 +3168,7 @@ Place the correct answer first and bold it.`
 
 
     function isSetupVersionConfirmedForContext() {
-      const product = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      if (!product) return false;
-      if (!["chatgpt", "gemini", "copilot"].includes(product)) return false;
-      return !!expectedChoice;
+      return isLlmConfirmationComplete();
     }
 
     function getProductVersionSummaryText() {
@@ -3215,6 +3211,53 @@ Place the correct answer first and bold it.`
       if (contextFields) contextFields.classList.toggle("hidden", !showConfirmed);
     }
 
+    function refreshProductVersionState(options = {}) {
+      const { focusMismatch = false } = options;
+      const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
+      const expectedSelect = $("llmExpectedChoice");
+      const mismatchInput = $("llmMismatchDescription");
+
+      const expectedChoice = (expectedSelect?.value || "").trim();
+      const mismatchDescription = mismatchInput?.value || "";
+      const previousExpectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
+
+      if (expectedChoice) {
+        localStorage.setItem(KEYS.llmExpectedChoice, expectedChoice);
+      } else {
+        localStorage.removeItem(KEYS.llmExpectedChoice);
+      }
+
+      const shouldShowMismatch = expectedChoice === "different";
+      const switchedIntoDifferent = previousExpectedChoice !== "different" && shouldShowMismatch;
+      const switchedAwayFromDifferent = previousExpectedChoice === "different" && !shouldShowMismatch;
+
+      setLlmMismatchVisibility(shouldShowMismatch, focusMismatch && switchedIntoDifferent);
+
+      if (!shouldShowMismatch) {
+        if (mismatchInput) mismatchInput.value = "";
+        localStorage.removeItem(KEYS.llmMismatchDescription);
+        if (switchedAwayFromDifferent) {
+          llmMismatchReported = false;
+          llmMismatchAlertAttempted = false;
+        }
+      } else if (mismatchInput) {
+        localStorage.setItem(KEYS.llmMismatchDescription, mismatchDescription);
+      }
+
+      const canConfirm = isSetupVersionConfirmedForContext();
+      console.log("[product-version] eligibility recalculated", {
+        llmProduct,
+        expectedChoice,
+        mismatchLength: mismatchDescription.trim().length,
+        canConfirm
+      });
+
+      updateStarterCopyAvailability();
+      updateProceedToPromptsAvailability();
+      updateSetupSubbandVisibility();
+      applyStageUI();
+    }
+
     function renderLlmConfirmPanel(productKey) {
       const panel = $("llmConfirmPanel");
       const expectedSelect = $("llmExpectedChoice");
@@ -3236,7 +3279,7 @@ Place the correct answer first and bold it.`
         const llmConfirmIntro = $("llmConfirmIntro");
         if (productVersionTitle) productVersionTitle.textContent = "Confirm product version";
         if (llmConfirmIntro) llmConfirmIntro.textContent = "";
-        updateSetupSubbandVisibility();
+        refreshProductVersionState();
         return;
       }
 
@@ -3285,28 +3328,13 @@ Place the correct answer first and bold it.`
       const validValues = new Set(options.map((o) => o.value));
       const selectedValue = validValues.has(existingValue) ? existingValue : (defaultOption?.value || "");
       expectedSelect.value = selectedValue;
-      if (selectedValue) {
-        localStorage.setItem(KEYS.llmExpectedChoice, selectedValue);
-      } else {
-        localStorage.removeItem(KEYS.llmExpectedChoice);
+      const mismatch = localStorage.getItem(KEYS.llmMismatchDescription) || "";
+      mismatchInput.value = mismatch;
+      if (selectedValue === "different" && mismatch.trim()) {
+        llmMismatchReported = true;
+        llmMismatchAlertAttempted = true;
       }
-
-      if (selectedValue === "different") {
-        const mismatch = localStorage.getItem(KEYS.llmMismatchDescription) || "";
-        mismatchInput.value = mismatch;
-        setLlmMismatchVisibility(true);
-        if (mismatch.trim()) {
-          llmMismatchReported = true;
-          llmMismatchAlertAttempted = true;
-        }
-      } else {
-        mismatchInput.value = "";
-        setLlmMismatchVisibility(false);
-        localStorage.removeItem(KEYS.llmMismatchDescription);
-        llmMismatchReported = false;
-        llmMismatchAlertAttempted = false;
-      }
-      updateSetupSubbandVisibility();
+      refreshProductVersionState();
     }
 
     function setStage(stage) {
@@ -4638,6 +4666,7 @@ Place the correct answer first and bold it.`
           setProductVersionConfirmedState(false);
         }
         renderLlmConfirmPanel(llmProduct);
+        refreshProductVersionState();
         renderModelMismatchTrainingTip();
         renderPromptList();
         renderCopyCardPromptText();
@@ -4648,10 +4677,7 @@ Place the correct answer first and bold it.`
           e.preventDefault();
           selectModel(btn.dataset.model || "", { logSelection: true });
           invalidateStarterPromptCopied();
-          updateStarterCopyAvailability();
-          updateProceedToPromptsAvailability();
-          updateSetupSubbandVisibility();
-          applyStageUI();
+          refreshProductVersionState();
         });
       });
       const storedLlmProduct = localStorage.getItem(KEYS.llmProduct) || "";
@@ -4662,54 +4688,35 @@ Place the correct answer first and bold it.`
         renderLlmConfirmPanel("");
       }
       renderModelMismatchTrainingTip();
-      updateSetupSubbandVisibility();
-      updateStarterCopyAvailability();
-      updateProceedToPromptsAvailability();
-      applyStageUI();
+      refreshProductVersionState();
 
       const llmExpectedChoiceEl = $("llmExpectedChoice");
       const llmMismatchDescriptionEl = $("llmMismatchDescription");
 
       if (llmExpectedChoiceEl) {
-        llmExpectedChoiceEl.addEventListener("change", () => {
+        const handleExpectedChoiceUpdate = (eventType) => {
           const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-          const expectedChoice = llmExpectedChoiceEl.value || "";
-          if (expectedChoice) {
-            localStorage.setItem(KEYS.llmExpectedChoice, expectedChoice);
-          } else {
-            localStorage.removeItem(KEYS.llmExpectedChoice);
-          }
-
+          const expectedChoice = (llmExpectedChoiceEl.value || "").trim();
+          console.log("[product-version] expected choice changed", { eventType, llmProduct, expectedChoice });
           logEvent("llm_expected_choice_selected", { llmProduct, expectedChoice });
           setProductVersionConfirmedState(false);
           invalidateStarterPromptCopied();
-
-          if (expectedChoice === "different") {
-            setLlmMismatchVisibility(true, true);
-          } else {
-            setLlmMismatchVisibility(false);
-            if (llmMismatchDescriptionEl) llmMismatchDescriptionEl.value = "";
-            localStorage.removeItem(KEYS.llmMismatchDescription);
-            llmMismatchReported = false;
-            llmMismatchAlertAttempted = false;
-          }
-          updateStarterCopyAvailability();
-          updateProceedToPromptsAvailability();
-          updateSetupSubbandVisibility();
-          applyStageUI();
-        });
+          refreshProductVersionState({ focusMismatch: true });
+        };
+        llmExpectedChoiceEl.addEventListener("change", () => handleExpectedChoiceUpdate("change"));
+        llmExpectedChoiceEl.addEventListener("input", () => handleExpectedChoiceUpdate("input"));
       }
 
       if (llmMismatchDescriptionEl) {
         llmMismatchDescriptionEl.addEventListener("input", async () => {
           const mismatchDescription = llmMismatchDescriptionEl.value || "";
+          console.log("[product-version] mismatch description changed", {
+            mismatchLength: mismatchDescription.trim().length
+          });
           localStorage.setItem(KEYS.llmMismatchDescription, mismatchDescription);
           setProductVersionConfirmedState(false);
           invalidateStarterPromptCopied();
-          updateStarterCopyAvailability();
-          updateProceedToPromptsAvailability();
-          updateSetupSubbandVisibility();
-          applyStageUI();
+          refreshProductVersionState();
 
           const trimmed = mismatchDescription.trim();
           const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
@@ -4751,8 +4758,10 @@ Place the correct answer first and bold it.`
 
       if (confirmProductVersionBtn) {
         confirmProductVersionBtn.addEventListener("click", () => {
-          console.log("Confirm product/version clicked");
-          if (!isSetupVersionConfirmedForContext()) {
+          refreshProductVersionState();
+          const canConfirm = isSetupVersionConfirmedForContext();
+          console.log("[product-version] confirm clicked", { canConfirm });
+          if (!canConfirm) {
             console.log("Confirm product/version blocked: setup version requirements not met");
             return;
           }
