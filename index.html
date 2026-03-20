@@ -921,6 +921,23 @@
       max-width: 100%;
       min-width: 260px;
     }
+    .audioElapsedRow {
+      margin-top: 8px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .audioElapsedLabel {
+      color: var(--muted);
+    }
+    .audioElapsedValue {
+      font-weight: 700;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+    }
 
     details summary {
       list-style: none;
@@ -1495,6 +1512,10 @@
                       <button class="btn audioStateStatus" id="btnAudioState" type="button" disabled>Recording</button>
                       <button class="btn" id="btnAudioPauseResume" type="button">Pause</button>
                       <button class="btn" id="btnAudioStop" type="button">Stop</button>
+                    </div>
+                    <div class="audioElapsedRow" id="audioElapsedRow" aria-live="polite">
+                      <span class="audioElapsedLabel">Recording time</span>
+                      <span class="audioElapsedValue" id="audioElapsedValue">00:00</span>
                     </div>
 
                     <div class="audioPlaybackRow" id="audioPlaybackRow">
@@ -2166,6 +2187,9 @@ Place the correct answer first and bold it.`
     let uploadedAudioInfo = null;
     let audioStartedAt = null;
     let audioUploadInProgress = false;
+    let audioElapsedMs = 0;
+    let audioElapsedLastStartedAt = null;
+    let audioElapsedTickHandle = null;
 
     function hideToast() {
       const t = $("toast");
@@ -2882,6 +2906,60 @@ Place the correct answer first and bold it.`
       currentAudioStream = null;
     }
 
+    function formatAudioElapsed(ms) {
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      if (hours > 0) {
+        return [
+          String(hours).padStart(2, "0"),
+          String(minutes).padStart(2, "0"),
+          String(seconds).padStart(2, "0")
+        ].join(":");
+      }
+
+      return [
+        String(minutes).padStart(2, "0"),
+        String(seconds).padStart(2, "0")
+      ].join(":");
+    }
+
+    function getCurrentAudioElapsedMs() {
+      if (audioElapsedLastStartedAt) {
+        return audioElapsedMs + (Date.now() - audioElapsedLastStartedAt);
+      }
+      return audioElapsedMs;
+    }
+
+    function renderAudioElapsed() {
+      const row = $("audioElapsedRow");
+      const value = $("audioElapsedValue");
+      if (!row || !value) return;
+
+      const recorderState = mediaRecorder?.state || "inactive";
+      const hasRecording = !!audioBlob;
+      const shouldShow = recorderState === "recording" || recorderState === "paused" || hasRecording;
+
+      row.style.display = shouldShow ? "flex" : "none";
+      value.textContent = formatAudioElapsed(getCurrentAudioElapsedMs());
+    }
+
+    function startAudioElapsedTicker() {
+      stopAudioElapsedTicker();
+      audioElapsedTickHandle = setInterval(() => {
+        renderAudioElapsed();
+      }, 250);
+    }
+
+    function stopAudioElapsedTicker() {
+      if (audioElapsedTickHandle) {
+        clearInterval(audioElapsedTickHandle);
+        audioElapsedTickHandle = null;
+      }
+    }
+
     // Keep recorder UI updates in one place for maintainability.
     function updateAudioRecorderUI() {
       const recorderState = mediaRecorder?.state || "inactive";
@@ -2924,6 +3002,7 @@ Place the correct answer first and bold it.`
           submitBtn.disabled = !hasRecording;
         }
       }
+      renderAudioElapsed();
     }
 
     function clearAudioRecorderState({ keepSubmitted = false } = {}) {
@@ -2939,6 +3018,9 @@ Place the correct answer first and bold it.`
       audioStartedAt = null;
       uploadedAudioInfo = null;
       audioUploadInProgress = false;
+      audioElapsedMs = 0;
+      audioElapsedLastStartedAt = null;
+      stopAudioElapsedTicker();
       if (!keepSubmitted) audioSubmitted = false;
       resetAudioUploadButton();
 
@@ -2948,6 +3030,7 @@ Place the correct answer first and bold it.`
         player.removeAttribute("src");
         player.load();
       }
+      renderAudioElapsed();
     }
 
     async function startAudioRecording() {
@@ -2976,12 +3059,17 @@ Place the correct answer first and bold it.`
             player.load();
           }
           stopAudioFeedbackStream();
+          renderAudioElapsed();
           updateAudioRecorderUI();
         };
 
         audioStartedAt = Date.now();
         audioSubmitted = false;
         uploadedAudioInfo = null;
+        audioElapsedMs = 0;
+        audioElapsedLastStartedAt = Date.now();
+        renderAudioElapsed();
+        startAudioElapsedTicker();
         mediaRecorder.start();
         updateAudioRecorderUI();
       } catch (err) {
@@ -2994,16 +3082,32 @@ Place the correct answer first and bold it.`
 
     function togglePauseResumeAudioRecording() {
       if (!mediaRecorder) return;
+
       if (mediaRecorder.state === "recording") {
         mediaRecorder.pause();
+        if (audioElapsedLastStartedAt) {
+          audioElapsedMs += Date.now() - audioElapsedLastStartedAt;
+          audioElapsedLastStartedAt = null;
+        }
+        stopAudioElapsedTicker();
       } else if (mediaRecorder.state === "paused") {
         mediaRecorder.resume();
+        audioElapsedLastStartedAt = Date.now();
+        startAudioElapsedTicker();
       }
+
+      renderAudioElapsed();
       updateAudioRecorderUI();
     }
 
     function stopAudioRecording() {
       if (!mediaRecorder || mediaRecorder.state === "inactive") return;
+      if (mediaRecorder.state === "recording" && audioElapsedLastStartedAt) {
+        audioElapsedMs += Date.now() - audioElapsedLastStartedAt;
+        audioElapsedLastStartedAt = null;
+      }
+      stopAudioElapsedTicker();
+      renderAudioElapsed();
       mediaRecorder.stop();
     }
 
