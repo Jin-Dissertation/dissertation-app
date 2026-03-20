@@ -1086,7 +1086,20 @@
       }
       .promptTopRowActions {
         width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
         justify-content: flex-start;
+        align-items: flex-start;
+      }
+      #btnEditContext {
+        order: 1;
+      }
+      #btnExpandAllPrompts {
+        order: 2;
+      }
+      #btnCollapseAllPrompts {
+        order: 3;
       }
       .promptActions {
         gap: 0;
