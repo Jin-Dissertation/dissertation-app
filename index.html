@@ -1125,6 +1125,21 @@
     .trainingTip.trainingTipSmall#makingQuestionsTrainingTip {
       margin-bottom: 10px;
     }
+    #trainingTipFinalizeIntro {
+      margin-bottom: 10px;
+    }
+    #finalCopiedTrainingTip {
+      margin-top: 8px;
+      margin-bottom: 10px;
+    }
+    #trainingTipFinalizeFeedback {
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
+    #trainingTipEndSession {
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
     .training-tip-icon {
       font-size: 13px;
       line-height: 1;
@@ -1680,6 +1695,12 @@
 
           <div id="finalizeInner" style="display:none;">
             <div class="card">
+              <div id="trainingTipFinalizeIntro" class="trainingTip trainingTipSmall">
+                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                <p>This section is where you generate the finished version of your question set and submit your session.</p>
+                <p>You will first copy the final prompt into your LLM, then paste the model’s response back into this app.</p>
+              </div>
+
               <div class="finalizeTopRow">
                 <div class="finalizeCopySlot">
                   <div class="copyCard" id="finalCopyCard" role="button" tabindex="0" aria-label="Copy final prompt">
@@ -1700,6 +1721,12 @@
                 </div>
               </div>
 
+              <div id="finalCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
+                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                <p>The final prompt is now copied to your clipboard.</p>
+                <p>Go to your LLM conversation and paste it with Ctrl+V on Windows/Chromebook or Command+V on Mac, then wait for the full output.</p>
+              </div>
+
               <p class="muted small finalizeNotice" id="finalizeCopyNotice"></p>
 
               <div id="finalizeLockedArea" class="finalizeLockedContent" style="margin-top:8px; display:none;">
@@ -1707,6 +1734,12 @@
                 <div style="margin-top:12px;">
 
                   <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
+                </div>
+
+                <div id="trainingTipFinalizeFeedback" class="trainingTip trainingTipSmall">
+                  <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                  <p>This feedback section is optional.</p>
+                  <p>Use it to share anything confusing, helpful, frustrating, or noteworthy about the workflow.</p>
                 </div>
 
                 <div class="optionalFeedbackBox" id="finalFeedbackSection">
@@ -1742,10 +1775,10 @@
 
               <p class="muted small" id="finalizeMsg" style="margin:10px 0 0;"></p>
 
-              <div id="trainingTipEndSession" class="training-tip" style="margin-top:10px;">
-                <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-                <p>Click End Session when you are finished practicing.</p>
-                <p style="margin-top:8px;">You do not need to produce perfect questions — the goal of this activity is simply to practice using the app. Your responses will be saved when you end the session.</p>
+              <div id="trainingTipEndSession" class="trainingTip trainingTipSmall">
+                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                <p>Only end the session after you have pasted your final model output into the box above.</p>
+                <p>Once you end the session, the app treats your work as complete.</p>
               </div>
               <div class="finalActionRow" id="endSessionRow" style="display:none;">
                 <button id="btnEndSession" class="btn danger primary finalActionBtn" type="button">
@@ -2832,11 +2865,11 @@ Place the correct answer first and bold it.`
 
 
     function configureTrainingTipsUI() {
-      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "trainingTipMismatch", "makingQuestionsTrainingTip"];
+      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "trainingTipMismatch", "makingQuestionsTrainingTip", "trainingTipFinalizeIntro", "finalCopiedTrainingTip", "trainingTipFinalizeFeedback", "trainingTipEndSession"];
       tipIds.forEach((id) => {
         const el = $(id);
         if (!el) return;
-        const shouldShow = isTrainingMode && (id !== "starterCopiedTrainingTip" || !el.hidden);
+        const shouldShow = isTrainingMode && ((id !== "starterCopiedTrainingTip" && id !== "finalCopiedTrainingTip") || !el.hidden);
         el.style.display = shouldShow ? "block" : "none";
       });
     }
@@ -3175,6 +3208,7 @@ Place the correct answer first and bold it.`
       const lockedArea = $("finalizeLockedArea");
       const endRow = $("endSessionRow");
       const endTip = $("trainingTipEndSession");
+      const finalCopiedTip = $("finalCopiedTrainingTip");
       const llm = $("llmResponse");
 
       if (notice) {
@@ -3203,6 +3237,10 @@ Place the correct answer first and bold it.`
       if (llm) llm.disabled = !copied;
       if (endRow) endRow.style.display = copied ? "flex" : "none";
       updateEndSessionState();
+      if (finalCopiedTip) {
+        finalCopiedTip.hidden = !copied;
+        finalCopiedTip.style.display = isTrainingMode && copied ? "block" : "none";
+      }
       // End Session training tip is shown only when the End Session section is visible.
       if (endTip) endTip.style.display = isTrainingMode && copied ? "block" : "none";
     }
@@ -4700,6 +4738,10 @@ Place the correct answer first and bold it.`
         localStorage.setItem(KEYS.finalPromptCopied, "true");
         logEvent("final_prompt_copied", {});
         sendAutosave(buildAutosave("final_prompt_copied", { promptName: "final_prompt" }));
+        const finalCopiedTip = $("finalCopiedTrainingTip");
+        if (isTrainingMode && finalCopiedTip) {
+          finalCopiedTip.hidden = false;
+        }
         updateFinalizeContentUI();
       };
 
