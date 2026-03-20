@@ -54,11 +54,25 @@
     }
     .pageFooter {
       margin-top: 14px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .pageFooterInner {
+      width: 100%;
+      box-sizing: border-box;
       display: flex;
       flex-direction: column;
       align-items: flex-start;
       text-align: left;
       gap: 4px;
+    }
+    .pageFooter.is-landing .pageFooterInner {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .pageFooter.is-app .pageFooterInner {
+      max-width: none;
+      margin: 0;
     }
     .pageFooterMeta {
       margin: 0;
@@ -1668,17 +1682,19 @@
         </aside>
       </div>
       </div>
-      <div class="pageFooter">
-        <footer id="buildInfo" class="pageFooterMeta"><span id="lastUpdated"></span></footer>
-        <div id="helpLinkRow" class="pageFooterLink">
-          <a
-            href="https://jin-dissertation.github.io/dissertation-app/help.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="helpFaqLink"
-          >
-            Help / FAQ
-          </a>
+      <div class="pageFooter is-landing">
+        <div class="pageFooterInner">
+          <footer id="buildInfo" class="pageFooterMeta"><span id="lastUpdated"></span></footer>
+          <div id="helpLinkRow" class="pageFooterLink">
+            <a
+              href="https://jin-dissertation.github.io/dissertation-app/help.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="helpFaqLink"
+            >
+              Help / FAQ
+            </a>
+          </div>
         </div>
       </div>
   </div>
@@ -2746,6 +2762,17 @@ Place the correct answer first and bold it.`
       $("appShell").style.display = isLocked ? "none" : "block";
       $("accessGate").style.display = isLocked ? "block" : "none";
       if ($("accessMsg")) $("accessMsg").textContent = msg;
+      updateFooterMode();
+    }
+
+    function updateFooterMode() {
+      const footer = document.querySelector(".pageFooter");
+      const appShell = $("appShell");
+      if (!footer || !appShell) return;
+
+      const appVisible = appShell.style.display !== "none" && !appShell.hidden;
+      footer.classList.toggle("is-app", appVisible);
+      footer.classList.toggle("is-landing", !appVisible);
     }
 
     function getContext() {
@@ -4145,6 +4172,7 @@ Place the correct answer first and bold it.`
     // Init
     // -----------------------------
     async function init() {
+      updateFooterMode();
       configureTrainingTipsUI();
       configureTimerModeUI();
       setAccessLoadingState(true, "Loading, please wait…");
