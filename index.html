@@ -11,20 +11,21 @@
     .pageShell { max-width: 1440px; margin: 0 auto; padding: 18px 24px 20px; }
     h1 { font-family: inherit; font-size: 28px; font-weight:700; margin: 0 0 10px; letter-spacing: .01em; }
     .sub { color: var(--muted); margin: 0 0 10px; font-size: 14px; }
-    .landingHeader {
-      max-width: 660px;
-      margin: 10px auto 0;
-      text-align: left;
+    .landingColumn {
+      width: min(100%, 760px);
+      margin: 0 auto;
+      padding-inline: 20px;
+      box-sizing: border-box;
     }
-    .landingSubtitle {
-      margin: -8px 0 0;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.45;
+    .landingColumn > h1,
+    .landingColumn > .sub,
+    .landingColumn > .accessCard,
+    .landingColumn > .pageFooter {
+      width: 100%;
+      box-sizing: border-box;
     }
     .accessCard {
-      max-width: 640px;
-      margin: 18px auto 0;
+      margin: 18px 0 0;
       padding: 22px 24px;
     }
     .accessIntro {
@@ -217,9 +218,7 @@
       .accessInput, .accessBtn { width: 100%; }
     }
     @media (max-width: 900px) {
-      .landingHeader { margin-top: 0; }
       .accessCard {
-        max-width: 100%;
         margin-top: 14px;
         padding: 18px 18px;
       }
@@ -1308,35 +1307,34 @@
 </head>
 <body>
   <div class="pageShell">
-    <div class="landingHeader">
+    <div class="landingColumn">
       <h1>Dissertation Prompt App</h1>
-      <p class="landingSubtitle">Prompt workflow screen for study participants completing this session.</p>
-    </div>
-    <div id="trainingTopNote" class="training-tip">
-      <span class="training-tip-label">Training tip</span>
-      Training mode: The “Training tip” boxes on this page provide guidance for this tutorial and are not part of the normal app interface.
-    </div>
-    <!-- Access gate -->
-    <div class="card accessCard" id="accessGate">
-      <div class="accessIntro muted small">
-        <p>This tool is part of a research study conducted by Taemin Jin. Questions about this study may be directed to tjin@crimson.ua.edu.</p>
-        <p>This research study has been approved by the [UNIVERSITY NAME] Institutional Review Board (IRB), protocol ID #[NUMBER].</p>
-        <p>If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
+      <p class="sub">Prompt workflow screen for study participants completing this session.</p>
+      <div id="trainingTopNote" class="training-tip">
+        <span class="training-tip-label">Training tip</span>
+        Training mode: The “Training tip” boxes on this page provide guidance for this tutorial and are not part of the normal app interface.
+      </div>
+      <!-- Access gate -->
+      <div class="card accessCard" id="accessGate">
+        <div class="accessIntro muted small">
+          <p>This tool is part of a research study conducted by Taemin Jin. Questions about this study may be directed to tjin@crimson.ua.edu.</p>
+          <p>This research study has been approved by the [UNIVERSITY NAME] Institutional Review Board (IRB), protocol ID #[NUMBER].</p>
+          <p>If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
+        </div>
+
+        <div class="accessAction">
+          <p class="accessActionTitle">Enter your participant code to begin this session.</p>
+          <form class="accessRow" id="accessForm">
+            <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" />
+            <button class="btn primary accessBtn" id="btnVerifyAccess" type="submit">Continue</button>
+          </form>
+        </div>
+
+        <p id="accessMsg" class="muted small accessError" style="margin:8px 0 0;"></p>
       </div>
 
-      <div class="accessAction">
-        <p class="accessActionTitle">Enter your participant code to begin this session.</p>
-        <form class="accessRow" id="accessForm">
-          <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" />
-          <button class="btn primary accessBtn" id="btnVerifyAccess" type="submit">Continue</button>
-        </form>
-      </div>
-
-      <p id="accessMsg" class="muted small accessError" style="margin:8px 0 0;"></p>
-    </div>
-
-    <!-- Main app -->
-    <div id="appShell" style="display:none;">
+      <!-- Main app -->
+      <div id="appShell" style="display:none;">
       <div class="appHeaderBar">
         <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
       </div>
@@ -1643,18 +1641,19 @@
           </div>
         </aside>
       </div>
-    </div>
-    <div class="pageFooter">
-      <footer id="buildInfo" class="pageFooterMeta"><span id="lastUpdated"></span></footer>
-      <div id="helpLinkRow" class="pageFooterLink">
-        <a
-          href="https://jin-dissertation.github.io/dissertation-app/help.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="helpFaqLink"
-        >
-          Help / FAQ
-        </a>
+      </div>
+      <div class="pageFooter">
+        <footer id="buildInfo" class="pageFooterMeta"><span id="lastUpdated"></span></footer>
+        <div id="helpLinkRow" class="pageFooterLink">
+          <a
+            href="https://jin-dissertation.github.io/dissertation-app/help.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="helpFaqLink"
+          >
+            Help / FAQ
+          </a>
+        </div>
       </div>
     </div>
   </div>
