@@ -682,7 +682,8 @@
     }
     .finalizeTopRow {
       display: grid;
-      grid-template-columns: minmax(280px, 340px) 1fr;
+      grid-template-columns: minmax(260px, 340px) 1fr;
+      grid-template-areas: "copy back";
       align-items: start;
       column-gap: 12px;
       row-gap: 10px;
@@ -690,17 +691,17 @@
       box-sizing: border-box;
     }
     .finalizeCopySlot {
+      grid-area: copy;
       min-width: 0;
       width: 100%;
-      grid-column: 1;
-      grid-row: 1;
     }
     .finalizeBackSlot {
-      grid-column: 2;
-      grid-row: 1;
+      grid-area: back;
       display: flex;
       justify-content: flex-end;
       align-items: flex-start;
+      justify-self: end;
+      align-self: start;
       min-width: 0;
     }
     #finalCopyCard,
@@ -735,8 +736,12 @@
       min-width: 32px;
       box-sizing: border-box;
     }
-    .finalizeBackSlot .btn {
+    .finalizeBackSlot .btn,
+    #btnBackToPrompts {
+      width: auto;
+      max-width: max-content;
       white-space: nowrap;
+      flex: 0 0 auto;
     }
     @media (max-width: 820px) {
       .btn {
@@ -801,6 +806,7 @@
       .finalizeBackSlot {
         grid-area: back;
         display: block;
+        justify-self: stretch;
         width: 100%;
       }
 
@@ -810,6 +816,7 @@
       }
 
       .finalizeBackSlot .btn,
+      #btnBackToPrompts,
       #finalCopyCard,
       .finalizeCopySlot .copyCard {
         width: 100%;
