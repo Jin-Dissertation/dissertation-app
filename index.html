@@ -12,15 +12,41 @@
     h1 { font-family: inherit; font-size: 28px; font-weight:700; margin: 0 0 10px; letter-spacing: .01em; }
     .sub { color: var(--muted); margin: 0 0 10px; font-size: 14px; }
     .landingColumn {
+      box-sizing: border-box;
+    }
+    .pageShell.is-landing .landingColumn {
       width: min(100%, var(--landing-max-width));
       margin-inline: auto;
-      box-sizing: border-box;
+    }
+    .pageShell.is-app .landingColumn {
+      width: 100%;
+      margin-inline: 0;
     }
     .landingColumn > h1,
     .landingColumn > .sub,
     .landingColumn > .accessCard {
       width: 100%;
       box-sizing: border-box;
+    }
+    .pageShell.is-landing .landingHeader {
+      max-width: 660px;
+      margin: 10px auto 0;
+      text-align: left;
+    }
+    .pageShell.is-landing .landingSubtitle {
+      margin: -8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .pageShell.is-app .landingHeader {
+      max-width: none;
+      width: 100%;
+      margin: 0 0 12px;
+      text-align: left;
+    }
+    .pageShell.is-app .landingSubtitle {
+      margin: 0;
     }
     #appShell {
       width: 100%;
@@ -1372,10 +1398,10 @@
   </style>
 </head>
 <body>
-  <div class="pageShell">
+  <div class="pageShell is-landing">
     <div class="landingColumn">
-      <h1>Dissertation Prompt App</h1>
-      <p class="sub">Prompt workflow screen for study participants completing this session.</p>
+      <h1 class="landingHeader">Dissertation Prompt App</h1>
+      <p class="sub landingSubtitle">Prompt workflow screen for study participants completing this session.</p>
       <div id="trainingTopNote" class="training-tip">
         <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
         <p>Training mode: The “Training tip” boxes on this page provide guidance for this tutorial and are not part of the normal app interface.</p>
@@ -2789,7 +2815,18 @@ Place the correct answer first and bold it.`
       $("appShell").style.display = isLocked ? "none" : "block";
       $("accessGate").style.display = isLocked ? "block" : "none";
       if ($("accessMsg")) $("accessMsg").textContent = msg;
+      updatePageMode();
       updateFooterMode();
+    }
+
+    function updatePageMode() {
+      const shell = document.querySelector(".pageShell");
+      const appShell = $("appShell");
+      if (!shell || !appShell) return;
+
+      const appVisible = appShell.style.display !== "none" && !appShell.hidden;
+      shell.classList.toggle("is-app", appVisible);
+      shell.classList.toggle("is-landing", !appVisible);
     }
 
     function updateFooterMode() {
@@ -4199,6 +4236,7 @@ Place the correct answer first and bold it.`
     // Init
     // -----------------------------
     async function init() {
+      updatePageMode();
       updateFooterMode();
       configureTrainingTipsUI();
       configureTimerModeUI();
