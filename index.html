@@ -1375,13 +1375,13 @@
               <div class="copyCardWrap">
                 <div class="copyCard" id="starterCopyCard" role="button" tabindex="0" aria-label="Copy starter prompt">
                   <div class="copyCardHeader">
-                    <div class="copyCardTitle">Copy starter prompt</div>
+                    <div class="copyCardTitle" id="starterCopyTitle">Copy starter prompt</div>
                     <button type="button" class="promptChevronBtn" id="starterCopyChevron" aria-expanded="false" aria-controls="starterCopyDetails" aria-label="Show details for starter prompt">
                       <span class="promptChevronIcon" aria-hidden="true">›</span>
                     </button>
                   </div>
                   <div class="copyCardDetails" id="starterCopyDetails">
-                    <p class="promptDesc">Paste this into your selected LLM to begin generating questions.</p>
+                    <p class="promptDesc" id="starterCopyDescription">Paste this into your selected LLM to begin generating questions.</p>
                     <pre class="promptDetailsText copyCardPreview" id="starterCopyPreview"></pre>
                   </div>
                 </div>
@@ -1472,13 +1472,13 @@
                 <div class="finalizeCopySlot">
                   <div class="copyCard" id="finalCopyCard" role="button" tabindex="0" aria-label="Copy final prompt">
                     <div class="copyCardHeader">
-                      <div class="copyCardTitle">Copy final prompt</div>
+                      <div class="copyCardTitle" id="finalCopyTitle">Copy final prompt</div>
                       <button type="button" class="promptChevronBtn" id="finalCopyChevron" aria-expanded="false" aria-controls="finalCopyDetails" aria-label="Show details for final prompt">
                         <span class="promptChevronIcon" aria-hidden="true">›</span>
                       </button>
                     </div>
                     <div class="copyCardDetails" id="finalCopyDetails">
-                      <p class="promptDesc">Paste this into your selected LLM after refining questions to generate your final output.</p>
+                      <p class="promptDesc" id="finalCopyDescription">Paste this into your selected LLM after refining questions to generate your final output.</p>
                       <pre class="promptDetailsText copyCardPreview" id="finalCopyPreview"></pre>
                     </div>
                   </div>
@@ -1628,6 +1628,12 @@
 
     // Apps Script endpoint for background autosave events.
     const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbxL2vkcsWNQVRDug2rnZU01eQesd4S7QXY-3Qtm7ZeWgzTNw7jjvdYxT-DzMjD9gMTj/exec";
+    const REMOTE_CONFIG_URL = "https://script.google.com/macros/s/AKfycbw5i8StkIF_S0WxpAa4PQVZxzrsMTNBCQSP_g3MVmHNCHI0_DRTqDc_A1wNUT3TzWQ1pA/exec";
+
+    let remoteConfig = {
+      llmOptions: {},
+      prompts: {}
+    };
 
     // Paste your webhook URL into LLM_MISMATCH_ALERT_WEBHOOK to receive immediate mismatch alerts.
     const LLM_MISMATCH_ALERT_WEBHOOK = "";
@@ -2154,18 +2160,101 @@ Place the correct answer first and bold it.`
     const nowIso = () => new Date().toISOString();
     const isTrainingMode = new URLSearchParams(location.search).get("mode") === "training";
 
-    function getSelectedModelKey() {
-      const selectedProduct = localStorage.getItem(KEYS.llmProduct)
+    function getSelectedLlmKey() {
+      const selectedProduct = (typeof window !== "undefined" && window.selectedProduct) ? window.selectedProduct : "";
+      const modelUsed = (typeof window !== "undefined" && window.modelUsed) ? window.modelUsed : "";
+      return normalizeLlmProduct(
+        localStorage.getItem(KEYS.llmProduct)
         || normalizeLlmProduct(localStorage.getItem(KEYS.modelUsed) || "")
-        || "chatgpt";
-      return ["chatgpt", "gemini", "copilot"].includes(selectedProduct)
-        ? selectedProduct
-        : "chatgpt";
+        || selectedProduct
+        || modelUsed
+        || "chatgpt"
+      ) || "chatgpt";
+    }
+
+    function getRemoteLlmOptions(llmKey) {
+      return remoteConfig.llmOptions?.[llmKey] || [];
+    }
+
+    function getRemotePrompt(llmKey, promptId) {
+      return remoteConfig.prompts?.[llmKey]?.[promptId] || null;
+    }
+
+    function getPromptDefinition(promptId) {
+      const llmKey = getSelectedLlmKey();
+      return getRemotePrompt(llmKey, promptId);
+    }
+
+    function getPromptTitle(promptId, fallbackTitle = "") {
+      return getPromptDefinition(promptId)?.title || fallbackTitle;
+    }
+
+    function getPromptDescription(promptId, fallbackDescription = "") {
+      return getPromptDefinition(promptId)?.description_text || fallbackDescription;
+    }
+
+    function getPromptBody(promptId, fallbackBody = "") {
+      return getPromptDefinition(promptId)?.prompt_body || fallbackBody;
+    }
+
+    function getSelectedModelKey() {
+      return getSelectedLlmKey();
     }
 
     function getPromptText(promptId) {
+      const prompt = getPromptDefinition(promptId);
+      if (prompt?.prompt_body) return prompt.prompt_body;
       const modelKey = getSelectedModelKey();
-      return PROMPTS[promptId]?.[modelKey] || "";
+      return getPromptBody(promptId, PROMPTS[promptId]?.[modelKey] || "");
+    }
+
+    async function loadRemoteConfig() {
+      const res = await fetch(REMOTE_CONFIG_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error(`Config fetch failed: ${res.status}`);
+      const data = await res.json();
+      if (!data || !data.ok) throw new Error("Config response was not ok");
+
+      remoteConfig = {
+        llmOptions: data.llmOptions || {},
+        prompts: data.prompts || {}
+      };
+    }
+
+    function getLlmOptionList(productKey) {
+      const remoteOptions = getRemoteLlmOptions(productKey);
+      if (remoteOptions.length) return remoteOptions;
+      const fallbackConfig = LLM_UI_CONFIG[productKey];
+      if (!fallbackConfig?.expectedOptions?.length) return [];
+      return fallbackConfig.expectedOptions.map((opt) => ({
+        value: opt.value,
+        label: opt.label,
+        selectedByDefault: opt.value === fallbackConfig.defaultExpected
+      }));
+    }
+
+    function renderCopyCardPromptText() {
+      const starterTitle = getPromptTitle("starter", "Copy starter prompt");
+      const starterDescription = getPromptDescription("starter", "Paste this into your selected LLM to begin generating questions.");
+      const finalTitle = getPromptTitle("final_prompt", "Copy final prompt");
+      const finalDescription = getPromptDescription("final_prompt", "Paste this into your selected LLM after refining questions to generate your final output.");
+
+      const starterTitleEl = $("starterCopyTitle");
+      const starterCardEl = $("starterCopyCard");
+      const starterChevronEl = $("starterCopyChevron");
+      const starterDescriptionEl = $("starterCopyDescription");
+      if (starterTitleEl) starterTitleEl.textContent = starterTitle;
+      if (starterCardEl) starterCardEl.setAttribute("aria-label", starterTitle);
+      if (starterChevronEl) starterChevronEl.setAttribute("aria-label", `Show details for ${starterTitle}`);
+      if (starterDescriptionEl) starterDescriptionEl.textContent = starterDescription;
+
+      const finalTitleEl = $("finalCopyTitle");
+      const finalCardEl = $("finalCopyCard");
+      const finalChevronEl = $("finalCopyChevron");
+      const finalDescriptionEl = $("finalCopyDescription");
+      if (finalTitleEl) finalTitleEl.textContent = finalTitle;
+      if (finalCardEl) finalCardEl.setAttribute("aria-label", finalTitle);
+      if (finalChevronEl) finalChevronEl.setAttribute("aria-label", `Show details for ${finalTitle}`);
+      if (finalDescriptionEl) finalDescriptionEl.textContent = finalDescription;
     }
 
     // Most recently copied state (desktop sidebar)
@@ -2507,7 +2596,7 @@ Place the correct answer first and bold it.`
 
     function formatLlmExpectedChoiceLabel(productKey, expectedChoice) {
       if (!expectedChoice) return "—";
-      const options = LLM_UI_CONFIG[productKey]?.expectedOptions || [];
+      const options = getLlmOptionList(productKey);
       const match = options.find((o) => o.value === expectedChoice);
       return match?.label || expectedChoice;
     }
@@ -2681,22 +2770,24 @@ Place the correct answer first and bold it.`
       }
 
       const existingValue = localStorage.getItem(KEYS.llmExpectedChoice) || "";
+      const options = getLlmOptionList(productKey);
       expectedSelect.innerHTML = "";
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = "Select one";
-      expectedSelect.appendChild(placeholder);
-      config.expectedOptions.forEach((opt) => {
+      options.forEach((opt) => {
         const el = document.createElement("option");
         el.value = opt.value;
         el.textContent = opt.label;
         expectedSelect.appendChild(el);
       });
 
-      const validValues = new Set(config.expectedOptions.map((o) => o.value));
-      const selectedValue = validValues.has(existingValue) ? existingValue : "";
+      const defaultOption = options.find((o) => o.selectedByDefault) || options[0] || null;
+      const validValues = new Set(options.map((o) => o.value));
+      const selectedValue = validValues.has(existingValue) ? existingValue : (defaultOption?.value || "");
       expectedSelect.value = selectedValue;
-      if (!selectedValue) localStorage.removeItem(KEYS.llmExpectedChoice);
+      if (selectedValue) {
+        localStorage.setItem(KEYS.llmExpectedChoice, selectedValue);
+      } else {
+        localStorage.removeItem(KEYS.llmExpectedChoice);
+      }
 
       if (selectedValue === "different") {
         const mismatch = localStorage.getItem(KEYS.llmMismatchDescription) || "";
@@ -3459,6 +3550,7 @@ Place the correct answer first and bold it.`
       updateEndSessionVisibility();
       updateFinalizeContentUI();
       refreshFooterInfo();
+      renderCopyCardPromptText();
       if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
       if ($("finalCopyPreview")) $("finalCopyPreview").textContent = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
       const copied = localStorage.getItem(KEYS.starterCopied) === "true";
@@ -3540,20 +3632,23 @@ Place the correct answer first and bold it.`
         .forEach((id) => { const el = $(id); if (el) el.innerHTML = ""; });
 
       const makePromptCard = (prompt) => {
+        const displayTitle = getPromptTitle(prompt.id, prompt.title || "");
+        const displayDescription = getPromptDescription(prompt.id, prompt.description || "");
+
         const card = document.createElement("div");
         card.className = "promptCard";
         card.dataset.action = "copy";
         card.dataset.id = prompt.id;
         card.tabIndex = 0;
         card.setAttribute("role", "button");
-        card.setAttribute("aria-label", `Copy ${prompt.title}`);
+        card.setAttribute("aria-label", `Copy ${displayTitle}`);
 
         const header = document.createElement("div");
         header.className = "promptHeader";
 
         const title = document.createElement("div");
         title.className = "promptTitle";
-        title.textContent = prompt.title;
+        title.textContent = displayTitle;
         header.appendChild(title);
 
         const actions = document.createElement("div");
@@ -3564,7 +3659,7 @@ Place the correct answer first and bold it.`
         chevronBtn.className = "promptChevronBtn";
         chevronBtn.dataset.action = "toggle-details";
         chevronBtn.dataset.id = prompt.id;
-        chevronBtn.setAttribute("aria-label", `Show details for ${prompt.title}`);
+        chevronBtn.setAttribute("aria-label", `Show details for ${displayTitle}`);
         chevronBtn.setAttribute("aria-expanded", "false");
         chevronBtn.innerHTML = `<span class="promptChevronIcon" aria-hidden="true">›</span>`;
 
@@ -3577,10 +3672,10 @@ Place the correct answer first and bold it.`
         details.className = "promptDetails";
         details.id = `promptDetails_${prompt.id}`;
 
-        if (prompt.description) {
+        if (displayDescription) {
           const desc = document.createElement("p");
           desc.className = "promptDesc";
-          desc.textContent = prompt.description;
+          desc.textContent = displayDescription;
           details.appendChild(desc);
         }
 
@@ -3627,14 +3722,15 @@ Place the correct answer first and bold it.`
         const prompt = PROMPT_META.find((x) => x.id === id);
         if (!prompt) return;
 
+        const promptTitle = getPromptTitle(id, prompt.title || id);
         const promptText = fillTemplate(getPromptText(id));
-        const ok = await copyToClipboard(promptText, prompt.title);
+        const ok = await copyToClipboard(promptText, promptTitle);
 
         if (ok) {
           logEvent("prompt_copied", { promptId: id });
           sendAutosave(buildAutosave("prompt_copied", {
             promptName: id,
-            details: { promptId: id, promptTitle: prompt.title }
+            details: { promptId: id, promptTitle }
           }));
 
           card.classList.add("is-active");
@@ -3867,9 +3963,14 @@ Place the correct answer first and bold it.`
     // -----------------------------
     // Init
     // -----------------------------
-    function init() {
+    async function init() {
       configureTrainingTipsUI();
       configureTimerModeUI();
+      try {
+        await loadRemoteConfig();
+      } catch (err) {
+        console.error("Remote config failed to load", err);
+      }
       // Gate
       const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
 
@@ -3947,6 +4048,8 @@ Place the correct answer first and bold it.`
           setProductVersionConfirmedState(false);
         }
         renderLlmConfirmPanel(llmProduct);
+        renderPromptList();
+        renderCopyCardPromptText();
       };
 
       document.querySelectorAll(".modelOption").forEach((btn) => {
@@ -4072,6 +4175,7 @@ Place the correct answer first and bold it.`
 
       // Render prompts
       renderPromptList();
+      renderCopyCardPromptText();
 
       renderMostRecentCopied();
       if (!localStorage.getItem(KEYS.finalPromptCopied)) localStorage.setItem(KEYS.finalPromptCopied, "false");
@@ -4096,6 +4200,7 @@ Place the correct answer first and bold it.`
       });
 
       function refreshCopyCardPreviews() {
+        renderCopyCardPromptText();
         const starterPreview = $("starterCopyPreview");
         if (starterPreview) starterPreview.textContent = buildStarterPrompt();
         const finalPreview = $("finalCopyPreview");
@@ -4152,7 +4257,7 @@ Place the correct answer first and bold it.`
         refreshCopyCardPreviews();
         const starterCard = $("starterCopyCard");
         showCopyCardActiveState(starterCard);
-        const ok = await copyToClipboard(buildStarterPrompt(), "Starter prompt");
+        const ok = await copyToClipboard(buildStarterPrompt(), getPromptTitle("starter", "Starter prompt"));
         starterCard?.blur();
         if (ok) {
           logEvent("starter_copied", {});
@@ -4219,7 +4324,7 @@ Place the correct answer first and bold it.`
         const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
         const finalCard = $("finalCopyCard");
         showCopyCardActiveState(finalCard);
-        const ok = await copyToClipboard(fp, "Final prompt");
+        const ok = await copyToClipboard(fp, getPromptTitle("final_prompt", "Final prompt"));
         finalCard?.blur();
         if (!ok) return;
         localStorage.setItem(KEYS.finalPromptCopied, "true");
@@ -4341,7 +4446,9 @@ Place the correct answer first and bold it.`
       }
     }
 
-    init();
+    init().catch((err) => {
+      console.error("Initialization failed", err);
+    });
   </script>
 </body>
 </html>
