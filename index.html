@@ -262,6 +262,26 @@
     .accessAction.is-loading {
       opacity: 0.85;
     }
+    .modeToggleRow {
+      margin-top: 10px;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+    }
+    .modeToggleLabel {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    .modeToggleLabel input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      margin: 0;
+    }
 
     @media (max-width: 560px) {
       .accessRow { flex-wrap: wrap; }
@@ -1494,6 +1514,12 @@
             <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" />
             <button class="btn primary accessBtn" id="btnVerifyAccess" type="submit">Continue</button>
           </form>
+          <div class="modeToggleRow">
+            <label class="modeToggleLabel">
+              <input type="checkbox" id="trainingModeToggle" />
+              <span>Training mode</span>
+            </label>
+          </div>
         </div>
 
         <p id="accessMsg" class="muted small accessError" style="margin:8px 0 0;"></p>
@@ -2688,6 +2714,21 @@ Place the correct answer first and bold it.`
       const generated = "ck_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
       localStorage.setItem(KEYS.clientKey, generated);
       return generated;
+    }
+
+    function setupTrainingModeToggle() {
+      const trainingModeToggle = $("trainingModeToggle");
+      if (!trainingModeToggle) return;
+      trainingModeToggle.checked = isTrainingMode;
+      trainingModeToggle.addEventListener("change", () => {
+        const url = new URL(window.location.href);
+        if (trainingModeToggle.checked) {
+          url.searchParams.set("mode", "training");
+        } else {
+          url.searchParams.delete("mode");
+        }
+        window.location.href = url.toString();
+      });
     }
 
     function loadJSON(key, fallback) {
@@ -4355,6 +4396,7 @@ Place the correct answer first and bold it.`
       updateFooterMode();
       configureTrainingTipsUI();
       configureTimerModeUI();
+      setupTrainingModeToggle();
       setAccessLoadingState(true, "Loading, please wait…");
       try {
         await loadRemoteConfig();
