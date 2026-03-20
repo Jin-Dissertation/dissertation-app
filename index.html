@@ -9,8 +9,21 @@
     :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; --landing-max-width: 760px; }
     body { margin:0; font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); letter-spacing: .01em; }
     .pageShell { max-width: 1440px; margin: 0 auto; padding: 18px 24px 20px; }
-    h1 { font-family: inherit; font-size: 28px; font-weight:700; margin: 0 0 10px; letter-spacing: .01em; }
-    .sub { color: var(--muted); margin: 0 0 10px; font-size: 14px; }
+    h1 {
+      font-family: inherit;
+      font-size: clamp(22px, 2.6vw, 28px);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: 0.01em;
+      margin: 0 0 6px;
+    }
+    .sub,
+    .landingSubtitle {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.4;
+      margin: 0;
+    }
     .landingColumn {
       box-sizing: border-box;
     }
@@ -29,24 +42,16 @@
       box-sizing: border-box;
     }
     .pageShell.is-landing .landingHeader {
-      max-width: 660px;
-      margin: 10px auto 0;
+      width: min(100%, var(--landing-max-width));
+      margin: 10px auto 16px;
       text-align: left;
-    }
-    .pageShell.is-landing .landingSubtitle {
-      margin: -8px 0 0;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.45;
+      box-sizing: border-box;
     }
     .pageShell.is-app .landingHeader {
-      max-width: none;
       width: 100%;
-      margin: 0 0 12px;
+      margin: 0 0 14px;
       text-align: left;
-    }
-    .pageShell.is-app .landingSubtitle {
-      margin: 0;
+      box-sizing: border-box;
     }
     #appShell {
       width: 100%;
@@ -1132,8 +1137,6 @@
     }
     @media (min-width: 1100px) {
       .pageShell { max-width: 1440px; padding: 18px 24px 20px; }
-      h1 { font-size: 28px; margin-bottom: 10px; }
-      .sub { margin-bottom: 10px; font-size: 14px; }
       .card { padding: 12px; }
       .subBand { padding: 12px 14px; margin-top: 10px; }
       .groupCard { padding: 11px; }
