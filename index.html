@@ -1117,6 +1117,9 @@
       font-size: 13px;
       line-height: 1.4;
     }
+    .trainingTip.trainingTipSmall#makingQuestionsTrainingTip {
+      margin-bottom: 10px;
+    }
     .training-tip-icon {
       font-size: 13px;
       line-height: 1;
@@ -1614,6 +1617,11 @@
 
           <div id="promptsInner" style="display:none;">
             <div class="card">
+              <div class="trainingTip trainingTipSmall" id="makingQuestionsTrainingTip">
+                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                <p>This section is where you work with the AI on one question at a time.</p>
+                <p>Use these prompt buttons to accept a question, replace it, refine parts of it, review what you have so far, or audit the balance of your question set.</p>
+              </div>
               <div class="promptTopRow">
                 <div class="promptTopRowActions">
                   <button class="btn" id="btnExpandAllPrompts" type="button">Expand all</button>
@@ -2821,7 +2829,7 @@ Place the correct answer first and bold it.`
 
 
     function configureTrainingTipsUI() {
-      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "trainingTipMismatch"];
+      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "trainingTipMismatch", "makingQuestionsTrainingTip"];
       tipIds.forEach((id) => {
         const el = $(id);
         if (!el) return;
