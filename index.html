@@ -1142,14 +1142,16 @@
       /* Mobile override for actual prompt button selector (.promptCard is the clickable row via role="button"). */
       .promptCard[role="button"] {
         height: auto;
-        min-height: 60px;
-        padding: 10px 15px;
+        min-height: 0;
+        padding: 8px 10px;
+        border-radius: 12px;
       }
       .promptHeader {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
-        column-gap: 12px;
+        column-gap: 8px;
+        min-height: 0;
         width: 100%;
         box-sizing: border-box;
       }
@@ -1163,7 +1165,7 @@
       }
       .promptTitle {
         margin: 0;
-        font-size: 14px;
+        font-size: 16px;
         text-align: left;
         align-self: center;
         line-height: 1.2;
@@ -1183,38 +1185,76 @@
         align-items: center;
       }
       .btn,
-      .promptChevronBtn,
       .accessBtn,
       #btnPauseTimer {
         min-height: 44px;
       }
       /* Mobile override for actual chevron button selector (.promptChevronBtn inside each prompt card). */
       .promptChevronBtn {
-        width: 40px;
-        height: 40px;
-        min-width: 40px;
-        min-height: 40px;
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        min-height: 28px;
         padding: 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        flex: 0 0 40px;
+        flex: 0 0 28px;
         border-radius: 10px;
       }
       .promptSections {
         gap: 8px;
       }
       .promptListCompact {
-        gap: 10px;
+        gap: 8px;
       }
       .promptListSingle .promptCard + .promptCard {
-        margin-top: 10px;
+        margin-top: 8px;
       }
       .promptSection {
-        padding: 8px 9px;
+        padding: 10px 10px 12px;
+        margin-top: 10px;
+        border-radius: 14px;
       }
       .promptSectionTitle {
-        margin: 0 0 6px;
+        margin: 0 0 8px;
+        font-size: 15px;
+        line-height: 1.2;
+      }
+      .promptSection,
+      .groupCard,
+      .promptGroup,
+      .promptGroupPanel {
+        padding: 10px 10px 12px;
+        margin-top: 10px;
+        border-radius: 14px;
+      }
+      .promptSectionTitle,
+      .promptGroupTitle,
+      .groupTitle {
+        margin-bottom: 8px;
+        font-size: 15px;
+        line-height: 1.2;
+      }
+      .promptCard {
+        padding: 8px 10px;
+        min-height: 0;
+        border-radius: 12px;
+      }
+      .promptHeader {
+        min-height: 0;
+        gap: 8px;
+      }
+      .promptListCompact,
+      .promptCards,
+      .promptGroupCards {
+        gap: 8px;
+      }
+      .promptCard,
+      .promptDetails,
+      .promptDetailsText {
+        box-sizing: border-box;
+        max-width: 100%;
       }
       .btn {
         display: inline-flex;
