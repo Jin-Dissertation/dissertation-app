@@ -1142,6 +1142,9 @@
       font-size: 13px;
       line-height: 1.4;
     }
+    #trainingTipModelMismatchBody {
+      white-space: pre-line;
+    }
     .trainingTip.trainingTipSmall#makingQuestionsTrainingTip {
       margin-bottom: 10px;
     }
@@ -1588,10 +1591,9 @@
                   <label for="llmMismatchDescription">Please briefly describe the options you see in the menu.</label>
                   <textarea id="llmMismatchDescription" placeholder="Example: Auto, Instant 5.5, Thinking 5.6"></textarea>
                 </div>
-                <div id="trainingTipMismatch" class="training-tip">
-                  <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-                  <p>If the model name you see in your AI interface does not match the options listed here, choose “I see something different” and briefly describe what you see.</p>
-                  <p style="margin-top:8px;">This helps us record which AI system and model you used.</p>
+                <div id="trainingTipModelMismatch" class="trainingTip trainingTipSmall">
+                  <div id="trainingTipModelMismatchLabel" class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                  <p id="trainingTipModelMismatchBody"></p>
                 </div>
               </div>
 
@@ -2497,6 +2499,19 @@ Place the correct answer first and bold it.`
       return getPromptDefinition(promptId)?.prompt_body || fallbackBody;
     }
 
+    function getTrainingTipDefinition(promptId) {
+      const llmKey = getSelectedLlmKey();
+      return getRemotePrompt(llmKey, promptId);
+    }
+
+    function getTrainingTipTitle(promptId, fallbackTitle = "TRAINING TIP") {
+      return getTrainingTipDefinition(promptId)?.title || fallbackTitle;
+    }
+
+    function getTrainingTipBody(promptId, fallbackBody = "") {
+      return getTrainingTipDefinition(promptId)?.description_text || fallbackBody;
+    }
+
     function getSelectedModelKey() {
       return getSelectedLlmKey();
     }
@@ -2932,13 +2947,28 @@ Place the correct answer first and bold it.`
 
 
     function configureTrainingTipsUI() {
-      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "trainingTipMismatch", "makingQuestionsTrainingTip", "trainingTipFinalizeIntro", "finalCopiedTrainingTip", "trainingTipFinalizeFeedback", "trainingTipEndSession"];
+      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "trainingTipModelMismatch", "makingQuestionsTrainingTip", "trainingTipFinalizeIntro", "finalCopiedTrainingTip", "trainingTipFinalizeFeedback", "trainingTipEndSession"];
       tipIds.forEach((id) => {
         const el = $(id);
         if (!el) return;
         const shouldShow = isTrainingMode && ((id !== "starterCopiedTrainingTip" && id !== "finalCopiedTrainingTip") || !el.hidden);
         el.style.display = shouldShow ? "block" : "none";
       });
+    }
+
+    function renderModelMismatchTrainingTip() {
+      const labelEl = $("trainingTipModelMismatchLabel");
+      const bodyEl = $("trainingTipModelMismatchBody");
+      if (!labelEl || !bodyEl) return;
+
+      const title = getTrainingTipTitle("tip_model_mismatch", "TRAINING TIP");
+      const body = getTrainingTipBody(
+        "tip_model_mismatch",
+        "If the model name you see in your AI interface does not match the options listed here, choose “I see something different” and briefly describe what you see.\n\nThis helps us record which AI system and model you used."
+      );
+
+      labelEl.innerHTML = `<span aria-hidden="true">ⓘ</span><span>${title}</span>`;
+      bodyEl.textContent = body;
     }
 
     function configureTimerModeUI() {
@@ -4398,6 +4428,7 @@ Place the correct answer first and bold it.`
       setAccessLoadingState(true, "Loading, please wait…");
       try {
         await loadRemoteConfig();
+        renderModelMismatchTrainingTip();
         appBootLoading = false;
         appBootReady = true;
         setAccessLoadingState(false, "");
@@ -4499,6 +4530,7 @@ Place the correct answer first and bold it.`
           setProductVersionConfirmedState(false);
         }
         renderLlmConfirmPanel(llmProduct);
+        renderModelMismatchTrainingTip();
         renderPromptList();
         renderCopyCardPromptText();
       };
@@ -4513,6 +4545,7 @@ Place the correct answer first and bold it.`
       });
       selectModel($("modelUsed").value || "", { logSelection: false });
       renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "chatgpt");
+      renderModelMismatchTrainingTip();
       updateSetupSubbandVisibility();
 
       const llmExpectedChoiceEl = $("llmExpectedChoice");
