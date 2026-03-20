@@ -2470,8 +2470,7 @@ Place the correct answer first and bold it.`
         || normalizeLlmProduct(localStorage.getItem(KEYS.modelUsed) || "")
         || selectedProduct
         || modelUsed
-        || "chatgpt"
-      ) || "chatgpt";
+      ) || "";
     }
 
     function getRemoteLlmOptions(llmKey) {
@@ -3175,7 +3174,8 @@ Place the correct answer first and bold it.`
 
       if (!config) {
         panel.style.display = "none";
-        expectedSelect.innerHTML = "";
+        expectedSelect.innerHTML = '<option value="">Select a product first</option>';
+        expectedSelect.disabled = true;
         setLlmMismatchVisibility(false);
         localStorage.removeItem(KEYS.llmExpectedChoice);
         localStorage.removeItem(KEYS.llmMismatchDescription);
@@ -3190,6 +3190,7 @@ Place the correct answer first and bold it.`
       }
 
       panel.style.display = "block";
+      expectedSelect.disabled = false;
 
       const productVersionTitle = $("productVersionTitle");
       const llmConfirmIntro = $("llmConfirmIntro");
@@ -4499,13 +4500,12 @@ Place the correct answer first and bold it.`
 
       // Hydrate fields
       const modelLabelByProduct = { chatgpt: "ChatGPT", gemini: "Gemini", copilot: "Copilot" };
-      const storedModelProduct = normalizeLlmProduct(localStorage.getItem(KEYS.modelUsed) || "");
-      const storedLlmProduct = normalizeLlmProduct(localStorage.getItem(KEYS.llmProduct) || "");
-      const initialProduct = storedLlmProduct || storedModelProduct || "chatgpt";
-      const initialModel = modelLabelByProduct[initialProduct] || "ChatGPT";
-      $("modelUsed").value = initialModel;
-      localStorage.setItem(KEYS.modelUsed, initialModel);
-      localStorage.setItem(KEYS.llmProduct, initialProduct);
+      $("modelUsed").value = "";
+      localStorage.removeItem(KEYS.modelUsed);
+      localStorage.removeItem(KEYS.llmProduct);
+      localStorage.removeItem(KEYS.llmExpectedChoice);
+      localStorage.removeItem(KEYS.llmMismatchDescription);
+      setProductVersionConfirmedState(false);
       const ctx = getContext();
       $("ctxCourse").value = ctx.course || "";
       $("ctxArea").value = ctx.area || "";
@@ -4514,17 +4514,25 @@ Place the correct answer first and bold it.`
       localStorage.setItem(KEYS.starterCopied, "false");
 
       const selectModel = (model, { logSelection = true } = {}) => {
-        const llmProduct = normalizeLlmProduct(model) || "chatgpt";
-        const selectedModelLabel = modelLabelByProduct[llmProduct] || "ChatGPT";
+        const llmProduct = normalizeLlmProduct(model) || "";
+        const selectedModelLabel = modelLabelByProduct[llmProduct] || "";
         $("modelUsed").value = selectedModelLabel;
-        localStorage.setItem(KEYS.modelUsed, selectedModelLabel);
+        if (selectedModelLabel) {
+          localStorage.setItem(KEYS.modelUsed, selectedModelLabel);
+        } else {
+          localStorage.removeItem(KEYS.modelUsed);
+        }
         document.querySelectorAll(".modelOption").forEach((btn) => {
           const isSelected = btn.dataset.model === selectedModelLabel;
           btn.classList.toggle("active", isSelected);
           btn.classList.toggle("selected", isSelected);
         });
 
-        localStorage.setItem(KEYS.llmProduct, llmProduct);
+        if (llmProduct) {
+          localStorage.setItem(KEYS.llmProduct, llmProduct);
+        } else {
+          localStorage.removeItem(KEYS.llmProduct);
+        }
         if (logSelection) {
           logEvent("llm_product_selected", { llmProduct });
           setProductVersionConfirmedState(false);
@@ -4543,8 +4551,8 @@ Place the correct answer first and bold it.`
           applyStageUI();
         });
       });
-      selectModel($("modelUsed").value || "", { logSelection: false });
-      renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "chatgpt");
+      selectModel("", { logSelection: false });
+      renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "");
       renderModelMismatchTrainingTip();
       updateSetupSubbandVisibility();
 
