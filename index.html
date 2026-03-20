@@ -1140,6 +1140,35 @@
       margin-top: 10px;
       margin-bottom: 8px;
     }
+    #trainingCompletionBanner {
+      position: sticky;
+      top: 16px;
+      z-index: 50;
+      margin: 0 0 14px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid #b9ddc3;
+      border-left: 6px solid #52a36d;
+      background: #eef9f1;
+      color: #234b31;
+      box-shadow: 0 6px 16px rgba(16, 33, 61, 0.08);
+    }
+    #trainingCompletionBanner[hidden] {
+      display: none !important;
+    }
+    .trainingCompletionTitle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      margin-bottom: 6px;
+    }
+    .trainingCompletionBody {
+      font-size: 14px;
+      line-height: 1.45;
+    }
     .training-tip-icon {
       font-size: 13px;
       line-height: 1;
@@ -1475,6 +1504,10 @@
     <div id="appShell" style="display:none;">
       <div class="appHeaderBar">
         <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
+      </div>
+      <div id="trainingCompletionBanner" hidden>
+        <div class="trainingCompletionTitle"><span aria-hidden="true">✓</span><span>Training activity complete</span></div>
+        <div class="trainingCompletionBody">You have finished this training activity. You can now close this window and return to the training.</div>
       </div>
       <div class="layoutGrid">
         <div class="main">
@@ -1849,11 +1882,6 @@
         <button class="btn danger" id="btnEndConfirm" type="button">I saved it — end session</button>
       </div>
     </div>
-  </div>
-
-  <div id="trainingEndFallback" class="card training-tip" style="display:none; margin: 8px 24px 12px;">
-    <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-    <p>Training activity complete. You can now close this window and return to the training.</p>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -4816,15 +4844,14 @@ Place the correct answer first and bold it.`
             return;
           }
 
+          const completionBanner = $("trainingCompletionBanner");
+          if (completionBanner) {
+            completionBanner.hidden = false;
+            completionBanner.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+
           // window.close() in training mode may fail if the page was not opened by script.
           window.close();
-          setTimeout(() => {
-            if (!window.closed) {
-              // Show fallback message if close does not succeed.
-              const fallback = $("trainingEndFallback");
-              if (fallback) fallback.style.display = "block";
-            }
-          }, 150);
         };
 
         if (autosavePayload) {
