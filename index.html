@@ -727,52 +727,68 @@
         margin-bottom: 10px;
       }
 
-      .finalizeTopRow {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-      }
-      .finalizeBackSlot {
-        order: 1;
-        justify-content: flex-start;
-        align-items: flex-start;
-      }
-      .finalizeCopySlot {
-        order: 2;
-        width: 100%;
-      }
-      .finalizeCopySlot .copyCard,
-      #finalCopyCard {
-        width: 100%;
-        max-width: 100%;
-      }
-
       .promptTopRowActions {
         width: 100%;
         display: grid;
         grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+          "back back"
+          "expand collapse";
         gap: 8px;
-        justify-content: stretch;
         align-items: stretch;
       }
 
       #btnEditContext {
-        order: unset;
-        grid-column: 1 / -1;
+        grid-area: back;
         width: 100%;
       }
 
       #btnExpandAllPrompts {
-        order: unset;
-        grid-column: 1;
+        grid-area: expand;
         width: 100%;
       }
 
       #btnCollapseAllPrompts {
-        order: unset;
-        grid-column: 2;
+        grid-area: collapse;
         width: 100%;
+      }
+
+      .finalizeTopRow {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "back"
+          "copy";
+        gap: 10px;
+        align-items: stretch;
+      }
+
+      .finalizeBackSlot {
+        grid-area: back;
+        display: block;
+        width: 100%;
+      }
+
+      .finalizeCopySlot {
+        grid-area: copy;
+        width: 100%;
+      }
+
+      .finalizeBackSlot .btn,
+      #finalCopyCard,
+      .finalizeCopySlot .copyCard {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      #btnEditContext,
+      .finalizeBackSlot .btn,
+      #btnBackToPrompts {
+        width: 100%;
+        text-align: left;
+        justify-content: flex-start;
+        white-space: normal;
+        min-height: 44px;
       }
     }
     .promptDetailsText {
