@@ -1160,9 +1160,7 @@
       margin-top: 10px;
       margin-bottom: 8px;
     }
-    #trainingCompletionBanner {
-      position: sticky;
-      top: 16px;
+    .trainingCompletionBanner {
       z-index: 50;
       margin: 0 0 14px;
       padding: 14px 16px;
@@ -1171,9 +1169,9 @@
       border-left: 6px solid #52a36d;
       background: #eef9f1;
       color: #234b31;
-      box-shadow: 0 6px 16px rgba(16, 33, 61, 0.08);
+      box-shadow: 0 4px 10px rgba(16, 33, 61, 0.05);
     }
-    #trainingCompletionBanner[hidden] {
+    .trainingCompletionBanner[hidden] {
       display: none !important;
     }
     .trainingCompletionTitle {
@@ -1500,6 +1498,10 @@
         <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
         <p>Training mode: The “Training tip” boxes on this page provide guidance for this tutorial and are not part of the normal app interface.</p>
       </div>
+      <div id="landingTrainingCompleteBanner" class="trainingCompletionBanner" hidden>
+        <div class="trainingCompletionTitle"><span aria-hidden="true">✓</span><span>Training activity complete</span></div>
+        <div class="trainingCompletionBody">Your session has been submitted. You can now close this window and return to the training.</div>
+      </div>
       <!-- Access gate -->
       <div class="card accessCard" id="accessGate">
         <div class="accessIntro muted small">
@@ -1530,10 +1532,6 @@
     <div id="appShell" style="display:none;">
       <div class="appHeaderBar">
         <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
-      </div>
-      <div id="trainingCompletionBanner" hidden>
-        <div class="trainingCompletionTitle"><span aria-hidden="true">✓</span><span>Training activity complete</span></div>
-        <div class="trainingCompletionBody">You have finished this training activity. You can now close this window and return to the training.</div>
       </div>
       <div class="layoutGrid">
         <div class="main">
@@ -2460,7 +2458,16 @@ Place the correct answer first and bold it.`
     // -----------------------------
     const $ = (id) => document.getElementById(id);
     const nowIso = () => new Date().toISOString();
-    const isTrainingMode = new URLSearchParams(location.search).get("mode") === "training";
+    const currentUrl = new URL(window.location.href);
+    const isTrainingMode = currentUrl.searchParams.get("mode") === "training";
+    const trainingComplete = currentUrl.searchParams.get("trainingComplete") === "1";
+
+    function buildTrainingCompletionUrl() {
+      const url = new URL(window.location.href);
+      url.searchParams.set("mode", "training");
+      url.searchParams.set("trainingComplete", "1");
+      return url.toString();
+    }
 
     function getSelectedLlmKey() {
       const selectedProduct = (typeof window !== "undefined" && window.selectedProduct) ? window.selectedProduct : "";
@@ -4429,6 +4436,16 @@ Place the correct answer first and bold it.`
         setLockedState(true);
       }
 
+      const landingBanner = $("landingTrainingCompleteBanner");
+      if (isTrainingMode && trainingComplete && landingBanner) {
+        landingBanner.hidden = false;
+      }
+      if (isTrainingMode && trainingComplete) {
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete("trainingComplete");
+        window.history.replaceState({}, "", cleanUrl.toString());
+      }
+
       requestAnimationFrame(() => {
         if ($("accessGate")?.style.display !== "none") {
           $("accessCodeInput")?.focus();
@@ -4885,15 +4902,8 @@ Place the correct answer first and bold it.`
             location.reload();
             return;
           }
-
-          const completionBanner = $("trainingCompletionBanner");
-          if (completionBanner) {
-            completionBanner.hidden = false;
-            completionBanner.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-
-          // window.close() in training mode may fail if the page was not opened by script.
-          window.close();
+          const targetUrl = buildTrainingCompletionUrl();
+          window.location.href = targetUrl;
         };
 
         if (autosavePayload) {
