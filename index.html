@@ -2353,9 +2353,7 @@ Place the correct answer first and bold it.`
     let sessionTimerIntervalId = null;
     let llmMismatchReported = false;
     let llmMismatchAlertAttempted = false;
-    let starterPromptCopied = localStorage.getItem(KEYS.starterCopied) === "true";
-    let starterCopiedSetupSignature = localStorage.getItem(KEYS.starterCopiedSetupSignature) || "";
-    let lastRequiredSetupSignature = "";
+    let starterPromptCopied = false;
 
     // Optional audio feedback recorder state (kept centralized for easy end-session integration later).
     let currentAudioStream = null;
@@ -2429,22 +2427,30 @@ Place the correct answer first and bold it.`
     }
 
     function updateStarterCopyAvailability() {
-      const card = $("starterCopyCard");
-      if (!card) return;
+      const starterCard = $("starterCopyCard");
+      if (!starterCard) return;
 
-      const enabled = isStarterSetupValid();
+      const canCopy = isStarterSetupValid();
 
-      card.classList.toggle("is-disabled", !enabled);
-      card.setAttribute("aria-disabled", String(!enabled));
-      card.tabIndex = enabled ? 0 : -1;
+      starterCard.classList.toggle("is-disabled", !canCopy);
+      starterCard.setAttribute("aria-disabled", String(!canCopy));
+      starterCard.tabIndex = canCopy ? 0 : -1;
     }
 
-    function invalidateStarterCopyState() {
-      if (!starterPromptCopied) return;
+    function updateProceedToPromptsAvailability() {
+      const btn = $("btnGoPrompts");
+      if (!btn) return;
+
+      const canProceed = isStarterSetupValid() && !!starterPromptCopied;
+      btn.disabled = !canProceed;
+      btn.classList.toggle("primary", canProceed);
+    }
+
+    function invalidateStarterPromptCopied() {
       starterPromptCopied = false;
-      starterCopiedSetupSignature = "";
       localStorage.setItem(KEYS.starterCopied, "false");
       localStorage.removeItem(KEYS.starterCopiedSetupSignature);
+      updateProceedToPromptsAvailability();
 
       const setupMsg = $("setupMsg");
       if (setupMsg && (setupMsg.textContent || "").includes("Starter prompt copied.")) {
@@ -3690,9 +3696,7 @@ Place the correct answer first and bold it.`
       if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
       if ($("finalCopyPreview")) $("finalCopyPreview").textContent = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
       updateStarterCopyAvailability();
-      const canAttemptProceedToPrompts = isStarterSetupValid();
-      $("btnGoPrompts").disabled = !canAttemptProceedToPrompts;
-      $("btnGoPrompts").classList.toggle("disabledBtn", !canAttemptProceedToPrompts);
+      updateProceedToPromptsAvailability();
     }
 
     // -----------------------------
@@ -4166,15 +4170,7 @@ Place the correct answer first and bold it.`
       $("ctxArea").value = ctx.area || "";
       $("ctxNotes").value = ctx.notes || "";
       $("ctxQuestionCount").value = ctx.questionCount || "10";
-      const restoredRequiredSignature = getStarterSetupSignature();
-      if (starterPromptCopied) {
-        if (starterCopiedSetupSignature && starterCopiedSetupSignature !== restoredRequiredSignature) {
-          invalidateStarterCopyState();
-        } else if (!starterCopiedSetupSignature) {
-          starterCopiedSetupSignature = restoredRequiredSignature;
-          localStorage.setItem(KEYS.starterCopiedSetupSignature, starterCopiedSetupSignature);
-        }
-      }
+      localStorage.setItem(KEYS.starterCopied, "false");
 
       const selectModel = (model, { logSelection = true } = {}) => {
         const llmProduct = normalizeLlmProduct(model) || "chatgpt";
@@ -4201,7 +4197,7 @@ Place the correct answer first and bold it.`
         btn.addEventListener("click", (e) => {
           e.preventDefault();
           selectModel(btn.dataset.model || "", { logSelection: true });
-          invalidateStarterCopyState();
+          invalidateStarterPromptCopied();
           applyStageUI();
         });
       });
@@ -4336,21 +4332,19 @@ Place the correct answer first and bold it.`
         $("setupMsg").style.display = "none";
       }
 
-      const handleRequiredSetupFieldChange = () => {
-        const currentSignature = getStarterSetupSignature();
-        if (currentSignature !== lastRequiredSetupSignature) {
-          if (starterPromptCopied && currentSignature !== starterCopiedSetupSignature) {
-            invalidateStarterCopyState();
-          }
-          lastRequiredSetupSignature = currentSignature;
-        }
-        updateStarterCopyAvailability();
-        applyStageUI();
-        if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
-      };
+      const requiredSetupInputs = [
+        $("ctxCourse"),
+        $("ctxArea")
+      ].filter(Boolean);
 
-      ["ctxCourse", "ctxArea"].forEach((id) => {
-        $(id).addEventListener("input", handleRequiredSetupFieldChange);
+      requiredSetupInputs.forEach((el) => {
+        el.addEventListener("input", () => {
+          invalidateStarterPromptCopied();
+          updateStarterCopyAvailability();
+          updateProceedToPromptsAvailability();
+          applyStageUI();
+          if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
+        });
       });
 
       ["ctxNotes", "ctxQuestionCount"].forEach((id) => {
@@ -4427,8 +4421,7 @@ Place the correct answer first and bold it.`
           if (autosavePayload) sendAutosave(autosavePayload);
           starterPromptCopied = true;
           localStorage.setItem(KEYS.starterCopied, "true");
-          starterCopiedSetupSignature = getStarterSetupSignature();
-          localStorage.setItem(KEYS.starterCopiedSetupSignature, starterCopiedSetupSignature);
+          updateProceedToPromptsAvailability();
           $("setupMsg").textContent = "Starter prompt copied. Paste it into your selected LLM, then click Proceed to 2) Making questions.";
           $("setupMsg").style.display = "block";
         }
@@ -4509,7 +4502,7 @@ Place the correct answer first and bold it.`
       });
       refreshCopyCardPreviews();
       updateStarterCopyAvailability();
-      lastRequiredSetupSignature = getStarterSetupSignature();
+      updateProceedToPromptsAvailability();
 
       $("llmResponse").addEventListener("input", () => {
         updateFinalizeContentUI();
