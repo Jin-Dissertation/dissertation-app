@@ -723,6 +723,10 @@
       white-space: nowrap;
     }
     @media (max-width: 820px) {
+      .promptTopRow {
+        margin-bottom: 10px;
+      }
+
       .finalizeTopRow {
         display: flex;
         flex-direction: column;
@@ -745,26 +749,30 @@
       }
 
       .promptTopRowActions {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-start;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        justify-content: stretch;
+        align-items: stretch;
       }
 
       #btnEditContext {
-        order: 1;
+        order: unset;
+        grid-column: 1 / -1;
+        width: 100%;
       }
 
       #btnExpandAllPrompts {
-        order: 2;
+        order: unset;
+        grid-column: 1;
+        width: 100%;
       }
 
       #btnCollapseAllPrompts {
-        order: 3;
-      }
-
-      #btnExpandAllPrompts,
-      #btnCollapseAllPrompts {
-        flex: 0 0 auto;
+        order: unset;
+        grid-column: 2;
+        width: 100%;
       }
     }
     .promptDetailsText {
@@ -1499,19 +1507,6 @@
           </div>
         </div>
       </details>
-      <div class="pageFooter">
-        <footer id="buildInfo" class="pageFooterMeta"><span id="lastUpdated"></span></footer>
-        <div id="helpLinkRow" class="pageFooterLink">
-          <a
-            href="https://jin-dissertation.github.io/dissertation-app/help.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="helpFaqLink"
-          >
-            Help / FAQ
-          </a>
-        </div>
-      </div>
         </div>
 
         <aside class="sidebar">
@@ -1532,6 +1527,19 @@
             </div>
           </div>
         </aside>
+      </div>
+    </div>
+    <div class="pageFooter">
+      <footer id="buildInfo" class="pageFooterMeta"><span id="lastUpdated"></span></footer>
+      <div id="helpLinkRow" class="pageFooterLink">
+        <a
+          href="https://jin-dissertation.github.io/dissertation-app/help.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="helpFaqLink"
+        >
+          Help / FAQ
+        </a>
       </div>
     </div>
   </div>
