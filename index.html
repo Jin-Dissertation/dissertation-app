@@ -1067,6 +1067,30 @@
       color: #334766;
       line-height: 1.45;
     }
+    .trainingTip.trainingTipSmall,
+    .training-tip.trainingTipSmall,
+    .trainingNote.trainingTipSmall {
+      padding: 10px 12px;
+      border-left-width: 4px;
+      border-radius: 12px;
+      margin-top: 8px;
+      margin-bottom: 10px;
+    }
+    .trainingTip.trainingTipSmall .trainingTipLabel,
+    .trainingTip.trainingTipSmall .training-tip-label,
+    .training-tip.trainingTipSmall .trainingTipLabel,
+    .training-tip.trainingTipSmall .training-tip-label,
+    .trainingNote.trainingTipSmall .trainingTipLabel,
+    .trainingNote.trainingTipSmall .training-tip-label {
+      font-size: 11px;
+      margin-bottom: 6px;
+    }
+    .trainingTip.trainingTipSmall p,
+    .training-tip.trainingTipSmall p,
+    .trainingNote.trainingTipSmall p {
+      font-size: 13px;
+      line-height: 1.4;
+    }
     .training-tip-icon {
       font-size: 13px;
       line-height: 1;
@@ -1480,18 +1504,18 @@
 
             <div id="contextSubband" class="subBand hidden" style="margin-top:10px;">
               <h4 class="subBandTitle">B. Question context</h4>
+              <div id="trainingTipQuestionContext" class="training-tip">
+                <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
+                <p>Describe the course context and content area briefly and clearly. These fields help the AI understand what kind of questions to create.</p>
+                <p style="margin-top:8px;">You do not need to write a full assignment prompt or copy an entire syllabus.</p>
+                <p style="margin-top:8px;">A short, specific description is usually best.</p>
+              </div>
 
               <div id="contextFields">
             <div class="row" style="margin-top:10px;">
               <div style="flex:1; min-width: 240px;">
                 <label>Course / class context</label>
                 <input id="ctxCourse" placeholder="e.g., Health Assessment (first semester)" />
-                <div id="trainingTipCourseContext" class="training-tip">
-                  <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-                  <p>Describe the course context in one or two sentences. This should be enough information for the AI to understand the topic, but it does not need to be detailed.</p>
-                  <p style="margin-top:8px;">Example: Undergraduate pediatric nursing course covering insulin administration and medication safety.</p>
-                  <p style="margin-top:8px;">Avoid writing a full assignment description or copying a syllabus.</p>
-                </div>
               </div>
               <div style="flex:1; min-width: 240px;">
                 <label>Content area</label>
@@ -1513,6 +1537,10 @@
             <p class="muted small" style="margin:10px 0 0;">
               Copy the starter prompt, paste it into your selected LLM, then click the button below to continue.
             </p>
+            <div id="trainingTipStarterGate" class="trainingTip trainingTipSmall">
+              <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
+              <p>The app will not let you copy the starter prompt until you enter something for both Course / class context and Content area. It also will not let you proceed to Making questions until you copy the starter prompt.</p>
+            </div>
 
             <div class="row copyPromptRow" style="margin-top:12px;">
               <div class="copyCardWrap">
@@ -1529,6 +1557,10 @@
                   </div>
                 </div>
               </div>
+            </div>
+            <div id="starterCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
+              <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
+              <p>The starter prompt is now copied to your clipboard. You do not need to do anything else in this app before using it. Go to your LLM conversation box and paste it with Ctrl+V on Windows/Chromebook or Command+V on Mac. These are useful shortcuts worth learning.</p>
             </div>
 
             <p class="muted small" id="setupMsg" style="margin:10px 0 0; display:none;"></p>
@@ -2510,6 +2542,11 @@ Place the correct answer first and bold it.`
       localStorage.setItem(KEYS.starterCopied, "false");
       localStorage.removeItem(KEYS.starterCopiedSetupSignature);
       updateProceedToPromptsAvailability();
+      const copiedTip = $("starterCopiedTrainingTip");
+      if (copiedTip) {
+        copiedTip.hidden = true;
+        copiedTip.style.display = "none";
+      }
 
       const setupMsg = $("setupMsg");
       if (setupMsg && (setupMsg.textContent || "").includes("Starter prompt copied.")) {
@@ -2758,11 +2795,12 @@ Place the correct answer first and bold it.`
 
 
     function configureTrainingTipsUI() {
-      const tipIds = ["trainingTopNote", "trainingTipCourseContext", "trainingTipMismatch"];
+      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "trainingTipMismatch"];
       tipIds.forEach((id) => {
         const el = $(id);
         if (!el) return;
-        el.style.display = isTrainingMode ? "block" : "none";
+        const shouldShow = isTrainingMode && (id !== "starterCopiedTrainingTip" || !el.hidden);
+        el.style.display = shouldShow ? "block" : "none";
       });
     }
 
@@ -4538,6 +4576,11 @@ Place the correct answer first and bold it.`
           if (autosavePayload) sendAutosave(autosavePayload);
           starterPromptCopied = true;
           localStorage.setItem(KEYS.starterCopied, "true");
+          const copiedTip = $("starterCopiedTrainingTip");
+          if (isTrainingMode && copiedTip) {
+            copiedTip.hidden = false;
+            copiedTip.style.display = "block";
+          }
           updateProceedToPromptsAvailability();
           $("setupMsg").textContent = "Starter prompt copied. Paste it into your selected LLM, then click Proceed to 2) Making questions.";
           $("setupMsg").style.display = "block";
