@@ -19,9 +19,13 @@
     }
     .landingColumn > h1,
     .landingColumn > .sub,
-    .landingColumn > .accessCard,
-    .landingColumn > .pageFooter {
+    .landingColumn > .accessCard {
       width: 100%;
+      box-sizing: border-box;
+    }
+    #appShell {
+      width: 100%;
+      max-width: 100%;
       box-sizing: border-box;
     }
     .accessCard {
@@ -212,6 +216,9 @@
     }
     #accessMsg { font-size: 16px; }
     .accessError { color:#b91c1c; font-size:0.9rem; margin-top:8px; }
+    .accessAction.is-loading {
+      opacity: 0.85;
+    }
 
     @media (max-width: 560px) {
       .accessRow { flex-wrap: wrap; }
@@ -1350,9 +1357,10 @@
 
         <p id="accessMsg" class="muted small accessError" style="margin:8px 0 0;"></p>
       </div>
+    </div>
 
-      <!-- Main app -->
-      <div id="appShell" style="display:none;">
+    <!-- Main app -->
+    <div id="appShell" style="display:none;">
       <div class="appHeaderBar">
         <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
       </div>
@@ -1673,7 +1681,6 @@
           </a>
         </div>
       </div>
-    </div>
   </div>
 
 
@@ -2361,6 +2368,8 @@ Place the correct answer first and bold it.`
     let llmMismatchReported = false;
     let llmMismatchAlertAttempted = false;
     let starterPromptCopied = false;
+    let appBootLoading = true;
+    let appBootReady = false;
 
     // Optional audio feedback recorder state (kept centralized for easy end-session integration later).
     let currentAudioStream = null;
@@ -2468,6 +2477,31 @@ Place the correct answer first and bold it.`
 
     function normalizeCode(s) {
       return (s || "").trim().toLowerCase();
+    }
+
+    function setAccessLoadingState(isLoading, message = "Loading, please wait…") {
+      const btn = $("btnVerifyAccess");
+      const input = $("accessCodeInput");
+      const msg = $("accessMsg");
+      const action = document.querySelector("#accessGate .accessAction");
+
+      if (btn) {
+        btn.disabled = !!isLoading;
+        btn.textContent = isLoading ? "Loading..." : "Continue";
+      }
+
+      if (input) {
+        input.disabled = !!isLoading;
+      }
+
+      if (action) {
+        action.classList.toggle("is-loading", !!isLoading);
+      }
+
+      if (msg) {
+        msg.textContent = isLoading ? message : "";
+        msg.style.display = isLoading ? "block" : "";
+      }
     }
 
     function getOrCreateClientKey() {
@@ -4113,10 +4147,22 @@ Place the correct answer first and bold it.`
     async function init() {
       configureTrainingTipsUI();
       configureTimerModeUI();
+      setAccessLoadingState(true, "Loading, please wait…");
       try {
         await loadRemoteConfig();
+        appBootLoading = false;
+        appBootReady = true;
+        setAccessLoadingState(false, "");
       } catch (err) {
         console.error("Remote config failed to load", err);
+        appBootLoading = false;
+        appBootReady = false;
+        setAccessLoadingState(false, "");
+        const msg = $("accessMsg");
+        if (msg) {
+          msg.textContent = "The app is still loading or could not reach the configuration service. Please wait a moment and try again.";
+          msg.style.display = "block";
+        }
       }
       // Gate
       const alreadyVerified = localStorage.getItem(KEYS.accessVerified) === "true";
@@ -4140,6 +4186,15 @@ Place the correct answer first and bold it.`
       });
 
       $("accessForm").addEventListener("submit", async (e) => {
+        if (!appBootReady) {
+          e.preventDefault();
+          const msg = $("accessMsg");
+          if (msg) {
+            msg.textContent = "Loading, please wait a moment before continuing.";
+            msg.style.display = "block";
+          }
+          return;
+        }
         e.preventDefault();
         await verifyAccessCode();
       });
