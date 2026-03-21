@@ -545,6 +545,19 @@
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 12px 16px 12px 12px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    .copiedText.recentPreview:not(.is-empty) {
+      cursor: pointer;
+    }
+    .copiedText.recentPreview:not(.is-empty):hover {
+      border-color: #a9bfdc;
+      box-shadow: 0 2px 8px rgba(16,33,61,0.07);
+      background: #fcfdff;
+    }
+    .copiedText.recentPreview:not(.is-empty):active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
     }
     .copiedText.recentPreview.is-empty {
       color: var(--muted);
@@ -1838,7 +1851,7 @@
       <!-- Access gate -->
       <div class="card accessCard" id="accessGate">
         <div class="accessIntro muted small">
-          <p>This tool is part of a research study conducted by Taemin Jin. Questions about this study may be directed to tjin@crimson.ua.edu.</p>
+          <p>This tool is part of a research study conducted by Taemin Jin. Questions about this study may be directed to <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e4908e8d8aa487968d89978b8aca9185ca818091">[email&#160;protected]</a>.</p>
           <p>This research study has been approved by the [UNIVERSITY NAME] Institutional Review Board (IRB), protocol ID #[NUMBER].</p>
           <p>If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
         </div>
@@ -2274,7 +2287,7 @@
     <button class="timerNoticeClose" id="timerNoticeClose" type="button" aria-label="Dismiss notification">×</button>
   </div>
 
-  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
     window.addEventListener("error", (e) => {
       console.error("Global script error:", e.message, "at", e.filename, "line", e.lineno);
     });
@@ -4041,15 +4054,18 @@ Place the correct answer first and bold it.`,
     // Prompt rendering
     // -----------------------------
     function renderMostRecentCopied() {
-      const text = $("recentCopiedText");
-      if (!text) return;
+      const el = $("recentCopiedText");
+      if (!el) return;
 
       const hasText = !!lastCopiedText.trim();
-      text.textContent = hasText
+      el.textContent = hasText
         ? lastCopiedText
         : "Nothing copied yet. Click any Copy button to see it here.";
 
-      text.classList.toggle("is-empty", !hasText);
+      el.classList.toggle("is-empty", !hasText);
+      el.setAttribute("role", hasText ? "button" : "");
+      el.tabIndex = hasText ? 0 : -1;
+      el.title = hasText ? "Click to re-copy this prompt" : "";
     }
 
     function renderCopyHistory() {
@@ -5102,6 +5118,22 @@ Place the correct answer first and bold it.`,
         return;
       }
 
+      // Sidebar preview re-copy
+      if (e.target.id === "recentCopiedText" || e.target.closest("#recentCopiedText")) {
+        const el = document.getElementById("recentCopiedText");
+        if (el && !el.classList.contains("is-empty") && lastCopiedText.trim()) {
+          try { await navigator.clipboard.writeText(lastCopiedText); } catch (_) {}
+          toast("Copied ✅");
+          el.style.background = "var(--accent-soft)";
+          el.style.borderColor = "var(--accent)";
+          setTimeout(() => {
+            el.style.background = "";
+            el.style.borderColor = "";
+          }, 400);
+          return;
+        }
+      }
+
       // History item re-copy
       const historyItem = e.target.closest(".copyHistoryItem");
       if (historyItem) {
@@ -5149,6 +5181,16 @@ Place the correct answer first and bold it.`,
 
     document.addEventListener("keydown", async (e) => {
       if (e.key !== "Enter" && e.key !== " ") return;
+
+      // Sidebar preview re-copy via keyboard
+      if (e.target.id === "recentCopiedText") {
+        const el = e.target;
+        if (el && !el.classList.contains("is-empty") && lastCopiedText.trim()) {
+          e.preventDefault();
+          el.click();
+          return;
+        }
+      }
 
       // History item re-copy via keyboard
       const historyItem = e.target.closest(".copyHistoryItem");
