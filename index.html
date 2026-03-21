@@ -2805,7 +2805,10 @@ Place the correct answer first and bold it.`,
       }
       if (summary) summary.style.display = showConfirmed ? "block" : "none";
       if (contextSubband) contextSubband.classList.toggle("hidden", !showConfirmed);
-      if (contextFields) contextFields.classList.toggle("hidden", !showConfirmed);
+      // contextFields visibility is controlled by its parent contextSubband —
+      // toggling hidden on both caused layout issues on first-load confirm flow.
+      if (contextFields) contextFields.classList.remove("hidden");
+      updateStarterCopyAvailability();
     }
 
     function renderLlmConfirmPanel(productKey) {
@@ -4344,6 +4347,14 @@ Place the correct answer first and bold it.`,
 
       requiredSetupInputs.forEach((el) => {
         el.addEventListener("input", () => {
+          // Save context immediately so localStorage stays in sync with DOM.
+          const ctx = {
+            course: ($("ctxCourse")?.value || "").trim(),
+            area: ($("ctxArea")?.value || "").trim(),
+            notes: ($("ctxNotes")?.value || "").trim(),
+            questionCount: ($("ctxQuestionCount")?.value || "10").trim() || "10"
+          };
+          saveJSON(KEYS.context, ctx);
           invalidateStarterPromptCopied();
           updateStarterCopyAvailability();
           updateProceedToPromptsAvailability();
@@ -4354,6 +4365,13 @@ Place the correct answer first and bold it.`,
 
       ["ctxNotes", "ctxQuestionCount"].forEach((id) => {
         $(id).addEventListener("input", () => {
+          const ctx = {
+            course: ($("ctxCourse")?.value || "").trim(),
+            area: ($("ctxArea")?.value || "").trim(),
+            notes: ($("ctxNotes")?.value || "").trim(),
+            questionCount: ($("ctxQuestionCount")?.value || "10").trim() || "10"
+          };
+          saveJSON(KEYS.context, ctx);
           applyStageUI();
           if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
         });
