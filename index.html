@@ -589,13 +589,44 @@
 
     /* Sidebar view panels */
     .sidebarView { display: none; }
-    .sidebarView.is-visible { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+    .sidebarView.is-visible { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; margin-top: 10px; }
 
-    /* Sidebar collapsed state */
-    .stickySidebar.recentCard.is-collapsed {
+    /* Sidebar collapsed state — collapses horizontally to a narrow icon strip */
+    .sidebar {
+      transition: width 0.2s ease;
+    }
+    .layoutGrid {
+      transition: grid-template-columns 0.2s ease;
+    }
+    .sidebar.is-sidebar-collapsed {
+      width: 40px;
+    }
+    .layoutGrid.is-sidebar-collapsed {
+      grid-template-columns: minmax(0, 1fr) 40px;
+    }
+    .sidebar.is-sidebar-collapsed .stickySidebar.recentCard {
       height: auto !important;
       max-height: none !important;
-      padding-bottom: 12px;
+      padding: 8px 4px;
+      align-items: center;
+      overflow: visible;
+    }
+    .sidebar.is-sidebar-collapsed .sidebarHeader {
+      flex-direction: column;
+      gap: 8px;
+    }
+    .sidebar.is-sidebar-collapsed .sidebarHeader h3 {
+      display: none;
+    }
+    .sidebar.is-sidebar-collapsed .sidebarControls {
+      flex-direction: column;
+      gap: 4px;
+    }
+    .sidebar.is-sidebar-collapsed .sidebarView {
+      display: none !important;
+    }
+    .sidebar.is-sidebar-collapsed .timerCard {
+      display: none;
     }
     .stickySidebar.recentCard.is-collapsed .sidebarView { display: none !important; }
 
@@ -659,9 +690,15 @@
       .layoutGrid {
         grid-template-columns: minmax(0, 1fr) 240px;
       }
+      .layoutGrid.is-sidebar-collapsed {
+        grid-template-columns: minmax(0, 1fr) 40px;
+      }
       .sidebar {
         width: 240px;
         top: 18px;
+      }
+      .sidebar.is-sidebar-collapsed {
+        width: 40px;
       }
       .stickySidebar.recentCard {
         height: clamp(414px, 64vh, 598px);
@@ -1683,7 +1720,7 @@
       <div class="appHeaderBar">
         <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
       </div>
-      <div class="layoutGrid">
+      <div class="layoutGrid" id="layoutGrid">
         <div class="main">
           <!-- Accordion bands -->
       <details class="band" id="bandSetup">
@@ -3890,6 +3927,8 @@ Place the correct answer first and bold it.`,
     function setSidebarMode(mode) {
       sidebarMode = mode;
       const card = $("sidebarClipboard");
+      const sidebar = document.querySelector(".sidebar");
+      const grid = $("layoutGrid");
       const previewView = $("sidebarPreviewView");
       const historyView = $("sidebarHistoryView");
       const btnPreview = $("sidebarBtnPreview");
@@ -3899,6 +3938,8 @@ Place the correct answer first and bold it.`,
 
       // Reset
       card.classList.remove("is-collapsed");
+      if (sidebar) sidebar.classList.remove("is-sidebar-collapsed");
+      if (grid) grid.classList.remove("is-sidebar-collapsed");
       if (previewView) previewView.classList.remove("is-visible");
       if (historyView) historyView.classList.remove("is-visible");
       if (btnPreview) btnPreview.classList.remove("is-active");
@@ -3914,6 +3955,8 @@ Place the correct answer first and bold it.`,
         renderCopyHistory();
       } else if (mode === "collapsed") {
         card.classList.add("is-collapsed");
+        if (sidebar) sidebar.classList.add("is-sidebar-collapsed");
+        if (grid) grid.classList.add("is-sidebar-collapsed");
         if (btnCollapse) btnCollapse.classList.add("is-active");
       }
     }
