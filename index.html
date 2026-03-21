@@ -2240,7 +2240,6 @@ Place the correct answer first and bold it.`,
     let starterPromptCopied = false;
     let appBootLoading = true;
     let appBootReady = false;
-    let appInitComplete = false;
 
     // Optional audio feedback recorder state (kept centralized for easy end-session integration later).
     let currentAudioStream = null;
@@ -2308,32 +2307,26 @@ Place the correct answer first and bold it.`,
     }
 
     function isStarterSetupValid() {
-      const course = ($("ctxCourse")?.value || "").trim();
-      const area = ($("ctxArea")?.value || "").trim();
-      return !!course && !!area;
+      const courseEl = $("ctxCourse");
+      const areaEl = $("ctxArea");
+      const course = (courseEl?.value || "").trim();
+      const area = (areaEl?.value || "").trim();
+      const result = !!course && !!area;
+      console.log("isStarterSetupValid:", { course, area, result, courseElExists: !!courseEl, areaElExists: !!areaEl, courseElHidden: courseEl?.offsetParent === null, areaElHidden: areaEl?.offsetParent === null });
+      return result;
     }
 
     function updateStarterCopyAvailability() {
       const starterCard = $("starterCopyCard");
       if (!starterCard) return;
 
-      const course = ($("ctxCourse")?.value || "").trim();
-      const area = ($("ctxArea")?.value || "").trim();
       const canCopy = isStarterSetupValid();
-      const hadIsDisabled = starterCard.classList.contains("is-disabled");
+      const wasDis = starterCard.classList.contains("is-disabled");
 
       starterCard.classList.toggle("is-disabled", !canCopy);
       starterCard.setAttribute("aria-disabled", String(!canCopy));
       starterCard.tabIndex = canCopy ? 0 : -1;
-      const hasIsDisabled = starterCard.classList.contains("is-disabled");
-
-      console.log("updateStarterCopyAvailability", {
-        course,
-        area,
-        canCopy,
-        hadIsDisabled,
-        hasIsDisabled
-      });
+      console.log("updateStarterCopyAvailability:", { canCopy, wasDis, nowDis: starterCard.classList.contains("is-disabled"), classList: starterCard.className });
     }
 
     function updateProceedToPromptsAvailability() {
@@ -2361,16 +2354,6 @@ Place the correct answer first and bold it.`,
         setupMsg.textContent = "";
         setupMsg.style.display = "none";
       }
-    }
-
-    function syncStarterCopyUI() {
-      const course = ($("ctxCourse")?.value || "").trim();
-      const area = ($("ctxArea")?.value || "").trim();
-      console.log("syncStarterCopyUI", { course, area });
-      updateStarterCopyAvailability();
-      updateProceedToPromptsAvailability();
-      applyStageUI();
-      if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
     }
 
     function normalizeCode(s) {
@@ -2819,6 +2802,8 @@ Place the correct answer first and bold it.`,
       const canConfirm = isSetupVersionConfirmedForContext();
       const isConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
       const showConfirmed = isConfirmed && canConfirm;
+
+      console.log("updateSetupSubbandVisibility:", { canConfirm, isConfirmed, showConfirmed, contextSubbandHidden: contextSubband?.classList.contains("hidden"), contextFieldsHidden: contextFields?.classList.contains("hidden") });
 
       const productSelected = !!(localStorage.getItem(KEYS.llmProduct) || "");
       if (confirmBtn) confirmBtn.disabled = !canConfirm;
@@ -4158,7 +4143,10 @@ Place the correct answer first and bold it.`,
         sessionStorage.removeItem("dissertation.ended");
         toast("Session ended. Data cleared on this device.");
       }
-      if (!verified) {
+      if (verified) {
+        setLockedState(false);
+        initializeSessionTimerIfNeeded();
+      } else {
         setLockedState(true);
       }
       requestAnimationFrame(() => {
@@ -4193,7 +4181,6 @@ Place the correct answer first and bold it.`,
     // Init
     // -----------------------------
     async function init() {
-      console.log("[init] init start");
       await initBootAndConfig();
       const alreadyVerified = initAccessGate();
 
@@ -4216,13 +4203,10 @@ Place the correct answer first and bold it.`,
       $("ctxArea").value = ctx.area || "";
       $("ctxNotes").value = ctx.notes || "";
       $("ctxQuestionCount").value = ctx.questionCount || "10";
+      localStorage.setItem(KEYS.starterCopied, "false");
 
       document.querySelectorAll(".modelOption").forEach((btn) => {
         btn.addEventListener("click", (e) => {
-          if (!appInitComplete) {
-            console.log("[init-guard] ignored interaction before init complete");
-            return;
-          }
           e.preventDefault();
           selectModel(btn.dataset.model || "", { logSelection: true });
           invalidateStarterPromptCopied();
@@ -4232,16 +4216,14 @@ Place the correct answer first and bold it.`,
       if (initialProduct) {
         selectModel($("modelUsed").value || "", { logSelection: false });
       }
+      renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "");
+      updateSetupSubbandVisibility();
 
       const llmExpectedChoiceEl = $("llmExpectedChoice");
       const llmMismatchDescriptionEl = $("llmMismatchDescription");
 
       if (llmExpectedChoiceEl) {
         llmExpectedChoiceEl.addEventListener("change", () => {
-          if (!appInitComplete) {
-            console.log("[init-guard] ignored interaction before init complete");
-            return;
-          }
           const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
           const expectedChoice = llmExpectedChoiceEl.value || "";
           if (expectedChoice) {
@@ -4316,10 +4298,6 @@ Place the correct answer first and bold it.`,
 
       if (confirmProductVersionBtn) {
         confirmProductVersionBtn.addEventListener("click", () => {
-          if (!appInitComplete) {
-            console.log("[init-guard] ignored interaction before init complete");
-            return;
-          }
           console.log("Confirm product/version clicked");
           if (!isSetupVersionConfirmedForContext()) {
             console.log("Confirm product/version blocked: setup version requirements not met");
@@ -4375,15 +4353,9 @@ Place the correct answer first and bold it.`,
         $("ctxArea")
       ].filter(Boolean);
 
-      let lastStarterSetupSignature = getStarterSetupSignature();
-      const handleRequiredSetupInputEvent = () => {
-        if (!appInitComplete) {
-          console.log("[init-guard] ignored interaction before init complete");
-          return;
-        }
-        const signature = getStarterSetupSignature();
-        if (signature !== lastStarterSetupSignature) {
-          lastStarterSetupSignature = signature;
+      requiredSetupInputs.forEach((el) => {
+        el.addEventListener("input", () => {
+          console.log(">>> Context input fired:", el.id, "value:", el.value);
           // Save context immediately so localStorage stays in sync with DOM.
           const ctx = {
             course: ($("ctxCourse")?.value || "").trim(),
@@ -4393,12 +4365,10 @@ Place the correct answer first and bold it.`,
           };
           saveJSON(KEYS.context, ctx);
           invalidateStarterPromptCopied();
-        }
-        syncStarterCopyUI();
-      };
-      requiredSetupInputs.forEach((el) => {
-        ["input", "change", "blur", "keyup"].forEach((eventName) => {
-          el.addEventListener(eventName, handleRequiredSetupInputEvent);
+          updateStarterCopyAvailability();
+          updateProceedToPromptsAvailability();
+          applyStageUI();
+          if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
         });
       });
 
@@ -4562,6 +4532,10 @@ Place the correct answer first and bold it.`,
         cardLabel: "final prompt",
         onCopy: copyFinalPrompt
       });
+      refreshCopyCardPreviews();
+      updateStarterCopyAvailability();
+      updateProceedToPromptsAvailability();
+
       $("llmResponse").addEventListener("input", () => {
         updateFinalizeContentUI();
         updateEndSessionState();
@@ -4646,23 +4620,6 @@ Place the correct answer first and bold it.`,
 
       // Always show footer status immediately (even before access is verified)
       refreshFooterInfo();
-
-      refreshCopyCardPreviews();
-      renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "");
-      updateSetupSubbandVisibility();
-      syncStarterCopyUI();
-      updateStarterCopyAvailability();
-      updateProceedToPromptsAvailability();
-      applyStageUI();
-
-      console.log("[init] listeners finished binding");
-      appInitComplete = true;
-      console.log("[init] appInitComplete true");
-      if (alreadyVerified) {
-        console.log("[init] setLockedState(false) after init completion");
-        setLockedState(false);
-        initializeSessionTimerIfNeeded();
-      }
 
       // Finally apply stage UI if already verified
       if (alreadyVerified) {
