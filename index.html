@@ -2091,6 +2091,12 @@
       }
     };
 
+    const LLM_DIFFERENT_PLACEHOLDERS = {
+      chatgpt: "Example: I see Thinking Pro or version 5.5",
+      gemini: "Example: I see Gemini 4 or Gemini 2.5 Pro",
+      copilot: "Example: I see GPT-5 or a different mode name"
+    };
+
 // Prompt metadata (grouped for UI)
 const PROMPT_META = [
   {
@@ -3251,6 +3257,13 @@ Place the correct answer first and bold it.`
       const modeDifferentCheckbox = $("llmModeDifferentCheckbox");
       const modeDifferentText = $("llmModeDifferentText");
       const config = LLM_UI_CONFIG[productKey];
+      const textarea = document.getElementById("llmModeDifferentText");
+
+      if (textarea) {
+        textarea.placeholder =
+          LLM_DIFFERENT_PLACEHOLDERS[productKey] ||
+          "Please describe what you see";
+      }
 
       if (!panel || !modeGroup || !modeDifferentCheckbox || !modeDifferentText) return;
 
@@ -4621,6 +4634,8 @@ Place the correct answer first and bold it.`
           localStorage.removeItem(KEYS.llmMode);
           localStorage.removeItem(KEYS.llmModeDifferent);
           localStorage.removeItem(KEYS.llmModeDifferentText);
+          const textarea = document.getElementById("llmModeDifferentText");
+          if (textarea) textarea.value = "";
           setProductVersionConfirmedState(false);
         }
 
