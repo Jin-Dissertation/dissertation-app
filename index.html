@@ -1729,6 +1729,50 @@
         display: flex;
       }
     }
+
+    /* Session complete banner (non-training) */
+    .sessionCompleteBanner {
+      margin: 0 0 14px;
+      padding: 18px 20px;
+      border-radius: 14px;
+      border: 1px solid #b9ddc3;
+      border-left: 6px solid #52a36d;
+      background: #eef9f1;
+      color: #1a3d25;
+      box-shadow: 0 4px 12px rgba(16, 33, 61, 0.06);
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .sessionCompleteBanner[hidden] {
+      display: none !important;
+    }
+    .sessionCompleteIcon {
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      background: #dcfce7;
+      color: #15803d;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      font-weight: 700;
+      flex: 0 0 36px;
+    }
+    .sessionCompleteContent {
+      flex: 1 1 auto;
+    }
+    .sessionCompleteTitle {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .sessionCompleteBody {
+      font-size: 14px;
+      line-height: 1.45;
+      color: #2d5a3a;
+    }
+
   </style>
 </head>
 <body>
@@ -1744,10 +1788,17 @@
         <div class="trainingCompletionTitle"><span aria-hidden="true">✓</span><span>Training activity complete</span></div>
         <div class="trainingCompletionBody">Your session has been submitted. You can now close this window and return to the training.</div>
       </div>
+      <div id="sessionCompleteBanner" class="sessionCompleteBanner" hidden>
+        <div class="sessionCompleteIcon" aria-hidden="true">✓</div>
+        <div class="sessionCompleteContent">
+          <div class="sessionCompleteTitle">Session complete — thank you!</div>
+          <div class="sessionCompleteBody">Your session has been submitted. You may now close this window.</div>
+        </div>
+      </div>
       <!-- Access gate -->
       <div class="card accessCard" id="accessGate">
         <div class="accessIntro muted small">
-          <p>This tool is part of a research study conducted by Taemin Jin. Questions about this study may be directed to <a href="mailto:tjin@crimson.ua.edu">tjin@crimson.ua.edu</a>.</p>
+          <p>This tool is part of a research study conducted by Taemin Jin. Questions about this study may be directed to <a href="/cdn-cgi/l/email-protection#cabea0a3a48aa9b8a3a7b9a5a4e4bfabe4afaebf"><span class="__cf_email__" data-cfemail="8efae4e7e0ceedfce7e3fde1e0a0fbefa0ebeafb">[email&#160;protected]</span></a>.</p>
           <p>This research study has been approved by the [UNIVERSITY NAME] Institutional Review Board (IRB), protocol ID #[NUMBER].</p>
           <p>If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
         </div>
@@ -1839,7 +1890,7 @@
                 <div id="trainingTipMismatch" class="training-tip">
                   <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
                   <p>If the mode you are using in your AI product doesn't match any of the options listed here, choose "I see something different" and briefly describe what you see.</p>
-  
+                  <p style="margin-top:8px;">This helps us record which AI system and model you used.</p>
                 </div>
               </div>
 
@@ -1859,6 +1910,8 @@
               <div id="trainingTipQuestionContext" class="training-tip">
                 <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
                 <p>These two fields tell the AI what kind of questions to create. This doesn't have to be detailed; it's just a short, specific description to point the AI in the right direction.</p>
+                <p style="margin-top:8px;">You do not need to write a full assignment prompt or copy an entire syllabus.</p>
+                <p style="margin-top:8px;">A short, specific description is usually best.</p>
               </div>
 
               <div id="contextFields">
@@ -1910,7 +1963,7 @@
             </div>
             <div id="starterCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
               <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-              <p>The starter prompt is now on your clipboard. Switch to your AI product and paste it into the message box<span class="desktop-only"> (Ctrl+V on Windows or Chromebook, or ⌘+V on Mac)</span><span class="mobile-only"> (tap and hold in the text field, then tap <strong>Paste</strong>)</span>. After the AI responds, come back here and click "Proceed to Making questions."</p>
+              <p>The starter prompt is now on your clipboard. Switch to your AI product and paste it into the message box<span class="desktop-only"> (Ctrl+V on Windows/Chromebook, or ⌘+V on Mac)</span><span class="mobile-only"> (tap and hold in the text field, then tap <strong>Paste</strong>)</span>. After the AI responds, come back here and click "Proceed to Making questions."</p>
               <p style="margin-top:8px;" class="desktop-only">The <strong>Clipboard</strong> panel on the right shows what you last copied. Use the icons at the top of the panel to switch between a preview of the current copy and a history of everything you've copied this session.</p>
               <p style="margin-top:8px;" class="mobile-only">Each prompt you copy stays on your clipboard until the next one replaces it. You can always re-copy a button if you need it again.</p>
             </div>
@@ -2177,7 +2230,7 @@
     <button class="timerNoticeClose" id="timerNoticeClose" type="button" aria-label="Dismiss notification">×</button>
   </div>
 
-  <script>
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
     window.addEventListener("error", (e) => {
       console.error("Global script error:", e.message, "at", e.filename, "line", e.lineno);
     });
@@ -4484,7 +4537,8 @@ Place the correct answer first and bold it.`,
       const endedFlag = sessionStorage.getItem("dissertation.ended");
       if (endedFlag === "true") {
         sessionStorage.removeItem("dissertation.ended");
-        toast("Session ended. Data cleared on this device.");
+        const completeBanner = document.getElementById("sessionCompleteBanner");
+        if (completeBanner) completeBanner.hidden = false;
       }
       if (verified) {
         setLockedState(false);
@@ -4870,14 +4924,7 @@ Place the correct answer first and bold it.`,
         logEvent("end_session_opened");
         openModal("modalEnd");
       });
-      $("btnEndCancel").addEventListener("click", () => {
-        logEvent("end_session_cancelled");
-        closeModal("modalEnd");
-      });
-      $("btnEndConfirm").addEventListener("click", () => {
-        console.log("End session confirm clicked");
-        logEvent("end_session_confirmed");
-        const autosavePayload = buildAutosave("session_ended", {
+      $("btnEndCancel").addEventListener("click", () => {     const autosavePayload = buildAutosave("session_ended", {
           details: {
             source: "end_confirm"
           }
