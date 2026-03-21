@@ -1683,6 +1683,52 @@
       }
     }
 
+
+    /* Mobile-only compact timer bar */
+    .mobileTimerBar {
+      display: none; /* hidden by default — shown via JS in training mode on mobile */
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      margin-bottom: 8px;
+      background: #fafcff;
+      border: 1px solid #dce5f0;
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .mobileTimerLabel {
+      font-weight: 600;
+      font-size: 12px;
+    }
+    .mobileTimerValue {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .mobileTimerPause {
+      margin-left: auto;
+      background: #f1f7ff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    /* Desktop/mobile visibility helpers */
+    .desktop-only { display: inline; }
+    .mobile-only { display: none; }
+    @media (max-width: 820px) and (hover: none) and (pointer: coarse) {
+      .desktop-only { display: none !important; }
+      .mobile-only { display: inline !important; }
+      .mobileTimerBar.is-training-visible {
+        display: flex;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1692,7 +1738,7 @@
       <p class="sub landingSubtitle">Prompt workflow screen for study participants completing this session.</p>
       <div id="trainingTopNote" class="training-tip">
         <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-        <p>You are in training mode. These blue "Training tip" boxes you'll see on this page are here to walk you through the app. They won't appear during your actual study session.</p>
+        <p>You're in training mode. These blue "Training tip" boxes you'll see on this page are here to walk you through the app. They won't appear during your actual study session.</p>
       </div>
       <div id="landingTrainingCompleteBanner" class="trainingCompletionBanner" hidden>
         <div class="trainingCompletionTitle"><span aria-hidden="true">✓</span><span>Training activity complete</span></div>
@@ -1728,6 +1774,12 @@
     <div id="appShell" style="display:none;">
       <div class="appHeaderBar">
         <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
+      </div>
+      <!-- Mobile-only compact timer (training mode) -->
+      <div class="mobileTimerBar" id="mobileTimerBar">
+        <span class="mobileTimerLabel">Timer</span>
+        <span id="mobileTimerDisplay" class="mobileTimerValue">00:00</span>
+        <button class="mobileTimerPause" id="btnMobilePauseTimer" type="button">Pause</button>
       </div>
       <div class="layoutGrid" id="layoutGrid">
         <div class="main">
@@ -1807,6 +1859,8 @@
               <div id="trainingTipQuestionContext" class="training-tip">
                 <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
                 <p>These two fields tell the AI what kind of questions to create. This doesn't have to be detailed; it's just a short, specific description to point the AI in the right direction.</p>
+                <p style="margin-top:8px;">You do not need to write a full assignment prompt or copy an entire syllabus.</p>
+                <p style="margin-top:8px;">A short, specific description is usually best.</p>
               </div>
 
               <div id="contextFields">
@@ -1859,7 +1913,8 @@
             <div id="starterCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
               <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
               <p>The starter prompt is now on your clipboard. Switch to your AI product and paste it into the message box (Ctrl+V on Windows/Chromebook, or ⌘+V on Mac). After the AI responds, come back here and click "Proceed to Making questions."</p>
-              <p style="margin-top:8px;">The <strong>Clipboard</strong> panel on the right shows what you last copied. Use the icons at the top of the panel to switch between a preview of the current copy and a history of everything you've copied this session.</p>
+              <p style="margin-top:8px;" class="desktop-only">The <strong>Clipboard</strong> panel on the right shows what you last copied. Use the icons at the top of the panel to switch between a preview of the current copy and a history of everything you've copied this session.</p>
+              <p style="margin-top:8px;" class="mobile-only">Each prompt you copy stays on your clipboard until the next one replaces it. You can always re-copy a button if you need it again.</p>
             </div>
 
             <p class="muted small" id="setupMsg" style="margin:10px 0 0; display:none;"></p>
@@ -1889,9 +1944,7 @@
             <div class="card">
               <div class="trainingTip trainingTipSmall" id="makingQuestionsTrainingTip">
                 <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
-<p>This step works in the opposite direction from what you've been doing. Instead of pasting <em>into</em> your AI product, you'll be copying <em>from</em> it.</p>
-<p style="margin-top:8px;">Once you send the final prompt into your AI conversation, wait for the full response, then copy the AI's entire response and paste it into the box below.</p>
-<p style="margin-top:8px;">This response won't be evaluated on its own; it's just so I can review what the AI produced during your session and use it as a reference point for our second interview.</p>
+                <p>You'll work with the AI one question at a time. After the AI generates a question, use these buttons to accept it, request a replacement, refine the answer or distractors, or audit the overall balance of your question set. Each button copies a prompt — paste it into your AI conversation to continue.</p>
               </div>
               <div class="promptTopRow">
                 <div class="promptTopRowActions">
@@ -1975,7 +2028,9 @@
 
               <div id="finalCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
                 <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
-                <p>The final prompt is now on your clipboard. Paste it into your AI conversation and wait for the complete response. Once the AI finishes, copy its entire response and paste it into the box below.</p>
+                <p>This step works in the opposite direction from what you've been doing. Instead of pasting <em>into</em> your AI product, you'll be copying <em>from</em> it.</p>
+                <p style="margin-top:8px;">Paste the final prompt into your AI conversation, wait for the full response, then copy the AI's entire response and paste it into the box below.</p>
+                <p style="margin-top:8px;">This response won't be graded or evaluated on its own — it's just so I can review what the AI produced during your session and use it as a reference point for our interview conversation.</p>
               </div>
 
               <p class="muted small finalizeNotice" id="finalizeCopyNotice"></p>
@@ -2746,9 +2801,10 @@ Place the correct answer first and bold it.`,
 
     function restoreTimerButtonState() {
       const btn = $("btnPauseTimer");
-      if (!btn) return;
+      const mobileBtn = $("btnMobilePauseTimer");
       const paused = localStorage.getItem(KEYS.timerPaused) === "true";
-      btn.textContent = paused ? "Resume" : "Pause";
+      if (btn) btn.textContent = paused ? "Resume" : "Pause";
+      if (mobileBtn) mobileBtn.textContent = paused ? "Resume" : "Pause";
     }
 
     function initializeSessionTimerIfNeeded() {
@@ -2777,6 +2833,9 @@ Place the correct answer first and bold it.`,
 
       const elapsed = getTimerElapsedMs();
       display.textContent = formatElapsed(elapsed);
+      // Sync mobile timer display
+      const mobileDisplay = document.getElementById("mobileTimerDisplay");
+      if (mobileDisplay) mobileDisplay.textContent = formatElapsed(elapsed);
 
       if (!isTrainingMode) {
         restoreTimerButtonState();
@@ -2831,14 +2890,16 @@ Place the correct answer first and bold it.`,
     function configureTimerModeUI() {
       const timerCard = $("sessionTimerCard");
       const timerNotice = $("timerNotice");
+      const mobileTimer = $("mobileTimerBar");
       if (!isTrainingMode) {
         if (timerCard) timerCard.style.display = "none";
         if (timerNotice) timerNotice.style.display = "none";
+        if (mobileTimer) mobileTimer.classList.remove("is-training-visible");
         hideTimerNotice();
         return;
       }
       if (timerCard) timerCard.style.display = "";
-      console.log("Training mode timer enabled");
+      if (mobileTimer) mobileTimer.classList.add("is-training-visible");
     }
 
     function makeSessionId(participantCode) {
@@ -4925,6 +4986,13 @@ Place the correct answer first and bold it.`,
     const _copyCardHandlers = {};
 
     document.addEventListener("click", async (e) => {
+      // Mobile timer pause button
+      if (e.target.id === "btnMobilePauseTimer" || e.target.closest("#btnMobilePauseTimer")) {
+        e.preventDefault();
+        handlePauseResumeTimer();
+        return;
+      }
+
       // Sidebar mode buttons
       const modeBtn = e.target.closest(".sidebarModeBtn");
       if (modeBtn) {
