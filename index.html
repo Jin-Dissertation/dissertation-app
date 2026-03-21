@@ -334,6 +334,43 @@
       }
     }
     .llmCompactSelect { width: 100%; max-width: 100%; min-width: 0; }
+    .llmChoiceList{
+      display:grid;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .llmChoiceRow{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      font-size:14px;
+      line-height:1.35;
+      color:var(--text);
+      cursor:pointer;
+      margin:0;
+    }
+
+    .llmChoiceRow input[type="radio"]{
+      margin:2px 0 0;
+      flex:0 0 auto;
+      width:auto;
+    }
+
+    .llmChoiceRowText{
+      display:block;
+    }
+
+    .llmSectionLabel{
+      font-size:12px;
+      color:var(--muted);
+      display:block;
+      margin:12px 0 6px;
+    }
+
+    .llmInlineInput{
+      margin-top:10px;
+    }
     .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:600; }
 
     .productVersionSummary {
@@ -2747,6 +2784,57 @@ Place the correct answer first and bold it.`
       return el ? el.textContent.trim() : "";
     }
 
+    function buildLlmVersionSummary() {
+      const product = localStorage.getItem(KEYS.llmProduct) || "";
+      const mode = localStorage.getItem(KEYS.llmMode) || "";
+      const modeOther = (localStorage.getItem(KEYS.llmModeOther) || "").trim();
+      const versionConfirm = localStorage.getItem(KEYS.llmVersionConfirm) || "";
+      const versionOtherText = (localStorage.getItem(KEYS.llmVersionOtherText) || "").trim();
+      const versionText = (localStorage.getItem(KEYS.llmVersionText) || "").trim();
+
+      if (product === "chatgpt") {
+        const modeLabel = mode === "different" ? `different (${modeOther})` : mode || "";
+        const versionLabel =
+          versionConfirm === "current"
+            ? "Instant 5.3 / Thinking 5.4 confirmed"
+            : versionConfirm === "other"
+              ? `different (${versionOtherText})`
+              : "";
+        return [modeLabel && `mode=${modeLabel}`, versionLabel && `versions=${versionLabel}`]
+          .filter(Boolean)
+          .join(" | ");
+      }
+
+      if (product === "gemini" || product === "copilot") {
+        const modeLabel = mode === "different" ? `different (${modeOther})` : mode || "";
+        return [modeLabel && `mode=${modeLabel}`, versionText && `version=${versionText}`]
+          .filter(Boolean)
+          .join(" | ");
+      }
+
+      return "";
+    }
+
+    function buildLlmOtherSummary() {
+      const product = localStorage.getItem(KEYS.llmProduct) || "";
+      const mode = localStorage.getItem(KEYS.llmMode) || "";
+      const modeOther = (localStorage.getItem(KEYS.llmModeOther) || "").trim();
+      const versionConfirm = localStorage.getItem(KEYS.llmVersionConfirm) || "";
+      const versionOtherText = (localStorage.getItem(KEYS.llmVersionOtherText) || "").trim();
+
+      const parts = [];
+
+      if (mode === "different" && modeOther) {
+        parts.push(`mode seen: ${modeOther}`);
+      }
+
+      if (product === "chatgpt" && versionConfirm === "other" && versionOtherText) {
+        parts.push(`versions seen: ${versionOtherText}`);
+      }
+
+      return parts.join(" | ");
+    }
+
     function buildAutosave(eventType, extra = {}) {
       const sessionId = localStorage.getItem(KEYS.sessionId) || "";
       if (!sessionId) {
@@ -2760,13 +2848,13 @@ Place the correct answer first and bold it.`
 
       const modeParam = new URLSearchParams(window.location.search).get("mode");
       const ctx = getContext();
-      const details = extra.details && typeof extra.details === "object" ? extra.details : {};
-      const llmMode = (localStorage.getItem(KEYS.llmMode) || "").trim();
-      const llmModeOther = (localStorage.getItem(KEYS.llmModeOther) || "").trim();
-      const llmVersionConfirm = (localStorage.getItem(KEYS.llmVersionConfirm) || "").trim();
-      const llmVersionOtherText = (localStorage.getItem(KEYS.llmVersionOtherText) || "").trim();
-      const llmVersionText = (localStorage.getItem(KEYS.llmVersionText) || "").trim();
-      const versionValue = llmVersionText || llmVersionOtherText || llmVersionConfirm || "";
+      const llmDetails = {
+        llmMode: localStorage.getItem(KEYS.llmMode) || "",
+        llmModeOther: localStorage.getItem(KEYS.llmModeOther) || "",
+        llmVersionConfirm: localStorage.getItem(KEYS.llmVersionConfirm) || "",
+        llmVersionOtherText: localStorage.getItem(KEYS.llmVersionOtherText) || "",
+        llmVersionText: localStorage.getItem(KEYS.llmVersionText) || ""
+      };
 
       const payload = {
         sessionId,
@@ -2776,12 +2864,9 @@ Place the correct answer first and bold it.`
         eventType,
         promptName: extra.promptName || "",
         product: localStorage.getItem(KEYS.llmProduct) || localStorage.getItem(KEYS.modelUsed) || "",
-        version: versionValue,
-        llmMode,
-        llmModeOther,
-        llmVersionConfirm,
-        llmVersionOtherText,
-        llmVersionText,
+        version: buildLlmVersionSummary(),
+        llmMismatchDescription: buildLlmOtherSummary(),
+        ...llmDetails,
         desiredQuestions: ctx.questionCount || "",
         courseContext: ctx.course || "",
         questionContext: ctx.area || "",
@@ -2794,7 +2879,10 @@ Place the correct answer first and bold it.`
         audioFileUrl: uploadedAudioInfo?.audioFileUrl || "",
         audioMimeType: uploadedAudioInfo?.audioMimeType || "",
         audioDuration: uploadedAudioInfo?.audioDuration || "",
-        details,
+        details: {
+          ...(extra.details && typeof extra.details === "object" ? extra.details : {}),
+          ...llmDetails
+        },
         appVersion: getAppVersion()
       };
       console.log("Autosave payload built", payload);
@@ -3258,21 +3346,20 @@ Place the correct answer first and bold it.`
 
       if (config.versionUI === "chatgptConfirm") {
         versionBlock.innerHTML = `
-          <fieldset style="border:0; padding:0; margin:0;">
-            <legend style="font-weight:600; margin-bottom:6px;">Version confirmation</legend>
-            <div class="small">
-              <label style="display:block; margin-bottom:6px;">
-                <input type="radio" name="llmChatgptVersionConfirm" id="llmChatgptVersionCurrent" value="current" />
-                I confirm the dropdown shows Instant 5.3 and Thinking 5.4
-              </label>
-              <label style="display:block;">
-                <input type="radio" name="llmChatgptVersionConfirm" id="llmChatgptVersionOther" value="other" />
-                I see something different
-              </label>
-            </div>
-          </fieldset>
-          <div id="llmChatgptVersionOtherWrap" style="display:none; margin-top:10px;">
-            <label for="llmChatgptVersionOtherText">Please describe what version text you see.</label>
+          <label class="llmSectionLabel">Version confirmation</label>
+          <div class="llmChoiceList">
+            <label class="llmChoiceRow" for="llmChatgptVersionCurrent">
+              <input type="radio" id="llmChatgptVersionCurrent" name="llmChatgptVersionConfirm" value="current" />
+              <span class="llmChoiceRowText">I confirm the dropdown shows Instant 5.3 and Thinking 5.4</span>
+            </label>
+
+            <label class="llmChoiceRow" for="llmChatgptVersionOther">
+              <input type="radio" id="llmChatgptVersionOther" name="llmChatgptVersionConfirm" value="other" />
+              <span class="llmChoiceRowText">I see something different</span>
+            </label>
+          </div>
+          <div id="llmChatgptVersionOtherWrap" class="llmInlineInput" style="display:none;">
+            <label for="llmChatgptVersionOtherText">Please describe the version numbers you see.</label>
             <textarea id="llmChatgptVersionOtherText" placeholder="Example: Instant 5.5 and Thinking 5.6"></textarea>
           </div>
         `;
