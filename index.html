@@ -2463,6 +2463,10 @@ Place the correct answer first and bold it.`
     const nowIso = () => new Date().toISOString();
     const currentUrl = new URL(window.location.href);
     const isTrainingMode = currentUrl.searchParams.get("mode") === "training";
+
+    function getCurrentUiMode() {
+      return isTrainingMode ? "training" : "normal";
+    }
     function getSelectedLlmKey() {
       const selectedProduct = (typeof window !== "undefined" && window.selectedProduct) ? window.selectedProduct : "";
       const modelUsed = (typeof window !== "undefined" && window.modelUsed) ? window.modelUsed : "";
@@ -3139,15 +3143,18 @@ Place the correct answer first and bold it.`
 
     function clearProductVersionState(options = {}) {
       const { keepStarterCopied = false } = options;
-      localStorage.removeItem(KEYS.llmExpectedChoice);
-      localStorage.removeItem(KEYS.llmMismatchDescription);
-      localStorage.setItem(KEYS.productVersionConfirmed, "false");
+
+      try { localStorage.removeItem(KEYS.llmExpectedChoice); } catch (_) {}
+      try { localStorage.removeItem(KEYS.llmMismatchDescription); } catch (_) {}
+      try { localStorage.setItem(KEYS.productVersionConfirmed, "false"); } catch (_) {}
 
       if (!keepStarterCopied) {
-        localStorage.setItem(KEYS.starterCopied, "false");
-        if (KEYS.starterCopiedSetupSignature) {
-          localStorage.removeItem(KEYS.starterCopiedSetupSignature);
-        }
+        try { localStorage.setItem(KEYS.starterCopied, "false"); } catch (_) {}
+        try {
+          if (KEYS.starterCopiedSetupSignature) {
+            localStorage.removeItem(KEYS.starterCopiedSetupSignature);
+          }
+        } catch (_) {}
         starterPromptCopied = false;
       }
 
@@ -3161,24 +3168,28 @@ Place the correct answer first and bold it.`
       if (mismatchInput) mismatchInput.value = "";
 
       setLlmMismatchVisibility(false);
-      console.log("[product-version] clearProductVersionState called", { keepStarterCopied });
+
+      console.log("[product-version] clearProductVersionState");
     }
 
+
     function validateProductVersionState() {
-      const llmProduct = (localStorage.getItem(KEYS.llmProduct) || "").trim();
+      const product = (localStorage.getItem(KEYS.llmProduct) || "").trim();
       const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
       const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
       const confirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
 
       let corrected = false;
 
-      if (!llmProduct) {
+      if (!product) {
         if (expectedChoice) {
           localStorage.removeItem(KEYS.llmExpectedChoice);
           corrected = true;
         }
         if (mismatchDescription) {
           localStorage.removeItem(KEYS.llmMismatchDescription);
+          const mismatchInput = $("llmMismatchDescription");
+          if (mismatchInput) mismatchInput.value = "";
           corrected = true;
         }
         if (confirmed) {
@@ -3200,9 +3211,14 @@ Place the correct answer first and bold it.`
       }
 
       if (corrected) {
-        console.log("[product-version] validateProductVersionState corrected stale state");
+        console.log("[product-version] validateProductVersionState corrected stale state", {
+          product,
+          expectedChoice,
+          confirmed
+        });
       }
     }
+
 
     async function sendLlmMismatchAlert(payload) {
       if (!LLM_MISMATCH_ALERT_WEBHOOK.trim()) return;
@@ -4717,10 +4733,10 @@ Place the correct answer first and bold it.`
       if (!localStorage.getItem(KEYS.starterCopied)) {
         localStorage.setItem(KEYS.starterCopied, "false");
       }
-      const currentMode = isTrainingMode ? "training" : "normal";
-      const storedMode = localStorage.getItem(UI_MODE_KEY) || "";
-      if (storedMode && storedMode !== currentMode) {
-        console.log("[product-version] mode changed", { from: storedMode, to: currentMode });
+      const previousMode = localStorage.getItem(UI_MODE_KEY) || "";
+      const currentMode = getCurrentUiMode();
+      if (previousMode && previousMode !== currentMode) {
+        console.log("[product-version] mode changed", { previousMode, currentMode });
         clearProductVersionState();
       }
       localStorage.setItem(UI_MODE_KEY, currentMode);
@@ -4731,7 +4747,7 @@ Place the correct answer first and bold it.`
         const llmProduct = normalizeLlmProduct(model) || "";
         const previousProduct = normalizeLlmProduct(localStorage.getItem(KEYS.llmProduct) || "");
         if (previousProduct !== llmProduct) {
-          console.log("[product-version] product changed in selectModel", { previousProduct, newProduct: llmProduct });
+          console.log("[product-version] product changed", { previousProduct, newProduct: llmProduct });
           clearProductVersionState();
         }
         if (llmProduct) {
@@ -4784,6 +4800,13 @@ Place the correct answer first and bold it.`
       validateProductVersionState();
       renderModelMismatchTrainingTip();
       refreshProductVersionState();
+      console.log("[product-version] startup state", {
+        mode: getCurrentUiMode(),
+        storedMode: localStorage.getItem(UI_MODE_KEY),
+        llmProduct: localStorage.getItem(KEYS.llmProduct),
+        llmExpectedChoice: localStorage.getItem(KEYS.llmExpectedChoice),
+        confirmed: localStorage.getItem(KEYS.productVersionConfirmed)
+      });
 
       const llmExpectedChoiceEl = $("llmExpectedChoice");
       const llmMismatchDescriptionEl = $("llmMismatchDescription");
