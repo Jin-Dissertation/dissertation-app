@@ -6,7 +6,7 @@
   <title>Dissertation Prompt App</title>
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap");
-    :root { --bg:#edf4ff; --card:#ffffff; --panel:#f8fbff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; --landing-max-width: 760px; }
+    :root { --bg:#edf4ff; --card:#ffffff; --panel:#f8fbff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; --landing-max-width: 760px; --landing-card-max-width: 570px; }
     body { margin:0; font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); letter-spacing: .01em; }
     .pageShell { max-width: 1440px; margin: 0 auto; padding: 18px 24px 20px; }
     h1 {
@@ -61,6 +61,10 @@
     .accessCard {
       margin: 18px 0 0;
       padding: 22px 24px;
+    }
+    .pageShell.is-landing .accessCard {
+      width: min(100%, var(--landing-card-max-width));
+      margin-inline: auto;
     }
     .accessIntro {
       margin: 0;
