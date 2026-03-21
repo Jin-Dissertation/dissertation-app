@@ -1505,7 +1505,7 @@
       <!-- Access gate -->
       <div class="card accessCard" id="accessGate">
         <div class="accessIntro muted small">
-          <p>This tool is part of a research study conducted by Taemin Jin. Questions about this study may be directed to <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="394d535057795a4b50544a5657174c58175c5d4c">[email&#160;protected]</a>.</p>
+          <p>This tool is part of a research study conducted by Taemin Jin. Questions about this study may be directed to <a href="mailto:tjin@crimson.ua.edu">tjin@crimson.ua.edu</a>.</p>
           <p>This research study has been approved by the [UNIVERSITY NAME] Institutional Review Board (IRB), protocol ID #[NUMBER].</p>
           <p>If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
         </div>
@@ -1909,7 +1909,7 @@
     <button class="timerNoticeClose" id="timerNoticeClose" type="button" aria-label="Dismiss notification">×</button>
   </div>
 
-  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  <script>
     window.addEventListener("error", (e) => {
       console.error("Global script error:", e.message, "at", e.filename, "line", e.lineno);
     });
@@ -2307,26 +2307,19 @@ Place the correct answer first and bold it.`,
     }
 
     function isStarterSetupValid() {
-      const courseEl = $("ctxCourse");
-      const areaEl = $("ctxArea");
+      const courseEl = document.getElementById("ctxCourse");
+      const areaEl = document.getElementById("ctxArea");
       const course = (courseEl?.value || "").trim();
       const area = (areaEl?.value || "").trim();
-      const result = !!course && !!area;
-      console.log("isStarterSetupValid:", { course, area, result, courseElExists: !!courseEl, areaElExists: !!areaEl, courseElHidden: courseEl?.offsetParent === null, areaElHidden: areaEl?.offsetParent === null });
-      return result;
+      return !!course && !!area;
     }
 
+    // The starter copy card is always clickable — validation happens inside
+    // the copy handler (copyStarterPrompt) when the user clicks it.
+    // This avoids CSS pointer-events issues with elements inside hidden→visible
+    // ancestor transitions that silently block clicks on first page load.
     function updateStarterCopyAvailability() {
-      const starterCard = $("starterCopyCard");
-      if (!starterCard) return;
-
-      const canCopy = isStarterSetupValid();
-      const wasDis = starterCard.classList.contains("is-disabled");
-
-      starterCard.classList.toggle("is-disabled", !canCopy);
-      starterCard.setAttribute("aria-disabled", String(!canCopy));
-      starterCard.tabIndex = canCopy ? 0 : -1;
-      console.log("updateStarterCopyAvailability:", { canCopy, wasDis, nowDis: starterCard.classList.contains("is-disabled"), classList: starterCard.className });
+      // No-op: disabled state removed. Click handler validates instead.
     }
 
     function updateProceedToPromptsAvailability() {
@@ -4348,43 +4341,8 @@ Place the correct answer first and bold it.`,
         $("setupMsg").style.display = "none";
       }
 
-      const requiredSetupInputs = [
-        $("ctxCourse"),
-        $("ctxArea")
-      ].filter(Boolean);
-
-      requiredSetupInputs.forEach((el) => {
-        el.addEventListener("input", () => {
-          console.log(">>> Context input fired:", el.id, "value:", el.value);
-          // Save context immediately so localStorage stays in sync with DOM.
-          const ctx = {
-            course: ($("ctxCourse")?.value || "").trim(),
-            area: ($("ctxArea")?.value || "").trim(),
-            notes: ($("ctxNotes")?.value || "").trim(),
-            questionCount: ($("ctxQuestionCount")?.value || "10").trim() || "10"
-          };
-          saveJSON(KEYS.context, ctx);
-          invalidateStarterPromptCopied();
-          updateStarterCopyAvailability();
-          updateProceedToPromptsAvailability();
-          applyStageUI();
-          if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
-        });
-      });
-
-      ["ctxNotes", "ctxQuestionCount"].forEach((id) => {
-        $(id).addEventListener("input", () => {
-          const ctx = {
-            course: ($("ctxCourse")?.value || "").trim(),
-            area: ($("ctxArea")?.value || "").trim(),
-            notes: ($("ctxNotes")?.value || "").trim(),
-            questionCount: ($("ctxQuestionCount")?.value || "10").trim() || "10"
-          };
-          saveJSON(KEYS.context, ctx);
-          applyStageUI();
-          if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
-        });
-      });
+      // Context field input handling is registered at module scope (outside init)
+      // to avoid any async timing issues. See the document-level listener below.
 
 
       // Setup: Copy starter prompt only
@@ -4457,12 +4415,8 @@ Place the correct answer first and bold it.`,
         applyStageUI();
       };
 
-      bindCopyCardInteractions({
-        cardId: "starterCopyCard",
-        chevronId: "starterCopyChevron",
-        cardLabel: "starter prompt",
-        onCopy: copyStarterPrompt
-      });
+      // Register copy handler for document-level delegation (defined at module scope).
+      _copyCardHandlers["starterCopyCard"] = copyStarterPrompt;
 
       $("btnGoPrompts").addEventListener("click", () => {
         logEvent("go_prompts_clicked");
@@ -4526,12 +4480,8 @@ Place the correct answer first and bold it.`,
         updateFinalizeContentUI();
       };
 
-      bindCopyCardInteractions({
-        cardId: "finalCopyCard",
-        chevronId: "finalCopyChevron",
-        cardLabel: "final prompt",
-        onCopy: copyFinalPrompt
-      });
+      // Register copy handler for document-level delegation (defined at module scope).
+      _copyCardHandlers["finalCopyCard"] = copyFinalPrompt;
       refreshCopyCardPreviews();
       updateStarterCopyAvailability();
       updateProceedToPromptsAvailability();
@@ -4631,6 +4581,103 @@ Place the correct answer first and bold it.`,
         applyStageUI();
       }
     }
+
+    // =================================================================
+    // Context field input handling (document-level, outside init)
+    // =================================================================
+    // Registered at module scope so it's active from the moment the script
+    // loads. Previous attempts to attach listeners inside init() — both
+    // directly on elements and via bandSetup delegation — failed on
+    // first-load due to a timing issue with async init and hidden→visible
+    // DOM transitions.
+    document.addEventListener("input", (e) => {
+      const target = e.target;
+      if (!target || !target.id) return;
+
+      const isRequired = target.id === "ctxCourse" || target.id === "ctxArea";
+      const isOptional = target.id === "ctxNotes" || target.id === "ctxQuestionCount";
+      if (!isRequired && !isOptional) return;
+
+      const courseEl = document.getElementById("ctxCourse");
+      const areaEl = document.getElementById("ctxArea");
+      const notesEl = document.getElementById("ctxNotes");
+      const countEl = document.getElementById("ctxQuestionCount");
+
+      const ctx = {
+        course: (courseEl?.value || "").trim(),
+        area: (areaEl?.value || "").trim(),
+        notes: (notesEl?.value || "").trim(),
+        questionCount: (countEl?.value || "10").trim() || "10"
+      };
+      saveJSON(KEYS.context, ctx);
+
+      if (isRequired) {
+        invalidateStarterPromptCopied();
+        updateStarterCopyAvailability();
+        updateProceedToPromptsAvailability();
+      }
+      applyStageUI();
+      const preview = document.getElementById("starterCopyPreview");
+      if (preview) preview.textContent = buildStarterPrompt();
+    });
+
+    // =================================================================
+    // Copy card click handling (document-level, outside init)
+    // =================================================================
+    // Same issue as input listeners: click handlers attached to elements
+    // inside init() silently fail on first-load. Document-level delegation
+    // bypasses the problem entirely.
+    //
+    // _copyCardHandlers is populated by init() when copyStarterPrompt and
+    // copyFinalPrompt are defined. The delegation layer routes clicks to
+    // the correct handler by card ID.
+    const _copyCardHandlers = {};
+
+    document.addEventListener("click", async (e) => {
+      // Handle chevron toggle (expand/collapse prompt details)
+      const chevron = e.target.closest(".copyCard .promptChevronBtn");
+      if (chevron) {
+        e.preventDefault();
+        e.stopPropagation();
+        const card = chevron.closest(".copyCard");
+        if (!card) return;
+        const isExpanded = !card.classList.contains("is-expanded");
+        card.classList.toggle("is-expanded", isExpanded);
+        chevron.setAttribute("aria-expanded", String(isExpanded));
+        return;
+      }
+
+      // Handle card click (copy action)
+      const card = e.target.closest(".copyCard");
+      if (!card || !card.id) return;
+
+      const handler = _copyCardHandlers[card.id];
+      if (typeof handler === "function") {
+        await handler();
+      }
+    });
+
+    document.addEventListener("keydown", async (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const card = e.target.closest(".copyCard");
+      if (!card || !card.id) return;
+
+      const chevron = e.target.closest(".promptChevronBtn");
+      if (chevron) {
+        e.preventDefault();
+        e.stopPropagation();
+        const isExpanded = !card.classList.contains("is-expanded");
+        card.classList.toggle("is-expanded", isExpanded);
+        chevron.setAttribute("aria-expanded", String(isExpanded));
+        return;
+      }
+
+      const handler = _copyCardHandlers[card.id];
+      if (typeof handler === "function") {
+        e.preventDefault();
+        await handler();
+      }
+    });
 
     init();
   </script>
