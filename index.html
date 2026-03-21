@@ -1839,7 +1839,7 @@
                 <div id="trainingTipMismatch" class="training-tip">
                   <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
                   <p>If the mode you are using in your AI product doesn't match any of the options listed here, choose "I see something different" and briefly describe what you see.</p>
-                  <p style="margin-top:8px;">This helps us record which AI system and model you used.</p>
+  
                 </div>
               </div>
 
@@ -1859,8 +1859,6 @@
               <div id="trainingTipQuestionContext" class="training-tip">
                 <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
                 <p>These two fields tell the AI what kind of questions to create. This doesn't have to be detailed; it's just a short, specific description to point the AI in the right direction.</p>
-                <p style="margin-top:8px;">You do not need to write a full assignment prompt or copy an entire syllabus.</p>
-                <p style="margin-top:8px;">A short, specific description is usually best.</p>
               </div>
 
               <div id="contextFields">
@@ -1912,7 +1910,7 @@
             </div>
             <div id="starterCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
               <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-              <p>The starter prompt is now on your clipboard. Switch to your AI product and paste it into the message box<span class="desktop-only"> (Ctrl+V on Windows/Chromebook, or ⌘+V on Mac)</span><span class="mobile-only"> (tap and hold in the text field, then tap <strong>Paste</strong>)</span>. After the AI responds, come back here and click "Proceed to Making questions."</p>
+              <p>The starter prompt is now on your clipboard. Switch to your AI product and paste it into the message box<span class="desktop-only"> (Ctrl+V on Windows or Chromebook, or ⌘+V on Mac)</span><span class="mobile-only"> (tap and hold in the text field, then tap <strong>Paste</strong>)</span>. After the AI responds, come back here and click "Proceed to Making questions."</p>
               <p style="margin-top:8px;" class="desktop-only">The <strong>Clipboard</strong> panel on the right shows what you last copied. Use the icons at the top of the panel to switch between a preview of the current copy and a history of everything you've copied this session.</p>
               <p style="margin-top:8px;" class="mobile-only">Each prompt you copy stays on your clipboard until the next one replaces it. You can always re-copy a button if you need it again.</p>
             </div>
@@ -2001,13 +1999,17 @@
 
           <div id="finalizeInner" style="display:none;">
             <div class="card">
+
+              <div style="margin-bottom:10px;">
+                <button class="btn" id="btnBackToPrompts">Go back to making questions</button>
+              </div>
+
               <div id="trainingTipFinalizeIntro" class="trainingTip trainingTipSmall">
                 <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
                 <p>This is the final step. Copy the final prompt into your AI product — it will ask the AI to compile all accepted questions into a clean list. Then copy the AI's response and paste it into the text box below.</p>
               </div>
 
-              <div class="finalizeTopRow">
-                <div class="finalizeCopySlot">
+              <div class="copyCardWrap" style="margin-top:10px;">
                   <div class="copyCard" id="finalCopyCard" role="button" tabindex="0" aria-label="Copy final prompt">
                     <div class="copyCardHeader">
                       <div class="copyCardTitle" id="finalCopyTitle">Copy final prompt</div>
@@ -2020,10 +2022,6 @@
                       <pre class="promptDetailsText copyCardPreview" id="finalCopyPreview"></pre>
                     </div>
                   </div>
-                </div>
-                <div class="finalizeBackSlot">
-                  <button class="btn" id="btnBackToPrompts">Go back to making questions</button>
-                </div>
               </div>
 
               <div id="finalCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
