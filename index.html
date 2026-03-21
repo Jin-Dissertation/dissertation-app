@@ -2316,11 +2316,23 @@ Place the correct answer first and bold it.`,
       const starterCard = $("starterCopyCard");
       if (!starterCard) return;
 
+      const course = ($("ctxCourse")?.value || "").trim();
+      const area = ($("ctxArea")?.value || "").trim();
       const canCopy = isStarterSetupValid();
+      const hadIsDisabled = starterCard.classList.contains("is-disabled");
 
       starterCard.classList.toggle("is-disabled", !canCopy);
       starterCard.setAttribute("aria-disabled", String(!canCopy));
       starterCard.tabIndex = canCopy ? 0 : -1;
+      const hasIsDisabled = starterCard.classList.contains("is-disabled");
+
+      console.log("updateStarterCopyAvailability", {
+        course,
+        area,
+        canCopy,
+        hadIsDisabled,
+        hasIsDisabled
+      });
     }
 
     function updateProceedToPromptsAvailability() {
@@ -2348,6 +2360,16 @@ Place the correct answer first and bold it.`,
         setupMsg.textContent = "";
         setupMsg.style.display = "none";
       }
+    }
+
+    function syncStarterCopyUI() {
+      const course = ($("ctxCourse")?.value || "").trim();
+      const area = ($("ctxArea")?.value || "").trim();
+      console.log("syncStarterCopyUI", { course, area });
+      updateStarterCopyAvailability();
+      updateProceedToPromptsAvailability();
+      applyStageUI();
+      if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
     }
 
     function normalizeCode(s) {
@@ -4195,7 +4217,6 @@ Place the correct answer first and bold it.`,
       $("ctxArea").value = ctx.area || "";
       $("ctxNotes").value = ctx.notes || "";
       $("ctxQuestionCount").value = ctx.questionCount || "10";
-      localStorage.setItem(KEYS.starterCopied, "false");
 
       document.querySelectorAll(".modelOption").forEach((btn) => {
         btn.addEventListener("click", (e) => {
@@ -4210,6 +4231,7 @@ Place the correct answer first and bold it.`,
       }
       renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "");
       updateSetupSubbandVisibility();
+      syncStarterCopyUI();
 
       const llmExpectedChoiceEl = $("llmExpectedChoice");
       const llmMismatchDescriptionEl = $("llmMismatchDescription");
@@ -4345,8 +4367,11 @@ Place the correct answer first and bold it.`,
         $("ctxArea")
       ].filter(Boolean);
 
-      requiredSetupInputs.forEach((el) => {
-        el.addEventListener("input", () => {
+      let lastStarterSetupSignature = getStarterSetupSignature();
+      const handleRequiredSetupInputEvent = () => {
+        const signature = getStarterSetupSignature();
+        if (signature !== lastStarterSetupSignature) {
+          lastStarterSetupSignature = signature;
           // Save context immediately so localStorage stays in sync with DOM.
           const ctx = {
             course: ($("ctxCourse")?.value || "").trim(),
@@ -4356,10 +4381,12 @@ Place the correct answer first and bold it.`,
           };
           saveJSON(KEYS.context, ctx);
           invalidateStarterPromptCopied();
-          updateStarterCopyAvailability();
-          updateProceedToPromptsAvailability();
-          applyStageUI();
-          if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
+        }
+        syncStarterCopyUI();
+      };
+      requiredSetupInputs.forEach((el) => {
+        ["input", "change", "blur", "keyup"].forEach((eventName) => {
+          el.addEventListener(eventName, handleRequiredSetupInputEvent);
         });
       });
 
