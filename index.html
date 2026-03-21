@@ -6,7 +6,7 @@
   <title>Dissertation Prompt App</title>
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap");
-    :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; --landing-max-width: 760px; }
+    :root { --bg:#edf4ff; --card:#ffffff; --panel:#f8fbff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; --landing-max-width: 760px; }
     body { margin:0; font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); letter-spacing: .01em; }
     .pageShell { max-width: 1440px; margin: 0 auto; padding: 18px 24px 20px; }
     h1 {
@@ -337,22 +337,30 @@
     .llmChoiceList{
       display:grid;
       gap:10px;
-      margin-top:10px;
+      margin-top:6px;
+    }
+
+    .llmModeCard{
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px 14px;
+      background:var(--panel);
     }
 
     .llmChoiceRow{
       display:flex;
-      align-items:flex-start;
+      align-items:center;
       gap:10px;
       font-size:14px;
       line-height:1.35;
       color:var(--text);
       cursor:pointer;
       margin:0;
+      padding:4px 2px;
     }
 
     .llmChoiceRow input[type="radio"]{
-      margin:2px 0 0;
+      margin:0;
       flex:0 0 auto;
       width:auto;
     }
@@ -362,10 +370,69 @@
     }
 
     .llmSectionLabel{
-      font-size:12px;
-      color:var(--muted);
+      font-size:13px;
+      font-weight:600;
+      color:var(--text);
       display:block;
       margin:12px 0 6px;
+    }
+
+    .llmHelperText{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+
+    .llmDivider{
+      text-align:center;
+      font-size:12px;
+      color:var(--muted);
+      margin:12px 0 6px;
+      position:relative;
+    }
+
+    .llmDivider::before,
+    .llmDivider::after{
+      content:"";
+      position:absolute;
+      top:50%;
+      width:40%;
+      height:1px;
+      background:var(--border);
+    }
+
+    .llmDivider::before{ left:0; }
+    .llmDivider::after{ right:0; }
+
+    .llmCheckboxRow{
+      display:flex;
+      align-items:flex-start;
+      gap:8px;
+      margin-top:6px;
+      font-size:14px;
+      color:var(--text);
+      line-height:1.35;
+      cursor:pointer;
+    }
+
+    .llmCheckboxRow input{
+      margin-top:2px;
+      width:auto;
+      flex:0 0 auto;
+    }
+
+    #llmModeDifferentWrap{
+      margin-top:8px;
+    }
+
+    #llmModeDifferentText{
+      width:100%;
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:10px;
+      font-size:14px;
+      min-height:80px;
+      resize:vertical;
     }
 
     .llmInlineInput{
@@ -1615,16 +1682,21 @@
                 </details>
 
                 <label class="llmSectionLabel">Which mode are you currently using?</label>
-                <div class="llmChoiceList" id="llmModeGroup">
-                  <!-- dynamically populated -->
+                <div class="llmModeCard">
+                  <div class="llmChoiceList" id="llmModeGroup">
+                    <!-- dynamically populated -->
+                  </div>
+                  <div class="llmHelperText">Select the option that matches what you see at the top of your chat.</div>
                 </div>
 
-                <label style="display:block; margin-top:12px;">
+                <div class="llmDivider">or</div>
+
+                <label class="llmCheckboxRow">
                   <input type="checkbox" id="llmModeDifferentCheckbox">
-                  I see something different or my model changed during the session
+                  <span>I see something different or my model changed during the session</span>
                 </label>
 
-                <div id="llmModeDifferentWrap" style="display:none; margin-top:10px;">
+                <div id="llmModeDifferentWrap" style="display:none;">
                   <label for="llmModeDifferentText">
                     Please describe exactly what you see (mode, version, or anything different)
                   </label>
