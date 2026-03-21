@@ -2139,14 +2139,10 @@ Place the correct answer first and bold it.`,
     const currentUrl = new URL(window.location.href);
     const isTrainingMode = currentUrl.searchParams.get("mode") === "training";
     function getSelectedLlmKey() {
-      const selectedProduct = (typeof window !== "undefined" && window.selectedProduct) ? window.selectedProduct : "";
-      const modelUsed = (typeof window !== "undefined" && window.modelUsed) ? window.modelUsed : "";
       return normalizeLlmProduct(
         localStorage.getItem(KEYS.llmProduct)
-        || normalizeLlmProduct(localStorage.getItem(KEYS.modelUsed) || "")
-        || selectedProduct
-        || modelUsed
-        || "chatgpt"
+        || localStorage.getItem(KEYS.modelUsed)
+        || ""
       ) || "chatgpt";
     }
 
@@ -2675,7 +2671,7 @@ Place the correct answer first and bold it.`,
 
 
     function normalizeLlmProduct(model) {
-      const m = (model || "").trim().toLowerCase();
+      const m = String(model || "").trim().toLowerCase();
       if (!m) return "";
       if (["chatgpt", "gemini", "copilot"].includes(m)) return m;
       return "";
@@ -2795,8 +2791,6 @@ Place the correct answer first and bold it.`,
       const canConfirm = isSetupVersionConfirmedForContext();
       const isConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
       const showConfirmed = isConfirmed && canConfirm;
-
-      console.log("updateSetupSubbandVisibility:", { canConfirm, isConfirmed, showConfirmed, contextSubbandHidden: contextSubband?.classList.contains("hidden"), contextFieldsHidden: contextFields?.classList.contains("hidden") });
 
       const productSelected = !!(localStorage.getItem(KEYS.llmProduct) || "");
       if (confirmBtn) confirmBtn.disabled = !canConfirm;
