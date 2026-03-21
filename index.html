@@ -2240,6 +2240,7 @@ Place the correct answer first and bold it.`,
     let starterPromptCopied = false;
     let appBootLoading = true;
     let appBootReady = false;
+    let appInitComplete = false;
 
     // Optional audio feedback recorder state (kept centralized for easy end-session integration later).
     let currentAudioStream = null;
@@ -4157,10 +4158,7 @@ Place the correct answer first and bold it.`,
         sessionStorage.removeItem("dissertation.ended");
         toast("Session ended. Data cleared on this device.");
       }
-      if (verified) {
-        setLockedState(false);
-        initializeSessionTimerIfNeeded();
-      } else {
+      if (!verified) {
         setLockedState(true);
       }
       requestAnimationFrame(() => {
@@ -4195,6 +4193,7 @@ Place the correct answer first and bold it.`,
     // Init
     // -----------------------------
     async function init() {
+      console.log("[init] init start");
       await initBootAndConfig();
       const alreadyVerified = initAccessGate();
 
@@ -4220,6 +4219,10 @@ Place the correct answer first and bold it.`,
 
       document.querySelectorAll(".modelOption").forEach((btn) => {
         btn.addEventListener("click", (e) => {
+          if (!appInitComplete) {
+            console.log("[init-guard] ignored interaction before init complete");
+            return;
+          }
           e.preventDefault();
           selectModel(btn.dataset.model || "", { logSelection: true });
           invalidateStarterPromptCopied();
@@ -4229,15 +4232,16 @@ Place the correct answer first and bold it.`,
       if (initialProduct) {
         selectModel($("modelUsed").value || "", { logSelection: false });
       }
-      renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "");
-      updateSetupSubbandVisibility();
-      syncStarterCopyUI();
 
       const llmExpectedChoiceEl = $("llmExpectedChoice");
       const llmMismatchDescriptionEl = $("llmMismatchDescription");
 
       if (llmExpectedChoiceEl) {
         llmExpectedChoiceEl.addEventListener("change", () => {
+          if (!appInitComplete) {
+            console.log("[init-guard] ignored interaction before init complete");
+            return;
+          }
           const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
           const expectedChoice = llmExpectedChoiceEl.value || "";
           if (expectedChoice) {
@@ -4312,6 +4316,10 @@ Place the correct answer first and bold it.`,
 
       if (confirmProductVersionBtn) {
         confirmProductVersionBtn.addEventListener("click", () => {
+          if (!appInitComplete) {
+            console.log("[init-guard] ignored interaction before init complete");
+            return;
+          }
           console.log("Confirm product/version clicked");
           if (!isSetupVersionConfirmedForContext()) {
             console.log("Confirm product/version blocked: setup version requirements not met");
@@ -4369,6 +4377,10 @@ Place the correct answer first and bold it.`,
 
       let lastStarterSetupSignature = getStarterSetupSignature();
       const handleRequiredSetupInputEvent = () => {
+        if (!appInitComplete) {
+          console.log("[init-guard] ignored interaction before init complete");
+          return;
+        }
         const signature = getStarterSetupSignature();
         if (signature !== lastStarterSetupSignature) {
           lastStarterSetupSignature = signature;
@@ -4550,10 +4562,6 @@ Place the correct answer first and bold it.`,
         cardLabel: "final prompt",
         onCopy: copyFinalPrompt
       });
-      refreshCopyCardPreviews();
-      updateStarterCopyAvailability();
-      updateProceedToPromptsAvailability();
-
       $("llmResponse").addEventListener("input", () => {
         updateFinalizeContentUI();
         updateEndSessionState();
@@ -4638,6 +4646,23 @@ Place the correct answer first and bold it.`,
 
       // Always show footer status immediately (even before access is verified)
       refreshFooterInfo();
+
+      refreshCopyCardPreviews();
+      renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "");
+      updateSetupSubbandVisibility();
+      syncStarterCopyUI();
+      updateStarterCopyAvailability();
+      updateProceedToPromptsAvailability();
+      applyStageUI();
+
+      console.log("[init] listeners finished binding");
+      appInitComplete = true;
+      console.log("[init] appInitComplete true");
+      if (alreadyVerified) {
+        console.log("[init] setLockedState(false) after init completion");
+        setLockedState(false);
+        initializeSessionTimerIfNeeded();
+      }
 
       // Finally apply stage UI if already verified
       if (alreadyVerified) {
