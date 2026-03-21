@@ -1578,16 +1578,16 @@
                 </details>
 
                 <div style="margin-top:10px;">
-                  <label id="llmConfirmLabel"></label>
-                  <select id="llmExpectedChoice" class="llmCompactSelect"></select>
+                  <label id="llmModeLabel" for="llmModeSelect">Mode</label>
+                  <select id="llmModeSelect" class="llmCompactSelect"></select>
                 </div>
 
-                <p class="muted small" id="llmMismatchNote" style="display:none; margin:8px 0 0;"></p>
-
-                <div id="llmMismatchWrap" style="display:none; margin-top:10px;">
-                  <label for="llmMismatchDescription">Please briefly describe the options you see in the menu.</label>
-                  <textarea id="llmMismatchDescription" placeholder="Example: Auto, Instant 5.5, Thinking 5.6"></textarea>
+                <div id="llmModeOtherWrap" style="display:none; margin-top:10px;">
+                  <label for="llmModeOther">Please briefly describe the mode options you see in the menu.</label>
+                  <textarea id="llmModeOther" placeholder="Example: Auto, Instant 5.5, Thinking 5.6"></textarea>
                 </div>
+
+                <div id="llmVersionBlock" style="margin-top:10px;"></div>
                 <div id="trainingTipMismatch" class="training-tip">
                   <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
                   <p>If the model name you see in your AI interface does not match the options listed here, choose “I see something different” and briefly describe what you see.</p>
@@ -1941,37 +1941,52 @@
     const LLM_UI_CONFIG = {
       chatgpt: {
         label: "ChatGPT",
-        instruction: "Use ChatGPT in its default mode for this activity. Do not manually switch to Instant or Thinking.",
+        instruction: "Choose the current ChatGPT mode shown in your interface.",
         whereText: "Click the model selector at the top of the chat.",
-        expectedOptions: [
-          { value: "inst-5.3_thi-5.4", label: "Auto selected; menu shows Instant 5.3 and Thinking 5.4" },
+        modeOptions: [
+          { value: "", label: "Select a mode" },
+          { value: "auto", label: "Auto" },
+          { value: "instant", label: "Instant" },
+          { value: "thinking", label: "Thinking" },
           { value: "different", label: "I see something different" }
         ],
-        defaultExpected: "inst-5.3_thi-5.4",
+        versionUI: "chatgptConfirm",
+        modeOtherPlaceholder: "Example: Auto, Instant 5.5, Thinking 5.6",
         image1Alt: "ChatGPT model selector location",
         image2Alt: "ChatGPT dropdown example"
       },
       gemini: {
         label: "Gemini",
-        instruction: "Use Gemini in its default mode for this activity. Do not manually switch modes.",
+        instruction: "Choose the current Gemini mode shown in your interface.",
         whereText: "Click the mode dropdown next to the prompt box.",
-        expectedOptions: [
-          { value: "gemini-3", label: "Fast selected; menu shows Gemini 3" },
+        modeOptions: [
+          { value: "", label: "Select a mode" },
+          { value: "fast", label: "Fast" },
+          { value: "thinking", label: "Thinking" },
+          { value: "pro", label: "Pro" },
           { value: "different", label: "I see something different" }
         ],
-        defaultExpected: "gemini-3",
+        versionUI: "freeTextVersion",
+        versionLabel: "Which version text do you see?",
+        versionPlaceholder: "Example: Gemini 2.5 Pro",
+        modeOtherPlaceholder: "Describe the mode options you see",
         image1Alt: "Gemini mode selector location",
         image2Alt: "Gemini dropdown example"
       },
       copilot: {
         label: "Microsoft Copilot",
-        instruction: "Use Microsoft Copilot in its default mode for this activity. Do not manually change the conversation mode.",
+        instruction: "Choose the current Copilot mode shown in your interface.",
         whereText: "Click the dropdown next to the prompt box that shows the current mode.",
-        expectedOptions: [
-          { value: "gpt-5.1", label: "Smart selected; menu shows GPT 5.1" },
+        modeOptions: [
+          { value: "", label: "Select a mode" },
+          { value: "smart", label: "Smart" },
+          { value: "think_deeper", label: "Think Deeper" },
           { value: "different", label: "I see something different" }
         ],
-        defaultExpected: "gpt-5.1",
+        versionUI: "freeTextVersion",
+        versionLabel: "Which version text do you see?",
+        versionPlaceholder: "Example: GPT 5.1",
+        modeOtherPlaceholder: "Describe the mode options you see",
         image1Alt: "Copilot mode selector location",
         image2Alt: "Copilot dropdown example"
       }
@@ -2434,8 +2449,11 @@ Place the correct answer first and bold it.`
       finalPromptCopied: "dissertation.finalPromptCopied",
       submitClicked: "dissertation.submitClicked",
       llmProduct: "dissertation.llmProduct",
-      llmExpectedChoice: "dissertation.llmExpectedChoice",
-      llmMismatchDescription: "dissertation.llmMismatchDescription",
+      llmMode: "dissertation.llmMode",
+      llmModeOther: "dissertation.llmModeOther",
+      llmVersionConfirm: "dissertation.llmVersionConfirm",
+      llmVersionOtherText: "dissertation.llmVersionOtherText",
+      llmVersionText: "dissertation.llmVersionText",
       productVersionConfirmed: "dissertation.productVersionConfirmed",
       resubmitting: "dissertation.resubmitting",
       timerStartedAt: "dissertation.timerStartedAt",
@@ -2518,18 +2536,6 @@ Place the correct answer first and bold it.`
         llmOptions: data.llmOptions || {},
         prompts: data.prompts || {}
       };
-    }
-
-    function getLlmOptionList(productKey) {
-      const remoteOptions = getRemoteLlmOptions(productKey);
-      if (remoteOptions.length) return remoteOptions;
-      const fallbackConfig = LLM_UI_CONFIG[productKey];
-      if (!fallbackConfig?.expectedOptions?.length) return [];
-      return fallbackConfig.expectedOptions.map((opt) => ({
-        value: opt.value,
-        label: opt.label,
-        selectedByDefault: opt.value === fallbackConfig.defaultExpected
-      }));
     }
 
     function renderCopyCardPromptText() {
@@ -2755,9 +2761,12 @@ Place the correct answer first and bold it.`
       const modeParam = new URLSearchParams(window.location.search).get("mode");
       const ctx = getContext();
       const details = extra.details && typeof extra.details === "object" ? extra.details : {};
-      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      const mismatchDescription = (($("llmMismatchDescription")?.value || localStorage.getItem(KEYS.llmMismatchDescription) || "")).trim();
-      const versionValue = expectedChoice || "";
+      const llmMode = (localStorage.getItem(KEYS.llmMode) || "").trim();
+      const llmModeOther = (localStorage.getItem(KEYS.llmModeOther) || "").trim();
+      const llmVersionConfirm = (localStorage.getItem(KEYS.llmVersionConfirm) || "").trim();
+      const llmVersionOtherText = (localStorage.getItem(KEYS.llmVersionOtherText) || "").trim();
+      const llmVersionText = (localStorage.getItem(KEYS.llmVersionText) || "").trim();
+      const versionValue = llmVersionText || llmVersionOtherText || llmVersionConfirm || "";
 
       const payload = {
         sessionId,
@@ -2768,7 +2777,11 @@ Place the correct answer first and bold it.`
         promptName: extra.promptName || "",
         product: localStorage.getItem(KEYS.llmProduct) || localStorage.getItem(KEYS.modelUsed) || "",
         version: versionValue,
-        llmMismatchDescription: mismatchDescription,
+        llmMode,
+        llmModeOther,
+        llmVersionConfirm,
+        llmVersionOtherText,
+        llmVersionText,
         desiredQuestions: ctx.questionCount || "",
         courseContext: ctx.course || "",
         questionContext: ctx.area || "",
@@ -2810,7 +2823,7 @@ Place the correct answer first and bold it.`
       const sessionId = localStorage.getItem(KEYS.sessionId) || "";
       const modelUsed = localStorage.getItem(KEYS.modelUsed) || "";
       const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-      const llmExpectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
+      const llmMode = localStorage.getItem(KEYS.llmMode) || "";
       const timerState = getCurrentTimerState();
       events.push({
         t: nowIso(),
@@ -2820,7 +2833,7 @@ Place the correct answer first and bold it.`
         sessionId,
         modelUsed,
         llmProduct,
-        llmExpectedChoice,
+        llmMode,
         elapsed_ms: timerState.elapsedMs,
         elapsed_mmss: timerState.elapsedMmss,
         timer_paused: timerState.timerPaused,
@@ -3014,11 +3027,11 @@ Place the correct answer first and bold it.`
       return "—";
     }
 
-    function formatLlmExpectedChoiceLabel(productKey, expectedChoice) {
-      if (!expectedChoice) return "—";
-      const options = getLlmOptionList(productKey);
-      const match = options.find((o) => o.value === expectedChoice);
-      return match?.label || expectedChoice;
+    function getModeOptionLabel(productKey, modeValue) {
+      if (!modeValue) return "—";
+      const options = LLM_UI_CONFIG[productKey]?.modeOptions || [];
+      const match = options.find((o) => o.value === modeValue);
+      return match?.label || modeValue;
     }
 
     function getLlmHelpImages(productKey) {
@@ -3046,13 +3059,11 @@ Place the correct answer first and bold it.`
     }
 
 
-    function setLlmMismatchVisibility(show, shouldFocus = false) {
-      const wrap = $("llmMismatchWrap");
-      const note = $("llmMismatchNote");
+    function setLlmModeOtherVisibility(show, shouldFocus = false) {
+      const wrap = $("llmModeOtherWrap");
       if (wrap) wrap.style.display = show ? "block" : "none";
-      if (note) note.style.display = show ? "block" : "none";
       if (show && shouldFocus) {
-        requestAnimationFrame(() => $("llmMismatchDescription")?.focus());
+        requestAnimationFrame(() => $("llmModeOther")?.focus());
       }
     }
 
@@ -3076,37 +3087,52 @@ Place the correct answer first and bold it.`
 
     function isLlmConfirmationComplete() {
       const product = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
+      const mode = (localStorage.getItem(KEYS.llmMode) || "").trim();
+      const modeOther = (localStorage.getItem(KEYS.llmModeOther) || "").trim();
+      const versionConfirm = (localStorage.getItem(KEYS.llmVersionConfirm) || "").trim();
+      const versionOtherText = (localStorage.getItem(KEYS.llmVersionOtherText) || "").trim();
+      const versionText = (localStorage.getItem(KEYS.llmVersionText) || "").trim();
 
       if (!product) return false;
       if (!["chatgpt", "gemini", "copilot"].includes(product)) return false;
-      if (!expectedChoice) return false;
-      if (expectedChoice === "different" && !mismatchDescription) return false;
+      if (!mode) return false;
+      if (mode === "different" && !modeOther) return false;
+      if (product === "chatgpt") {
+        if (!versionConfirm) return false;
+        if (versionConfirm === "other" && !versionOtherText) return false;
+      } else if (!versionText) {
+        return false;
+      }
       return true;
     }
 
 
     function isSetupVersionConfirmedForContext() {
-      const product = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      if (!product) return false;
-      if (!["chatgpt", "gemini", "copilot"].includes(product)) return false;
-      return !!expectedChoice;
+      return isLlmConfirmationComplete();
     }
 
     function getProductVersionSummaryText() {
       const productKey = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-      const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
+      const mode = (localStorage.getItem(KEYS.llmMode) || "").trim();
+      const modeOther = (localStorage.getItem(KEYS.llmModeOther) || "").trim();
+      const versionConfirm = (localStorage.getItem(KEYS.llmVersionConfirm) || "").trim();
+      const versionOtherText = (localStorage.getItem(KEYS.llmVersionOtherText) || "").trim();
+      const versionText = (localStorage.getItem(KEYS.llmVersionText) || "").trim();
       const productLabel = formatLlmProductLabel(productKey);
+      const modeLabel = mode === "different"
+        ? `I see something different (${modeOther || "—"})`
+        : getModeOptionLabel(productKey, mode);
 
-      let versionLabel = formatLlmExpectedChoiceLabel(productKey, expectedChoice);
-      if (expectedChoice === "different") {
-        versionLabel = mismatchDescription || "I see something different";
+      let versionLabel = "—";
+      if (productKey === "chatgpt") {
+        versionLabel = versionConfirm === "current"
+          ? "confirmed Instant 5.3 / Thinking 5.4"
+          : (versionOtherText ? `user reported different versions: ${versionOtherText}` : "—");
+      } else {
+        versionLabel = versionText || "—";
       }
 
-      return `Product: ${productLabel} · Version/menu: ${versionLabel || "—"}`;
+      return `Product: ${productLabel} · Mode: ${modeLabel || "—"} · Version: ${versionLabel}`;
     }
 
     function setProductVersionConfirmedState(isConfirmed) {
@@ -3137,18 +3163,23 @@ Place the correct answer first and bold it.`
 
     function renderLlmConfirmPanel(productKey) {
       const panel = $("llmConfirmPanel");
-      const expectedSelect = $("llmExpectedChoice");
-      const mismatchInput = $("llmMismatchDescription");
+      const modeSelect = $("llmModeSelect");
+      const modeOtherInput = $("llmModeOther");
+      const versionBlock = $("llmVersionBlock");
       const config = LLM_UI_CONFIG[productKey];
 
-      if (!panel || !expectedSelect || !mismatchInput) return;
+      if (!panel || !modeSelect || !modeOtherInput || !versionBlock) return;
 
       if (!config) {
         panel.style.display = "none";
-        expectedSelect.innerHTML = "";
-        setLlmMismatchVisibility(false);
-        localStorage.removeItem(KEYS.llmExpectedChoice);
-        localStorage.removeItem(KEYS.llmMismatchDescription);
+        modeSelect.innerHTML = "";
+        versionBlock.innerHTML = "";
+        setLlmModeOtherVisibility(false);
+        localStorage.removeItem(KEYS.llmMode);
+        localStorage.removeItem(KEYS.llmModeOther);
+        localStorage.removeItem(KEYS.llmVersionConfirm);
+        localStorage.removeItem(KEYS.llmVersionOtherText);
+        localStorage.removeItem(KEYS.llmVersionText);
         llmMismatchReported = false;
         llmMismatchAlertAttempted = false;
         const productVersionTitle = $("productVersionTitle");
@@ -3164,10 +3195,11 @@ Place the correct answer first and bold it.`
       const productVersionTitle = $("productVersionTitle");
       const llmConfirmIntro = $("llmConfirmIntro");
       if (productVersionTitle) productVersionTitle.textContent = "Confirm product version";
-      if (llmConfirmIntro) llmConfirmIntro.textContent = `Set ${config.label} to its default mode and use the dropdown menu below to select the version you are using.`;
-      $("llmInstructionText").textContent = "";
-      $("llmWhereText").textContent = "";
-      $("llmConfirmLabel").textContent = "";
+      if (llmConfirmIntro) llmConfirmIntro.textContent = `Set ${config.label} to its current mode and provide version details below.`;
+      $("llmInstructionText").textContent = config.instruction || "";
+      $("llmWhereText").textContent = config.whereText || "";
+      $("llmModeLabel").textContent = "Mode";
+      modeOtherInput.placeholder = config.modeOtherPlaceholder || "Describe what you see";
 
       const helpImages = getLlmHelpImages(productKey);
       const img1 = $("llmImage1");
@@ -3189,42 +3221,139 @@ Place the correct answer first and bold it.`
         }
       }
 
-      const existingValue = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-      const options = getLlmOptionList(productKey);
-      expectedSelect.innerHTML = "";
-      options.forEach((opt) => {
+      const modeOptions = config.modeOptions || [];
+      modeSelect.innerHTML = "";
+      modeOptions.forEach((opt) => {
         const el = document.createElement("option");
         el.value = opt.value;
         el.textContent = opt.label;
-        expectedSelect.appendChild(el);
+        modeSelect.appendChild(el);
       });
 
-      const defaultOption = options.find((o) => o.selectedByDefault) || options[0] || null;
-      const validValues = new Set(options.map((o) => o.value));
-      const selectedValue = validValues.has(existingValue) ? existingValue : (defaultOption?.value || "");
-      expectedSelect.value = selectedValue;
-      if (selectedValue) {
-        localStorage.setItem(KEYS.llmExpectedChoice, selectedValue);
+      const existingMode = (localStorage.getItem(KEYS.llmMode) || "").trim();
+      const validModes = new Set(modeOptions.map((o) => o.value));
+      const selectedMode = validModes.has(existingMode) ? existingMode : "";
+      modeSelect.value = selectedMode;
+      if (selectedMode) {
+        localStorage.setItem(KEYS.llmMode, selectedMode);
       } else {
-        localStorage.removeItem(KEYS.llmExpectedChoice);
+        localStorage.removeItem(KEYS.llmMode);
       }
 
-      if (selectedValue === "different") {
-        const mismatch = localStorage.getItem(KEYS.llmMismatchDescription) || "";
-        mismatchInput.value = mismatch;
-        setLlmMismatchVisibility(true);
-        if (mismatch.trim()) {
+      const existingModeOther = localStorage.getItem(KEYS.llmModeOther) || "";
+      modeOtherInput.value = existingModeOther;
+      if (selectedMode === "different") {
+        setLlmModeOtherVisibility(true);
+        if (existingModeOther.trim()) {
           llmMismatchReported = true;
           llmMismatchAlertAttempted = true;
         }
       } else {
-        mismatchInput.value = "";
-        setLlmMismatchVisibility(false);
-        localStorage.removeItem(KEYS.llmMismatchDescription);
+        modeOtherInput.value = "";
+        setLlmModeOtherVisibility(false);
+        localStorage.removeItem(KEYS.llmModeOther);
         llmMismatchReported = false;
         llmMismatchAlertAttempted = false;
       }
+
+      if (config.versionUI === "chatgptConfirm") {
+        versionBlock.innerHTML = `
+          <fieldset style="border:0; padding:0; margin:0;">
+            <legend style="font-weight:600; margin-bottom:6px;">Version confirmation</legend>
+            <div class="small">
+              <label style="display:block; margin-bottom:6px;">
+                <input type="radio" name="llmChatgptVersionConfirm" id="llmChatgptVersionCurrent" value="current" />
+                I confirm the dropdown shows Instant 5.3 and Thinking 5.4
+              </label>
+              <label style="display:block;">
+                <input type="radio" name="llmChatgptVersionConfirm" id="llmChatgptVersionOther" value="other" />
+                I see something different
+              </label>
+            </div>
+          </fieldset>
+          <div id="llmChatgptVersionOtherWrap" style="display:none; margin-top:10px;">
+            <label for="llmChatgptVersionOtherText">Please describe what version text you see.</label>
+            <textarea id="llmChatgptVersionOtherText" placeholder="Example: Instant 5.5 and Thinking 5.6"></textarea>
+          </div>
+        `;
+        const selectedConfirm = (localStorage.getItem(KEYS.llmVersionConfirm) || "").trim();
+        const otherText = localStorage.getItem(KEYS.llmVersionOtherText) || "";
+        const currentRadio = $("llmChatgptVersionCurrent");
+        const otherRadio = $("llmChatgptVersionOther");
+        const otherWrap = $("llmChatgptVersionOtherWrap");
+        const otherInput = $("llmChatgptVersionOtherText");
+        if (currentRadio) currentRadio.checked = selectedConfirm === "current";
+        if (otherRadio) otherRadio.checked = selectedConfirm === "other";
+        if (otherWrap) otherWrap.style.display = selectedConfirm === "other" ? "block" : "none";
+        if (otherInput) otherInput.value = otherText;
+      } else if (productKey === "gemini") {
+        versionBlock.innerHTML = `
+          <label id="llmGeminiVersionLabel" for="llmGeminiVersionText">${config.versionLabel || "Which version text do you see?"}</label>
+          <input id="llmGeminiVersionText" placeholder="${config.versionPlaceholder || ""}" />
+        `;
+        const input = $("llmGeminiVersionText");
+        if (input) input.value = localStorage.getItem(KEYS.llmVersionText) || "";
+      } else if (productKey === "copilot") {
+        versionBlock.innerHTML = `
+          <label id="llmCopilotVersionLabel" for="llmCopilotVersionText">${config.versionLabel || "Which version text do you see?"}</label>
+          <input id="llmCopilotVersionText" placeholder="${config.versionPlaceholder || ""}" />
+        `;
+        const input = $("llmCopilotVersionText");
+        if (input) input.value = localStorage.getItem(KEYS.llmVersionText) || "";
+      } else {
+        versionBlock.innerHTML = "";
+      }
+      wireLlmVersionInputs();
       updateSetupSubbandVisibility();
+    }
+
+    function wireLlmVersionInputs() {
+      const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
+      if (!llmProduct) return;
+
+      const currentRadio = $("llmChatgptVersionCurrent");
+      const otherRadio = $("llmChatgptVersionOther");
+      const otherWrap = $("llmChatgptVersionOtherWrap");
+      const chatgptOther = $("llmChatgptVersionOtherText");
+      const geminiInput = $("llmGeminiVersionText");
+      const copilotInput = $("llmCopilotVersionText");
+
+      const handleChatgptVersionChange = () => {
+        let value = "";
+        if (currentRadio?.checked) value = "current";
+        if (otherRadio?.checked) value = "other";
+        if (value) localStorage.setItem(KEYS.llmVersionConfirm, value);
+        else localStorage.removeItem(KEYS.llmVersionConfirm);
+        if (value !== "other") {
+          localStorage.removeItem(KEYS.llmVersionOtherText);
+          if (chatgptOther) chatgptOther.value = "";
+        }
+        if (otherWrap) otherWrap.style.display = value === "other" ? "block" : "none";
+        setProductVersionConfirmedState(false);
+        updateSetupSubbandVisibility();
+      };
+
+      currentRadio?.addEventListener("change", handleChatgptVersionChange);
+      otherRadio?.addEventListener("change", handleChatgptVersionChange);
+      chatgptOther?.addEventListener("input", () => {
+        localStorage.setItem(KEYS.llmVersionOtherText, chatgptOther.value || "");
+        setProductVersionConfirmedState(false);
+        updateSetupSubbandVisibility();
+      });
+      geminiInput?.addEventListener("input", () => {
+        localStorage.setItem(KEYS.llmVersionText, geminiInput.value || "");
+        localStorage.removeItem(KEYS.llmVersionConfirm);
+        localStorage.removeItem(KEYS.llmVersionOtherText);
+        setProductVersionConfirmedState(false);
+        updateSetupSubbandVisibility();
+      });
+      copilotInput?.addEventListener("input", () => {
+        localStorage.setItem(KEYS.llmVersionText, copilotInput.value || "");
+        localStorage.removeItem(KEYS.llmVersionConfirm);
+        localStorage.removeItem(KEYS.llmVersionOtherText);
+        setProductVersionConfirmedState(false);
+        updateSetupSubbandVisibility();
+      });
     }
 
     function setStage(stage) {
@@ -4319,8 +4448,11 @@ Place the correct answer first and bold it.`
         product_used: localStorage.getItem(KEYS.modelUsed) || "",
         model_used: localStorage.getItem(KEYS.modelUsed) || "",
         llm_product: localStorage.getItem(KEYS.llmProduct) || "",
-        llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
-        llm_mismatch_description: localStorage.getItem(KEYS.llmMismatchDescription) || "",
+        llm_mode: localStorage.getItem(KEYS.llmMode) || "",
+        llm_mode_other: localStorage.getItem(KEYS.llmModeOther) || "",
+        llm_version_confirm: localStorage.getItem(KEYS.llmVersionConfirm) || "",
+        llm_version_other_text: localStorage.getItem(KEYS.llmVersionOtherText) || "",
+        llm_version_text: localStorage.getItem(KEYS.llmVersionText) || "",
         context: getContext(),
         events: loadJSON(KEYS.events, []),
         stage: getStage(),
@@ -4470,11 +4602,16 @@ Place the correct answer first and bold it.`
       const modelLabelByProduct = { chatgpt: "ChatGPT", gemini: "Gemini", copilot: "Copilot" };
       const storedModelProduct = normalizeLlmProduct(localStorage.getItem(KEYS.modelUsed) || "");
       const storedLlmProduct = normalizeLlmProduct(localStorage.getItem(KEYS.llmProduct) || "");
-      const initialProduct = storedLlmProduct || storedModelProduct || "chatgpt";
-      const initialModel = modelLabelByProduct[initialProduct] || "ChatGPT";
+      const initialProduct = storedLlmProduct || storedModelProduct || "";
+      const initialModel = initialProduct ? (modelLabelByProduct[initialProduct] || "") : "";
       $("modelUsed").value = initialModel;
-      localStorage.setItem(KEYS.modelUsed, initialModel);
-      localStorage.setItem(KEYS.llmProduct, initialProduct);
+      if (initialModel) {
+        localStorage.setItem(KEYS.modelUsed, initialModel);
+        localStorage.setItem(KEYS.llmProduct, initialProduct);
+      } else {
+        localStorage.removeItem(KEYS.modelUsed);
+        localStorage.removeItem(KEYS.llmProduct);
+      }
       const ctx = getContext();
       $("ctxCourse").value = ctx.course || "";
       $("ctxArea").value = ctx.area || "";
@@ -4483,18 +4620,29 @@ Place the correct answer first and bold it.`
       localStorage.setItem(KEYS.starterCopied, "false");
 
       const selectModel = (model, { logSelection = true } = {}) => {
-        const llmProduct = normalizeLlmProduct(model) || "chatgpt";
-        const selectedModelLabel = modelLabelByProduct[llmProduct] || "ChatGPT";
+        const llmProduct = normalizeLlmProduct(model);
+        const selectedModelLabel = llmProduct ? (modelLabelByProduct[llmProduct] || "") : "";
         $("modelUsed").value = selectedModelLabel;
-        localStorage.setItem(KEYS.modelUsed, selectedModelLabel);
         document.querySelectorAll(".modelOption").forEach((btn) => {
           const isSelected = btn.dataset.model === selectedModelLabel;
           btn.classList.toggle("active", isSelected);
           btn.classList.toggle("selected", isSelected);
         });
 
-        localStorage.setItem(KEYS.llmProduct, llmProduct);
-        if (logSelection) {
+        if (llmProduct && selectedModelLabel) {
+          localStorage.setItem(KEYS.modelUsed, selectedModelLabel);
+          localStorage.setItem(KEYS.llmProduct, llmProduct);
+        } else {
+          localStorage.removeItem(KEYS.modelUsed);
+          localStorage.removeItem(KEYS.llmProduct);
+        }
+
+        if (logSelection && llmProduct) {
+          localStorage.removeItem(KEYS.llmMode);
+          localStorage.removeItem(KEYS.llmModeOther);
+          localStorage.removeItem(KEYS.llmVersionConfirm);
+          localStorage.removeItem(KEYS.llmVersionOtherText);
+          localStorage.removeItem(KEYS.llmVersionText);
           logEvent("llm_product_selected", { llmProduct });
           setProductVersionConfirmedState(false);
         }
@@ -4511,49 +4659,57 @@ Place the correct answer first and bold it.`
           applyStageUI();
         });
       });
-      selectModel($("modelUsed").value || "", { logSelection: false });
-      renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "chatgpt");
+      if (initialProduct) {
+        selectModel(initialProduct, { logSelection: false });
+      } else {
+        selectModel("", { logSelection: false });
+      }
       updateSetupSubbandVisibility();
 
-      const llmExpectedChoiceEl = $("llmExpectedChoice");
-      const llmMismatchDescriptionEl = $("llmMismatchDescription");
+      const llmModeSelectEl = $("llmModeSelect");
+      const llmModeOtherEl = $("llmModeOther");
 
-      if (llmExpectedChoiceEl) {
-        llmExpectedChoiceEl.addEventListener("change", () => {
+      if (llmModeSelectEl) {
+        llmModeSelectEl.addEventListener("change", () => {
           const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-          const expectedChoice = llmExpectedChoiceEl.value || "";
-          if (expectedChoice) {
-            localStorage.setItem(KEYS.llmExpectedChoice, expectedChoice);
+          const mode = llmModeSelectEl.value || "";
+          if (mode) {
+            localStorage.setItem(KEYS.llmMode, mode);
           } else {
-            localStorage.removeItem(KEYS.llmExpectedChoice);
+            localStorage.removeItem(KEYS.llmMode);
           }
 
-          logEvent("llm_expected_choice_selected", { llmProduct, expectedChoice });
+          logEvent("llm_mode_selected", { llmProduct, llmMode: mode });
           setProductVersionConfirmedState(false);
 
-          if (expectedChoice === "different") {
-            setLlmMismatchVisibility(true, true);
+          if (mode === "different") {
+            setLlmModeOtherVisibility(true, true);
           } else {
-            setLlmMismatchVisibility(false);
-            if (llmMismatchDescriptionEl) llmMismatchDescriptionEl.value = "";
-            localStorage.removeItem(KEYS.llmMismatchDescription);
+            setLlmModeOtherVisibility(false);
+            if (llmModeOtherEl) llmModeOtherEl.value = "";
+            localStorage.removeItem(KEYS.llmModeOther);
             llmMismatchReported = false;
             llmMismatchAlertAttempted = false;
           }
+
+          localStorage.removeItem(KEYS.llmVersionConfirm);
+          localStorage.removeItem(KEYS.llmVersionOtherText);
+          localStorage.removeItem(KEYS.llmVersionText);
+          renderLlmConfirmPanel(llmProduct);
           updateSetupSubbandVisibility();
         });
       }
 
-      if (llmMismatchDescriptionEl) {
-        llmMismatchDescriptionEl.addEventListener("input", async () => {
-          const mismatchDescription = llmMismatchDescriptionEl.value || "";
-          localStorage.setItem(KEYS.llmMismatchDescription, mismatchDescription);
+      if (llmModeOtherEl) {
+        llmModeOtherEl.addEventListener("input", async () => {
+          const modeOther = llmModeOtherEl.value || "";
+          localStorage.setItem(KEYS.llmModeOther, modeOther);
           setProductVersionConfirmedState(false);
           updateSetupSubbandVisibility();
 
-          const trimmed = mismatchDescription.trim();
+          const trimmed = modeOther.trim();
           const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-          const expectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
+          const mode = localStorage.getItem(KEYS.llmMode) || "";
 
           if (!trimmed) {
             llmMismatchReported = false;
@@ -4565,12 +4721,12 @@ Place the correct answer first and bold it.`
             llmMismatchReported = true;
             logEvent("llm_mismatch_reported", {
               llmProduct,
-              expectedChoice: "different",
-              mismatchDescription: trimmed
+              llmMode: "different",
+              llmModeOther: trimmed
             });
           }
 
-          if (!llmMismatchAlertAttempted && trimmed && expectedChoice === "different") {
+          if (!llmMismatchAlertAttempted && trimmed && mode === "different") {
             llmMismatchAlertAttempted = true;
             await sendLlmMismatchAlert({
               accessCode: localStorage.getItem(KEYS.accessCode) || "",
@@ -4578,8 +4734,8 @@ Place the correct answer first and bold it.`
               stage: getStage(),
               modelUsed: localStorage.getItem(KEYS.modelUsed) || "",
               llmProduct,
-              llmExpectedChoice: expectedChoice,
-              llmMismatchDescription: trimmed,
+              llmMode: mode,
+              llmModeOther: trimmed,
               timestamp: nowIso()
             });
           }
