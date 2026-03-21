@@ -1496,7 +1496,7 @@
       <p class="sub landingSubtitle">Prompt workflow screen for study participants completing this session.</p>
       <div id="trainingTopNote" class="training-tip">
         <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-        <p>Training mode: The “Training tip” boxes on this page provide guidance for this tutorial and are not part of the normal app interface.</p>
+        <p>You're in training mode. These blue "Training tip" boxes you'll see on this page are here to walk you through the app. They won't appear during your actual study session.</p>
       </div>
       <div id="landingTrainingCompleteBanner" class="trainingCompletionBanner" hidden>
         <div class="trainingCompletionTitle"><span aria-hidden="true">✓</span><span>Training activity complete</span></div>
@@ -1590,7 +1590,7 @@
                 </div>
                 <div id="trainingTipMismatch" class="training-tip">
                   <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-                  <p>If the model name you see in your AI interface does not match the options listed here, choose “I see something different” and briefly describe what you see.</p>
+                  <p>If the mode you are using in your AI product doesn't match any of the options listed here, choose "I see something different" and briefly describe what you see.</p>
                   <p style="margin-top:8px;">This helps us record which AI system and model you used.</p>
                 </div>
               </div>
@@ -1610,7 +1610,7 @@
               <h4 class="subBandTitle">B. Question context</h4>
               <div id="trainingTipQuestionContext" class="training-tip">
                 <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-                <p>Describe the course context and content area briefly and clearly. These fields help the AI understand what kind of questions to create.</p>
+                <p>These two fields tell the AI what kind of questions to create. This doesn't have to be detailed; it's just a short, specific description to point the AI in the right direction.</p>
                 <p style="margin-top:8px;">You do not need to write a full assignment prompt or copy an entire syllabus.</p>
                 <p style="margin-top:8px;">A short, specific description is usually best.</p>
               </div>
@@ -1643,7 +1643,7 @@
             </p>
             <div id="trainingTipStarterGate" class="trainingTip trainingTipSmall">
               <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-              <p>The app will not let you copy the starter prompt until you enter something for both Course / class context and Content area. It also will not let you proceed to Making questions until you copy the starter prompt.</p>
+              <p>To move forward: fill in the course context and content area, then copy the starter prompt and paste it into your AI product. Once you've done that, the "Proceed to Making questions" button will unlock.</p>
             </div>
 
             <div class="row copyPromptRow" style="margin-top:12px;">
@@ -1664,7 +1664,7 @@
             </div>
             <div id="starterCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
               <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-              <p>The starter prompt is now copied to your clipboard. You do not need to do anything else in this app before using it. Go to your LLM conversation box and paste it with Ctrl+V on Windows/Chromebook or Command+V on Mac. These are useful shortcuts worth learning.</p>
+              <p>The starter prompt is now on your clipboard. Switch to your AI product and paste it into the message box (Ctrl+V on Windows/Chromebook, or ⌘+V on Mac). After the AI responds, come back here and click "Proceed to Making questions."</p>
             </div>
 
             <p class="muted small" id="setupMsg" style="margin:10px 0 0; display:none;"></p>
@@ -1694,8 +1694,7 @@
             <div class="card">
               <div class="trainingTip trainingTipSmall" id="makingQuestionsTrainingTip">
                 <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
-                <p>This section is where you work with the AI on one question at a time.</p>
-                <p>Use these prompt buttons to accept a question, replace it, refine parts of it, review what you have so far, or audit the balance of your question set.</p>
+                <p>You'll work with the AI one question at a time. After the AI generates a question, use these buttons to accept it, request a replacement, refine the answer or distractors, or audit the overall balance of your question set. Each button copies a prompt — paste it into your AI conversation to continue.</p>
               </div>
               <div class="promptTopRow">
                 <div class="promptTopRowActions">
@@ -1754,8 +1753,7 @@
             <div class="card">
               <div id="trainingTipFinalizeIntro" class="trainingTip trainingTipSmall">
                 <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
-                <p>This section is where you generate the finished version of your question set and submit your session.</p>
-                <p>You will first copy the final prompt into your LLM, then paste the model’s response back into this app.</p>
+                <p>This is the final step. Copy the final prompt into your AI product — it will ask the AI to compile all accepted questions into a clean list. Then copy the AI's response and paste it into the text box below.</p>
               </div>
 
               <div class="finalizeTopRow">
@@ -1780,8 +1778,7 @@
 
               <div id="finalCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
                 <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
-                <p>The final prompt is now copied to your clipboard.</p>
-                <p>Go to your LLM conversation and paste it with Ctrl+V on Windows/Chromebook or Command+V on Mac, then wait for the full output.</p>
+                <p>The final prompt is now on your clipboard. Paste it into your AI conversation and wait for the complete response. Once the AI finishes, copy its entire response and paste it into the box below.</p>
               </div>
 
               <p class="muted small finalizeNotice" id="finalizeCopyNotice"></p>
@@ -1795,8 +1792,7 @@
 
                 <div id="trainingTipFinalizeFeedback" class="trainingTip trainingTipSmall">
                   <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
-                  <p>This feedback section is optional.</p>
-                  <p>Use it to share anything confusing, helpful, frustrating, or noteworthy about the workflow.</p>
+                  <p>This section is completely optional. If anything about the workflow felt confusing, surprisingly helpful, or worth noting, this is the place to share it.</p>
                 </div>
 
                 <div class="optionalFeedbackBox" id="finalFeedbackSection">
@@ -1834,7 +1830,7 @@
 
               <div id="trainingTipEndSession" class="trainingTip trainingTipSmall">
                 <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
-                <p>Only end the session after you have pasted your final model output into the box above.</p>
+                <p>Make sure you've pasted the AI's final response into the box above before ending. Once you end the session, your work is submitted and the app resets.</p>
                 <p>Once you end the session, the app treats your work as complete.</p>
               </div>
               <div class="finalActionRow" id="endSessionRow" style="display:none;">
