@@ -2452,9 +2452,9 @@ Place the correct answer first and bold it.`
       submissionError: "dissertation.submissionError",
       appsScriptResponseFileName: "dissertation.appsScriptResponseFileName",
       appsScriptResponseFileId: "dissertation.appsScriptResponseFileId",
-      autosaveEventIndex: "dissertation.autosaveEventIndex",
-      uiMode: "dissertation.uiMode"
+      autosaveEventIndex: "dissertation.autosaveEventIndex"
     };
+    const UI_MODE_KEY = "dissertation.uiMode";
 
     // -----------------------------
     // Utilities
@@ -3139,58 +3139,68 @@ Place the correct answer first and bold it.`
 
     function clearProductVersionState(options = {}) {
       const { keepStarterCopied = false } = options;
-      console.log("[product-version] clearProductVersionState called", { keepStarterCopied });
       localStorage.removeItem(KEYS.llmExpectedChoice);
       localStorage.removeItem(KEYS.llmMismatchDescription);
       localStorage.setItem(KEYS.productVersionConfirmed, "false");
+
       if (!keepStarterCopied) {
-        starterPromptCopied = false;
         localStorage.setItem(KEYS.starterCopied, "false");
-        if (KEYS.starterCopiedSetupSignature) localStorage.removeItem(KEYS.starterCopiedSetupSignature);
+        if (KEYS.starterCopiedSetupSignature) {
+          localStorage.removeItem(KEYS.starterCopiedSetupSignature);
+        }
+        starterPromptCopied = false;
       }
+
       llmMismatchReported = false;
       llmMismatchAlertAttempted = false;
 
       const expectedSelect = $("llmExpectedChoice");
       const mismatchInput = $("llmMismatchDescription");
+
       if (expectedSelect) expectedSelect.value = "";
       if (mismatchInput) mismatchInput.value = "";
+
       setLlmMismatchVisibility(false);
+      console.log("[product-version] clearProductVersionState called", { keepStarterCopied });
     }
 
     function validateProductVersionState() {
-      let corrected = false;
-      const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
+      const llmProduct = (localStorage.getItem(KEYS.llmProduct) || "").trim();
       const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      const isConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
+      const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
+      const confirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
+
+      let corrected = false;
 
       if (!llmProduct) {
         if (expectedChoice) {
           localStorage.removeItem(KEYS.llmExpectedChoice);
           corrected = true;
         }
-        if ((localStorage.getItem(KEYS.llmMismatchDescription) || "").trim()) {
+        if (mismatchDescription) {
           localStorage.removeItem(KEYS.llmMismatchDescription);
           corrected = true;
         }
-        if (isConfirmed) {
+        if (confirmed) {
           localStorage.setItem(KEYS.productVersionConfirmed, "false");
           corrected = true;
         }
       }
 
-      if (expectedChoice !== "different" && (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim()) {
+      if (expectedChoice !== "different" && mismatchDescription) {
         localStorage.removeItem(KEYS.llmMismatchDescription);
+        const mismatchInput = $("llmMismatchDescription");
+        if (mismatchInput) mismatchInput.value = "";
         corrected = true;
       }
 
-      if (localStorage.getItem(KEYS.productVersionConfirmed) === "true" && !isLlmConfirmationComplete()) {
+      if (confirmed && !isLlmConfirmationComplete()) {
         localStorage.setItem(KEYS.productVersionConfirmed, "false");
         corrected = true;
       }
 
       if (corrected) {
-        console.log("[product-version] validateProductVersionState corrected state");
+        console.log("[product-version] validateProductVersionState corrected stale state");
       }
     }
 
@@ -3312,6 +3322,7 @@ Place the correct answer first and bold it.`
         canConfirm
       });
 
+      validateProductVersionState();
       updateStarterCopyAvailability();
       updateProceedToPromptsAvailability();
       updateSetupSubbandVisibility();
@@ -4706,13 +4717,13 @@ Place the correct answer first and bold it.`
       if (!localStorage.getItem(KEYS.starterCopied)) {
         localStorage.setItem(KEYS.starterCopied, "false");
       }
-      const currentUiMode = isTrainingMode ? "training" : "normal";
-      const previousUiMode = localStorage.getItem(KEYS.uiMode) || "";
-      if (previousUiMode && previousUiMode !== currentUiMode) {
-        console.log("[product-version] mode change detected", { previousUiMode, currentUiMode });
+      const currentMode = isTrainingMode ? "training" : "normal";
+      const storedMode = localStorage.getItem(UI_MODE_KEY) || "";
+      if (storedMode && storedMode !== currentMode) {
+        console.log("[product-version] mode changed", { from: storedMode, to: currentMode });
         clearProductVersionState();
       }
-      localStorage.setItem(KEYS.uiMode, currentUiMode);
+      localStorage.setItem(UI_MODE_KEY, currentMode);
       validateProductVersionState();
 
       const selectModel = (model, { logSelection = true } = {}) => {
@@ -4720,8 +4731,13 @@ Place the correct answer first and bold it.`
         const llmProduct = normalizeLlmProduct(model) || "";
         const previousProduct = normalizeLlmProduct(localStorage.getItem(KEYS.llmProduct) || "");
         if (previousProduct !== llmProduct) {
-          console.log("[product-version] product changed in selectModel", { previousProduct, llmProduct });
+          console.log("[product-version] product changed in selectModel", { previousProduct, newProduct: llmProduct });
           clearProductVersionState();
+        }
+        if (llmProduct) {
+          localStorage.setItem(KEYS.llmProduct, llmProduct);
+        } else {
+          localStorage.removeItem(KEYS.llmProduct);
         }
         const selectedModelLabel = modelLabelByProduct[llmProduct] || "";
         $("modelUsed").value = selectedModelLabel;
@@ -4735,12 +4751,6 @@ Place the correct answer first and bold it.`
           btn.classList.toggle("active", isSelected);
           btn.classList.toggle("selected", isSelected);
         });
-
-        if (llmProduct) {
-          localStorage.setItem(KEYS.llmProduct, llmProduct);
-        } else {
-          localStorage.removeItem(KEYS.llmProduct);
-        }
         if (logSelection) {
           logEvent("llm_product_selected", { llmProduct });
           setProductVersionConfirmedState(false);
@@ -5096,6 +5106,7 @@ Place the correct answer first and bold it.`
       const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
 
       $("btnResetSession").addEventListener("click", () => {
+        console.log("[reset] clicked");
         try { logEvent("reset_confirmed"); } catch (err) { console.warn("Reset log failed", err); }
         hardResetApp();
       });
