@@ -1161,16 +1161,63 @@
       min-width:170px;
     }
 
-    .optionalFeedbackBox{
-      font-size:0.94em;
-      border-top:1px solid #e4e8f0;
-      margin-top:14px;
-      padding-top:14px;
+    .feedbackCollapsible {
+      margin-top: 14px;
+      border: 1px dashed #d0d8e8;
+      border-radius: 10px;
+      background: #fafcff;
     }
-
-    .optionalFeedbackBox p{
-      margin-top:6px;
-      margin-bottom:10px;
+    .feedbackCollapsible[open] {
+      border-style: solid;
+      border-color: var(--border);
+      background: #fff;
+    }
+    .feedbackSummary {
+      padding: 12px 14px;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--muted);
+      user-select: none;
+      transition: color 0.15s ease;
+    }
+    .feedbackSummary::-webkit-details-marker { display: none; }
+    .feedbackSummary:hover {
+      color: var(--text);
+    }
+    .feedbackSummaryLeft {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .feedbackSummaryLabel {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .feedbackSummaryHint {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .feedbackSummaryChevron {
+      display: inline-block;
+      font-size: 14px;
+      transition: transform 0.18s ease;
+      color: var(--muted);
+    }
+    .feedbackCollapsible[open] .feedbackSummaryChevron {
+      transform: rotate(90deg);
+    }
+    .feedbackInner {
+      padding: 0 14px 14px;
+      font-size: 0.94em;
+    }
+    .feedbackInner p {
+      margin-top: 6px;
+      margin-bottom: 10px;
     }
 
     .audioFeedbackSection {
@@ -2089,39 +2136,47 @@
                   <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
                 </div>
 
-                <div id="trainingTipFinalizeFeedback" class="trainingTip trainingTipSmall">
-                  <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
-                  <p>This section is completely optional. If anything about the workflow felt confusing, surprisingly helpful, or worth noting, this is the place to share it.</p>
-                </div>
-
-                <div class="optionalFeedbackBox" id="finalFeedbackSection">
-                  <p style="margin:0 0 6px; font-weight:600;">Optional feedback</p>
-                  <p class="muted small" style="margin:0 0 10px;">I would appreciate any feedback you have for me, which you may provide in writing and/or as an audio recording. This is completely optional.</p>
-
-                  <textarea
-                    id="sessionNotes"
-                    placeholder="Provide written feedback here"
-                  ></textarea>
-
-                  <div class="audioFeedbackSection" id="audioRecorderPanel" style="margin-top:8px;">
-                    <div class="audioControlRow" id="audioPrimaryControls">
-                      <button class="btn" id="btnAudioStart" type="button">Start recording</button>
-                      <button class="btn audioStateStatus" id="btnAudioState" type="button" disabled>Recording</button>
-                      <button class="btn" id="btnAudioPauseResume" type="button">Pause</button>
-                      <button class="btn" id="btnAudioStop" type="button">Stop</button>
+                <details class="feedbackCollapsible" id="finalFeedbackSection">
+                  <summary class="feedbackSummary">
+                    <div class="feedbackSummaryLeft">
+                      <span class="feedbackSummaryLabel">Optional feedback</span>
+                      <span class="feedbackSummaryHint">— leave a comment or recording</span>
                     </div>
-                    <div class="audioElapsedRow" id="audioElapsedRow" aria-live="polite">
-                      <span class="audioElapsedLabel">Recording time</span>
-                      <span class="audioElapsedValue" id="audioElapsedValue">00:00</span>
+                    <span class="feedbackSummaryChevron" aria-hidden="true">›</span>
+                  </summary>
+                  <div class="feedbackInner">
+                    <div id="trainingTipFinalizeFeedback" class="trainingTip trainingTipSmall">
+                      <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                      <p>This section is completely optional. If anything about the workflow felt confusing, surprisingly helpful, or worth noting, this is the place to share it.</p>
                     </div>
 
-                    <div class="audioPlaybackRow" id="audioPlaybackRow">
-                      <audio id="audioFeedbackPlayer" controls preload="metadata"></audio>
-                      <button class="btn" id="btnAudioSubmit" type="button">Submit audio</button>
-                      <button class="btn" id="btnAudioDelete" type="button">Delete recording</button>
+                    <p class="muted small" style="margin:0 0 10px;">I would appreciate any feedback you have for me, which you may provide in writing and/or as an audio recording. This is completely optional.</p>
+
+                    <textarea
+                      id="sessionNotes"
+                      placeholder="Provide written feedback here"
+                    ></textarea>
+
+                    <div class="audioFeedbackSection" id="audioRecorderPanel" style="margin-top:8px;">
+                      <div class="audioControlRow" id="audioPrimaryControls">
+                        <button class="btn" id="btnAudioStart" type="button">Start recording</button>
+                        <button class="btn audioStateStatus" id="btnAudioState" type="button" disabled>Recording</button>
+                        <button class="btn" id="btnAudioPauseResume" type="button">Pause</button>
+                        <button class="btn" id="btnAudioStop" type="button">Stop</button>
+                      </div>
+                      <div class="audioElapsedRow" id="audioElapsedRow" aria-live="polite">
+                        <span class="audioElapsedLabel">Recording time</span>
+                        <span class="audioElapsedValue" id="audioElapsedValue">00:00</span>
+                      </div>
+
+                      <div class="audioPlaybackRow" id="audioPlaybackRow">
+                        <audio id="audioFeedbackPlayer" controls preload="metadata"></audio>
+                        <button class="btn" id="btnAudioSubmit" type="button">Submit audio</button>
+                        <button class="btn" id="btnAudioDelete" type="button">Delete recording</button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </details>
 
               </div>
 
