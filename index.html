@@ -2623,6 +2623,7 @@ Place the correct answer first and bold it.`
     let sessionTimerIntervalId = null;
     let llmMismatchReported = false;
     let llmMismatchAlertAttempted = false;
+    let productVersionDomWired = false;
     let starterPromptCopied = false;
     let appBootLoading = true;
     let appBootReady = false;
@@ -3141,13 +3142,21 @@ Place the correct answer first and bold it.`
       }
     }
 
-    function clearProductVersionState(options = {}) {
-      const { keepStarterCopied = false } = options;
+    function clearDraftProductVersionState() {
+      const expectedSelect = $("llmExpectedChoice");
+      const mismatchInput = $("llmMismatchDescription");
+      if (expectedSelect) expectedSelect.value = "";
+      if (mismatchInput) mismatchInput.value = "";
+      setLlmMismatchVisibility(false);
+      llmMismatchReported = false;
+      llmMismatchAlertAttempted = false;
+    }
 
+    function clearCommittedProductVersionState(options = {}) {
+      const { keepStarterCopied = false } = options;
       try { localStorage.removeItem(KEYS.llmExpectedChoice); } catch (_) {}
       try { localStorage.removeItem(KEYS.llmMismatchDescription); } catch (_) {}
       try { localStorage.setItem(KEYS.productVersionConfirmed, "false"); } catch (_) {}
-
       if (!keepStarterCopied) {
         try { localStorage.setItem(KEYS.starterCopied, "false"); } catch (_) {}
         try {
@@ -3157,19 +3166,28 @@ Place the correct answer first and bold it.`
         } catch (_) {}
         starterPromptCopied = false;
       }
+    }
 
-      llmMismatchReported = false;
-      llmMismatchAlertAttempted = false;
-
-      const expectedSelect = $("llmExpectedChoice");
-      const mismatchInput = $("llmMismatchDescription");
-
-      if (expectedSelect) expectedSelect.value = "";
-      if (mismatchInput) mismatchInput.value = "";
-
-      setLlmMismatchVisibility(false);
-
+    function clearProductVersionState(options = {}) {
+      const { keepStarterCopied = false } = options;
+      clearCommittedProductVersionState({ keepStarterCopied });
+      clearDraftProductVersionState();
       console.log("[product-version] clearProductVersionState");
+    }
+
+    function getDraftProductVersionState() {
+      return {
+        product: (localStorage.getItem(KEYS.llmProduct) || "").trim(),
+        expectedChoice: ($("llmExpectedChoice")?.value || "").trim(),
+        mismatchDescription: ($("llmMismatchDescription")?.value || "").trim()
+      };
+    }
+
+    function isDraftProductVersionComplete() {
+      const { product, expectedChoice, mismatchDescription } = getDraftProductVersionState();
+      if (!product || !expectedChoice) return false;
+      if (expectedChoice === "different" && !mismatchDescription) return false;
+      return true;
     }
 
 
@@ -3252,7 +3270,7 @@ Place the correct answer first and bold it.`
 
 
     function isSetupVersionConfirmedForContext() {
-      return isLlmConfirmationComplete();
+      return localStorage.getItem(KEYS.productVersionConfirmed) === "true" && isLlmConfirmationComplete();
     }
 
     function getProductVersionSummaryText() {
@@ -3280,9 +3298,9 @@ Place the correct answer first and bold it.`
       const summary = $("productVersionSummary");
       const summaryText = $("productVersionSummaryText");
       const confirmBtn = $("btnConfirmProductVersion");
-      const canConfirm = isSetupVersionConfirmedForContext();
-      const isConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
-      const showConfirmed = isConfirmed && canConfirm;
+      const canConfirm = isDraftProductVersionComplete();
+      const isConfirmed = isSetupVersionConfirmedForContext();
+      const showConfirmed = isConfirmed;
 
       const productSelected = !!(localStorage.getItem(KEYS.llmProduct) || "");
       if (confirmBtn) confirmBtn.disabled = !canConfirm;
@@ -3296,53 +3314,43 @@ Place the correct answer first and bold it.`
     }
 
     function refreshProductVersionState(options = {}) {
-      validateProductVersionState();
-      console.log("[product-version] refreshProductVersionState start");
       const { focusMismatch = false } = options;
-      const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedSelect = $("llmExpectedChoice");
+      const draft = getDraftProductVersionState();
       const mismatchInput = $("llmMismatchDescription");
-
-      const expectedChoice = (expectedSelect?.value || "").trim();
-      const mismatchDescription = mismatchInput?.value || "";
-      const previousExpectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-
-      if (expectedChoice) {
-        localStorage.setItem(KEYS.llmExpectedChoice, expectedChoice);
-      } else {
-        localStorage.removeItem(KEYS.llmExpectedChoice);
-      }
+      const expectedChoice = draft.expectedChoice;
 
       const shouldShowMismatch = expectedChoice === "different";
-      const switchedIntoDifferent = previousExpectedChoice !== "different" && shouldShowMismatch;
-      const switchedAwayFromDifferent = previousExpectedChoice === "different" && !shouldShowMismatch;
-
-      setLlmMismatchVisibility(shouldShowMismatch, focusMismatch && switchedIntoDifferent);
+      setLlmMismatchVisibility(shouldShowMismatch, focusMismatch && shouldShowMismatch);
 
       if (!shouldShowMismatch) {
         if (mismatchInput) mismatchInput.value = "";
-        localStorage.removeItem(KEYS.llmMismatchDescription);
-        if (switchedAwayFromDifferent) {
-          llmMismatchReported = false;
-          llmMismatchAlertAttempted = false;
-        }
-      } else if (mismatchInput) {
-        localStorage.setItem(KEYS.llmMismatchDescription, mismatchDescription);
+        llmMismatchReported = false;
+        llmMismatchAlertAttempted = false;
       }
 
-      const canConfirm = isSetupVersionConfirmedForContext();
-      console.log("[product-version] eligibility recalculated", {
-        llmProduct,
-        expectedChoice,
-        mismatchLength: mismatchDescription.trim().length,
-        canConfirm
-      });
-
-      validateProductVersionState();
       updateStarterCopyAvailability();
       updateProceedToPromptsAvailability();
       updateSetupSubbandVisibility();
-      console.log("[product-version] refreshProductVersionState end");
+    }
+
+    function populateLlmExpectedChoiceOptions(productKey) {
+      const expectedSelect = $("llmExpectedChoice");
+      if (!expectedSelect) return;
+      const options = getLlmOptionList(productKey);
+      expectedSelect.replaceChildren();
+      if (!options.length) {
+        const fallbackOption = document.createElement("option");
+        fallbackOption.value = "";
+        fallbackOption.textContent = "Select a product first";
+        expectedSelect.appendChild(fallbackOption);
+        return;
+      }
+      options.forEach((opt) => {
+        const el = document.createElement("option");
+        el.value = (opt.value || "").trim();
+        el.textContent = opt.label || opt.value || "";
+        expectedSelect.appendChild(el);
+      });
     }
 
     function renderLlmConfirmPanel(productKey) {
@@ -3356,13 +3364,9 @@ Place the correct answer first and bold it.`
 
       if (!config) {
         panel.style.display = "none";
-        expectedSelect.innerHTML = '<option value="">Select a product first</option>';
+        populateLlmExpectedChoiceOptions("");
         expectedSelect.disabled = true;
-        setLlmMismatchVisibility(false);
-        localStorage.removeItem(KEYS.llmExpectedChoice);
-        localStorage.removeItem(KEYS.llmMismatchDescription);
-        llmMismatchReported = false;
-        llmMismatchAlertAttempted = false;
+        clearDraftProductVersionState();
         const productVersionTitle = $("productVersionTitle");
         const llmConfirmIntro = $("llmConfirmIntro");
         if (productVersionTitle) productVersionTitle.textContent = "Confirm product version";
@@ -3402,32 +3406,127 @@ Place the correct answer first and bold it.`
         }
       }
 
-      const existingValue = localStorage.getItem(KEYS.llmExpectedChoice) || "";
       const options = getLlmOptionList(productKey);
-      expectedSelect.innerHTML = "";
-      options.forEach((opt) => {
-        const el = document.createElement("option");
-        el.value = opt.value;
-        el.textContent = opt.label;
-        expectedSelect.appendChild(el);
+      const previousDraftChoice = (expectedSelect.value || "").trim();
+      populateLlmExpectedChoiceOptions(productKey);
+
+      const validValues = new Set(options.map((o) => (o.value || "").trim()));
+      const defaultOption = options.find((o) => o.selectedByDefault) || options[0] || null;
+      const confirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
+      const committedChoice = confirmed ? (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim() : "";
+      const committedMismatch = confirmed ? (localStorage.getItem(KEYS.llmMismatchDescription) || "") : "";
+
+      const draftChoice = validValues.has(previousDraftChoice)
+        ? previousDraftChoice
+        : "";
+      const selectedValue = validValues.has(committedChoice)
+        ? committedChoice
+        : (confirmed ? (defaultOption?.value || "") : draftChoice);
+      expectedSelect.value = selectedValue;
+
+      if (selectedValue === "different") {
+        mismatchInput.value = validValues.has(committedChoice) && committedChoice === "different" ? committedMismatch : (mismatchInput.value || "");
+      } else {
+        mismatchInput.value = "";
+      }
+      setLlmMismatchVisibility(selectedValue === "different");
+      updateSetupSubbandVisibility();
+    }
+
+    function wireProductVersionDomOnce() {
+      if (productVersionDomWired) return;
+      const expectedSelect = $("llmExpectedChoice");
+      const mismatchWrap = $("llmMismatchWrap");
+      const mismatchInput = $("llmMismatchDescription");
+      const confirmBtn = $("btnConfirmProductVersion");
+      if (!expectedSelect || !mismatchWrap || !mismatchInput || !confirmBtn) return;
+
+      const handleExpectedChoiceUpdate = (eventType) => {
+        const expectedChoice = (expectedSelect.value || "").trim();
+        if (expectedChoice === "different") {
+          mismatchWrap.style.display = "block";
+          mismatchInput.disabled = false;
+          requestAnimationFrame(() => mismatchInput.focus());
+        } else {
+          mismatchWrap.style.display = "none";
+          mismatchInput.value = "";
+          mismatchInput.disabled = false;
+          llmMismatchReported = false;
+          llmMismatchAlertAttempted = false;
+        }
+        setProductVersionConfirmedState(false);
+        invalidateStarterPromptCopied();
+        console.log("[product-version] select changed", getDraftProductVersionState());
+        logEvent("llm_expected_choice_selected", {
+          eventType,
+          llmProduct: (localStorage.getItem(KEYS.llmProduct) || "").trim(),
+          expectedChoice
+        });
+        refreshProductVersionState();
+      };
+
+      expectedSelect.addEventListener("change", () => handleExpectedChoiceUpdate("change"));
+      expectedSelect.addEventListener("input", () => handleExpectedChoiceUpdate("input"));
+
+      mismatchInput.addEventListener("input", async () => {
+        const draft = getDraftProductVersionState();
+        console.log("[product-version] mismatch input changed", draft);
+        setProductVersionConfirmedState(false);
+        invalidateStarterPromptCopied();
+        refreshProductVersionState();
+
+        const trimmed = draft.mismatchDescription.trim();
+        if (!trimmed) {
+          llmMismatchReported = false;
+          llmMismatchAlertAttempted = false;
+          return;
+        }
+
+        if (!llmMismatchReported) {
+          llmMismatchReported = true;
+          logEvent("llm_mismatch_reported", {
+            llmProduct: draft.product,
+            expectedChoice: "different",
+            mismatchDescription: trimmed
+          });
+        }
+
+        if (!llmMismatchAlertAttempted && draft.expectedChoice === "different") {
+          llmMismatchAlertAttempted = true;
+          await sendLlmMismatchAlert({
+            accessCode: localStorage.getItem(KEYS.accessCode) || "",
+            sessionId: localStorage.getItem(KEYS.sessionId) || "",
+            stage: getStage(),
+            modelUsed: localStorage.getItem(KEYS.modelUsed) || "",
+            llmProduct: draft.product,
+            llmExpectedChoice: draft.expectedChoice,
+            llmMismatchDescription: trimmed,
+            timestamp: nowIso()
+          });
+        }
       });
 
-      const defaultOption = options.find((o) => o.selectedByDefault) || options[0] || null;
-      const validValues = new Set(options.map((o) => o.value));
-      const selectedValue = validValues.has(existingValue) ? existingValue : (defaultOption?.value || "");
-      expectedSelect.value = selectedValue;
-      const shouldShowMismatch = selectedValue === "different";
-      const mismatch = shouldShowMismatch ? (localStorage.getItem(KEYS.llmMismatchDescription) || "") : "";
-      mismatchInput.value = mismatch;
-      setLlmMismatchVisibility(shouldShowMismatch);
-      if (shouldShowMismatch && mismatch.trim()) {
-        llmMismatchReported = true;
-        llmMismatchAlertAttempted = true;
-      } else if (!shouldShowMismatch) {
-        llmMismatchReported = false;
-        llmMismatchAlertAttempted = false;
-      }
-      updateSetupSubbandVisibility();
+      confirmBtn.addEventListener("click", () => {
+        const draft = getDraftProductVersionState();
+        console.log("[product-version] confirm clicked", draft);
+        if (!isDraftProductVersionComplete()) return;
+
+        localStorage.setItem(KEYS.llmExpectedChoice, draft.expectedChoice);
+        if (draft.expectedChoice === "different") {
+          localStorage.setItem(KEYS.llmMismatchDescription, draft.mismatchDescription);
+        } else {
+          localStorage.removeItem(KEYS.llmMismatchDescription);
+        }
+        setProductVersionConfirmedState(true);
+        logEvent("product_version_confirm_clicked");
+        sendAutosave(buildAutosave("product_version_confirmed"));
+        updateStarterCopyAvailability();
+        updateProceedToPromptsAvailability();
+        updateSetupSubbandVisibility();
+        applyStageUI();
+      });
+
+      productVersionDomWired = true;
     }
 
     function setStage(stage) {
@@ -4733,22 +4832,25 @@ Place the correct answer first and bold it.`
       if (!localStorage.getItem(KEYS.starterCopied)) {
         localStorage.setItem(KEYS.starterCopied, "false");
       }
+      wireProductVersionDomOnce();
       const previousMode = localStorage.getItem(UI_MODE_KEY) || "";
       const currentMode = getCurrentUiMode();
       if (previousMode && previousMode !== currentMode) {
         console.log("[product-version] mode changed", { previousMode, currentMode });
-        clearProductVersionState();
+        clearCommittedProductVersionState();
+        clearDraftProductVersionState();
       }
       localStorage.setItem(UI_MODE_KEY, currentMode);
       validateProductVersionState();
 
-      const selectModel = (model, { logSelection = true } = {}) => {
+      const selectModel = (model, { logSelection = true, restoreCommitted = false } = {}) => {
         console.log("[product-version] selectModel start", { model });
         const llmProduct = normalizeLlmProduct(model) || "";
         const previousProduct = normalizeLlmProduct(localStorage.getItem(KEYS.llmProduct) || "");
         if (previousProduct !== llmProduct) {
           console.log("[product-version] product changed", { previousProduct, newProduct: llmProduct });
-          clearProductVersionState();
+          clearCommittedProductVersionState();
+          clearDraftProductVersionState();
         }
         if (llmProduct) {
           localStorage.setItem(KEYS.llmProduct, llmProduct);
@@ -4772,6 +4874,19 @@ Place the correct answer first and bold it.`
           setProductVersionConfirmedState(false);
         }
         renderLlmConfirmPanel(llmProduct);
+        if (restoreCommitted && localStorage.getItem(KEYS.productVersionConfirmed) === "true") {
+          const expectedSelect = $("llmExpectedChoice");
+          const mismatchInput = $("llmMismatchDescription");
+          const committedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
+          if (expectedSelect) expectedSelect.value = committedChoice;
+          if (committedChoice === "different") {
+            if (mismatchInput) mismatchInput.value = localStorage.getItem(KEYS.llmMismatchDescription) || "";
+            setLlmMismatchVisibility(true);
+          } else {
+            if (mismatchInput) mismatchInput.value = "";
+            setLlmMismatchVisibility(false);
+          }
+        }
         renderModelMismatchTrainingTip();
         refreshProductVersionState();
         validateProductVersionState();
@@ -4793,7 +4908,7 @@ Place the correct answer first and bold it.`
       const storedLlmProduct = localStorage.getItem(KEYS.llmProduct) || "";
       const restoredModel = storedLlmProduct || storedModelUsed;
       if (restoredModel) {
-        selectModel(restoredModel, { logSelection: false });
+        selectModel(restoredModel, { logSelection: false, restoreCommitted: true });
       } else {
         renderLlmConfirmPanel("");
       }
@@ -4808,93 +4923,7 @@ Place the correct answer first and bold it.`
         confirmed: localStorage.getItem(KEYS.productVersionConfirmed)
       });
 
-      const llmExpectedChoiceEl = $("llmExpectedChoice");
-      const llmMismatchDescriptionEl = $("llmMismatchDescription");
-
-      if (llmExpectedChoiceEl) {
-        const handleExpectedChoiceUpdate = (eventType) => {
-          const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-          const expectedChoice = (llmExpectedChoiceEl.value || "").trim();
-          console.log("[product-version] expected choice changed", { eventType, llmProduct, expectedChoice });
-          logEvent("llm_expected_choice_selected", { llmProduct, expectedChoice });
-          setProductVersionConfirmedState(false);
-          invalidateStarterPromptCopied();
-          refreshProductVersionState({ focusMismatch: true });
-        };
-        llmExpectedChoiceEl.addEventListener("change", () => handleExpectedChoiceUpdate("change"));
-        llmExpectedChoiceEl.addEventListener("input", () => handleExpectedChoiceUpdate("input"));
-      }
-
-      if (llmMismatchDescriptionEl) {
-        llmMismatchDescriptionEl.addEventListener("input", async () => {
-          const mismatchDescription = llmMismatchDescriptionEl.value || "";
-          console.log("[product-version] mismatch description changed", {
-            mismatchLength: mismatchDescription.trim().length
-          });
-          localStorage.setItem(KEYS.llmMismatchDescription, mismatchDescription);
-          setProductVersionConfirmedState(false);
-          invalidateStarterPromptCopied();
-          refreshProductVersionState();
-
-          const trimmed = mismatchDescription.trim();
-          const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-          const expectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-
-          if (!trimmed) {
-            llmMismatchReported = false;
-            llmMismatchAlertAttempted = false;
-            return;
-          }
-
-          if (!llmMismatchReported && trimmed) {
-            llmMismatchReported = true;
-            logEvent("llm_mismatch_reported", {
-              llmProduct,
-              expectedChoice: "different",
-              mismatchDescription: trimmed
-            });
-          }
-
-          if (!llmMismatchAlertAttempted && trimmed && expectedChoice === "different") {
-            llmMismatchAlertAttempted = true;
-            await sendLlmMismatchAlert({
-              accessCode: localStorage.getItem(KEYS.accessCode) || "",
-              sessionId: localStorage.getItem(KEYS.sessionId) || "",
-              stage: getStage(),
-              modelUsed: localStorage.getItem(KEYS.modelUsed) || "",
-              llmProduct,
-              llmExpectedChoice: expectedChoice,
-              llmMismatchDescription: trimmed,
-              timestamp: nowIso()
-            });
-          }
-        });
-      }
-
-      const confirmProductVersionBtn = $("btnConfirmProductVersion");
       const productVersionSummary = $("productVersionSummary");
-
-      if (confirmProductVersionBtn) {
-        confirmProductVersionBtn.addEventListener("click", () => {
-          validateProductVersionState();
-          refreshProductVersionState();
-          const canConfirm = isSetupVersionConfirmedForContext();
-          console.log("[product-version] confirm clicked", { canConfirm });
-          if (!canConfirm) {
-            console.log("Confirm product/version blocked: setup version requirements not met");
-            return;
-          }
-          setProductVersionConfirmedState(true);
-          logEvent("product_version_confirm_clicked");
-          sendAutosave(buildAutosave("product_version_confirmed"));
-          console.log("Confirm product/version autosave call completed");
-          updateStarterCopyAvailability();
-          updateProceedToPromptsAvailability();
-          updateSetupSubbandVisibility();
-          applyStageUI();
-          console.log("Confirm product/version completed");
-        });
-      }
 
       const reopenProductVersion = () => {
         setProductVersionConfirmedState(false);
@@ -5129,7 +5158,7 @@ Place the correct answer first and bold it.`
       const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
 
       $("btnResetSession").addEventListener("click", () => {
-        console.log("[reset] clicked");
+        console.log("[product-version] reset clicked");
         try { logEvent("reset_confirmed"); } catch (err) { console.warn("Reset log failed", err); }
         hardResetApp();
       });
