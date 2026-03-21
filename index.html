@@ -1941,7 +1941,6 @@
     const LLM_UI_CONFIG = {
       chatgpt: {
         label: "ChatGPT",
-        instruction: "Use ChatGPT in its default mode for this activity. Do not manually switch to Instant or Thinking.",
         whereText: "Click the model selector at the top of the chat.",
         expectedOptions: [
           { value: "inst-5.3_thi-5.4", label: "Auto selected; menu shows Instant 5.3 and Thinking 5.4" },
@@ -1953,7 +1952,6 @@
       },
       gemini: {
         label: "Gemini",
-        instruction: "Use Gemini in its default mode for this activity. Do not manually switch modes.",
         whereText: "Click the mode dropdown next to the prompt box.",
         expectedOptions: [
           { value: "gemini-3", label: "Fast selected; menu shows Gemini 3" },
@@ -1965,7 +1963,6 @@
       },
       copilot: {
         label: "Microsoft Copilot",
-        instruction: "Use Microsoft Copilot in its default mode for this activity. Do not manually change the conversation mode.",
         whereText: "Click the dropdown next to the prompt box that shows the current mode.",
         expectedOptions: [
           { value: "gpt-5.1", label: "Smart selected; menu shows GPT 5.1" },
@@ -2845,7 +2842,7 @@ Place the correct answer first and bold it.`,
       const productVersionTitle = $("productVersionTitle");
       const llmConfirmIntro = $("llmConfirmIntro");
       if (productVersionTitle) productVersionTitle.textContent = "Confirm product version";
-      if (llmConfirmIntro) llmConfirmIntro.textContent = `Set ${config.label} to its default mode and use the dropdown menu below to select the version you are using.`;
+      if (llmConfirmIntro) llmConfirmIntro.textContent = "";
       $("llmInstructionText").textContent = "";
       $("llmWhereText").textContent = "";
       $("llmConfirmLabel").textContent = "";
@@ -4185,18 +4182,22 @@ Place the correct answer first and bold it.`,
       // Hydrate fields
       const storedModelProduct = normalizeLlmProduct(localStorage.getItem(KEYS.modelUsed) || "");
       const storedLlmProduct = normalizeLlmProduct(localStorage.getItem(KEYS.llmProduct) || "");
-      const initialProduct = storedLlmProduct || storedModelProduct || "chatgpt";
-      const initialModel = MODEL_LABEL_BY_PRODUCT[initialProduct] || "ChatGPT";
-      $("modelUsed").value = initialModel;
-      localStorage.setItem(KEYS.modelUsed, initialModel);
-      localStorage.setItem(KEYS.llmProduct, initialProduct);
+      const initialProduct = storedLlmProduct || storedModelProduct || "";
+      if (initialProduct) {
+        const initialModel = MODEL_LABEL_BY_PRODUCT[initialProduct] || "";
+        $("modelUsed").value = initialModel;
+        localStorage.setItem(KEYS.modelUsed, initialModel);
+        localStorage.setItem(KEYS.llmProduct, initialProduct);
+      } else {
+        // No product previously selected — leave the grid unselected.
+        $("modelUsed").value = "";
+      }
       const ctx = getContext();
       $("ctxCourse").value = ctx.course || "";
       $("ctxArea").value = ctx.area || "";
       $("ctxNotes").value = ctx.notes || "";
       $("ctxQuestionCount").value = ctx.questionCount || "10";
       localStorage.setItem(KEYS.starterCopied, "false");
-
 
       document.querySelectorAll(".modelOption").forEach((btn) => {
         btn.addEventListener("click", (e) => {
@@ -4206,8 +4207,10 @@ Place the correct answer first and bold it.`,
           applyStageUI();
         });
       });
-      selectModel($("modelUsed").value || "", { logSelection: false });
-      renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "chatgpt");
+      if (initialProduct) {
+        selectModel($("modelUsed").value || "", { logSelection: false });
+      }
+      renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "");
       updateSetupSubbandVisibility();
 
       const llmExpectedChoiceEl = $("llmExpectedChoice");
