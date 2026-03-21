@@ -1978,7 +1978,7 @@
     const LLM_UI_CONFIG = {
       chatgpt: {
         label: "ChatGPT",
-        instruction: "Choose the current ChatGPT mode shown in your interface.",
+        instruction: "Select the ChatGPT mode you are using, then confirm whether the visible version numbers match what is listed below.",
         whereText: "Click the model selector at the top of the chat.",
         modeOptions: [
           { value: "", label: "Select a mode" },
@@ -1988,13 +1988,12 @@
           { value: "different", label: "I see something different" }
         ],
         versionUI: "chatgptConfirm",
-        modeOtherPlaceholder: "Example: Auto, Instant 5.5, Thinking 5.6",
         image1Alt: "ChatGPT model selector location",
         image2Alt: "ChatGPT dropdown example"
       },
       gemini: {
         label: "Gemini",
-        instruction: "Choose the current Gemini mode shown in your interface.",
+        instruction: "Select the Gemini mode you are using, then type the Gemini version shown in your interface.",
         whereText: "Click the mode dropdown next to the prompt box.",
         modeOptions: [
           { value: "", label: "Select a mode" },
@@ -2004,15 +2003,14 @@
           { value: "different", label: "I see something different" }
         ],
         versionUI: "freeTextVersion",
-        versionLabel: "Which version text do you see?",
-        versionPlaceholder: "Example: Gemini 2.5 Pro",
-        modeOtherPlaceholder: "Describe the mode options you see",
+        versionLabel: "What Gemini version do you see?",
+        versionPlaceholder: "e.g., Gemini 2.5 Pro",
         image1Alt: "Gemini mode selector location",
         image2Alt: "Gemini dropdown example"
       },
       copilot: {
         label: "Microsoft Copilot",
-        instruction: "Choose the current Copilot mode shown in your interface.",
+        instruction: "Select the Copilot mode you are using, then type whatever version or model text Copilot shows.",
         whereText: "Click the dropdown next to the prompt box that shows the current mode.",
         modeOptions: [
           { value: "", label: "Select a mode" },
@@ -2021,9 +2019,8 @@
           { value: "different", label: "I see something different" }
         ],
         versionUI: "freeTextVersion",
-        versionLabel: "Which version text do you see?",
-        versionPlaceholder: "Example: GPT 5.1",
-        modeOtherPlaceholder: "Describe the mode options you see",
+        versionLabel: "What version or model text do you see?",
+        versionPlaceholder: "e.g., GPT-5 or whatever Copilot shows",
         image1Alt: "Copilot mode selector location",
         image2Alt: "Copilot dropdown example"
       }
@@ -2523,8 +2520,7 @@ Place the correct answer first and bold it.`
         || normalizeLlmProduct(localStorage.getItem(KEYS.modelUsed) || "")
         || selectedProduct
         || modelUsed
-        || "chatgpt"
-      ) || "chatgpt";
+      ) || "";
     }
 
     function getRemoteLlmOptions(llmKey) {
@@ -2605,8 +2601,10 @@ Place the correct answer first and bold it.`
     let lastCopiedLabel = "";
     let lastCopiedAt = null;
     let sessionTimerIntervalId = null;
-    let llmMismatchReported = false;
-    let llmMismatchAlertAttempted = false;
+    let llmModeMismatchReported = false;
+    let llmVersionMismatchReported = false;
+    let llmModeMismatchAlertAttempted = false;
+    let llmVersionMismatchAlertAttempted = false;
     let starterPromptCopied = false;
     let appBootLoading = true;
     let appBootReady = false;
@@ -3146,12 +3144,24 @@ Place the correct answer first and bold it.`
       return map[productKey] || null;
     }
 
+    function getSelectedLlmProductKey() {
+      return localStorage.getItem(KEYS.llmProduct) || "";
+    }
+
 
     function setLlmModeOtherVisibility(show, shouldFocus = false) {
       const wrap = $("llmModeOtherWrap");
       if (wrap) wrap.style.display = show ? "block" : "none";
       if (show && shouldFocus) {
         requestAnimationFrame(() => $("llmModeOther")?.focus());
+      }
+    }
+
+    function setLlmVersionOtherVisibility(show, shouldFocus = false) {
+      const wrap = $("llmChatgptVersionOtherWrap");
+      if (wrap) wrap.style.display = show ? "block" : "none";
+      if (show && shouldFocus) {
+        requestAnimationFrame(() => $("llmVersionOtherText")?.focus());
       }
     }
 
@@ -3202,19 +3212,26 @@ Place the correct answer first and bold it.`
     function getProductVersionSummaryText() {
       const productKey = localStorage.getItem(KEYS.llmProduct) || "";
       const mode = (localStorage.getItem(KEYS.llmMode) || "").trim();
-      const modeOther = (localStorage.getItem(KEYS.llmModeOther) || "").trim();
       const versionConfirm = (localStorage.getItem(KEYS.llmVersionConfirm) || "").trim();
       const versionOtherText = (localStorage.getItem(KEYS.llmVersionOtherText) || "").trim();
       const versionText = (localStorage.getItem(KEYS.llmVersionText) || "").trim();
       const productLabel = formatLlmProductLabel(productKey);
-      const modeLabel = mode === "different"
-        ? `I see something different (${modeOther || "—"})`
-        : getModeOptionLabel(productKey, mode);
+      const modeLabelMap = {
+        auto: "Auto",
+        instant: "Instant",
+        thinking: "Thinking",
+        fast: "Fast",
+        pro: "Pro",
+        smart: "Smart",
+        think_deeper: "Think Deeper",
+        different: "Different"
+      };
+      const modeLabel = modeLabelMap[mode] || getModeOptionLabel(productKey, mode);
 
       let versionLabel = "—";
       if (productKey === "chatgpt") {
         versionLabel = versionConfirm === "current"
-          ? "confirmed Instant 5.3 / Thinking 5.4"
+          ? "Instant 5.3 / Thinking 5.4 confirmed"
           : (versionOtherText ? `user reported different versions: ${versionOtherText}` : "—");
       } else {
         versionLabel = versionText || "—";
@@ -3263,13 +3280,16 @@ Place the correct answer first and bold it.`
         modeSelect.innerHTML = "";
         versionBlock.innerHTML = "";
         setLlmModeOtherVisibility(false);
+        setLlmVersionOtherVisibility(false);
         localStorage.removeItem(KEYS.llmMode);
         localStorage.removeItem(KEYS.llmModeOther);
         localStorage.removeItem(KEYS.llmVersionConfirm);
         localStorage.removeItem(KEYS.llmVersionOtherText);
         localStorage.removeItem(KEYS.llmVersionText);
-        llmMismatchReported = false;
-        llmMismatchAlertAttempted = false;
+        llmModeMismatchReported = false;
+        llmVersionMismatchReported = false;
+        llmModeMismatchAlertAttempted = false;
+        llmVersionMismatchAlertAttempted = false;
         const productVersionTitle = $("productVersionTitle");
         const llmConfirmIntro = $("llmConfirmIntro");
         if (productVersionTitle) productVersionTitle.textContent = "Confirm product version";
@@ -3287,7 +3307,7 @@ Place the correct answer first and bold it.`
       $("llmInstructionText").textContent = config.instruction || "";
       $("llmWhereText").textContent = config.whereText || "";
       $("llmModeLabel").textContent = "Mode";
-      modeOtherInput.placeholder = config.modeOtherPlaceholder || "Describe what you see";
+      modeOtherInput.placeholder = "Example: Auto, Instant 5.5, Thinking 5.6";
 
       const helpImages = getLlmHelpImages(productKey);
       const img1 = $("llmImage1");
@@ -3333,15 +3353,15 @@ Place the correct answer first and bold it.`
       if (selectedMode === "different") {
         setLlmModeOtherVisibility(true);
         if (existingModeOther.trim()) {
-          llmMismatchReported = true;
-          llmMismatchAlertAttempted = true;
+          llmModeMismatchReported = true;
+          llmModeMismatchAlertAttempted = true;
         }
       } else {
         modeOtherInput.value = "";
         setLlmModeOtherVisibility(false);
         localStorage.removeItem(KEYS.llmModeOther);
-        llmMismatchReported = false;
-        llmMismatchAlertAttempted = false;
+        llmModeMismatchReported = false;
+        llmModeMismatchAlertAttempted = false;
       }
 
       if (config.versionUI === "chatgptConfirm") {
@@ -3359,33 +3379,36 @@ Place the correct answer first and bold it.`
             </label>
           </div>
           <div id="llmChatgptVersionOtherWrap" class="llmInlineInput" style="display:none;">
-            <label for="llmChatgptVersionOtherText">Please describe the version numbers you see.</label>
-            <textarea id="llmChatgptVersionOtherText" placeholder="Example: Instant 5.5 and Thinking 5.6"></textarea>
+            <label for="llmVersionOtherText">Please describe the version numbers you see.</label>
+            <textarea id="llmVersionOtherText" placeholder="Example: Instant 5.5, Thinking 5.6"></textarea>
           </div>
         `;
         const selectedConfirm = (localStorage.getItem(KEYS.llmVersionConfirm) || "").trim();
         const otherText = localStorage.getItem(KEYS.llmVersionOtherText) || "";
         const currentRadio = $("llmChatgptVersionCurrent");
         const otherRadio = $("llmChatgptVersionOther");
-        const otherWrap = $("llmChatgptVersionOtherWrap");
-        const otherInput = $("llmChatgptVersionOtherText");
+        const otherInput = $("llmVersionOtherText");
         if (currentRadio) currentRadio.checked = selectedConfirm === "current";
         if (otherRadio) otherRadio.checked = selectedConfirm === "other";
-        if (otherWrap) otherWrap.style.display = selectedConfirm === "other" ? "block" : "none";
+        setLlmVersionOtherVisibility(selectedConfirm === "other");
         if (otherInput) otherInput.value = otherText;
+        if (otherText.trim()) {
+          llmVersionMismatchReported = true;
+          llmVersionMismatchAlertAttempted = true;
+        }
       } else if (productKey === "gemini") {
         versionBlock.innerHTML = `
-          <label id="llmGeminiVersionLabel" for="llmGeminiVersionText">${config.versionLabel || "Which version text do you see?"}</label>
-          <input id="llmGeminiVersionText" placeholder="${config.versionPlaceholder || ""}" />
+          <label for="llmVersionText">${config.versionLabel || ""}</label>
+          <input type="text" id="llmVersionText" class="llmCompactSelect llmInlineInput" placeholder="${config.versionPlaceholder || ""}" />
         `;
-        const input = $("llmGeminiVersionText");
+        const input = $("llmVersionText");
         if (input) input.value = localStorage.getItem(KEYS.llmVersionText) || "";
       } else if (productKey === "copilot") {
         versionBlock.innerHTML = `
-          <label id="llmCopilotVersionLabel" for="llmCopilotVersionText">${config.versionLabel || "Which version text do you see?"}</label>
-          <input id="llmCopilotVersionText" placeholder="${config.versionPlaceholder || ""}" />
+          <label for="llmVersionText">${config.versionLabel || ""}</label>
+          <input type="text" id="llmVersionText" class="llmCompactSelect llmInlineInput" placeholder="${config.versionPlaceholder || ""}" />
         `;
-        const input = $("llmCopilotVersionText");
+        const input = $("llmVersionText");
         if (input) input.value = localStorage.getItem(KEYS.llmVersionText) || "";
       } else {
         versionBlock.innerHTML = "";
@@ -3400,10 +3423,8 @@ Place the correct answer first and bold it.`
 
       const currentRadio = $("llmChatgptVersionCurrent");
       const otherRadio = $("llmChatgptVersionOther");
-      const otherWrap = $("llmChatgptVersionOtherWrap");
-      const chatgptOther = $("llmChatgptVersionOtherText");
-      const geminiInput = $("llmGeminiVersionText");
-      const copilotInput = $("llmCopilotVersionText");
+      const chatgptOther = $("llmVersionOtherText");
+      const versionTextInput = $("llmVersionText");
 
       const handleChatgptVersionChange = () => {
         let value = "";
@@ -3415,27 +3436,51 @@ Place the correct answer first and bold it.`
           localStorage.removeItem(KEYS.llmVersionOtherText);
           if (chatgptOther) chatgptOther.value = "";
         }
-        if (otherWrap) otherWrap.style.display = value === "other" ? "block" : "none";
+        setLlmVersionOtherVisibility(value === "other", value === "other");
+        logEvent("llm_version_confirm_selected", { llmProduct, llmVersionConfirm: value });
         setProductVersionConfirmedState(false);
         updateSetupSubbandVisibility();
       };
 
       currentRadio?.addEventListener("change", handleChatgptVersionChange);
       otherRadio?.addEventListener("change", handleChatgptVersionChange);
-      chatgptOther?.addEventListener("input", () => {
+      chatgptOther?.addEventListener("input", async () => {
         localStorage.setItem(KEYS.llmVersionOtherText, chatgptOther.value || "");
         setProductVersionConfirmedState(false);
         updateSetupSubbandVisibility();
+
+        const trimmed = (chatgptOther.value || "").trim();
+        if (!trimmed) {
+          llmVersionMismatchReported = false;
+          llmVersionMismatchAlertAttempted = false;
+          return;
+        }
+        if (!llmVersionMismatchReported) {
+          llmVersionMismatchReported = true;
+          logEvent("llm_mismatch_reported", {
+            llmProduct,
+            llmVersionConfirm: "other",
+            llmVersionOtherText: trimmed
+          });
+        }
+        if (!llmVersionMismatchAlertAttempted) {
+          llmVersionMismatchAlertAttempted = true;
+          await sendLlmMismatchAlert({
+            accessCode: localStorage.getItem(KEYS.accessCode) || "",
+            sessionId: localStorage.getItem(KEYS.sessionId) || "",
+            stage: getStage(),
+            modelUsed: localStorage.getItem(KEYS.modelUsed) || "",
+            llmProduct,
+            llmMode: localStorage.getItem(KEYS.llmMode) || "",
+            llmModeOther: localStorage.getItem(KEYS.llmModeOther) || "",
+            llmVersionConfirm: "other",
+            llmVersionOtherText: trimmed,
+            timestamp: nowIso()
+          });
+        }
       });
-      geminiInput?.addEventListener("input", () => {
-        localStorage.setItem(KEYS.llmVersionText, geminiInput.value || "");
-        localStorage.removeItem(KEYS.llmVersionConfirm);
-        localStorage.removeItem(KEYS.llmVersionOtherText);
-        setProductVersionConfirmedState(false);
-        updateSetupSubbandVisibility();
-      });
-      copilotInput?.addEventListener("input", () => {
-        localStorage.setItem(KEYS.llmVersionText, copilotInput.value || "");
+      versionTextInput?.addEventListener("input", () => {
+        localStorage.setItem(KEYS.llmVersionText, versionTextInput.value || "");
         localStorage.removeItem(KEYS.llmVersionConfirm);
         localStorage.removeItem(KEYS.llmVersionOtherText);
         setProductVersionConfirmedState(false);
@@ -4707,6 +4752,7 @@ Place the correct answer first and bold it.`
       localStorage.setItem(KEYS.starterCopied, "false");
 
       const selectModel = (model, { logSelection = true } = {}) => {
+        const previousProduct = getSelectedLlmProductKey();
         const llmProduct = normalizeLlmProduct(model);
         const selectedModelLabel = llmProduct ? (modelLabelByProduct[llmProduct] || "") : "";
         $("modelUsed").value = selectedModelLabel;
@@ -4722,6 +4768,21 @@ Place the correct answer first and bold it.`
         } else {
           localStorage.removeItem(KEYS.modelUsed);
           localStorage.removeItem(KEYS.llmProduct);
+        }
+
+        const switchedProduct = !!previousProduct && !!llmProduct && previousProduct !== llmProduct;
+
+        if (switchedProduct) {
+          localStorage.removeItem(KEYS.llmMode);
+          localStorage.removeItem(KEYS.llmModeOther);
+          localStorage.removeItem(KEYS.llmVersionConfirm);
+          localStorage.removeItem(KEYS.llmVersionOtherText);
+          localStorage.removeItem(KEYS.llmVersionText);
+          setProductVersionConfirmedState(false);
+          llmModeMismatchReported = false;
+          llmVersionMismatchReported = false;
+          llmModeMismatchAlertAttempted = false;
+          llmVersionMismatchAlertAttempted = false;
         }
 
         if (logSelection && llmProduct) {
@@ -4758,7 +4819,7 @@ Place the correct answer first and bold it.`
 
       if (llmModeSelectEl) {
         llmModeSelectEl.addEventListener("change", () => {
-          const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
+          const llmProduct = getSelectedLlmProductKey();
           const mode = llmModeSelectEl.value || "";
           if (mode) {
             localStorage.setItem(KEYS.llmMode, mode);
@@ -4775,13 +4836,15 @@ Place the correct answer first and bold it.`
             setLlmModeOtherVisibility(false);
             if (llmModeOtherEl) llmModeOtherEl.value = "";
             localStorage.removeItem(KEYS.llmModeOther);
-            llmMismatchReported = false;
-            llmMismatchAlertAttempted = false;
+            llmModeMismatchReported = false;
+            llmModeMismatchAlertAttempted = false;
           }
 
           localStorage.removeItem(KEYS.llmVersionConfirm);
           localStorage.removeItem(KEYS.llmVersionOtherText);
           localStorage.removeItem(KEYS.llmVersionText);
+          llmVersionMismatchReported = false;
+          llmVersionMismatchAlertAttempted = false;
           renderLlmConfirmPanel(llmProduct);
           updateSetupSubbandVisibility();
         });
@@ -4795,17 +4858,17 @@ Place the correct answer first and bold it.`
           updateSetupSubbandVisibility();
 
           const trimmed = modeOther.trim();
-          const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
+          const llmProduct = getSelectedLlmProductKey();
           const mode = localStorage.getItem(KEYS.llmMode) || "";
 
           if (!trimmed) {
-            llmMismatchReported = false;
-            llmMismatchAlertAttempted = false;
+            llmModeMismatchReported = false;
+            llmModeMismatchAlertAttempted = false;
             return;
           }
 
-          if (!llmMismatchReported && trimmed) {
-            llmMismatchReported = true;
+          if (!llmModeMismatchReported && trimmed) {
+            llmModeMismatchReported = true;
             logEvent("llm_mismatch_reported", {
               llmProduct,
               llmMode: "different",
@@ -4813,8 +4876,8 @@ Place the correct answer first and bold it.`
             });
           }
 
-          if (!llmMismatchAlertAttempted && trimmed && mode === "different") {
-            llmMismatchAlertAttempted = true;
+          if (!llmModeMismatchAlertAttempted && trimmed && mode === "different") {
+            llmModeMismatchAlertAttempted = true;
             await sendLlmMismatchAlert({
               accessCode: localStorage.getItem(KEYS.accessCode) || "",
               sessionId: localStorage.getItem(KEYS.sessionId) || "",
@@ -4823,6 +4886,7 @@ Place the correct answer first and bold it.`
               llmProduct,
               llmMode: mode,
               llmModeOther: trimmed,
+              llmVersionOtherText: localStorage.getItem(KEYS.llmVersionOtherText) || "",
               timestamp: nowIso()
             });
           }
