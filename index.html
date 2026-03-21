@@ -1547,7 +1547,7 @@
         <div class="bandBody">
           <div class="card">
             <div class="subBand" style="margin-top:0;">
-              <h4 class="subBandTitle">A. Select product and version</h4>
+              <h4 class="subBandTitle">A. Select product and mode</h4>
               <div class="row">
                 <div style="flex:1; min-width: 240px;">
                   <input type="hidden" id="modelUsed" />
@@ -1562,7 +1562,7 @@
               </div>
 
               <div id="productVersionEditor" class="subBand hidden" style="margin-top:10px;">
-              <h4 class="subBandTitle" id="productVersionTitle">Confirm product version</h4>
+              <h4 class="subBandTitle" id="productVersionTitle">Confirm product mode</h4>
               <p class="muted small llmConfirmIntro" id="llmConfirmIntro"></p>
 
               <div id="llmConfirmPanel" style="display:none; margin-top:8px;">
@@ -1586,7 +1586,7 @@
 
                 <div id="llmMismatchWrap" style="display:none; margin-top:10px;">
                   <label for="llmMismatchDescription">Please briefly describe the options you see in the menu.</label>
-                  <textarea id="llmMismatchDescription" placeholder="Example: Auto, Instant 5.5, Thinking 5.6"></textarea>
+                  <textarea id="llmMismatchDescription" placeholder="Example: Auto, Quick response, Think deeper"></textarea>
                 </div>
                 <div id="trainingTipMismatch" class="training-tip">
                   <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
@@ -1596,12 +1596,12 @@
               </div>
 
               <div class="row" style="margin-top:10px;">
-                <button class="btn" id="btnConfirmProductVersion" type="button" disabled>Confirm product and version</button>
+                <button class="btn" id="btnConfirmProductVersion" type="button" disabled>Confirm product and mode</button>
               </div>
             </div>
 
             <div id="productVersionSummary" class="subBand productVersionSummary" style="display:none;" role="button" tabindex="0">
-              <div class="title">Product and version confirmed</div>
+              <div class="title">Product and mode confirmed</div>
               <div class="muted small" id="productVersionSummaryText"></div>
             </div>
             </div>
@@ -1639,7 +1639,7 @@
             </div>
 
             <p class="muted small" style="margin:10px 0 0;">
-              Copy the starter prompt, paste it into your selected LLM, then click the button below to continue.
+              Copy the starter prompt, paste it into your AI product, then click the button below to continue.
             </p>
             <div id="trainingTipStarterGate" class="trainingTip trainingTipSmall">
               <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
@@ -1656,7 +1656,7 @@
                     </button>
                   </div>
                   <div class="copyCardDetails" id="starterCopyDetails">
-                    <p class="promptDesc" id="starterCopyDescription">Paste this into your selected LLM to begin generating questions.</p>
+                    <p class="promptDesc" id="starterCopyDescription">Paste this into your AI product to begin generating questions.</p>
                     <pre class="promptDetailsText copyCardPreview" id="starterCopyPreview"></pre>
                   </div>
                 </div>
@@ -1766,7 +1766,7 @@
                       </button>
                     </div>
                     <div class="copyCardDetails" id="finalCopyDetails">
-                      <p class="promptDesc" id="finalCopyDescription">Paste this into your selected LLM after refining questions to generate your final output.</p>
+                      <p class="promptDesc" id="finalCopyDescription">Paste this into your AI product to generate your final question set.</p>
                       <pre class="promptDetailsText copyCardPreview" id="finalCopyPreview"></pre>
                     </div>
                   </div>
@@ -1831,7 +1831,6 @@
               <div id="trainingTipEndSession" class="trainingTip trainingTipSmall">
                 <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
                 <p>Make sure you've pasted the AI's final response into the box above before ending. Once you end the session, your work is submitted and the app resets.</p>
-                <p>Once you end the session, the app treats your work as complete.</p>
               </div>
               <div class="finalActionRow" id="endSessionRow" style="display:none;">
                 <button id="btnEndSession" class="btn danger primary finalActionBtn" type="button">
@@ -1858,7 +1857,7 @@
               </div>
             </div>
             <div class="muted small" style="margin-top:8px;">
-              <div>Goal: Build a 10-question set</div>
+              <div>Try out the tool for about 15 minutes. Experiment with different prompts to see what they do.</div>
             </div>
           </div>
         </aside>
@@ -2208,9 +2207,9 @@ Place the correct answer first and bold it.`,
 
     function renderCopyCardPromptText() {
       const starterTitle = getPromptTitle("starter", "Copy starter prompt");
-      const starterDescription = getPromptDescription("starter", "Paste this into your selected LLM to begin generating questions.");
+      const starterDescription = getPromptDescription("starter", "Paste this into your AI product to begin generating questions.");
       const finalTitle = getPromptTitle("final_prompt", "Copy final prompt");
-      const finalDescription = getPromptDescription("final_prompt", "Paste this into your selected LLM after refining questions to generate your final output.");
+      const finalDescription = getPromptDescription("final_prompt", "Paste this into your AI product to generate your final question set.");
 
       const starterTitleEl = $("starterCopyTitle");
       const starterCardEl = $("starterCopyCard");
@@ -2503,7 +2502,7 @@ Place the correct answer first and bold it.`,
       saveJSON(KEYS.events, events);
     }
 
-    const TIMER_TRAINING_NOTICE_10_MIN_MS = 10 * 60 * 1000;
+    const TIMER_TRAINING_NOTICE_15_MIN_MS = 15 * 60 * 1000;
 
     function formatElapsed(ms) {
       const totalSeconds = Math.max(0, Math.floor((ms || 0) / 1000));
@@ -2570,7 +2569,7 @@ Place the correct answer first and bold it.`,
         return;
       }
 
-      if (elapsed >= TIMER_TRAINING_NOTICE_10_MIN_MS && localStorage.getItem(KEYS.trainingTenMinuteNoticeShown) !== "true") {
+      if (elapsed >= TIMER_TRAINING_NOTICE_15_MIN_MS && localStorage.getItem(KEYS.trainingTenMinuteNoticeShown) !== "true") {
         localStorage.setItem(KEYS.trainingTenMinuteNoticeShown, "true");
         showTimerNotice("By this point, you have probably spent enough time practicing to understand how the app works. If you’d like to keep working on your questions, that’s perfectly fine, but feel free to finish the activity now, even if you don't have all 5 questions fully refined.");
         console.log("10-minute training notice shown");
@@ -2780,7 +2779,7 @@ Place the correct answer first and bold it.`,
         versionLabel = mismatchDescription || "I see something different";
       }
 
-      return `Product: ${productLabel} · Version/menu: ${versionLabel || "—"}`;
+      return `Product: ${productLabel} · Mode: ${versionLabel || "—"}`;
     }
 
     function setProductVersionConfirmedState(isConfirmed) {
@@ -2827,7 +2826,7 @@ Place the correct answer first and bold it.`,
         llmMismatchAlertAttempted = false;
         const productVersionTitle = $("productVersionTitle");
         const llmConfirmIntro = $("llmConfirmIntro");
-        if (productVersionTitle) productVersionTitle.textContent = "Confirm product version";
+        if (productVersionTitle) productVersionTitle.textContent = "Confirm product mode";
         if (llmConfirmIntro) llmConfirmIntro.textContent = "";
         updateSetupSubbandVisibility();
         return;
@@ -2837,7 +2836,7 @@ Place the correct answer first and bold it.`,
 
       const productVersionTitle = $("productVersionTitle");
       const llmConfirmIntro = $("llmConfirmIntro");
-      if (productVersionTitle) productVersionTitle.textContent = "Confirm product version";
+      if (productVersionTitle) productVersionTitle.textContent = "Confirm product mode";
       if (llmConfirmIntro) llmConfirmIntro.textContent = "";
       $("llmInstructionText").textContent = "";
       $("llmWhereText").textContent = "";
@@ -2957,7 +2956,7 @@ Place the correct answer first and bold it.`,
           const model = localStorage.getItem(KEYS.modelUsed) || "Other";
           notice.style.display = "block";
           notice.innerHTML = `
-            1) Paste the final prompt into your selected LLM.<br><br>
+            1) Paste the final prompt into your AI product.<br><br>
             2) Click on the copy button below the response to copy it in its entirety<br>
             <details class="helpToggle" style="display:inline-block; margin-top:6px;">
               <summary class="whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
@@ -4298,6 +4297,7 @@ Place the correct answer first and bold it.`,
           sendAutosave(buildAutosave("product_version_confirmed"));
           console.log("Confirm product/version autosave call completed");
           updateSetupSubbandVisibility();
+          applyStageUI();
           console.log("Confirm product/version completed");
         });
       }
@@ -4306,6 +4306,7 @@ Place the correct answer first and bold it.`,
         setProductVersionConfirmedState(false);
         logEvent("product_version_reopened");
         updateSetupSubbandVisibility();
+        applyStageUI();
       };
 
       if (productVersionSummary) {
@@ -4379,7 +4380,7 @@ Place the correct answer first and bold it.`,
         }
 
         if (!isLlmConfirmationComplete() || localStorage.getItem(KEYS.productVersionConfirmed) !== "true") {
-          $("setupMsg").textContent = "Please confirm product version before continuing.";
+          $("setupMsg").textContent = "Please confirm product mode before continuing.";
           $("setupMsg").style.display = "block";
           showExistingErrorToast("Complete required fields");
           return;
@@ -4422,7 +4423,7 @@ Place the correct answer first and bold it.`,
             copiedTip.style.display = "block";
           }
           updateProceedToPromptsAvailability();
-          $("setupMsg").textContent = "Starter prompt copied. Paste it into your selected LLM, then click Proceed to 2) Making questions.";
+          $("setupMsg").textContent = "Starter prompt copied. Paste it into your AI product, then click Proceed to 2) Making questions.";
           $("setupMsg").style.display = "block";
         }
 
