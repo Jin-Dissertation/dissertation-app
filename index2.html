@@ -1,0 +1,4685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Dissertation Prompt App</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap");
+    :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; --landing-max-width: 760px; }
+    body { margin:0; font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); letter-spacing: .01em; }
+    .pageShell { max-width: 1440px; margin: 0 auto; padding: 18px 24px 20px; }
+    h1 {
+      font-family: inherit;
+      font-size: clamp(22px, 2.6vw, 28px);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: 0.01em;
+      margin: 0 0 6px;
+    }
+    .sub,
+    .landingSubtitle {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.4;
+      margin: 0;
+    }
+    .landingColumn {
+      box-sizing: border-box;
+    }
+    .pageShell.is-landing .landingColumn {
+      width: min(100%, var(--landing-max-width));
+      margin-inline: auto;
+    }
+    .pageShell.is-app .landingColumn {
+      width: 100%;
+      margin-inline: 0;
+    }
+    .landingColumn > h1,
+    .landingColumn > .sub,
+    .landingColumn > .accessCard {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .pageShell.is-landing .landingHeader {
+      width: min(100%, var(--landing-max-width));
+      margin: 10px auto 16px;
+      text-align: left;
+      box-sizing: border-box;
+    }
+    .pageShell.is-app .landingHeader {
+      width: 100%;
+      margin: 0 0 14px;
+      text-align: left;
+      box-sizing: border-box;
+    }
+    #appShell {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .accessCard {
+      margin: 18px 0 0;
+      padding: 22px 24px;
+    }
+    .accessIntro {
+      margin: 0;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #f8fbff;
+    }
+    .accessIntro p { margin: 0; }
+    .accessIntro p + p { margin-top: 8px; }
+    .accessAction {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .accessActionTitle {
+      margin: 0 0 10px;
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 600;
+    }
+    .pageFooter {
+      margin-top: 14px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .pageFooterInner {
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+      gap: 4px;
+    }
+    .pageFooter.is-landing .pageFooterInner {
+      width: min(100%, var(--landing-max-width));
+      margin-inline: auto;
+    }
+    .pageFooter.is-app .pageFooterInner {
+      width: 100%;
+      margin-inline: 0;
+    }
+    .pageFooterMeta {
+      margin: 0;
+      padding: 0;
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--muted);
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
+    .pageFooterLink {
+      margin-top: 4px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
+    .card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 12px; box-shadow: 0 4px 10px rgba(16,33,61,0.05); }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    label { font-size: 12px; color: var(--muted); display:block; margin-bottom:4px; }
+    input, select, textarea {
+      width:100%; background:#f8fbff; border:1px solid var(--border); color:var(--text);
+      border-radius: 10px; padding: 10px; box-sizing:border-box;
+      font-family: inherit;
+      font-size: inherit;
+    }
+    textarea { min-height: 140px; resize: vertical; line-height: 1.4; }
+    #sessionNotes { min-height: 70px; }
+    .btn {
+      background: #f1f7ff; border:1px solid var(--border); color:var(--text);
+      padding:10px 12px; border-radius: 10px; cursor:pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      line-height: 1.2;
+      box-sizing: border-box;
+    }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color:#fff; font-weight: 650; }
+    .btn.warn { border-color: var(--warn); color: #9a5800; background: #fff7e8; }
+    .btn.danger { border-color:#dc2626; color:#991b1b; background:#fef2f2; }
+    .pill { font-size: 12px; padding: 6px 10px; border:1px solid var(--border); border-radius: 999px; color: var(--muted); }
+    .muted { color: var(--muted); }
+    .small { font-size: 12px; }
+    .hr { height:1px; background: var(--border); margin: 10px 0; }
+    .promptCard { border:1px solid var(--border); border-radius: 12px; padding: 12px; background:#f8fbff; }
+    .promptTitle { font-weight: 700; margin:0 0 6px; }
+    .promptDesc { margin:0 0 10px; color: var(--muted); font-size: 13px; }
+
+    .promptGroups{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap:14px;
+}
+@media (min-width: 900px){
+  .promptGroups{ grid-template-columns: 1fr 1fr; }
+}
+
+    .groupCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+.groupTitle { font-weight: 800; margin: 0 0 8px; }
+.groupSub { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+
+    .toast {
+      position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+      background: rgba(16,33,61,.95); border:1px solid #2f6edc; padding: 10px 12px;
+      border-radius: 10px; color: #fff; display:none;
+      z-index: 9999;
+    }
+
+    /* Accordion */
+    details.band { margin-top: 14px; }
+    details.band:first-of-type { margin-top: 0; }
+    details.band > summary {
+      list-style: none;
+      cursor: pointer;
+      user-select: none;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #f3f8ff;
+    }
+    details.band > summary::-webkit-details-marker { display:none; }
+    .summaryLeft { display:flex; align-items:center; gap:10px; }
+    .tag {
+      font-size: 12px;
+      padding: 3px 8px;
+      border:1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+    }
+    .tag.ok { border-color: rgba(47,110,220,.45); color: #1f4ca4; background: var(--accent-soft); }
+    .tag.lock { border-color: rgba(245,158,11,.5); color: #9a5800; background:#fff7e8; }
+    .bandBody { padding: 12px 4px 4px; min-width: 0; }
+    #promptsInner { min-width: 0; overflow-x: hidden; }
+    .lockMsg { border:1px dashed var(--border); border-radius: 10px; padding:10px; color: var(--muted); background: #f7faff; }
+    .hidden { display:none; }
+    .modelGrid, .product-grid { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:14px; }
+    .modelOption, .product-card { border:1px solid var(--border); border-radius: 10px; padding:8px 6px; min-height:78px; background:#f8fbff; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; }
+    .modelOption:hover, .product-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.08); border-color: var(--accent); }
+    .modelOption:active, .product-card:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+    .modelOption.active, .modelOption.selected, .product-card.selected { border:2px solid var(--accent); background: var(--accent-soft); transform: translateY(-1px); }
+    .logoDot { width:30px; height:30px; border-radius:999px; display:grid; place-items:center; font-size:10px; font-weight:700; color:#fff; }
+    .productIconCircle {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .productIconImage {
+      max-width: 70%;
+      max-height: 70%;
+      object-fit: contain;
+      display: block;
+    }
+    .productButton.selected .productIconCircle,
+    .product-card.selected .productIconCircle {
+      background: #e8f0ff;
+    }
+    .logo-openai{ background:#111827; }
+    .logo-gemini{ background:#6d5ef6; }
+    .logo-copilot{ background:#0ea5e9; }
+    .disabledBtn { opacity:.55; cursor:not-allowed; }
+    .accessPrompt { font-size: 18px; font-weight: 700; color: var(--text); margin:0 0 10px; line-height:1.3; }
+    .accessRow { display:flex; gap:12px; align-items:stretch; flex-wrap:nowrap; }
+    .accessInput {
+      width: 220px;
+      font-size: 20px;
+      font-weight:700;
+      letter-spacing:.3px;
+      text-align:center;
+      padding: 12px 10px;
+      flex: 1 1 240px;
+      min-width: 0;
+    }
+    .accessBtn {
+      margin-top:0 !important;
+      font-size: 17px;
+      font-weight: 700;
+      padding: 12px 22px;
+      align-self: stretch;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+    #accessMsg { font-size: 16px; }
+    .accessError { color:#b91c1c; font-size:0.9rem; margin-top:8px; }
+    .accessAction.is-loading {
+      opacity: 0.85;
+    }
+    .modeToggleRow {
+      margin-top: 10px;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+    }
+    .modeToggleLabel {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    .modeToggleLabel input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      margin: 0;
+    }
+
+    @media (max-width: 560px) {
+      .accessRow { flex-wrap: wrap; }
+      .accessInput, .accessBtn { width: 100%; }
+    }
+    @media (max-width: 900px) {
+      .accessCard {
+        margin-top: 14px;
+        padding: 18px 18px;
+      }
+      .pageFooter { margin-top: 12px; }
+    }
+    @media (max-width: 680px) {
+      .modelGrid, .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    .subBand { border:1px solid var(--border); border-radius: 10px; background:rgba(16,33,61,0.02); padding:12px 14px; margin-top:10px; }
+    .llmConfirmIntro { margin:10px 0 8px; }
+    .llmImageRow {
+      margin-top: 8px;
+    }
+    .helpExampleItem {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-top: 14px;
+    }
+    .helpExampleImage {
+      width: 420px;
+      height: 236px;
+      object-fit: contain;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+    }
+    .helpExampleText {
+      max-width: 260px;
+      font-size: 14px;
+      line-height: 1.4;
+      color: #4b5563;
+    }
+    @media (max-width: 900px) {
+      .helpExampleItem {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .helpExampleImage {
+        width: 100%;
+        max-width: 420px;
+        height: auto;
+        aspect-ratio: 16 / 9;
+      }
+    }
+    .llmCompactSelect { width: 100%; max-width: 100%; min-width: 0; }
+    .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:600; }
+
+    .productVersionSummary {
+      cursor: pointer;
+      padding: 12px 14px;
+    }
+    .productVersionSummary .title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
+    @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
+    .centerCard { max-width:420px; margin: 0 auto; }
+    .appHeaderBar { display:flex; justify-content:flex-start; align-items:center; margin-bottom:10px; padding:6px 2px; }
+    .timerCard {
+      margin-top: 12px;
+      padding: 10px 12px;
+    }
+    .timerHeaderRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .timerCard h3 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+    .timerInlineControls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+    .timerDisplay {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: 0.01em;
+    }
+    #btnPauseTimer {
+      flex: 0 0 auto;
+    }
+    .timerCard .muted.small {
+      line-height: 1.2;
+    }
+    .timerCard .muted.small > div + div {
+      margin-top: 2px;
+    }
+    .timerCard.timerComplete {
+      border-color: #16a34a;
+      background: #f0fdf4;
+    }
+    .timerNotice {
+      position: fixed;
+      bottom: 72px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f4ca4;
+      color: #ffffff;
+      border: 1px solid #1f4ca4;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: none;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      max-width: 460px;
+      width: calc(100% - 32px);
+      z-index: 10000;
+      box-shadow: 0 8px 20px rgba(16,33,61,0.18);
+    }
+    .timerNoticeMessage {
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .timerNoticeClose {
+      background: transparent;
+      border: 0;
+      color: #ffffff;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      flex: 0 0 auto;
+    }
+    .helpFaqLink {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .helpFaqLink:hover {
+      text-decoration: underline;
+    }
+    .btn.ghost { background:#f1f7ff; border:1px solid var(--border); color:var(--text); padding:6px 10px; }
+        .modalBackdrop { position:fixed; inset:0; background:rgba(16,33,61,.35); display:none; align-items:center; justify-content:center; z-index:10000; }
+    .modalCard { width:min(460px, calc(100vw - 24px)); background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; }
+    .layoutGrid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 240px;
+      gap: 16px;
+      align-items: start;
+    }
+    .main { min-width: 0; }
+    .sidebar {
+      width: 240px;
+      position: sticky;
+      top: 18px;
+      align-self: start;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .stickySidebar.recentCard {
+      display: flex;
+      flex-direction: column;
+      height: clamp(414px, 64vh, 598px);
+      max-height: clamp(414px, 64vh, 598px);
+      overflow: hidden;
+    }
+    .recentCard h3 {
+      flex: 0 0 auto;
+    }
+
+    .copyHelpExample {
+      margin-top: 10px;
+      max-width: 260px;
+    }
+    .copyHelpImage {
+      width: 220px;
+      height: 220px;
+      object-fit: contain;
+      border-radius: 12px;
+      display: block;
+    }
+    .copyHelpCaption {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #4b5563;
+      line-height: 1.3;
+    }
+    .copiedText.recentPreview {
+      width: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+      height: auto;
+      overflow: auto;
+      scrollbar-gutter: stable;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.45;
+      color: inherit;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px 12px 12px;
+    }
+    .copiedText.recentPreview.is-empty {
+      color: var(--muted);
+    }
+    @media (min-width: 900px) {
+      .layoutGrid {
+        grid-template-columns: minmax(0, 1fr) 240px;
+      }
+      .sidebar {
+        width: 240px;
+        top: 18px;
+      }
+      .stickySidebar.recentCard {
+        height: clamp(414px, 64vh, 598px);
+      }
+    }
+    .promptSections { display:grid; gap:12px; min-width: 0; }
+    .promptSection {
+      border:1px solid #bdcde5;
+      border-left: 4px solid #9ab7e8;
+      border-radius:10px;
+      background:#f3f8ff;
+      padding:10px;
+      min-width: 0;
+    }
+    .promptSectionTitle {
+      margin:0 0 8px;
+      font-size:14px;
+      font-weight:800;
+      color:#0f1f39;
+      letter-spacing: 0.005em;
+    }
+    .promptSection.section-accept {
+      background: #f2f7ff;
+      border-color: #c4d5ee;
+      border-left-color: #7da1d9;
+    }
+    .promptSection.section-refine {
+      background: #f2faf7;
+      border-color: #c2ddd2;
+      border-left-color: #6ea989;
+    }
+    .promptSection.section-audit {
+      background: #fff8ef;
+      border-color: #e5d3b6;
+      border-left-color: #c39854;
+    }
+    .promptSection.section-review {
+      background: #f5f3ff;
+      border-color: #d9d3f5;
+      border-left-color: #8b7bd6;
+    }
+    .promptListCompact { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:8px; min-width: 0; }
+    .promptListSingle { display:block; min-width: 0; width: 100%; max-width: 100%; overflow-x: hidden; }
+    .promptListSingle .promptCard { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
+    .promptReviewBlock { min-width: 0; width: 100%; max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
+    .promptCard {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 8px 10px;
+      min-height: 0;
+      min-width: 0;
+      box-sizing: border-box;
+      cursor: pointer;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    .promptCard:hover {
+      border-color: #a9bfdc;
+      box-shadow: 0 2px 8px rgba(16,33,61,0.07);
+      background: #fcfdff;
+    }
+    .promptCard:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .promptCard.is-active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+    .promptTopRow {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .promptTopRowActions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .promptHeader { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; min-width: 0; box-sizing: border-box; }
+    .promptHeaderText {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .promptActions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+    .promptChevronBtn {
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      flex: 0 0 30px;
+    }
+    @media (min-width: 900px) {
+      /* Desktop prompt card vertical centering */
+      .promptCard[role="button"] .promptHeader {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+      }
+      .promptCard[role="button"] .promptTitle {
+        margin: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        text-align: left;
+        line-height: 1.25;
+        align-self: center;
+        justify-self: start;
+      }
+      .promptCard[role="button"] .promptActions {
+        align-self: center;
+      }
+      .promptCard[role="button"] .promptChevronBtn {
+        align-self: center;
+      }
+    }
+    .promptChevronBtn:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: #1f4ca4;
+    }
+    .promptChevronIcon {
+      display: inline-block;
+      font-size: 14px;
+      line-height: 1;
+      transition: transform 0.18s ease;
+    }
+    .promptCard.is-expanded .promptChevronIcon {
+      transform: rotate(90deg);
+    }
+    .promptDetails {
+      display: none;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .promptCard.is-expanded .promptDetails {
+      display: block;
+    }
+    .copyCard {
+      display: block;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 8px 10px;
+      width: min(340px, 48%);
+      min-width: 280px;
+      max-width: 100%;
+      box-sizing: border-box;
+      cursor: pointer;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    .copyCard:hover {
+      border-color: #a9bfdc;
+      box-shadow: 0 2px 8px rgba(16,33,61,0.07);
+      background: #fcfdff;
+    }
+    .copyCard:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .copyCard.is-active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+    .copyCardHeader {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 32px;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
+    }
+    .copyCardTitle {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.25;
+      font-weight: 600;
+      color: var(--text);
+      min-width: 0;
+    }
+    .copyCardDetails {
+      display: none;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .copyCard.is-expanded .copyCardDetails {
+      display: block;
+    }
+    .copyCard.is-expanded .promptChevronIcon {
+      transform: rotate(90deg);
+    }
+    .copyCardPreview {
+      margin: 8px 0 0;
+      max-height: 180px;
+    }
+    .copyCard .promptDetailsText,
+    .copyCardPreview {
+      width: 100%;
+      box-sizing: border-box;
+      max-width: 100%;
+    }
+    .copyCard .promptChevronBtn,
+    .copyCardChevron {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      flex: 0 0 32px;
+      box-sizing: border-box;
+    }
+    .copyCard.is-disabled,
+    #starterCopyCard.is-disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+      filter: grayscale(0.1);
+    }
+    .copyCard.is-disabled .promptChevronBtn,
+    #starterCopyCard.is-disabled .promptChevronBtn {
+      pointer-events: none;
+    }
+    .copyCardWrap,
+    .copyPromptRow {
+      display: block;
+      width: 100%;
+    }
+    .finalizeTopRow {
+      display: grid;
+      grid-template-columns: minmax(260px, 340px) 1fr;
+      grid-template-areas: "copy back";
+      align-items: start;
+      column-gap: 12px;
+      row-gap: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .finalizeCopySlot {
+      grid-area: copy;
+      min-width: 0;
+      width: 100%;
+    }
+    .finalizeBackSlot {
+      grid-area: back;
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-start;
+      justify-self: end;
+      align-self: start;
+      min-width: 0;
+    }
+    #finalCopyCard,
+    .finalizeCopySlot .copyCard {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    #finalCopyCard .copyCardDetails,
+    #finalCopyCard .promptDetailsText,
+    #finalCopyCard .copyCardPreview {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    #finalCopyCard .copyCardHeader {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 32px;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    #finalCopyCard .copyCardTitle {
+      min-width: 0;
+    }
+    #finalCopyCard .promptChevronBtn {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      box-sizing: border-box;
+    }
+    .finalizeBackSlot .btn,
+    #btnBackToPrompts {
+      width: auto;
+      max-width: max-content;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    @media (max-width: 820px) {
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        line-height: 1.2;
+        min-height: 48px;
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+
+      .btn,
+      .btn.primary,
+      .btn.danger {
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+      }
+
+      .promptTopRow {
+        margin-bottom: 10px;
+      }
+
+      .promptTopRowActions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+          "back back"
+          "expand collapse";
+        gap: 8px;
+        align-items: stretch;
+      }
+
+      #btnEditContext {
+        grid-area: back;
+        width: 100%;
+      }
+
+      #btnExpandAllPrompts {
+        grid-area: expand;
+        width: 100%;
+      }
+
+      #btnCollapseAllPrompts {
+        grid-area: collapse;
+        width: 100%;
+      }
+
+      .finalizeTopRow {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "back"
+          "copy";
+        gap: 10px;
+        align-items: stretch;
+      }
+
+      .finalizeBackSlot {
+        grid-area: back;
+        display: block;
+        justify-self: stretch;
+        width: 100%;
+      }
+
+      .finalizeCopySlot {
+        grid-area: copy;
+        width: 100%;
+      }
+
+      .finalizeBackSlot .btn,
+      #btnBackToPrompts,
+      #finalCopyCard,
+      .finalizeCopySlot .copyCard {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      #btnEditContext,
+      .finalizeBackSlot .btn,
+      #btnBackToPrompts {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+        white-space: normal;
+        min-height: 44px;
+      }
+    }
+    .promptDetailsText {
+      margin: 8px 0 0;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fbff;
+      font-family: inherit;
+      font-size: 13px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      max-height: 220px;
+      overflow: auto;
+      box-sizing: border-box;
+    }
+    .promptArea { min-width: 0; overflow-x: hidden; }
+    .finalizeNotice { margin:10px 0 0; display:none; }
+    .finalizeLockedContent { opacity:.6; pointer-events:none; user-select:none; }
+    .finalActionBtn {
+      min-height: 44px;
+      padding: 0 16px;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      border-radius: 10px;
+    }
+      .finalActionBtn.btn.warn { font-weight: 600; }
+    #btnEndSession{
+      background:#d9534f;
+      color:white;
+      border:none;
+      opacity: 0.96;
+      font-weight: 600;
+    }
+    #btnEndSession.finalActionBtn.pseudo-disabled {
+      opacity: 0.45;
+      filter: grayscale(20%);
+      cursor: not-allowed;
+    }
+    #btnEndSession.finalActionBtn:hover {
+      opacity: 1;
+    }
+    #btnEndSession.finalActionBtn.pseudo-disabled:hover {
+      opacity: 0.45;
+    }
+
+    .finalActionRow{
+      border-top:1px solid #e5e9f2;
+      margin-top:22px;
+      padding-top:16px;
+      text-align:center;
+    }
+
+    .finalActionRow .btn{
+      min-width:170px;
+    }
+
+    .optionalFeedbackBox{
+      font-size:0.94em;
+      border-top:1px solid #e4e8f0;
+      margin-top:14px;
+      padding-top:14px;
+    }
+
+    .optionalFeedbackBox p{
+      margin-top:6px;
+      margin-bottom:10px;
+    }
+
+    .audioFeedbackSection {
+      margin-top: 6px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+    }
+    .audioRecorderTop .audioHelp {
+      margin: 0;
+    }
+    .audioControlRow,
+    .audioPlaybackRow {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .audioPlaybackRow {
+      display: none;
+    }
+    .audioControlRow .btn,
+    .audioPlaybackRow .btn {
+      min-width: 112px;
+      justify-content: center;
+    }
+    #btnAudioSubmit {
+      min-width: 148px;
+      position: relative;
+    }
+    #btnAudioSubmit.audioSubmitUploading {
+      opacity: 0.85;
+      cursor: progress;
+    }
+    #btnAudioSubmit.audioSubmitSuccess {
+      border-color: #1f7a4d;
+      background: #e8f8ef;
+      color: #185c3b;
+    }
+    #btnAudioSubmit.audioSubmitError {
+      border-color: #b42318;
+      background: #fef3f2;
+      color: #912018;
+    }
+    .audioControlRow .audioStateStatus {
+      cursor: default;
+      pointer-events: none;
+      opacity: 0.9;
+      border-color: var(--border);
+      color: var(--muted);
+      background: #eef2f7;
+    }
+    .audioPlaybackRow audio {
+      max-width: 100%;
+      min-width: 260px;
+    }
+    .audioElapsedRow {
+      margin-top: 8px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .audioElapsedLabel {
+      color: var(--muted);
+    }
+    .audioElapsedValue {
+      font-weight: 700;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+    }
+
+    details summary {
+      list-style: none;
+    }
+    details summary::-webkit-details-marker {
+      display: none;
+    }
+    .whereToggleSummary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .helpToggle .whereToggleIcon {
+      display: inline-block;
+      transition: transform 0.2s ease;
+      transform-origin: center;
+    }
+    .helpToggle[open] .whereToggleIcon {
+      transform: rotate(90deg);
+    }
+
+    .promptTitle { font-weight:600; font-size:14px; margin:0; line-height:1.2; min-width: 0; overflow-wrap: anywhere; color: var(--text); }
+    .promptDesc {
+      margin:8px 0 0;
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.35;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .trainingTip,
+    .training-tip,
+    .trainingNote {
+      display: none;
+      margin-top: 8px;
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      background: #eef4ff;
+      border: 1px solid #c9d8f4;
+      border-left: 5px solid #5f8fdd;
+      border-radius: 14px;
+      box-shadow: 0 2px 6px rgba(16, 33, 61, 0.04);
+      color: #2d3f62;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .trainingTipLabel,
+    .training-tip-label,
+    .trainingNoteLabel {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #365f9f;
+    }
+    .trainingTip p,
+    .training-tip p,
+    .trainingNote p {
+      margin: 0;
+      color: #334766;
+      line-height: 1.45;
+    }
+    .trainingTip.trainingTipSmall,
+    .training-tip.trainingTipSmall,
+    .trainingNote.trainingTipSmall {
+      padding: 10px 12px;
+      border-left-width: 4px;
+      border-radius: 12px;
+      margin-top: 8px;
+      margin-bottom: 10px;
+    }
+    .trainingTip.trainingTipSmall .trainingTipLabel,
+    .trainingTip.trainingTipSmall .training-tip-label,
+    .training-tip.trainingTipSmall .trainingTipLabel,
+    .training-tip.trainingTipSmall .training-tip-label,
+    .trainingNote.trainingTipSmall .trainingTipLabel,
+    .trainingNote.trainingTipSmall .training-tip-label {
+      font-size: 11px;
+      margin-bottom: 6px;
+    }
+    .trainingTip.trainingTipSmall p,
+    .training-tip.trainingTipSmall p,
+    .trainingNote.trainingTipSmall p {
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .trainingTip.trainingTipSmall#makingQuestionsTrainingTip {
+      margin-bottom: 10px;
+    }
+    #trainingTipFinalizeIntro {
+      margin-bottom: 10px;
+    }
+    #finalCopiedTrainingTip {
+      margin-top: 8px;
+      margin-bottom: 10px;
+    }
+    #trainingTipFinalizeFeedback {
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
+    #trainingTipEndSession {
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
+    .trainingCompletionBanner {
+      z-index: 50;
+      margin: 0 0 14px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid #b9ddc3;
+      border-left: 6px solid #52a36d;
+      background: #eef9f1;
+      color: #234b31;
+      box-shadow: 0 4px 10px rgba(16, 33, 61, 0.05);
+    }
+    .trainingCompletionBanner[hidden] {
+      display: none !important;
+    }
+    .trainingCompletionTitle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      margin-bottom: 6px;
+    }
+    .trainingCompletionBody {
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .training-tip-icon {
+      font-size: 13px;
+      line-height: 1;
+    }
+    @media (max-width: 820px) {
+      .trainingTip,
+      .training-tip,
+      .trainingNote {
+        padding: 12px 14px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+      }
+    }
+    @media (min-width: 1100px) {
+      .pageShell { max-width: 1440px; padding: 18px 24px 20px; }
+      .card { padding: 12px; }
+      .subBand { padding: 12px 14px; margin-top: 10px; }
+      .groupCard { padding: 11px; }
+      .promptSection { padding: 9px; }
+      .promptSections { gap: 10px; }
+      .promptListCompact { gap: 6px; }
+      .promptHeader { gap: 6px; }
+      .promptActions { gap: 5px; }
+      .promptDesc { margin-top: 8px; }
+      details.band { margin-top: 14px; }
+      details.band > summary { padding: 8px 12px; }
+      .bandBody { padding: 12px 4px 4px; }
+      input, select, textarea {
+        padding: 8px 9px;
+        font-size: 14px;
+      }
+      .btn { padding: 7px 10px; font-size: 14px; }
+      .modelGrid, .product-grid { gap: 10px; }
+      .modelOption, .product-card {
+        min-height: 68px;
+        padding: 7px 6px;
+        gap: 3px;
+      }
+      .productIconCircle {
+        width: 36px;
+        height: 36px;
+      }
+      .llmConfirmIntro { margin: 8px 0 6px; }
+      .llmImageRow { margin-top: 6px; }
+      .subBandTitle { margin-bottom: 8px; }
+      .twoCol { gap: 8px; }
+      .promptGroups { gap: 10px; }
+      .finalActionRow { margin-top: 18px; padding-top: 12px; }
+    }
+    @media (min-width: 1100px) {
+      .promptArea {
+        max-height: none !important;
+        overflow: visible !important;
+        padding-right: 0 !important;
+      }
+    }
+
+    /* Mobile-only layout overrides (phones / touch-first small screens only). */
+    @media (max-width: 820px) and (hover: none) and (pointer: coarse) {
+      body { font-size: 15px; }
+      .pageShell { padding: 12px 12px 16px; }
+      .layoutGrid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+      }
+      .main {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+      .sidebar { display: none; }
+
+      .appHeaderBar {
+        padding: 4px 0;
+        margin-bottom: 8px;
+      }
+      .row {
+        width: 100%;
+        min-width: 0;
+        gap: 8px;
+      }
+      .row > * {
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      .card,
+      .subBand,
+      .groupCard,
+      .promptSection,
+      .promptCard,
+      .modalCard,
+      .timerCard,
+      .finalActionRow {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
+      .card + .card,
+      .subBand + .subBand,
+      .promptSection + .promptSection {
+        margin-top: 4px;
+      }
+
+      .twoCol,
+      .promptGroups,
+      .promptListCompact,
+      .modelGrid,
+      .product-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+      }
+
+      .promptArea {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
+        overflow-x: hidden;
+        box-sizing: border-box;
+      }
+      #promptsInner,
+      .promptListSingle,
+      .promptCard,
+      .promptDetails,
+      .promptDetailsText {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      /* Mobile override for actual prompt button selector (.promptCard is the clickable row via role="button"). */
+      .promptCard[role="button"] {
+        height: auto;
+        min-height: 0;
+        padding: 8px 10px;
+        border-radius: 12px;
+      }
+      .promptHeader {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        column-gap: 8px;
+        min-height: 0;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .promptHeaderText {
+        min-width: 0;
+        margin: 0;
+        line-height: 1.2;
+        text-align: left;
+        align-self: center;
+        justify-self: start;
+      }
+      .promptTitle {
+        margin: 0;
+        font-size: 16px;
+        text-align: left;
+        align-self: center;
+        line-height: 1.2;
+      }
+      .promptDesc {
+        margin: 6px 0 0;
+        line-height: 1.2;
+        text-align: left;
+      }
+      .promptTopRowActions {
+        width: 100%;
+        gap: 8px;
+        align-items: flex-start;
+      }
+      .promptActions {
+        gap: 0;
+        align-items: center;
+      }
+      .btn,
+      .accessBtn,
+      #btnPauseTimer {
+        min-height: 44px;
+      }
+      /* Mobile override for actual chevron button selector (.promptChevronBtn inside each prompt card). */
+      .promptChevronBtn {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        min-height: 28px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 28px;
+        border-radius: 10px;
+      }
+      .promptSections {
+        gap: 8px;
+      }
+      .promptListCompact {
+        gap: 8px;
+      }
+      .promptListSingle .promptCard + .promptCard {
+        margin-top: 8px;
+      }
+      .promptSection {
+        padding: 10px 10px 12px;
+        margin-top: 10px;
+        border-radius: 14px;
+      }
+      .promptSectionTitle {
+        margin: 0 0 8px;
+        font-size: 15px;
+        line-height: 1.2;
+      }
+      .promptSection,
+      .groupCard,
+      .promptGroup,
+      .promptGroupPanel {
+        padding: 10px 10px 12px;
+        margin-top: 10px;
+        border-radius: 14px;
+      }
+      .promptSectionTitle,
+      .promptGroupTitle,
+      .groupTitle {
+        margin-bottom: 8px;
+        font-size: 15px;
+        line-height: 1.2;
+      }
+      .promptCard {
+        padding: 8px 10px;
+        min-height: 0;
+        border-radius: 12px;
+      }
+      .promptHeader {
+        min-height: 0;
+        gap: 8px;
+      }
+      .promptListCompact,
+      .promptCards,
+      .promptGroupCards {
+        gap: 8px;
+      }
+      .promptCard,
+      .promptDetails,
+      .promptDetailsText {
+        box-sizing: border-box;
+        max-width: 100%;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.2;
+        padding: 10px 12px;
+        min-height: 48px;
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+      .btn.primary,
+      .btn.danger {
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+      }
+      .tag,
+      .pill {
+        white-space: normal;
+      }
+      .summaryLeft {
+        min-width: 0;
+      }
+
+      .accessRow {
+        flex-wrap: wrap;
+      }
+      .accessInput,
+      .accessBtn {
+        width: 100%;
+      }
+      .accessBtn {
+        justify-content: center;
+      }
+
+      .timerHeaderRow,
+      .timerInlineControls {
+        flex-wrap: wrap;
+      }
+      .timerInlineControls {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="pageShell is-landing">
+    <div class="landingColumn">
+      <h1 class="landingHeader">Dissertation Prompt App</h1>
+      <p class="sub landingSubtitle">Prompt workflow screen for study participants completing this session.</p>
+      <div id="trainingTopNote" class="training-tip">
+        <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
+        <p>You're in training mode. These blue "Training tip" boxes you'll see on this page are here to walk you through the app. They won't appear during your actual study session.</p>
+      </div>
+      <div id="landingTrainingCompleteBanner" class="trainingCompletionBanner" hidden>
+        <div class="trainingCompletionTitle"><span aria-hidden="true">✓</span><span>Training activity complete</span></div>
+        <div class="trainingCompletionBody">Your session has been submitted. You can now close this window and return to the training.</div>
+      </div>
+      <!-- Access gate -->
+      <div class="card accessCard" id="accessGate">
+        <div class="accessIntro muted small">
+          <p>This tool is part of a research study conducted by Taemin Jin. Questions about this study may be directed to <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="394d535057795a4b50544a5657174c58175c5d4c">[email&#160;protected]</a>.</p>
+          <p>This research study has been approved by the [UNIVERSITY NAME] Institutional Review Board (IRB), protocol ID #[NUMBER].</p>
+          <p>If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
+        </div>
+
+        <div class="accessAction">
+          <p class="accessActionTitle">Enter your participant code to begin this session.</p>
+          <form class="accessRow" id="accessForm">
+            <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" />
+            <button class="btn primary accessBtn" id="btnVerifyAccess" type="submit">Continue</button>
+          </form>
+          <div class="modeToggleRow">
+            <label class="modeToggleLabel">
+              <input type="checkbox" id="trainingModeToggle" />
+              <span>Training mode</span>
+            </label>
+          </div>
+        </div>
+
+        <p id="accessMsg" class="muted small accessError" style="margin:8px 0 0;"></p>
+      </div>
+    </div>
+
+    <!-- Main app -->
+    <div id="appShell" style="display:none;">
+      <div class="appHeaderBar">
+        <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
+      </div>
+      <div class="layoutGrid">
+        <div class="main">
+          <!-- Accordion bands -->
+      <details class="band" id="bandSetup">
+        <summary id="sumSetup">
+          <div class="summaryLeft">
+            <strong>1) Set up</strong>
+            <span class="tag" id="tagSetup">In progress</span>
+          </div>
+
+        </summary>
+        <div class="bandBody">
+          <div class="card">
+            <div class="subBand" style="margin-top:0;">
+              <h4 class="subBandTitle">A. Select product and mode</h4>
+              <div class="row">
+                <div style="flex:1; min-width: 240px;">
+                  <input type="hidden" id="modelUsed" />
+                  <div class="modelGrid product-grid" id="modelGrid">
+
+                  <!-- Active products are currently limited to ChatGPT, Gemini, and Copilot. -->
+                  <button class="modelOption product-card productButton" data-model="ChatGPT" type="button"><div class="productIconCircle"><img src="images/chatgpt.png" class="productIconImage" alt="ChatGPT"></div><span>ChatGPT</span></button>
+<button class="modelOption product-card productButton" data-model="Gemini" type="button"><div class="productIconCircle"><img src="images/gemini.png" class="productIconImage" alt="Gemini"></div><span>Gemini</span></button>
+<button class="modelOption product-card productButton" data-model="Copilot" type="button"><div class="productIconCircle"><img src="images/copilot.png" class="productIconImage" alt="Copilot"></div><span>Copilot</span></button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="productVersionEditor" class="subBand hidden" style="margin-top:10px;">
+              <h4 class="subBandTitle" id="productVersionTitle">Confirm product mode</h4>
+              <p class="muted small llmConfirmIntro" id="llmConfirmIntro"></p>
+
+              <div id="llmConfirmPanel" style="display:none; margin-top:8px;">
+                <p id="llmInstructionText" class="muted small" style="margin:0 0 6px;"></p>
+                <p id="llmWhereText" class="muted small" style="margin:0;"></p>
+
+                <details class="helpToggle" style="margin-top:8px;">
+                  <summary class="muted small whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
+                  <div class="llmImageRow">
+                    <div id="llmImage1"></div>
+                    <div id="llmImage2"></div>
+                  </div>
+                </details>
+
+                <div style="margin-top:10px;">
+                  <label id="llmConfirmLabel"></label>
+                  <select id="llmExpectedChoice" class="llmCompactSelect"></select>
+                </div>
+
+                <p class="muted small" id="llmMismatchNote" style="display:none; margin:8px 0 0;"></p>
+
+                <div id="llmMismatchWrap" style="display:none; margin-top:10px;">
+                  <label for="llmMismatchDescription">Please briefly describe the options you see in the menu.</label>
+                  <textarea id="llmMismatchDescription" placeholder="Example: Auto, Quick response, Think deeper"></textarea>
+                </div>
+                <div id="trainingTipMismatch" class="training-tip">
+                  <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
+                  <p>If the mode you are using in your AI product doesn't match any of the options listed here, choose "I see something different" and briefly describe what you see.</p>
+                  <p style="margin-top:8px;">This helps us record which AI system and model you used.</p>
+                </div>
+              </div>
+
+              <div class="row" style="margin-top:10px;">
+                <button class="btn" id="btnConfirmProductVersion" type="button" disabled>Confirm product and mode</button>
+              </div>
+            </div>
+
+            <div id="productVersionSummary" class="subBand productVersionSummary" style="display:none;" role="button" tabindex="0">
+              <div class="title">Product and mode confirmed</div>
+              <div class="muted small" id="productVersionSummaryText"></div>
+            </div>
+            </div>
+
+            <div id="contextSubband" class="subBand hidden" style="margin-top:10px;">
+              <h4 class="subBandTitle">B. Question context</h4>
+              <div id="trainingTipQuestionContext" class="training-tip">
+                <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
+                <p>These two fields tell the AI what kind of questions to create. This doesn't have to be detailed; it's just a short, specific description to point the AI in the right direction.</p>
+                <p style="margin-top:8px;">You do not need to write a full assignment prompt or copy an entire syllabus.</p>
+                <p style="margin-top:8px;">A short, specific description is usually best.</p>
+              </div>
+
+              <div id="contextFields">
+            <div class="row" style="margin-top:10px;">
+              <div style="flex:1; min-width: 240px;">
+                <label>Course / class context</label>
+                <input id="ctxCourse" placeholder="e.g., Health Assessment (first semester)" />
+              </div>
+              <div style="flex:1; min-width: 240px;">
+                <label>Content area</label>
+                <input id="ctxArea" placeholder="e.g., Respiratory assessment" />
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:10px;">
+              <div style="flex:1; min-width: 240px;">
+                <label>Desired number of questions</label>
+                <input id="ctxQuestionCount" type="number" min="1" value="10" />
+              </div>
+              <div style="flex:1; min-width: 240px;">
+                <label>Any additional desired instructions or parameters (optional)</label>
+                <input id="ctxNotes" placeholder="Optional guidance (e.g., difficulty level, tone, formatting preferences)" />
+              </div>
+            </div>
+
+            <p class="muted small" style="margin:10px 0 0;">
+              Copy the starter prompt, paste it into your AI product, then click the button below to continue.
+            </p>
+            <div id="trainingTipStarterGate" class="trainingTip trainingTipSmall">
+              <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
+              <p>To move forward: fill in the course context and content area, then copy the starter prompt and paste it into your AI product. Once you've done that, the "Proceed to Making questions" button will unlock.</p>
+            </div>
+
+            <div class="row copyPromptRow" style="margin-top:12px;">
+              <div class="copyCardWrap">
+                <div class="copyCard" id="starterCopyCard" role="button" tabindex="0" aria-label="Copy starter prompt">
+                  <div class="copyCardHeader">
+                    <div class="copyCardTitle" id="starterCopyTitle">Copy starter prompt</div>
+                    <button type="button" class="promptChevronBtn" id="starterCopyChevron" aria-expanded="false" aria-controls="starterCopyDetails" aria-label="Show details for starter prompt">
+                      <span class="promptChevronIcon" aria-hidden="true">›</span>
+                    </button>
+                  </div>
+                  <div class="copyCardDetails" id="starterCopyDetails">
+                    <p class="promptDesc" id="starterCopyDescription">Paste this into your AI product to begin generating questions.</p>
+                    <pre class="promptDetailsText copyCardPreview" id="starterCopyPreview"></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="starterCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
+              <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
+              <p>The starter prompt is now on your clipboard. Switch to your AI product and paste it into the message box (Ctrl+V on Windows/Chromebook, or ⌘+V on Mac). After the AI responds, come back here and click "Proceed to Making questions."</p>
+            </div>
+
+            <p class="muted small" id="setupMsg" style="margin:10px 0 0; display:none;"></p>
+            <div class="row" style="margin-top:8px;">
+              <button class="btn primary" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
+            </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="band" id="bandPrompts">
+        <summary id="sumPrompts">
+          <div class="summaryLeft">
+            <strong>2) Making questions</strong>
+            <span class="tag lock" id="tagPrompts">Locked</span>
+          </div>
+
+        </summary>
+        <div class="bandBody">
+          <div class="lockMsg" id="lockPrompts">
+            Complete <strong>1) Set up</strong>, copy the starter prompt, and click Continue to unlock prompts.
+          </div>
+
+          <div id="promptsInner" style="display:none;">
+            <div class="card">
+              <div class="trainingTip trainingTipSmall" id="makingQuestionsTrainingTip">
+                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                <p>You'll work with the AI one question at a time. After the AI generates a question, use these buttons to accept it, request a replacement, refine the answer or distractors, or audit the overall balance of your question set. Each button copies a prompt — paste it into your AI conversation to continue.</p>
+              </div>
+              <div class="promptTopRow">
+                <div class="promptTopRowActions">
+                  <button class="btn" id="btnExpandAllPrompts" type="button">Expand all</button>
+                  <button class="btn" id="btnCollapseAllPrompts" type="button">Collapse all</button>
+                  <button class="btn" id="btnEditContext" type="button">Go back and edit context</button>
+                </div>
+              </div>
+
+              <div class="promptArea" style="margin-top:8px;">
+                <div class="promptSections">
+                  <div class="promptSection section-accept">
+                    <h4 class="promptSectionTitle">Accept or Replace Question</h4>
+                    <div id="promptGroupAcceptReplace" class="promptListCompact"></div>
+                  </div>
+
+                  <div class="promptSection section-refine">
+                    <h4 class="promptSectionTitle">Refine Options</h4>
+                    <div id="promptGroupRefine" class="promptListCompact"></div>
+                  </div>
+
+                  <div class="promptSection section-audit">
+                    <h4 class="promptSectionTitle">Audit Options</h4>
+                    <div id="promptGroupAudit" class="promptListCompact"></div>
+                  </div>
+
+                  <div class="promptSection section-review promptReviewBlock">
+                    <h4 class="promptSectionTitle">Review Questions</h4>
+                    <div id="promptGroupReview" class="promptListSingle"></div>
+                  </div>
+                </div>
+
+                <div class="row" style="justify-content: space-between; margin-top:8px; min-width:0;">
+                  <button class="btn primary" id="btnReadyFinal">I'm done making questions</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="band" id="bandFinalize">
+        <summary id="sumFinalize">
+          <div class="summaryLeft">
+            <strong>3) Finalize</strong>
+            <span class="tag lock" id="tagFinalize">Locked</span>
+          </div>
+
+        </summary>
+        <div class="bandBody">
+          <div class="lockMsg" id="lockFinalize">
+            Complete <strong>2) Making questions</strong> and click <strong>I'm done making questions</strong> to unlock the final step.
+          </div>
+
+          <div id="finalizeInner" style="display:none;">
+            <div class="card">
+              <div id="trainingTipFinalizeIntro" class="trainingTip trainingTipSmall">
+                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                <p>This is the final step. Copy the final prompt into your AI product — it will ask the AI to compile all accepted questions into a clean list. Then copy the AI's response and paste it into the text box below.</p>
+              </div>
+
+              <div class="finalizeTopRow">
+                <div class="finalizeCopySlot">
+                  <div class="copyCard" id="finalCopyCard" role="button" tabindex="0" aria-label="Copy final prompt">
+                    <div class="copyCardHeader">
+                      <div class="copyCardTitle" id="finalCopyTitle">Copy final prompt</div>
+                      <button type="button" class="promptChevronBtn" id="finalCopyChevron" aria-expanded="false" aria-controls="finalCopyDetails" aria-label="Show details for final prompt">
+                        <span class="promptChevronIcon" aria-hidden="true">›</span>
+                      </button>
+                    </div>
+                    <div class="copyCardDetails" id="finalCopyDetails">
+                      <p class="promptDesc" id="finalCopyDescription">Paste this into your AI product to generate your final question set.</p>
+                      <pre class="promptDetailsText copyCardPreview" id="finalCopyPreview"></pre>
+                    </div>
+                  </div>
+                </div>
+                <div class="finalizeBackSlot">
+                  <button class="btn" id="btnBackToPrompts">Go back to making questions</button>
+                </div>
+              </div>
+
+              <div id="finalCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
+                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                <p>The final prompt is now on your clipboard. Paste it into your AI conversation and wait for the complete response. Once the AI finishes, copy its entire response and paste it into the box below.</p>
+              </div>
+
+              <p class="muted small finalizeNotice" id="finalizeCopyNotice"></p>
+
+              <div id="finalizeLockedArea" class="finalizeLockedContent" style="margin-top:8px; display:none;">
+
+                <div style="margin-top:12px;">
+
+                  <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
+                </div>
+
+                <div id="trainingTipFinalizeFeedback" class="trainingTip trainingTipSmall">
+                  <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                  <p>This section is completely optional. If anything about the workflow felt confusing, surprisingly helpful, or worth noting, this is the place to share it.</p>
+                </div>
+
+                <div class="optionalFeedbackBox" id="finalFeedbackSection">
+                  <p style="margin:0 0 6px; font-weight:600;">Optional feedback</p>
+                  <p class="muted small" style="margin:0 0 10px;">I would appreciate any feedback you have for me, which you may provide in writing and/or as an audio recording. This is completely optional.</p>
+
+                  <textarea
+                    id="sessionNotes"
+                    placeholder="Provide written feedback here"
+                  ></textarea>
+
+                  <div class="audioFeedbackSection" id="audioRecorderPanel" style="margin-top:8px;">
+                    <div class="audioControlRow" id="audioPrimaryControls">
+                      <button class="btn" id="btnAudioStart" type="button">Start recording</button>
+                      <button class="btn audioStateStatus" id="btnAudioState" type="button" disabled>Recording</button>
+                      <button class="btn" id="btnAudioPauseResume" type="button">Pause</button>
+                      <button class="btn" id="btnAudioStop" type="button">Stop</button>
+                    </div>
+                    <div class="audioElapsedRow" id="audioElapsedRow" aria-live="polite">
+                      <span class="audioElapsedLabel">Recording time</span>
+                      <span class="audioElapsedValue" id="audioElapsedValue">00:00</span>
+                    </div>
+
+                    <div class="audioPlaybackRow" id="audioPlaybackRow">
+                      <audio id="audioFeedbackPlayer" controls preload="metadata"></audio>
+                      <button class="btn" id="btnAudioSubmit" type="button">Submit audio</button>
+                      <button class="btn" id="btnAudioDelete" type="button">Delete recording</button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <p class="muted small" id="finalizeMsg" style="margin:10px 0 0;"></p>
+
+              <div id="trainingTipEndSession" class="trainingTip trainingTipSmall">
+                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                <p>Make sure you've pasted the AI's final response into the box above before ending. Once you end the session, your work is submitted and the app resets.</p>
+              </div>
+              <div class="finalActionRow" id="endSessionRow" style="display:none;">
+                <button id="btnEndSession" class="btn danger primary finalActionBtn" type="button">
+                  End session
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+        </div>
+
+        <aside class="sidebar">
+          <div class="card stickySidebar recentCard">
+            <h3 style="margin:0 0 8px; font-size:16px;">Most Recently Copied</h3>
+            <div id="recentCopiedText" class="copiedText recentPreview" aria-live="polite"></div>
+          </div>
+          <div class="card timerCard" id="sessionTimerCard">
+            <div class="timerHeaderRow">
+              <h3>Session Timer</h3>
+              <div class="timerInlineControls">
+                <div id="sessionTimerDisplay" class="timerDisplay">00:00</div>
+                <button class="btn" id="btnPauseTimer" type="button">Pause</button>
+              </div>
+            </div>
+            <div class="muted small" style="margin-top:8px;">
+              <div>Try out the tool for about 15 minutes. Experiment with different prompts to see what they do.</div>
+            </div>
+          </div>
+        </aside>
+      </div>
+      </div>
+      <div class="pageFooter is-landing">
+        <div class="pageFooterInner">
+          <footer id="buildInfo" class="pageFooterMeta"><span id="lastUpdated"></span></footer>
+          <div id="helpLinkRow" class="pageFooterLink">
+            <a
+              href="https://jin-dissertation.github.io/dissertation-app/help.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="helpFaqLink"
+            >
+              Help / FAQ
+            </a>
+          </div>
+        </div>
+      </div>
+  </div>
+
+
+  <div class="modalBackdrop" id="modalReset">
+    <div class="modalCard">
+      <h3 style="margin:0 0 8px;">Reset this device?</h3>
+      <p class="muted" style="margin:0 0 12px;">This clears saved settings and history in this browser only.</p>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn" id="btnResetCancel" type="button">Cancel</button>
+        <button class="btn danger" id="btnResetConfirm" type="button">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBackdrop" id="modalEnd">
+    <div class="modalCard">
+      <h3 style="margin:0 0 8px;">End session?</h3>
+      <p class="muted" style="margin:0 0 12px;">Before ending, make sure you have saved any materials you need. Ending the session will clear this browser’s stored data.</p>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn" id="btnEndCancel" type="button">Cancel</button>
+        <button class="btn danger" id="btnEndConfirm" type="button">I saved it — end session</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="timerNotice" id="timerNotice" style="display:none;">
+    <div class="timerNoticeMessage" id="timerNoticeMessage"></div>
+    <button class="timerNoticeClose" id="timerNoticeClose" type="button" aria-label="Dismiss notification">×</button>
+  </div>
+
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+    window.addEventListener("error", (e) => {
+      console.error("Global script error:", e.message, "at", e.filename, "line", e.lineno);
+    });
+
+    // -----------------------------
+    // Config
+    // -----------------------------
+
+    const ACCESS_VERIFY_URL = "https://script.google.com/macros/s/AKfycbzlp6l70YV51i-jlnZr6_N1DVV_efWD3nf9n2aqvUPN7u92e5R2ZQ0zZbeCosSx2CZ78g/exec";
+
+    // Apps Script endpoint for background autosave events.
+    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbxL2vkcsWNQVRDug2rnZU01eQesd4S7QXY-3Qtm7ZeWgzTNw7jjvdYxT-DzMjD9gMTj/exec";
+    const REMOTE_CONFIG_URL = "https://script.google.com/macros/s/AKfycbw5i8StkIF_S0WxpAa4PQVZxzrsMTNBCQSP_g3MVmHNCHI0_DRTqDc_A1wNUT3TzWQ1pA/exec";
+
+    let remoteConfig = {
+      llmOptions: {},
+      prompts: {}
+    };
+
+    // Paste your webhook URL into LLM_MISMATCH_ALERT_WEBHOOK to receive immediate mismatch alerts.
+    const LLM_MISMATCH_ALERT_WEBHOOK = "";
+
+    // Active products are currently limited to ChatGPT, Gemini, and Copilot.
+    const LLM_UI_CONFIG = {
+      chatgpt: {
+        label: "ChatGPT",
+        whereText: "Click the model selector at the top of the chat.",
+        expectedOptions: [
+          { value: "inst-5.3_thi-5.4", label: "Auto selected; menu shows Instant 5.3 and Thinking 5.4" },
+          { value: "different", label: "I see something different" }
+        ],
+        defaultExpected: "inst-5.3_thi-5.4",
+        image1Alt: "ChatGPT model selector location",
+        image2Alt: "ChatGPT dropdown example"
+      },
+      gemini: {
+        label: "Gemini",
+        whereText: "Click the mode dropdown next to the prompt box.",
+        expectedOptions: [
+          { value: "gemini-3", label: "Fast selected; menu shows Gemini 3" },
+          { value: "different", label: "I see something different" }
+        ],
+        defaultExpected: "gemini-3",
+        image1Alt: "Gemini mode selector location",
+        image2Alt: "Gemini dropdown example"
+      },
+      copilot: {
+        label: "Microsoft Copilot",
+        whereText: "Click the dropdown next to the prompt box that shows the current mode.",
+        expectedOptions: [
+          { value: "gpt-5.1", label: "Smart selected; menu shows GPT 5.1" },
+          { value: "different", label: "I see something different" }
+        ],
+        defaultExpected: "gpt-5.1",
+        image1Alt: "Copilot mode selector location",
+        image2Alt: "Copilot dropdown example"
+      }
+    };
+
+// Prompt metadata (grouped for UI)
+const PROMPT_META = [
+  {
+    id: "next_question",
+    group: "Question Refinement",
+    title: "Accept & Continue",
+    description: "Accept this question and generate the next one."
+  },
+  {
+    id: "replace_question",
+    group: "Question Refinement",
+    title: "Generate Alternatives",
+    description: "Generate replacement versions of this question."
+  },
+  {
+    id: "distractor_options",
+    group: "Question Refinement",
+    title: "Refine Distractors",
+    description: "Generate additional plausible distractor options."
+  },
+  {
+    id: "correct_answer_options",
+    group: "Question Refinement",
+    title: "Refine Correct Answer",
+    description: "Generate alternate versions of the correct answer."
+  },
+  {
+    id: "pause_review",
+    group: "Pause and Audit",
+    title: "Review Questions",
+    description: "Show all questions generated so far."
+  },
+  {
+    id: "rebalance_content",
+    group: "Pause and Audit",
+    title: "Topic Coverage Audit",
+    description: "Identify overrepresented and underrepresented subtopics."
+  },
+  {
+    id: "core_or_peripheral",
+    group: "Pause and Audit",
+    title: "Breadth Audit",
+    description: "Classify questions as core or peripheral in focus."
+  },
+  {
+    id: "rebalance_question_type",
+    group: "Pause and Audit",
+    title: "Question Type Audit",
+    description: "Analyze the distribution of question types."
+  },
+  {
+    id: "difficulty_audit",
+    group: "Pause and Audit",
+    title: "Difficulty Audit",
+    description: "Analyze the distribution of difficulty levels."
+  },
+  {
+    id: "blooms_taxonomy_audit",
+    group: "Pause and Audit",
+    title: "Bloom’s Level Audit",
+    description: "Analyze the distribution of Bloom’s taxonomy levels."
+  }
+];
+
+/* ==========================================
+   MODEL-SPECIFIC PROMPTS
+   Search for:
+   - PROMPT: STARTER
+   - PROMPT: NEXT_QUESTION
+   - PROMPT: FINAL_PROMPT
+   ========================================== */
+// Fallback prompts (flat — remote config is primary). All model variants identical.
+const PROMPTS_FALLBACK = {
+  starter: `I am a nursing school instructor and would like your help writing multiple-choice questions for my class. Consider the following:
+
+1. Class Context (e.g., subject, course objectives, level, etc.): {{COURSE}}
+2. Content Area (specific topic or unit): {{AREA}}
+3. Desired Number of Questions: {{QUESTION_COUNT}}
+4. Additional parameters to consider (if blank, ignore): {{NOTES_LINE}}
+
+I may attach documents (e.g., lecture notes, flashcards, readings) to guide question creation. Use them as a general reference, but do not rely on them exclusively. Try to create a question set that reflects the concepts within the content area that are most relevant to NCLEX and nursing practice and follows best practices for writing high-quality multiple-choice questions.
+
+When outputting the questions, do not use any interactive widgets, quizzes, or UI tools. Whenever a question is output, I want it presented strictly in text form and in the following order (do not include the labels in your output):
+Question Name
+Question Stem
+A. The correct answer.
+B. The first distractor.
+C. The second distractor.
+D. The third distractor.
+
+You will create 1 question at a time. Pause after each one so I can give feedback on the overall question set or on the individual question just generated. Once I respond, adjust if requested, or continue with the next question, until I have reached the goal number of questions.
+
+For now, respond with a table that outlines the plan for all of the questions with these headings: #; subtopic; key concept. I will let you know if I would like any adjustments.`,
+  next_question: `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`,
+  replace_question: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic. Number each question clearly (1–5) before the question name so it is easy to reference which version should be kept.`,
+  correct_answer_options: `Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors. Number each option clearly (1–5) so it is easy to reference which version should be kept.`,
+  distractor_options: `I want to improve the distractors for this question. If any of the 3 original distractors are obviously different in length or complexity from the correct answer, please revise them so they better match the correct answer. Please list those 3 distractors, then add 10 additional plausible distractors that are similar in length and complexity to the correct answer. Present all distractors as a single numbered list (1–13) so I can easily indicate which ones I would like to keep.`,
+  pause_review: `Pause and show all questions generated so far in this session. Display them in a compact list with a numbered title, the question stem on the next line, and the answer options listed below using capital letters (A–D). Place the correct answer first and bold it.`,
+  rebalance_content: `Pause and audit how the questions are balanced between potential subtopics. Please break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance.`,
+  core_or_peripheral: `Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
+Core: The most common, obvious, first-line, or 'go-to' fact or intervention.
+Peripheral: A less obvious but still clinically important area.
+
+Provide the results in a table with the following columns and content:
+1. # -- Question Number
+2. Focus -- Core or Peripheral
+3. Topic Covered -- 2–4 word description
+4. Suggestion - If the question is core, suggest one peripheral angle within the same content area that has not yet been tested.`,
+  rebalance_question_type: `I would like to pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I rebalance the types of questions.`,
+  difficulty_audit: `Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix.`,
+  blooms_taxonomy_audit: `Please pause and audit my current MCQ set for Bloom’s taxonomy alignment. For each question, assign the primary level (Remember, Understand, Apply, Analyze, Evaluate, or Create). Show me the counts and percentages in each category. Then, suggest underrepresented levels and give me ideas for how to add or revise questions to cover them.`,
+  final_prompt: `Pause and show all questions that have been accepted and finalized so far in this session. Do not include any question that was just generated for consideration but has not yet been accepted or added to the set.
+
+Display the questions in a list with:
+A numbered title
+The question stem on the next line
+The answer options listed below using capital letters (A–D)
+
+Place the correct answer first and bold it.`,
+};
+
+    // -----------------------------
+    // Storage keys
+    // -----------------------------
+    const KEYS = {
+      accessVerified: "dissertation.accessVerified",
+      accessCode: "dissertation.accessCode",
+      participantId: "dissertation.participantId",
+      clientKey: "dissertation.clientKey",
+      sessionId: "dissertation.sessionId",
+      sessionStartTime: "dissertation.sessionStartTime",
+      modelUsed: "dissertation.modelUsed",
+      context: "dissertation.context",
+      starterCopied: "dissertation.starterCopied",
+      starterCopiedSetupSignature: "dissertation.starterCopiedSetupSignature",
+      stage: "dissertation.stage", // "setup" | "prompts" | "finalize"
+      events: "dissertation.events",
+      finalPrompt: "dissertation.finalPrompt",
+      anyCopy: "dissertation.anyCopy",
+      finalizeVisited: "dissertation.finalizeVisited",
+      finalPromptCopied: "dissertation.finalPromptCopied",
+      submitClicked: "dissertation.submitClicked",
+      llmProduct: "dissertation.llmProduct",
+      llmExpectedChoice: "dissertation.llmExpectedChoice",
+      llmMismatchDescription: "dissertation.llmMismatchDescription",
+      productVersionConfirmed: "dissertation.productVersionConfirmed",
+      resubmitting: "dissertation.resubmitting",
+      timerStartedAt: "dissertation.timerStartedAt",
+      timerElapsedBeforePause: "dissertation.timerElapsedBeforePause",
+      timerPaused: "dissertation.timerPaused",
+      timerWarned35: "dissertation.timerWarned35",
+      timerWarned40: "dissertation.timerWarned40",
+      trainingTenMinuteNoticeShown: "dissertation.trainingTenMinuteNoticeShown",
+      submissionAttempted: "dissertation.submissionAttempted",
+      submissionStatus: "dissertation.submissionStatus",
+      submissionCompletedAt: "dissertation.submissionCompletedAt",
+      submissionError: "dissertation.submissionError",
+      appsScriptResponseFileName: "dissertation.appsScriptResponseFileName",
+      appsScriptResponseFileId: "dissertation.appsScriptResponseFileId",
+      autosaveEventIndex: "dissertation.autosaveEventIndex"
+    };
+
+    // -----------------------------
+    // Utilities
+    // -----------------------------
+    const $ = (id) => document.getElementById(id);
+    const nowIso = () => new Date().toISOString();
+    const currentUrl = new URL(window.location.href);
+    const isTrainingMode = currentUrl.searchParams.get("mode") === "training";
+    function getSelectedLlmKey() {
+      const selectedProduct = (typeof window !== "undefined" && window.selectedProduct) ? window.selectedProduct : "";
+      const modelUsed = (typeof window !== "undefined" && window.modelUsed) ? window.modelUsed : "";
+      return normalizeLlmProduct(
+        localStorage.getItem(KEYS.llmProduct)
+        || normalizeLlmProduct(localStorage.getItem(KEYS.modelUsed) || "")
+        || selectedProduct
+        || modelUsed
+        || "chatgpt"
+      ) || "chatgpt";
+    }
+
+    function getRemoteLlmOptions(llmKey) {
+      return remoteConfig.llmOptions?.[llmKey] || [];
+    }
+
+    function getRemotePrompt(llmKey, promptId) {
+      return remoteConfig.prompts?.[llmKey]?.[promptId] || null;
+    }
+
+    function getPromptDefinition(promptId) {
+      const llmKey = getSelectedLlmKey();
+      return getRemotePrompt(llmKey, promptId);
+    }
+
+    function getPromptTitle(promptId, fallbackTitle = "") {
+      return getPromptDefinition(promptId)?.title || fallbackTitle;
+    }
+
+    function getPromptDescription(promptId, fallbackDescription = "") {
+      return getPromptDefinition(promptId)?.description_text || fallbackDescription;
+    }
+
+    function getPromptBody(promptId, fallbackBody = "") {
+      return getPromptDefinition(promptId)?.prompt_body || fallbackBody;
+    }
+
+    function getPromptText(promptId) {
+      const prompt = getPromptDefinition(promptId);
+      if (prompt?.prompt_body) return prompt.prompt_body;
+      return getPromptBody(promptId, PROMPTS_FALLBACK[promptId] || "");
+    }
+
+    async function loadRemoteConfig() {
+      const res = await fetch(REMOTE_CONFIG_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error(`Config fetch failed: ${res.status}`);
+      const data = await res.json();
+      if (!data || !data.ok) throw new Error("Config response was not ok");
+
+      remoteConfig = {
+        llmOptions: data.llmOptions || {},
+        prompts: data.prompts || {}
+      };
+    }
+
+    function getLlmOptionList(productKey) {
+      const remoteOptions = getRemoteLlmOptions(productKey);
+      if (remoteOptions.length) return remoteOptions;
+      const fallbackConfig = LLM_UI_CONFIG[productKey];
+      if (!fallbackConfig?.expectedOptions?.length) return [];
+      return fallbackConfig.expectedOptions.map((opt) => ({
+        value: opt.value,
+        label: opt.label,
+        selectedByDefault: opt.value === fallbackConfig.defaultExpected
+      }));
+    }
+
+    function renderCopyCardPromptText() {
+      const starterTitle = getPromptTitle("starter", "Copy starter prompt");
+      const starterDescription = getPromptDescription("starter", "Paste this into your AI product to begin generating questions.");
+      const finalTitle = getPromptTitle("final_prompt", "Copy final prompt");
+      const finalDescription = getPromptDescription("final_prompt", "Paste this into your AI product to generate your final question set.");
+
+      const starterTitleEl = $("starterCopyTitle");
+      const starterCardEl = $("starterCopyCard");
+      const starterChevronEl = $("starterCopyChevron");
+      const starterDescriptionEl = $("starterCopyDescription");
+      if (starterTitleEl) starterTitleEl.textContent = starterTitle;
+      if (starterCardEl) starterCardEl.setAttribute("aria-label", starterTitle);
+      if (starterChevronEl) starterChevronEl.setAttribute("aria-label", `Show details for ${starterTitle}`);
+      if (starterDescriptionEl) starterDescriptionEl.textContent = starterDescription;
+
+      const finalTitleEl = $("finalCopyTitle");
+      const finalCardEl = $("finalCopyCard");
+      const finalChevronEl = $("finalCopyChevron");
+      const finalDescriptionEl = $("finalCopyDescription");
+      if (finalTitleEl) finalTitleEl.textContent = finalTitle;
+      if (finalCardEl) finalCardEl.setAttribute("aria-label", finalTitle);
+      if (finalChevronEl) finalChevronEl.setAttribute("aria-label", `Show details for ${finalTitle}`);
+      if (finalDescriptionEl) finalDescriptionEl.textContent = finalDescription;
+    }
+
+    // Most recently copied state (desktop sidebar)
+    let lastCopiedText = "";
+    let lastCopiedLabel = "";
+    let lastCopiedAt = null;
+    let sessionTimerIntervalId = null;
+    let llmMismatchReported = false;
+    let llmMismatchAlertAttempted = false;
+    let starterPromptCopied = false;
+    let appBootLoading = true;
+    let appBootReady = false;
+
+    // Optional audio feedback recorder state (kept centralized for easy end-session integration later).
+    let currentAudioStream = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioBlob = null;
+    let audioUrl = "";
+    let audioSubmitted = false;
+    let audioDuration = 0;
+    let uploadedAudioInfo = null;
+    let audioStartedAt = null;
+    let audioUploadInProgress = false;
+    let audioElapsedMs = 0;
+    let audioElapsedLastStartedAt = null;
+    let audioElapsedTickHandle = null;
+
+    function hideToast() {
+      const t = $("toast");
+      if (!t) return;
+      if (t._hideTimer) clearTimeout(t._hideTimer);
+      t.style.display = "none";
+      t.textContent = "";
+    }
+
+    function hideTimerNotice() {
+      const notice = $("timerNotice");
+      const msg = $("timerNoticeMessage");
+      if (!notice || !msg) return;
+      if (notice._hideTimer) clearTimeout(notice._hideTimer);
+      notice.style.display = "none";
+      msg.textContent = "";
+    }
+
+    function showTimerNotice(message) {
+      const notice = $("timerNotice");
+      const msg = $("timerNoticeMessage");
+      if (!notice || !msg) return;
+      if (notice._hideTimer) clearTimeout(notice._hideTimer);
+      msg.textContent = message;
+      notice.style.display = "flex";
+      notice._hideTimer = setTimeout(() => {
+        hideTimerNotice();
+      }, 60000);
+    }
+
+    const toast = (msg, { duration = 1400 } = {}) => {
+      const t = $("toast");
+      if (!t) return;
+      if (t._hideTimer) clearTimeout(t._hideTimer);
+      t.textContent = msg;
+      t.style.display = "block";
+      t._hideTimer = setTimeout(() => {
+        hideToast();
+      }, duration);
+    };
+
+    function showExistingErrorToast(message) {
+      toast(message);
+    }
+
+    function getStarterSetupSignature() {
+      const course = ($("ctxCourse")?.value || "").trim();
+      const area = ($("ctxArea")?.value || "").trim();
+      return `${course}||${area}`;
+    }
+
+    function isStarterSetupValid() {
+      const courseEl = document.getElementById("ctxCourse");
+      const areaEl = document.getElementById("ctxArea");
+      const course = (courseEl?.value || "").trim();
+      const area = (areaEl?.value || "").trim();
+      return !!course && !!area;
+    }
+
+    // The starter copy card is always clickable — validation happens inside
+    // the copy handler (copyStarterPrompt) when the user clicks it.
+    // This avoids CSS pointer-events issues with elements inside hidden→visible
+    // ancestor transitions that silently block clicks on first page load.
+    function updateStarterCopyAvailability() {
+      // No-op: disabled state removed. Click handler validates instead.
+    }
+
+    function updateProceedToPromptsAvailability() {
+      const btn = $("btnGoPrompts");
+      if (!btn) return;
+
+      const canProceed = isStarterSetupValid() && !!starterPromptCopied;
+      btn.disabled = !canProceed;
+      btn.classList.toggle("primary", canProceed);
+    }
+
+    function invalidateStarterPromptCopied() {
+      starterPromptCopied = false;
+      localStorage.setItem(KEYS.starterCopied, "false");
+      localStorage.removeItem(KEYS.starterCopiedSetupSignature);
+      updateProceedToPromptsAvailability();
+      const copiedTip = $("starterCopiedTrainingTip");
+      if (copiedTip) {
+        copiedTip.hidden = true;
+        copiedTip.style.display = "none";
+      }
+
+      const setupMsg = $("setupMsg");
+      if (setupMsg && (setupMsg.textContent || "").includes("Starter prompt copied.")) {
+        setupMsg.textContent = "";
+        setupMsg.style.display = "none";
+      }
+    }
+
+    function normalizeCode(s) {
+      return (s || "").trim().toLowerCase();
+    }
+
+    function setAccessLoadingState(isLoading, message = "Loading, please wait…") {
+      const btn = $("btnVerifyAccess");
+      const input = $("accessCodeInput");
+      const msg = $("accessMsg");
+      const action = document.querySelector("#accessGate .accessAction");
+
+      if (btn) {
+        btn.disabled = !!isLoading;
+        btn.textContent = isLoading ? "Loading..." : "Continue";
+      }
+
+      if (input) {
+        input.disabled = !!isLoading;
+      }
+
+      if (action) {
+        action.classList.toggle("is-loading", !!isLoading);
+      }
+
+      if (msg) {
+        msg.textContent = isLoading ? message : "";
+        msg.style.display = isLoading ? "block" : "";
+      }
+    }
+
+    function getOrCreateClientKey() {
+      const existing = localStorage.getItem(KEYS.clientKey);
+      if (existing) return existing;
+      const generated = "ck_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem(KEYS.clientKey, generated);
+      return generated;
+    }
+
+    function setupTrainingModeToggle() {
+      const trainingModeToggle = $("trainingModeToggle");
+      if (!trainingModeToggle) return;
+      trainingModeToggle.checked = isTrainingMode;
+      trainingModeToggle.addEventListener("change", () => {
+        const url = new URL(window.location.href);
+        if (trainingModeToggle.checked) {
+          url.searchParams.set("mode", "training");
+        } else {
+          url.searchParams.delete("mode");
+        }
+        window.location.href = url.toString();
+      });
+    }
+
+    function loadJSON(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+      catch { return fallback; }
+    }
+    function saveJSON(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+    function getAppVersion() {
+      // appVersion comes from the visible Last updated text in the footer.
+      const el = document.getElementById("lastUpdated");
+      return el ? el.textContent.trim() : "";
+    }
+
+    function buildAutosave(eventType, extra = {}) {
+      const sessionId = localStorage.getItem(KEYS.sessionId) || "";
+      if (!sessionId) {
+        console.warn("Autosave skipped: no sessionId");
+        return null;
+      }
+
+      // Tracks event order within a session.
+      const nextEventIndex = (Number(localStorage.getItem(KEYS.autosaveEventIndex) || "0") || 0) + 1;
+      localStorage.setItem(KEYS.autosaveEventIndex, String(nextEventIndex));
+
+      const modeParam = new URLSearchParams(window.location.search).get("mode");
+      const ctx = getContext();
+      const details = extra.details && typeof extra.details === "object" ? extra.details : {};
+      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
+      const mismatchDescription = (($("llmMismatchDescription")?.value || localStorage.getItem(KEYS.llmMismatchDescription) || "")).trim();
+      const versionValue = expectedChoice || "";
+
+      const payload = {
+        sessionId,
+        mode: modeParam || "standard",
+        accessCode: localStorage.getItem(KEYS.accessCode) || "",
+        eventIndex: nextEventIndex,
+        eventType,
+        promptName: extra.promptName || "",
+        product: localStorage.getItem(KEYS.llmProduct) || localStorage.getItem(KEYS.modelUsed) || "",
+        version: versionValue,
+        llmMismatchDescription: mismatchDescription,
+        desiredQuestions: ctx.questionCount || "",
+        courseContext: ctx.course || "",
+        questionContext: ctx.area || "",
+        extraInstructions: ($("ctxNotes")?.value || "").trim(),
+        currentStage: getStage(),
+        finalLlmResponse: ($("llmResponse")?.value || "").trim(),
+        sessionNotes: ($("sessionNotes")?.value || "").trim(),
+        audioFilename: uploadedAudioInfo?.audioFilename || "",
+        audioFileId: uploadedAudioInfo?.audioFileId || "",
+        audioFileUrl: uploadedAudioInfo?.audioFileUrl || "",
+        audioMimeType: uploadedAudioInfo?.audioMimeType || "",
+        audioDuration: uploadedAudioInfo?.audioDuration || "",
+        details,
+        appVersion: getAppVersion()
+      };
+      console.log("Autosave payload built", payload);
+      return payload;
+    }
+
+    // Background autosave only: do not block UI actions on this network call.
+    function sendAutosave(payload) {
+      if (!payload) return;
+      console.log("Sending autosave", payload);
+      fetch(AUTOSAVE_URL, {
+        method: "POST",
+        body: new URLSearchParams({
+          payload: JSON.stringify(payload)
+        })
+      })
+        .then(r => r.text())
+        .then(text => console.log("Autosave response", text))
+        .catch(err => console.error("Autosave failed", err));
+    }
+
+    function logEvent(type, data = {}) {
+      const events = loadJSON(KEYS.events, []);
+      const stage = getStage();
+      const accessCode = localStorage.getItem(KEYS.accessCode) || "";
+      const sessionId = localStorage.getItem(KEYS.sessionId) || "";
+      const modelUsed = localStorage.getItem(KEYS.modelUsed) || "";
+      const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
+      const llmExpectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
+      const timerState = getCurrentTimerState();
+      events.push({
+        t: nowIso(),
+        type,
+        stage,
+        accessCode,
+        sessionId,
+        modelUsed,
+        llmProduct,
+        llmExpectedChoice,
+        elapsed_ms: timerState.elapsedMs,
+        elapsed_mmss: timerState.elapsedMmss,
+        timer_paused: timerState.timerPaused,
+        ...data
+      });
+      saveJSON(KEYS.events, events);
+    }
+
+    const TIMER_TRAINING_NOTICE_15_MIN_MS = 15 * 60 * 1000;
+
+    function formatElapsed(ms) {
+      const totalSeconds = Math.max(0, Math.floor((ms || 0) / 1000));
+      const mm = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+      const ss = String(totalSeconds % 60).padStart(2, "0");
+      return `${mm}:${ss}`;
+    }
+
+    function getTimerElapsedMs() {
+      const elapsedBeforePause = Number(localStorage.getItem(KEYS.timerElapsedBeforePause) || "0") || 0;
+      const paused = localStorage.getItem(KEYS.timerPaused) === "true";
+      if (paused) return elapsedBeforePause;
+      const startedAt = Number(localStorage.getItem(KEYS.timerStartedAt) || "0") || 0;
+      if (!startedAt) return elapsedBeforePause;
+      return elapsedBeforePause + Math.max(0, Date.now() - startedAt);
+    }
+
+    function getCurrentTimerState() {
+      const elapsedMs = getTimerElapsedMs();
+      const timerPaused = localStorage.getItem(KEYS.timerPaused) === "true";
+      return {
+        elapsedMs,
+        elapsedMmss: formatElapsed(elapsedMs),
+        timerPaused
+      };
+    }
+
+    function restoreTimerButtonState() {
+      const btn = $("btnPauseTimer");
+      if (!btn) return;
+      const paused = localStorage.getItem(KEYS.timerPaused) === "true";
+      btn.textContent = paused ? "Resume" : "Pause";
+    }
+
+    function initializeSessionTimerIfNeeded() {
+      if (!isTrainingMode) return;
+      const startedAt = localStorage.getItem(KEYS.timerStartedAt);
+      const elapsed = localStorage.getItem(KEYS.timerElapsedBeforePause);
+      const paused = localStorage.getItem(KEYS.timerPaused);
+
+      if (!elapsed) localStorage.setItem(KEYS.timerElapsedBeforePause, "0");
+      if (!paused) localStorage.setItem(KEYS.timerPaused, "false");
+      if (!localStorage.getItem(KEYS.trainingTenMinuteNoticeShown)) localStorage.setItem(KEYS.trainingTenMinuteNoticeShown, "false");
+
+      const isPaused = localStorage.getItem(KEYS.timerPaused) === "true";
+      if (!startedAt && !isPaused) {
+        localStorage.setItem(KEYS.timerStartedAt, String(Date.now()));
+        logEvent("timer_started");
+      }
+
+      restoreTimerButtonState();
+    }
+
+    function updateSessionTimer() {
+      const display = $("sessionTimerDisplay");
+      const card = $("sessionTimerCard");
+      if (!display || !card) return;
+
+      const elapsed = getTimerElapsedMs();
+      display.textContent = formatElapsed(elapsed);
+
+      if (!isTrainingMode) {
+        restoreTimerButtonState();
+        return;
+      }
+
+      if (elapsed >= TIMER_TRAINING_NOTICE_15_MIN_MS && localStorage.getItem(KEYS.trainingTenMinuteNoticeShown) !== "true") {
+        localStorage.setItem(KEYS.trainingTenMinuteNoticeShown, "true");
+        showTimerNotice("By this point, you have probably spent enough time practicing to understand how the app works. If you’d like to keep working on your questions, that’s perfectly fine, but feel free to finish the activity now, even if you don't have all 5 questions fully refined.");
+        console.log("10-minute training notice shown");
+      }
+
+      restoreTimerButtonState();
+    }
+
+    function startSessionTimerLoop() {
+      if (!isTrainingMode) return;
+      if (sessionTimerIntervalId) clearInterval(sessionTimerIntervalId);
+      sessionTimerIntervalId = setInterval(updateSessionTimer, 1000);
+      updateSessionTimer();
+    }
+
+    function handlePauseResumeTimer() {
+      if (!isTrainingMode) return;
+      const paused = localStorage.getItem(KEYS.timerPaused) === "true";
+      if (paused) {
+        localStorage.setItem(KEYS.timerStartedAt, String(Date.now()));
+        localStorage.setItem(KEYS.timerPaused, "false");
+        logEvent("timer_resumed");
+        sendAutosave(buildAutosave("timer_resumed"));
+      } else {
+        localStorage.setItem(KEYS.timerElapsedBeforePause, String(getTimerElapsedMs()));
+        localStorage.removeItem(KEYS.timerStartedAt);
+        localStorage.setItem(KEYS.timerPaused, "true");
+        logEvent("timer_paused");
+        sendAutosave(buildAutosave("timer_paused"));
+      }
+      updateSessionTimer();
+    }
+
+
+    function configureTrainingTipsUI() {
+      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "trainingTipMismatch", "makingQuestionsTrainingTip", "trainingTipFinalizeIntro", "finalCopiedTrainingTip", "trainingTipFinalizeFeedback", "trainingTipEndSession"];
+      tipIds.forEach((id) => {
+        const el = $(id);
+        if (!el) return;
+        const shouldShow = isTrainingMode && ((id !== "starterCopiedTrainingTip" && id !== "finalCopiedTrainingTip") || !el.hidden);
+        el.style.display = shouldShow ? "block" : "none";
+      });
+    }
+
+    function configureTimerModeUI() {
+      const timerCard = $("sessionTimerCard");
+      const timerNotice = $("timerNotice");
+      if (!isTrainingMode) {
+        if (timerCard) timerCard.style.display = "none";
+        if (timerNotice) timerNotice.style.display = "none";
+        hideTimerNotice();
+        return;
+      }
+      if (timerCard) timerCard.style.display = "";
+      console.log("Training mode timer enabled");
+    }
+
+    function makeSessionId(participantCode) {
+      const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+      const stamp = new Date().toISOString().replace(/[-:]/g,"").slice(0,13); // YYYYMMDDTHH
+      return `${participantCode}-${stamp}-${rand}`;
+    }
+
+    function setLockedState(isLocked, msg = "") {
+      $("appShell").style.display = isLocked ? "none" : "block";
+      $("accessGate").style.display = isLocked ? "block" : "none";
+      if ($("accessMsg")) $("accessMsg").textContent = msg;
+      updatePageMode();
+      updateFooterMode();
+    }
+
+    function updatePageMode() {
+      const shell = document.querySelector(".pageShell");
+      const appShell = $("appShell");
+      if (!shell || !appShell) return;
+
+      const appVisible = appShell.style.display !== "none" && !appShell.hidden;
+      shell.classList.toggle("is-app", appVisible);
+      shell.classList.toggle("is-landing", !appVisible);
+    }
+
+    function updateFooterMode() {
+      const footer = document.querySelector(".pageFooter");
+      const appShell = $("appShell");
+      if (!footer || !appShell) return;
+
+      const appVisible = appShell.style.display !== "none" && !appShell.hidden;
+      footer.classList.toggle("is-app", appVisible);
+      footer.classList.toggle("is-landing", !appVisible);
+    }
+
+    function getContext() {
+      return loadJSON(KEYS.context, { course: "", area: "", notes: "", questionCount: "10" });
+    }
+
+    function setContext(ctx) {
+      saveJSON(KEYS.context, ctx);
+      logEvent("context_saved", { ctx });
+    }
+
+    function getStage() {
+      return localStorage.getItem(KEYS.stage) || "setup";
+    }
+
+
+    function normalizeLlmProduct(model) {
+      const m = (model || "").trim().toLowerCase();
+      if (!m) return "";
+      if (["chatgpt", "gemini", "copilot"].includes(m)) return m;
+      return "";
+    }
+
+    function formatLlmProductLabel(productKey) {
+      if (LLM_UI_CONFIG[productKey]?.label) return LLM_UI_CONFIG[productKey].label;
+      return "—";
+    }
+
+    function formatLlmExpectedChoiceLabel(productKey, expectedChoice) {
+      if (!expectedChoice) return "—";
+      const options = getLlmOptionList(productKey);
+      const match = options.find((o) => o.value === expectedChoice);
+      return match?.label || expectedChoice;
+    }
+
+    function getLlmHelpImages(productKey) {
+      const map = {
+        chatgpt: {
+          image1Src: "images/chatgpt-1.png",
+          image2Src: "images/chatgpt-2.png",
+          image1Alt: "ChatGPT where to click",
+          image2Alt: "ChatGPT dropdown example"
+        },
+        copilot: {
+          image1Src: "images/copilot-1.png",
+          image2Src: "images/copilot-2.png",
+          image1Alt: "Copilot where to click",
+          image2Alt: "Copilot dropdown example"
+        },
+        gemini: {
+          image1Src: "images/gemini-1.png",
+          image2Src: "images/gemini-2.png",
+          image1Alt: "Gemini where to click",
+          image2Alt: "Gemini dropdown example"
+        }
+      };
+      return map[productKey] || null;
+    }
+
+
+    function setLlmMismatchVisibility(show, shouldFocus = false) {
+      const wrap = $("llmMismatchWrap");
+      const note = $("llmMismatchNote");
+      if (wrap) wrap.style.display = show ? "block" : "none";
+      if (note) note.style.display = show ? "block" : "none";
+      if (show && shouldFocus) {
+        requestAnimationFrame(() => $("llmMismatchDescription")?.focus());
+      }
+    }
+
+    async function sendLlmMismatchAlert(payload) {
+      if (!LLM_MISMATCH_ALERT_WEBHOOK.trim()) return;
+      try {
+        const res = await fetch(LLM_MISMATCH_ALERT_WEBHOOK, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        logEvent("llm_mismatch_alert_sent", { llmProduct: payload.llmProduct });
+      } catch (err) {
+        logEvent("llm_mismatch_alert_failed", {
+          llmProduct: payload.llmProduct,
+          error: String(err?.message || err || "unknown_error")
+        });
+      }
+    }
+
+    function isLlmConfirmationComplete() {
+      const product = localStorage.getItem(KEYS.llmProduct) || "";
+      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
+      const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
+
+      if (!product) return false;
+      if (!["chatgpt", "gemini", "copilot"].includes(product)) return false;
+      if (!expectedChoice) return false;
+      if (expectedChoice === "different" && !mismatchDescription) return false;
+      return true;
+    }
+
+
+    function isSetupVersionConfirmedForContext() {
+      const product = localStorage.getItem(KEYS.llmProduct) || "";
+      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
+      if (!product) return false;
+      if (!["chatgpt", "gemini", "copilot"].includes(product)) return false;
+      return !!expectedChoice;
+    }
+
+    function getProductVersionSummaryText() {
+      const productKey = localStorage.getItem(KEYS.llmProduct) || "";
+      const expectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
+      const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
+      const productLabel = formatLlmProductLabel(productKey);
+
+      let versionLabel = formatLlmExpectedChoiceLabel(productKey, expectedChoice);
+      if (expectedChoice === "different") {
+        versionLabel = mismatchDescription || "I see something different";
+      }
+
+      return `Product: ${productLabel} · Mode: ${versionLabel || "—"}`;
+    }
+
+    function setProductVersionConfirmedState(isConfirmed) {
+      localStorage.setItem(KEYS.productVersionConfirmed, isConfirmed ? "true" : "false");
+    }
+
+    function updateSetupSubbandVisibility() {
+      const contextSubband = $("contextSubband");
+      const contextFields = $("contextFields");
+      const editor = $("productVersionEditor");
+      const summary = $("productVersionSummary");
+      const summaryText = $("productVersionSummaryText");
+      const confirmBtn = $("btnConfirmProductVersion");
+      const canConfirm = isSetupVersionConfirmedForContext();
+      const isConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
+      const showConfirmed = isConfirmed && canConfirm;
+
+      console.log("updateSetupSubbandVisibility:", { canConfirm, isConfirmed, showConfirmed, contextSubbandHidden: contextSubband?.classList.contains("hidden"), contextFieldsHidden: contextFields?.classList.contains("hidden") });
+
+      const productSelected = !!(localStorage.getItem(KEYS.llmProduct) || "");
+      if (confirmBtn) confirmBtn.disabled = !canConfirm;
+      if (summaryText) summaryText.textContent = getProductVersionSummaryText();
+      if (editor) {
+        editor.classList.toggle("hidden", !productSelected || showConfirmed);
+      }
+      if (summary) summary.style.display = showConfirmed ? "block" : "none";
+      if (contextSubband) contextSubband.classList.toggle("hidden", !showConfirmed);
+      // contextFields visibility is controlled by its parent contextSubband —
+      // toggling hidden on both caused layout issues on first-load confirm flow.
+      if (contextFields) contextFields.classList.remove("hidden");
+      updateStarterCopyAvailability();
+    }
+
+    function renderLlmConfirmPanel(productKey) {
+      const panel = $("llmConfirmPanel");
+      const expectedSelect = $("llmExpectedChoice");
+      const mismatchInput = $("llmMismatchDescription");
+      const config = LLM_UI_CONFIG[productKey];
+
+      if (!panel || !expectedSelect || !mismatchInput) return;
+
+      if (!config) {
+        panel.style.display = "none";
+        expectedSelect.innerHTML = "";
+        setLlmMismatchVisibility(false);
+        localStorage.removeItem(KEYS.llmExpectedChoice);
+        localStorage.removeItem(KEYS.llmMismatchDescription);
+        llmMismatchReported = false;
+        llmMismatchAlertAttempted = false;
+        const productVersionTitle = $("productVersionTitle");
+        const llmConfirmIntro = $("llmConfirmIntro");
+        if (productVersionTitle) productVersionTitle.textContent = "Confirm product mode";
+        if (llmConfirmIntro) llmConfirmIntro.textContent = "";
+        updateSetupSubbandVisibility();
+        return;
+      }
+
+      panel.style.display = "block";
+
+      const productVersionTitle = $("productVersionTitle");
+      const llmConfirmIntro = $("llmConfirmIntro");
+      if (productVersionTitle) productVersionTitle.textContent = "Confirm product mode";
+      if (llmConfirmIntro) llmConfirmIntro.textContent = "";
+      $("llmInstructionText").textContent = "";
+      $("llmWhereText").textContent = "";
+      $("llmConfirmLabel").textContent = "";
+
+      const helpImages = getLlmHelpImages(productKey);
+      const img1 = $("llmImage1");
+      const img2 = $("llmImage2");
+      const caption1 = "Click here to open the dropdown menu.";
+      const caption2 = "Confirm that the text here matches the option in the dropdown menu.";
+      if (img1) {
+        if (helpImages) {
+          img1.innerHTML = `<div class="helpExampleItem"><img src="${helpImages.image1Src}" class="helpExampleImage" alt="${helpImages.image1Alt}"><div class="helpExampleText">${caption1}</div></div>`;
+        } else {
+          img1.innerHTML = "";
+        }
+      }
+      if (img2) {
+        if (helpImages) {
+          img2.innerHTML = `<div class="helpExampleItem"><img src="${helpImages.image2Src}" class="helpExampleImage" alt="${helpImages.image2Alt}"><div class="helpExampleText">${caption2}</div></div>`;
+        } else {
+          img2.innerHTML = "";
+        }
+      }
+
+      const existingValue = localStorage.getItem(KEYS.llmExpectedChoice) || "";
+      const options = getLlmOptionList(productKey);
+      expectedSelect.innerHTML = "";
+      options.forEach((opt) => {
+        const el = document.createElement("option");
+        el.value = opt.value;
+        el.textContent = opt.label;
+        expectedSelect.appendChild(el);
+      });
+
+      const defaultOption = options.find((o) => o.selectedByDefault) || options[0] || null;
+      const validValues = new Set(options.map((o) => o.value));
+      const selectedValue = validValues.has(existingValue) ? existingValue : (defaultOption?.value || "");
+      expectedSelect.value = selectedValue;
+      if (selectedValue) {
+        localStorage.setItem(KEYS.llmExpectedChoice, selectedValue);
+      } else {
+        localStorage.removeItem(KEYS.llmExpectedChoice);
+      }
+
+      if (selectedValue === "different") {
+        const mismatch = localStorage.getItem(KEYS.llmMismatchDescription) || "";
+        mismatchInput.value = mismatch;
+        setLlmMismatchVisibility(true);
+        if (mismatch.trim()) {
+          llmMismatchReported = true;
+          llmMismatchAlertAttempted = true;
+        }
+      } else {
+        mismatchInput.value = "";
+        setLlmMismatchVisibility(false);
+        localStorage.removeItem(KEYS.llmMismatchDescription);
+        llmMismatchReported = false;
+        llmMismatchAlertAttempted = false;
+      }
+      updateSetupSubbandVisibility();
+    }
+
+    function setStage(stage) {
+      const previousStage = getStage();
+      if (previousStage !== stage) {
+        logEvent("stage_exited", { stage: previousStage });
+        localStorage.setItem(KEYS.stage, stage);
+        logEvent("stage_entered", { stage });
+        logEvent("stage_set", { stage });
+      } else {
+        localStorage.setItem(KEYS.stage, stage);
+        logEvent("stage_set", { stage });
+      }
+      applyStageUI();
+    }
+
+    function markAnyCopy() {
+      localStorage.setItem(KEYS.anyCopy, "true");
+    }
+
+    function markFinalizeVisited() {
+      localStorage.setItem(KEYS.finalizeVisited, "true");
+    }
+
+    function isSessionReadyToEnd() {
+      return localStorage.getItem(KEYS.anyCopy) === "true" && localStorage.getItem(KEYS.finalizeVisited) === "true";
+    }
+
+    function updateEndSessionVisibility() {
+      const row = $("endSessionRow");
+      if (!row) return;
+      row.dataset.readyToEnd = isSessionReadyToEnd() ? "true" : "false";
+    }
+
+
+    function getFinalizeCopyInstructionLine(model) {
+      const m = (model || "").trim();
+      const caption = "Click the copy button beneath the AI response.";
+      if (m === "ChatGPT") return `<div class="copyHelpExample"><img src="images/chatgpt-copy.png" class="copyHelpImage" alt="ChatGPT copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      if (m === "Gemini") return `<div class="copyHelpExample"><img src="images/gemini-copy.png" class="copyHelpImage" alt="Gemini copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      if (m === "Copilot") return `<div class="copyHelpExample"><img src="images/copilot-copy.png" class="copyHelpImage" alt="Copilot copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      return caption;
+    }
+
+    function updateFinalizeContentUI() {
+      const copied = localStorage.getItem(KEYS.finalPromptCopied) === "true";
+      const notice = $("finalizeCopyNotice");
+      const lockedArea = $("finalizeLockedArea");
+      const endRow = $("endSessionRow");
+      const endTip = $("trainingTipEndSession");
+      const finalCopiedTip = $("finalCopiedTrainingTip");
+      const llm = $("llmResponse");
+
+      if (notice) {
+        if (copied) {
+          const model = localStorage.getItem(KEYS.modelUsed) || "Other";
+          notice.style.display = "block";
+          notice.innerHTML = `
+            1) Paste the final prompt into your AI product.<br><br>
+            2) Click on the copy button below the response to copy it in its entirety<br>
+            <details class="helpToggle" style="display:inline-block; margin-top:6px;">
+              <summary class="whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
+              <div style="margin-top:6px;">${getFinalizeCopyInstructionLine(model)}</div>
+            </details><br><br>
+            3) Paste that response below.
+          `;
+        } else {
+          notice.style.display = "none";
+          notice.textContent = "";
+        }
+      }
+
+      if (lockedArea) {
+        lockedArea.style.display = copied ? "block" : "none";
+        lockedArea.classList.toggle("finalizeLockedContent", !copied);
+      }
+      if (llm) llm.disabled = !copied;
+      if (endRow) endRow.style.display = copied ? "flex" : "none";
+      updateEndSessionState();
+      if (finalCopiedTip) {
+        finalCopiedTip.hidden = !copied;
+        finalCopiedTip.style.display = isTrainingMode && copied ? "block" : "none";
+      }
+      // End Session training tip is shown only when the End Session section is visible.
+      if (endTip) endTip.style.display = isTrainingMode && copied ? "block" : "none";
+    }
+
+
+    function canEndSession() {
+      return !!(($("llmResponse")?.value || "").trim());
+    }
+
+    function updateEndSessionState() {
+      const btn = $("btnEndSession");
+      if (!btn) return;
+      btn.disabled = false;
+      btn.classList.toggle("pseudo-disabled", !canEndSession());
+    }
+
+    function clearSessionData() {
+      Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+      lastCopiedText = "";
+      lastCopiedLabel = "";
+      lastCopiedAt = null;
+    }
+
+    // -----------------------------
+    // Footer status
+    // -----------------------------
+    function refreshFooterInfo() {
+      const code = localStorage.getItem(KEYS.accessCode) || "—";
+      const startIso = localStorage.getItem(KEYS.sessionStartTime);
+      const started = startIso ? new Date(startIso).toLocaleString() : "—";
+      const last = document.lastModified || "—";
+      const footer = $("buildInfo");
+      if (!footer) return;
+      footer.innerHTML = `Participant: ${code} • Started: ${started} • <span id="lastUpdated">Last updated: ${last}</span>`;
+    }
+
+    // -----------------------------
+    // Build starter/final prompts
+    // -----------------------------
+
+    // Produces the actual text copied to clipboard. Uses strict fallbacks.
+    function buildStarterPrompt() {
+      const ctx = getContext();
+      const notesLine = (ctx.notes || "").trim()
+        ? `Additional instructions/parameters: ${ctx.notes.trim()}`
+        : `Additional instructions/parameters: (none)`;
+      const template = getPromptText("starter");
+      return template
+        .replaceAll("{{COURSE}}", ctx.course || "(not provided)")
+        .replaceAll("{{AREA}}", ctx.area || "(not provided)")
+        .replaceAll("{{QUESTION_COUNT}}", ctx.questionCount || "10")
+        .replaceAll("{{NOTES_LINE}}", notesLine);
+    }
+
+    function buildFinalPrompt() {
+      return getPromptText("final_prompt");
+    }
+
+    // Preview text for prompt card panels. Uses natural-language fallbacks.
+    function fillTemplate(template) {
+      const ctx = getContext();
+      const notesLine = (ctx.notes || "").trim()
+        ? `Additional instructions: ${ctx.notes.trim()}`
+        : `(No additional instructions.)`;
+
+      return template
+        .replaceAll("{{COURSE}}", ctx.course || "the course")
+        .replaceAll("{{AREA}}", ctx.area || "the content area")
+        .replaceAll("{{NOTES_LINE}}", notesLine);
+    }
+
+
+    // Audio recorder status text renderer.
+    function setAudioFeedbackStatus(message) {
+      const el = $("btnAudioState");
+      if (el) el.textContent = message;
+    }
+
+    function setAudioUploadButtonState(state = "default", text = "Submit audio") {
+      const btn = $("btnAudioSubmit");
+      if (!btn) return;
+      btn.classList.remove("audioSubmitUploading", "audioSubmitSuccess", "audioSubmitError");
+      btn.removeAttribute("aria-busy");
+      btn.textContent = text;
+
+      if (state === "uploading") {
+        btn.classList.add("audioSubmitUploading");
+        btn.setAttribute("aria-busy", "true");
+      } else if (state === "success") {
+        btn.classList.add("audioSubmitSuccess");
+      } else if (state === "error") {
+        btn.classList.add("audioSubmitError");
+      }
+    }
+
+    function resetAudioUploadButton() {
+      setAudioUploadButtonState("default", "Submit audio");
+    }
+
+    function sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    // Release object URL whenever a recording is replaced.
+    function releaseAudioFeedbackUrl() {
+      if (!audioUrl) return;
+      URL.revokeObjectURL(audioUrl);
+      audioUrl = "";
+    }
+
+    // Stop current microphone stream tracks.
+    function stopAudioFeedbackStream() {
+      if (!currentAudioStream) return;
+      currentAudioStream.getTracks().forEach((track) => track.stop());
+      currentAudioStream = null;
+    }
+
+    function formatAudioElapsed(ms) {
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      if (hours > 0) {
+        return [
+          String(hours).padStart(2, "0"),
+          String(minutes).padStart(2, "0"),
+          String(seconds).padStart(2, "0")
+        ].join(":");
+      }
+
+      return [
+        String(minutes).padStart(2, "0"),
+        String(seconds).padStart(2, "0")
+      ].join(":");
+    }
+
+    function getCurrentAudioElapsedMs() {
+      if (audioElapsedLastStartedAt) {
+        return audioElapsedMs + (Date.now() - audioElapsedLastStartedAt);
+      }
+      return audioElapsedMs;
+    }
+
+    function renderAudioElapsed() {
+      const row = $("audioElapsedRow");
+      const value = $("audioElapsedValue");
+      if (!row || !value) return;
+
+      const recorderState = mediaRecorder?.state || "inactive";
+      const hasRecording = !!audioBlob;
+      const shouldShow = recorderState === "recording" || recorderState === "paused" || hasRecording;
+
+      row.style.display = shouldShow ? "flex" : "none";
+      value.textContent = formatAudioElapsed(getCurrentAudioElapsedMs());
+    }
+
+    function startAudioElapsedTicker() {
+      stopAudioElapsedTicker();
+      audioElapsedTickHandle = setInterval(() => {
+        renderAudioElapsed();
+      }, 250);
+    }
+
+    function stopAudioElapsedTicker() {
+      if (audioElapsedTickHandle) {
+        clearInterval(audioElapsedTickHandle);
+        audioElapsedTickHandle = null;
+      }
+    }
+
+    // Keep recorder UI updates in one place for maintainability.
+    function updateAudioRecorderUI() {
+      const recorderState = mediaRecorder?.state || "inactive";
+      const hasRecording = !!audioBlob;
+      const controlsRow = $("audioPrimaryControls");
+      const playbackRow = $("audioPlaybackRow");
+      const startBtn = $("btnAudioStart");
+      const stateBtn = $("btnAudioState");
+      const pauseResumeBtn = $("btnAudioPauseResume");
+      const stopBtn = $("btnAudioStop");
+      const submitBtn = $("btnAudioSubmit");
+
+      const showInitial = recorderState === "inactive" && !hasRecording;
+      const showActive = recorderState === "recording" || recorderState === "paused";
+      const showStopped = recorderState === "inactive" && hasRecording;
+
+      if (controlsRow) controlsRow.style.display = (showInitial || showActive) ? "flex" : "none";
+      if (startBtn) startBtn.style.display = showInitial ? "inline-flex" : "none";
+
+      if (stateBtn) {
+        stateBtn.style.display = showActive ? "inline-flex" : "none";
+        stateBtn.textContent = recorderState === "paused" ? "Paused" : "Recording";
+      }
+
+      if (pauseResumeBtn) {
+        pauseResumeBtn.style.display = showActive ? "inline-flex" : "none";
+        pauseResumeBtn.textContent = recorderState === "paused" ? "Resume" : "Pause";
+      }
+
+      if (stopBtn) stopBtn.style.display = showActive ? "inline-flex" : "none";
+      if (playbackRow) playbackRow.style.display = showStopped ? "flex" : "none";
+      if (submitBtn) {
+        if (audioUploadInProgress) {
+          submitBtn.disabled = true;
+        } else if (audioSubmitted) {
+          setAudioUploadButtonState("success", "Uploaded");
+          submitBtn.disabled = true;
+        } else {
+          resetAudioUploadButton();
+          submitBtn.disabled = !hasRecording;
+        }
+      }
+      renderAudioElapsed();
+    }
+
+    function clearAudioRecorderState({ keepSubmitted = false } = {}) {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      }
+      mediaRecorder = null;
+      stopAudioFeedbackStream();
+      releaseAudioFeedbackUrl();
+      audioChunks = [];
+      audioBlob = null;
+      audioDuration = 0;
+      audioStartedAt = null;
+      uploadedAudioInfo = null;
+      audioUploadInProgress = false;
+      audioElapsedMs = 0;
+      audioElapsedLastStartedAt = null;
+      stopAudioElapsedTicker();
+      if (!keepSubmitted) audioSubmitted = false;
+      resetAudioUploadButton();
+
+      const player = $("audioFeedbackPlayer");
+      if (player) {
+        player.pause();
+        player.removeAttribute("src");
+        player.load();
+      }
+      renderAudioElapsed();
+    }
+
+    async function startAudioRecording() {
+      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+        toast("Audio recording is not supported in this browser.");
+        return;
+      }
+      try {
+        clearAudioRecorderState();
+        currentAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(currentAudioStream);
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+          audioDuration = audioStartedAt ? Math.max(0, Date.now() - audioStartedAt) : 0;
+          releaseAudioFeedbackUrl();
+          audioUrl = URL.createObjectURL(audioBlob);
+          const player = $("audioFeedbackPlayer");
+          if (player) {
+            player.src = audioUrl;
+            player.load();
+          }
+          stopAudioFeedbackStream();
+          renderAudioElapsed();
+          updateAudioRecorderUI();
+        };
+
+        audioStartedAt = Date.now();
+        audioSubmitted = false;
+        uploadedAudioInfo = null;
+        audioElapsedMs = 0;
+        audioElapsedLastStartedAt = Date.now();
+        renderAudioElapsed();
+        startAudioElapsedTicker();
+        mediaRecorder.start();
+        updateAudioRecorderUI();
+      } catch (err) {
+        console.error("Audio recording start failed", err);
+        toast("Microphone permission or recording start failed.");
+        clearAudioRecorderState();
+        updateAudioRecorderUI();
+      }
+    }
+
+    function togglePauseResumeAudioRecording() {
+      if (!mediaRecorder) return;
+
+      if (mediaRecorder.state === "recording") {
+        mediaRecorder.pause();
+        if (audioElapsedLastStartedAt) {
+          audioElapsedMs += Date.now() - audioElapsedLastStartedAt;
+          audioElapsedLastStartedAt = null;
+        }
+        stopAudioElapsedTicker();
+      } else if (mediaRecorder.state === "paused") {
+        mediaRecorder.resume();
+        audioElapsedLastStartedAt = Date.now();
+        startAudioElapsedTicker();
+      }
+
+      renderAudioElapsed();
+      updateAudioRecorderUI();
+    }
+
+    function stopAudioRecording() {
+      if (!mediaRecorder || mediaRecorder.state === "inactive") return;
+      if (mediaRecorder.state === "recording" && audioElapsedLastStartedAt) {
+        audioElapsedMs += Date.now() - audioElapsedLastStartedAt;
+        audioElapsedLastStartedAt = null;
+      }
+      stopAudioElapsedTicker();
+      renderAudioElapsed();
+      mediaRecorder.stop();
+    }
+
+    function sanitizeFilenamePart(value) {
+      return (value || "")
+        .toString()
+        .trim()
+        .replace(/[^a-zA-Z0-9_-]+/g, "_")
+        .replace(/^_+|_+$/g, "") || "user";
+    }
+
+    function getYYMMDD(date = new Date()) {
+      const yy = String(date.getFullYear()).slice(-2);
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
+      return `${yy}${mm}${dd}`;
+    }
+
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const raw = String(reader.result || "");
+          const base64 = raw.includes(",") ? raw.split(",")[1] : raw;
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    // Upload flow (Apps Script action=uploadAudio).
+    function uploadAudioWithProgress(payload, onProgress) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", AUTOSAVE_URL, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable || typeof onProgress !== "function") return;
+          onProgress(event.loaded, event.total);
+        };
+
+        xhr.onload = () => {
+          resolve({ status: xhr.status, ok: xhr.status >= 200 && xhr.status < 300, text: xhr.responseText || "" });
+        };
+        xhr.onerror = () => reject(new Error("Network error during audio upload."));
+        xhr.send(JSON.stringify(payload));
+      });
+    }
+
+    async function submitAudioRecording() {
+      if (!audioBlob || audioUploadInProgress || audioSubmitted) return;
+
+      const accessCode = localStorage.getItem(KEYS.accessCode) || "participant";
+      const sessionId = localStorage.getItem(KEYS.sessionId) || "session";
+      const safeUser = sanitizeFilenamePart(accessCode);
+      const safeSession = sanitizeFilenamePart(sessionId);
+      // filename format: username_YYMMDD_sessionID.ext
+      const ext = (audioBlob.type || "").includes("ogg") ? "ogg" : "webm";
+      const filename = `${safeUser}_${getYYMMDD()}_${safeSession}.${ext}`;
+
+      try {
+        audioUploadInProgress = true;
+        const submitBtn = $("btnAudioSubmit");
+        if (submitBtn) submitBtn.disabled = true;
+        setAudioUploadButtonState("uploading", "Preparing audio…");
+        await sleep(120);
+
+        setAudioUploadButtonState("uploading", "Encoding audio…");
+        const audioBase64 = await blobToBase64(audioBlob);
+        setAudioUploadButtonState("uploading", "Uploading… 0%");
+
+        console.log("Submitting audio...");
+        console.log("audioBlob exists:", !!audioBlob);
+        console.log("audioBlob size:", audioBlob ? audioBlob.size : null);
+        console.log("audioBlob type:", audioBlob ? audioBlob.type : null);
+        console.log("filename:", filename);
+        console.log("base64 length:", audioBase64 ? audioBase64.length : null);
+
+        const body = new URLSearchParams({
+          action: "uploadAudio",
+          filename,
+          mimeType: audioBlob.type || `audio/${ext}`,
+          audioBase64
+        });
+
+        const fetchResponse = await fetch(AUTOSAVE_URL, {
+          method: "POST",
+          body
+        });
+        const response = {
+          status: fetchResponse.status,
+          ok: fetchResponse.ok,
+          text: await fetchResponse.text()
+        };
+
+        setAudioUploadButtonState("uploading", "Processing…");
+        const text = response.text;
+        let data = {};
+        try { data = JSON.parse(text); } catch { data = { raw: text }; }
+
+        if (!response.ok || data.ok === false) {
+          throw new Error(data.error || `Upload failed (${response.status})`);
+        }
+
+        uploadedAudioInfo = {
+          audioFilename: data.filename || filename,
+          audioFileId: data.fileId || data.audioFileId || "",
+          audioFileUrl: data.fileUrl || data.audioFileUrl || "",
+          audioMimeType: audioBlob.type || `audio/${ext}`,
+          audioDuration: audioDuration
+        };
+
+        audioSubmitted = true;
+        const audioUploadPayload = buildAutosave("audio_uploaded", {
+          details: {
+            source: "submit_audio_button"
+          }
+        });
+        sendAutosave(audioUploadPayload);
+        setAudioUploadButtonState("success", "Uploaded");
+        updateAudioRecorderUI();
+        toast("Audio submitted ✅");
+        await sleep(1700);
+      } catch (err) {
+        console.error("Audio upload failed", err);
+        setAudioUploadButtonState("error", "Upload failed");
+        toast("Audio upload failed. Please try again.");
+        await sleep(2000);
+        if (!audioSubmitted) {
+          resetAudioUploadButton();
+          updateAudioRecorderUI();
+        }
+      } finally {
+        audioUploadInProgress = false;
+        updateAudioRecorderUI();
+      }
+    }
+
+    async function initializeAudioFeedbackUI() {
+      if (!$("btnAudioStart")) return;
+      updateAudioRecorderUI();
+
+      $("btnAudioStart").addEventListener("click", () => { startAudioRecording(); });
+      $("btnAudioPauseResume").addEventListener("click", togglePauseResumeAudioRecording);
+      $("btnAudioStop").addEventListener("click", stopAudioRecording);
+      $("btnAudioSubmit").addEventListener("click", () => { submitAudioRecording(); });
+      $("btnAudioDelete").addEventListener("click", () => {
+        clearAudioRecorderState();
+        updateAudioRecorderUI();
+      });
+    }
+
+    function showCopyCardActiveState(card) {
+      if (!card) return;
+      card.classList.add("is-active");
+      if (card._activeTimer) clearTimeout(card._activeTimer);
+      card._activeTimer = setTimeout(() => {
+        card.classList.remove("is-active");
+      }, 400);
+    }
+
+    function setCopyCardExpanded(card, chevron, expanded, cardLabel) {
+      if (!card || !chevron) return;
+      card.classList.toggle("is-expanded", expanded);
+      chevron.setAttribute("aria-expanded", String(expanded));
+      chevron.setAttribute("aria-label", `${expanded ? "Hide" : "Show"} details for ${cardLabel}`);
+    }
+
+    function bindCopyCardInteractions({
+      cardId,
+      chevronId,
+      cardLabel,
+      onCopy
+    }) {
+      const card = $(cardId);
+      const chevron = $(chevronId);
+      if (!card || !chevron || typeof onCopy !== "function") return;
+
+      const toggleDetails = () => {
+        if (card.classList.contains("is-disabled")) return;
+        const isExpanded = !card.classList.contains("is-expanded");
+        setCopyCardExpanded(card, chevron, isExpanded, cardLabel);
+      };
+
+      chevron.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleDetails();
+      });
+
+      chevron.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        e.stopPropagation();
+        toggleDetails();
+      });
+
+      card.addEventListener("click", async (e) => {
+        if (card.classList.contains("is-disabled")) return;
+        if (e.target.closest(".promptChevronBtn")) return;
+        await onCopy();
+      });
+
+      card.addEventListener("keydown", async (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        if (card.classList.contains("is-disabled")) return;
+        if (e.target.closest(".promptChevronBtn")) return;
+        e.preventDefault();
+        await onCopy();
+      });
+    }
+
+    // -----------------------------
+    // Copy helper
+    // -----------------------------
+    async function copyToClipboard(text, label) {
+      let copied = false;
+
+      try {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } catch (e) {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.setAttribute("readonly", "");
+          ta.style.position = "fixed";
+          ta.style.top = "-1000px";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          copied = document.execCommand("copy");
+          document.body.removeChild(ta);
+        } catch (_) {
+          copied = false;
+        }
+      }
+
+      markAnyCopy();
+      lastCopiedText = text;
+      lastCopiedLabel = label;
+      lastCopiedAt = new Date();
+      renderMostRecentCopied();
+
+      if (copied) {
+        toast("Copied ✅");
+      } else {
+        toast("Clipboard blocked — please copy manually");
+      }
+
+      return copied;
+    }
+
+    // -----------------------------
+    // Accordion gating
+    // -----------------------------
+    function hasRequiredContextFields() {
+      const model = (localStorage.getItem(KEYS.modelUsed) || "").trim();
+      const ctx = getContext();
+      return !!model && !!ctx.course.trim() && !!ctx.area.trim();
+    }
+
+    function isSetupComplete() {
+      const isConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
+      return isConfirmed && hasRequiredContextFields();
+    }
+
+    function isPromptsUnlocked() {
+      const stage = getStage();
+      const copied = starterPromptCopied;
+      return (stage === "prompts" || stage === "finalize") && isSetupComplete() && copied;
+    }
+
+    function isFinalizeUnlocked() {
+      return getStage() === "finalize" && isPromptsUnlocked();
+    }
+
+    function lockableSummary(summaryEl, isLockedFn, openBandId, lockMsg) {
+      summaryEl.addEventListener("click", (e) => {
+        if (isLockedFn()) {
+          e.preventDefault();
+          toast(lockMsg);
+          // keep focus/scroll on the band that needs work
+          const target = $(openBandId);
+          if (target) {
+            target.open = true;
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
+      });
+    }
+
+    function applyStageUI() {
+      const stage = getStage();
+      const promptsUnlocked = isPromptsUnlocked();
+      const finalizeUnlocked = isFinalizeUnlocked();
+
+      // Setup tag
+      if (isSetupComplete()) {
+        $("tagSetup").textContent = "Complete";
+        $("tagSetup").className = "tag ok";
+      } else {
+        $("tagSetup").textContent = "In progress";
+        $("tagSetup").className = "tag";
+      }
+
+      // Prompts lock/unlock
+      if (promptsUnlocked) {
+        $("tagPrompts").textContent = "Open";
+        $("tagPrompts").className = "tag ok";
+        $("lockPrompts").style.display = "none";
+        $("promptsInner").style.display = "block";
+      } else {
+        $("tagPrompts").textContent = "Locked";
+        $("tagPrompts").className = "tag lock";
+        $("lockPrompts").style.display = "block";
+        $("promptsInner").style.display = "none";
+      }
+
+      // Finalize lock/unlock
+      if (finalizeUnlocked) {
+        $("tagFinalize").textContent = "Open";
+        $("tagFinalize").className = "tag ok";
+        $("lockFinalize").style.display = "none";
+        $("finalizeInner").style.display = "block";
+      } else {
+        $("tagFinalize").textContent = "Locked";
+        $("tagFinalize").className = "tag lock";
+        $("lockFinalize").style.display = "block";
+        $("finalizeInner").style.display = "none";
+      }
+
+      // Which band should be open?
+      if (stage === "setup" || !promptsUnlocked) {
+        $("bandSetup").open = true;
+        $("bandPrompts").open = false;
+        $("bandFinalize").open = false;
+      } else if (stage === "prompts" || !finalizeUnlocked) {
+        $("bandSetup").open = false;
+        $("bandPrompts").open = true;
+        $("bandFinalize").open = false;
+      } else if (stage === "finalize" && finalizeUnlocked) {
+        $("bandSetup").open = false;
+        $("bandPrompts").open = false;
+        $("bandFinalize").open = true;
+        markFinalizeVisited();
+      }
+
+      updateEndSessionVisibility();
+      updateFinalizeContentUI();
+      refreshFooterInfo();
+      renderCopyCardPromptText();
+      if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
+      if ($("finalCopyPreview")) $("finalCopyPreview").textContent = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+      updateStarterCopyAvailability();
+      updateProceedToPromptsAvailability();
+    }
+
+    // -----------------------------
+    // Prompt rendering
+    // -----------------------------
+    function renderMostRecentCopied() {
+      const text = $("recentCopiedText");
+      if (!text) return;
+
+      const hasText = !!lastCopiedText.trim();
+      text.textContent = hasText
+        ? lastCopiedText
+        : "Nothing copied yet. Click any Copy button to see it here.";
+
+      text.classList.toggle("is-empty", !hasText);
+    }
+
+    function setAllPromptCardsExpanded(expanded) {
+      const cards = document.querySelectorAll("#promptsInner .promptCard");
+      cards.forEach((card) => {
+        card.classList.toggle("is-expanded", expanded);
+
+        const chevron = card.querySelector(".promptChevronBtn");
+        if (chevron) {
+          chevron.setAttribute("aria-expanded", String(expanded));
+          const title = card.querySelector(".promptTitle")?.textContent || "prompt";
+          chevron.setAttribute(
+            "aria-label",
+            `${expanded ? "Hide" : "Show"} details for ${title}`
+          );
+        }
+      });
+    }
+
+    function bindPromptTopRowActions() {
+      const btnExpandAllPrompts = $("btnExpandAllPrompts");
+      const btnCollapseAllPrompts = $("btnCollapseAllPrompts");
+
+      if (btnExpandAllPrompts) {
+        btnExpandAllPrompts.onclick = () => setAllPromptCardsExpanded(true);
+      }
+
+      if (btnCollapseAllPrompts) {
+        btnCollapseAllPrompts.onclick = () => setAllPromptCardsExpanded(false);
+      }
+    }
+
+    function renderPromptList() {
+      const groupedPrompts = [
+        {
+          group: "Accept or Replace Question",
+          container: $("promptGroupAcceptReplace"),
+          items: ["next_question", "replace_question"]
+        },
+        {
+          group: "Refine Options",
+          container: $("promptGroupRefine"),
+          items: ["correct_answer_options", "distractor_options"]
+        },
+        {
+          group: "Question Set Audits",
+          container: $("promptGroupAudit"),
+          items: ["rebalance_content", "core_or_peripheral", "rebalance_question_type", "difficulty_audit", "blooms_taxonomy_audit"]
+        },
+        {
+          group: "Review Questions",
+          container: $("promptGroupReview"),
+          items: ["pause_review"]
+        }
+      ];
+
+      ["promptGroupAcceptReplace", "promptGroupRefine", "promptGroupReview", "promptGroupAudit"]
+        .forEach((id) => { const el = $(id); if (el) el.innerHTML = ""; });
+
+      const makePromptCard = (prompt) => {
+        const displayTitle = getPromptTitle(prompt.id, prompt.title || "");
+        const displayDescription = getPromptDescription(prompt.id, prompt.description || "");
+
+        const card = document.createElement("div");
+        card.className = "promptCard";
+        card.dataset.action = "copy";
+        card.dataset.id = prompt.id;
+        card.tabIndex = 0;
+        card.setAttribute("role", "button");
+        card.setAttribute("aria-label", `Copy ${displayTitle}`);
+
+        const header = document.createElement("div");
+        header.className = "promptHeader";
+
+        const title = document.createElement("div");
+        title.className = "promptTitle";
+        title.textContent = displayTitle;
+        header.appendChild(title);
+
+        const actions = document.createElement("div");
+        actions.className = "promptActions";
+
+        const chevronBtn = document.createElement("button");
+        chevronBtn.type = "button";
+        chevronBtn.className = "promptChevronBtn";
+        chevronBtn.dataset.action = "toggle-details";
+        chevronBtn.dataset.id = prompt.id;
+        chevronBtn.setAttribute("aria-label", `Show details for ${displayTitle}`);
+        chevronBtn.setAttribute("aria-expanded", "false");
+        chevronBtn.innerHTML = `<span class="promptChevronIcon" aria-hidden="true">›</span>`;
+
+        actions.appendChild(chevronBtn);
+
+        header.appendChild(actions);
+        card.appendChild(header);
+
+        const details = document.createElement("div");
+        details.className = "promptDetails";
+        details.id = `promptDetails_${prompt.id}`;
+
+        if (displayDescription) {
+          const desc = document.createElement("p");
+          desc.className = "promptDesc";
+          desc.textContent = displayDescription;
+          details.appendChild(desc);
+        }
+
+        const fullText = document.createElement("pre");
+        fullText.className = "promptDetailsText";
+        fullText.textContent = fillTemplate(getPromptText(prompt.id));
+
+        details.appendChild(fullText);
+        chevronBtn.setAttribute("aria-controls", details.id);
+        card.appendChild(details);
+
+        return card;
+      };
+
+      groupedPrompts.forEach((group) => {
+        if (!group.container) return;
+        group.items.forEach((id) => {
+          const prompt = PROMPT_META.find((p) => p.id === id);
+          if (!prompt) return;
+          group.container.appendChild(makePromptCard(prompt));
+        });
+      });
+
+      bindPromptTopRowActions();
+
+      const wrapper = $("promptsInner");
+      const togglePromptDetails = (chevron) => {
+        if (!chevron) return;
+        const card = chevron.closest(".promptCard");
+        if (!card) return;
+        const isExpanded = card.classList.toggle("is-expanded");
+        chevron.setAttribute("aria-expanded", String(isExpanded));
+        chevron.setAttribute(
+          "aria-label",
+          `${isExpanded ? "Hide" : "Show"} details for ${card.querySelector(".promptTitle")?.textContent || "prompt"}`
+        );
+      };
+
+      const copyPromptFromCard = async (card) => {
+        if (!card) return;
+        const id = card.dataset.id;
+        if (!id) return;
+
+        const prompt = PROMPT_META.find((x) => x.id === id);
+        if (!prompt) return;
+
+        const promptTitle = getPromptTitle(id, prompt.title || id);
+        const promptText = fillTemplate(getPromptText(id));
+        const ok = await copyToClipboard(promptText, promptTitle);
+
+        if (ok) {
+          logEvent("prompt_copied", { promptId: id });
+          sendAutosave(buildAutosave("prompt_copied", {
+            promptName: id,
+            details: { promptId: id, promptTitle }
+          }));
+
+          card.classList.add("is-active");
+          if (card._activeTimer) clearTimeout(card._activeTimer);
+          card._activeTimer = setTimeout(() => {
+            card.classList.remove("is-active");
+          }, 400);
+        }
+
+        card.blur?.();
+      };
+
+      wrapper.onclick = async (e) => {
+        const chevron = e.target.closest(".promptChevronBtn");
+        if (chevron) {
+          e.preventDefault();
+          e.stopPropagation();
+          togglePromptDetails(chevron);
+          return;
+        }
+
+        const card = e.target.closest(".promptCard[data-action='copy']");
+        if (!card) return;
+        await copyPromptFromCard(card);
+      };
+
+      wrapper.onkeydown = async (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        const chevron = e.target.closest(".promptChevronBtn");
+        if (chevron) {
+          e.preventDefault();
+          e.stopPropagation();
+          togglePromptDetails(chevron);
+          return;
+        }
+
+        const card = e.target.closest(".promptCard[data-action='copy']");
+        if (!card) return;
+        e.preventDefault();
+        await copyPromptFromCard(card);
+      };
+    }
+
+
+    // -----------------------------
+    // Access verification
+    // -----------------------------
+    async function verifyAccessCode() {
+      const verifyBtn = $("btnVerifyAccess");
+      if (verifyBtn?.dataset.verifying === "true") return false;
+
+      const code = normalizeCode($("accessCodeInput").value);
+      if (!code) {
+        setLockedState(true, "Please enter your access code.");
+        return false;
+      }
+
+      const originalBtnText = verifyBtn?.textContent || "Continue";
+      if (verifyBtn) {
+        verifyBtn.dataset.verifying = "true";
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = "Verifying...";
+      }
+
+      let validationResult;
+      try {
+        validationResult = await validateAccessCodeWithBackend(code);
+      } catch (err) {
+        setLockedState(true, "Could not verify access code right now. Please try again.");
+        logEvent("access_verification_error", { code_entered: code, error: String(err && err.message ? err.message : err) });
+        if (verifyBtn) {
+          verifyBtn.dataset.verifying = "false";
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = originalBtnText;
+        }
+        return false;
+      }
+
+      const { response, data } = validationResult;
+      if (response.ok && data && data.ok === true && data.valid === false && data.locked === true) {
+        const retryAfterSeconds = Number(data.retryAfterSeconds) || 0;
+        const waitMessage = retryAfterSeconds > 0
+          ? (retryAfterSeconds >= 60
+              ? `Too many failed attempts. Please wait ${Math.ceil(retryAfterSeconds / 60)} minute${Math.ceil(retryAfterSeconds / 60) === 1 ? "" : "s"} and try again.`
+              : `Too many failed attempts. Please wait ${retryAfterSeconds} seconds and try again.`)
+          : "Too many failed attempts. Please wait and try again.";
+        setLockedState(true, waitMessage);
+        logEvent("access_locked_out", { code_entered: code, retryAfterSeconds });
+        if (verifyBtn) {
+          verifyBtn.dataset.verifying = "false";
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = originalBtnText;
+        }
+        return false;
+      }
+
+      const isValidCode = response.ok && data && data.ok === true && data.valid === true;
+      if (!isValidCode) {
+        setLockedState(true, "Access code not recognized. Please contact the study team.");
+        logEvent("access_denied", { code_entered: code });
+        if (verifyBtn) {
+          verifyBtn.dataset.verifying = "false";
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = originalBtnText;
+        }
+        return false;
+      }
+
+      localStorage.setItem(KEYS.accessVerified, "true");
+      localStorage.setItem(KEYS.accessCode, code);
+      localStorage.setItem(KEYS.participantId, data.participantId || "");
+
+      // Start timestamp is the first step at sign-in (your request)
+      if (!localStorage.getItem(KEYS.sessionStartTime)) {
+        localStorage.setItem(KEYS.sessionStartTime, nowIso());
+      }
+
+      // Create a session id at sign-in (so it exists for starter prompt + logs)
+      if (!localStorage.getItem(KEYS.sessionId)) {
+        localStorage.setItem(KEYS.sessionId, makeSessionId(code));
+      }
+
+      // Initialize stage
+      if (!localStorage.getItem(KEYS.stage)) {
+        localStorage.setItem(KEYS.stage, "setup");
+      }
+
+      // Initialize events container if missing
+      if (!localStorage.getItem(KEYS.events)) {
+        saveJSON(KEYS.events, []);
+      }
+
+      setLockedState(false);
+      initializeSessionTimerIfNeeded();
+      startSessionTimerLoop();
+      if ($("topUser")) $("topUser").textContent = code || "User";
+      logEvent("access_verified", { accessCode: code });
+      sendAutosave(buildAutosave("access_confirmed"));
+      toast("Access verified ✅");
+
+      applyStageUI();
+      if (verifyBtn) {
+        verifyBtn.dataset.verifying = "false";
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = originalBtnText;
+      }
+      return true;
+    }
+
+    // -----------------------------
+    // Submit / JSON
+    // -----------------------------
+    function buildSessionRecord() {
+      const timerState = getCurrentTimerState();
+      return {
+        source: 'dissertation',
+        participant_code: localStorage.getItem(KEYS.participantId) || "",
+        session_id: localStorage.getItem(KEYS.sessionId) || "",
+        session_started_at: localStorage.getItem(KEYS.sessionStartTime) || "",
+        product_used: localStorage.getItem(KEYS.modelUsed) || "",
+        model_used: localStorage.getItem(KEYS.modelUsed) || "",
+        llm_product: localStorage.getItem(KEYS.llmProduct) || "",
+        llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
+        llm_mismatch_description: localStorage.getItem(KEYS.llmMismatchDescription) || "",
+        context: getContext(),
+        events: loadJSON(KEYS.events, []),
+        stage: getStage(),
+        final_prompt_copied: localStorage.getItem(KEYS.finalPromptCopied) || "false",
+        submit_clicked: localStorage.getItem(KEYS.submitClicked) || "false",
+        submission_attempted: localStorage.getItem(KEYS.submissionAttempted) === "true",
+        submission_status: localStorage.getItem(KEYS.submissionStatus) || "unknown",
+        submission_completed_at: localStorage.getItem(KEYS.submissionCompletedAt) || "",
+        submission_error: localStorage.getItem(KEYS.submissionError) || "",
+        apps_script_response_file_name: localStorage.getItem(KEYS.appsScriptResponseFileName) || "",
+        apps_script_response_file_id: localStorage.getItem(KEYS.appsScriptResponseFileId) || "",
+        last_copied_text: lastCopiedText || "",
+        final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
+        llm_response: ($("llmResponse").value || "").trim(),
+        session_notes: ($("sessionNotes")?.value || "").trim(),
+        timer_elapsed_ms: timerState.elapsedMs,
+        timer_elapsed_mmss: timerState.elapsedMmss,
+        timer_paused: timerState.timerPaused,
+        timer_started_at: localStorage.getItem(KEYS.timerStartedAt) || "",
+        timer_elapsed_before_pause: Number(localStorage.getItem(KEYS.timerElapsedBeforePause) || 0),
+        timer_warned_35: localStorage.getItem(KEYS.timerWarned35) === "true",
+        timer_warned_40: localStorage.getItem(KEYS.timerWarned40) === "true",
+        submitted_at: new Date().toISOString(),
+        page_last_updated: document.lastModified || ""
+      };
+    }
+
+    function getShortSessionSuffix(sessionId) {
+      const sid = (sessionId || "").trim();
+      if (!sid) return "session";
+      const parts = sid.split("-").filter(Boolean);
+      return parts[parts.length - 1] || "session";
+    }
+
+    function formatDateYYYYMMDD(isoString) {
+      const d = new Date(isoString || nowIso());
+      if (Number.isNaN(d.getTime())) return nowIso().slice(0, 10).replace(/-/g, "");
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(d.getUTCDate()).padStart(2, "0");
+      return `${y}${m}${day}`;
+    }
+
+    function buildSessionFilename(record, { revised = false } = {}) {
+      const participant = (record?.participant_code || "participant").trim() || "participant";
+      const datePart = formatDateYYYYMMDD(record?.submitted_at);
+      const shortSession = getShortSessionSuffix(record?.session_id);
+      const revisedSuffix = revised ? "_REVISED" : "";
+      return `${participant}_${datePart}_${shortSession}${revisedSuffix}.json`.replace(/[^\w.-]/g, "_");
+    }
+
+    async function validateAccessCodeWithBackend(code) {
+      const response = await fetch(ACCESS_VERIFY_URL, {
+        method: "POST",
+        body: new URLSearchParams({
+          action: "validateCode",
+          code,
+          client_key: getOrCreateClientKey()
+        })
+      });
+
+      const data = await response.json();
+      return { response, data };
+    }
+
+    // =================================================================
+    // Hoisted helpers (extracted from init for readability and reuse)
+    // =================================================================
+
+    const MODEL_LABEL_BY_PRODUCT = { chatgpt: "ChatGPT", gemini: "Gemini", copilot: "Copilot" };
+    const openModal = (id) => { const m = $(id); if (m) m.style.display = "flex"; };
+    const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
+
+    function selectModel(model, { logSelection = true } = {}) {
+      const llmProduct = normalizeLlmProduct(model) || "chatgpt";
+      const selectedModelLabel = MODEL_LABEL_BY_PRODUCT[llmProduct] || "ChatGPT";
+      $("modelUsed").value = selectedModelLabel;
+      localStorage.setItem(KEYS.modelUsed, selectedModelLabel);
+      document.querySelectorAll(".modelOption").forEach((btn) => {
+        const isSelected = btn.dataset.model === selectedModelLabel;
+        btn.classList.toggle("active", isSelected);
+        btn.classList.toggle("selected", isSelected);
+      });
+      localStorage.setItem(KEYS.llmProduct, llmProduct);
+      if (logSelection) {
+        logEvent("llm_product_selected", { llmProduct });
+        setProductVersionConfirmedState(false);
+      }
+      renderLlmConfirmPanel(llmProduct);
+      renderPromptList();
+      renderCopyCardPromptText();
+    }
+
+    function refreshCopyCardPreviews() {
+      renderCopyCardPromptText();
+      const starterPreview = $("starterCopyPreview");
+      if (starterPreview) starterPreview.textContent = buildStarterPrompt();
+      const finalPreview = $("finalCopyPreview");
+      if (finalPreview) {
+        finalPreview.textContent = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+      }
+    }
+
+    async function initBootAndConfig() {
+      updatePageMode();
+      updateFooterMode();
+      configureTrainingTipsUI();
+      configureTimerModeUI();
+      setupTrainingModeToggle();
+      setAccessLoadingState(true, "Loading, please wait…");
+      try {
+        await loadRemoteConfig();
+        appBootLoading = false;
+        appBootReady = true;
+        setAccessLoadingState(false, "");
+      } catch (err) {
+        console.error("Remote config failed to load", err);
+        appBootLoading = false;
+        appBootReady = false;
+        setAccessLoadingState(false, "");
+        const msg = $("accessMsg");
+        if (msg) {
+          msg.textContent = "The app is still loading or could not reach the configuration service. Please wait a moment and try again.";
+          msg.style.display = "block";
+        }
+      }
+    }
+
+    function initAccessGate() {
+      const verified = localStorage.getItem(KEYS.accessVerified) === "true";
+      const endedFlag = sessionStorage.getItem("dissertation.ended");
+      if (endedFlag === "true") {
+        sessionStorage.removeItem("dissertation.ended");
+        toast("Session ended. Data cleared on this device.");
+      }
+      if (verified) {
+        setLockedState(false);
+        initializeSessionTimerIfNeeded();
+      } else {
+        setLockedState(true);
+      }
+      requestAnimationFrame(() => {
+        if ($("accessGate")?.style.display !== "none") {
+          $("accessCodeInput")?.focus();
+        }
+      });
+      $("accessForm").addEventListener("submit", async (e) => {
+        if (!appBootReady) {
+          e.preventDefault();
+          const msg = $("accessMsg");
+          if (msg) {
+            msg.textContent = "Loading, please wait a moment before continuing.";
+            msg.style.display = "block";
+          }
+          return;
+        }
+        e.preventDefault();
+        await verifyAccessCode();
+      });
+      if ($("timerNoticeClose")) {
+        $("timerNoticeClose").addEventListener("click", () => hideTimerNotice());
+      }
+      lockableSummary($("sumPrompts"), () => !isPromptsUnlocked(), "bandSetup",
+        "Making questions is locked until you copy the starter prompt and click Proceed.");
+      lockableSummary($("sumFinalize"), () => !isFinalizeUnlocked(), "bandPrompts",
+        "Finalize is locked until you click \u201cI\u2019m done making questions.\u201d");
+      return verified;
+    }
+
+    // -----------------------------
+    // Init
+    // -----------------------------
+    async function init() {
+      await initBootAndConfig();
+      const alreadyVerified = initAccessGate();
+
+
+      // Hydrate fields
+      const storedModelProduct = normalizeLlmProduct(localStorage.getItem(KEYS.modelUsed) || "");
+      const storedLlmProduct = normalizeLlmProduct(localStorage.getItem(KEYS.llmProduct) || "");
+      const initialProduct = storedLlmProduct || storedModelProduct || "";
+      if (initialProduct) {
+        const initialModel = MODEL_LABEL_BY_PRODUCT[initialProduct] || "";
+        $("modelUsed").value = initialModel;
+        localStorage.setItem(KEYS.modelUsed, initialModel);
+        localStorage.setItem(KEYS.llmProduct, initialProduct);
+      } else {
+        // No product previously selected — leave the grid unselected.
+        $("modelUsed").value = "";
+      }
+      const ctx = getContext();
+      $("ctxCourse").value = ctx.course || "";
+      $("ctxArea").value = ctx.area || "";
+      $("ctxNotes").value = ctx.notes || "";
+      $("ctxQuestionCount").value = ctx.questionCount || "10";
+      localStorage.setItem(KEYS.starterCopied, "false");
+
+      document.querySelectorAll(".modelOption").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          selectModel(btn.dataset.model || "", { logSelection: true });
+          invalidateStarterPromptCopied();
+          applyStageUI();
+        });
+      });
+      if (initialProduct) {
+        selectModel($("modelUsed").value || "", { logSelection: false });
+      }
+      renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "");
+      updateSetupSubbandVisibility();
+
+      const llmExpectedChoiceEl = $("llmExpectedChoice");
+      const llmMismatchDescriptionEl = $("llmMismatchDescription");
+
+      if (llmExpectedChoiceEl) {
+        llmExpectedChoiceEl.addEventListener("change", () => {
+          const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
+          const expectedChoice = llmExpectedChoiceEl.value || "";
+          if (expectedChoice) {
+            localStorage.setItem(KEYS.llmExpectedChoice, expectedChoice);
+          } else {
+            localStorage.removeItem(KEYS.llmExpectedChoice);
+          }
+
+          logEvent("llm_expected_choice_selected", { llmProduct, expectedChoice });
+          setProductVersionConfirmedState(false);
+
+          if (expectedChoice === "different") {
+            setLlmMismatchVisibility(true, true);
+          } else {
+            setLlmMismatchVisibility(false);
+            if (llmMismatchDescriptionEl) llmMismatchDescriptionEl.value = "";
+            localStorage.removeItem(KEYS.llmMismatchDescription);
+            llmMismatchReported = false;
+            llmMismatchAlertAttempted = false;
+          }
+          updateSetupSubbandVisibility();
+        });
+      }
+
+      if (llmMismatchDescriptionEl) {
+        llmMismatchDescriptionEl.addEventListener("input", async () => {
+          const mismatchDescription = llmMismatchDescriptionEl.value || "";
+          localStorage.setItem(KEYS.llmMismatchDescription, mismatchDescription);
+          setProductVersionConfirmedState(false);
+          updateSetupSubbandVisibility();
+
+          const trimmed = mismatchDescription.trim();
+          const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
+          const expectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
+
+          if (!trimmed) {
+            llmMismatchReported = false;
+            llmMismatchAlertAttempted = false;
+            return;
+          }
+
+          if (!llmMismatchReported && trimmed) {
+            llmMismatchReported = true;
+            logEvent("llm_mismatch_reported", {
+              llmProduct,
+              expectedChoice: "different",
+              mismatchDescription: trimmed
+            });
+          }
+
+          if (!llmMismatchAlertAttempted && trimmed && expectedChoice === "different") {
+            llmMismatchAlertAttempted = true;
+            await sendLlmMismatchAlert({
+              accessCode: localStorage.getItem(KEYS.accessCode) || "",
+              sessionId: localStorage.getItem(KEYS.sessionId) || "",
+              stage: getStage(),
+              modelUsed: localStorage.getItem(KEYS.modelUsed) || "",
+              llmProduct,
+              llmExpectedChoice: expectedChoice,
+              llmMismatchDescription: trimmed,
+              timestamp: nowIso()
+            });
+          }
+        });
+      }
+
+      const confirmProductVersionBtn = $("btnConfirmProductVersion");
+      const productVersionSummary = $("productVersionSummary");
+      if (!localStorage.getItem(KEYS.productVersionConfirmed)) {
+        localStorage.setItem(KEYS.productVersionConfirmed, "false");
+      }
+
+      if (confirmProductVersionBtn) {
+        confirmProductVersionBtn.addEventListener("click", () => {
+          console.log("Confirm product/version clicked");
+          if (!isSetupVersionConfirmedForContext()) {
+            console.log("Confirm product/version blocked: setup version requirements not met");
+            return;
+          }
+          setProductVersionConfirmedState(true);
+          logEvent("product_version_confirm_clicked");
+          sendAutosave(buildAutosave("product_version_confirmed"));
+          console.log("Confirm product/version autosave call completed");
+          updateSetupSubbandVisibility();
+          applyStageUI();
+          console.log("Confirm product/version completed");
+        });
+      }
+
+      const reopenProductVersion = () => {
+        setProductVersionConfirmedState(false);
+        logEvent("product_version_reopened");
+        updateSetupSubbandVisibility();
+        applyStageUI();
+      };
+
+      if (productVersionSummary) {
+        productVersionSummary.addEventListener("click", reopenProductVersion);
+        productVersionSummary.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            reopenProductVersion();
+          }
+        });
+      }
+
+      // Render prompts
+      renderPromptList();
+      renderCopyCardPromptText();
+
+      renderMostRecentCopied();
+      if (!localStorage.getItem(KEYS.finalPromptCopied)) localStorage.setItem(KEYS.finalPromptCopied, "false");
+      if (isTrainingMode && $("btnPauseTimer")) {
+        $("btnPauseTimer").addEventListener("click", handlePauseResumeTimer);
+      }
+      startSessionTimerLoop();
+      updateFinalizeContentUI();
+      updateEndSessionState();
+      initializeAudioFeedbackUI();
+
+      if (!($("setupMsg").textContent || "").trim()) {
+        $("setupMsg").style.display = "none";
+      }
+
+      // Context field input handling is registered at module scope (outside init)
+      // to avoid any async timing issues. See the document-level listener below.
+
+
+      // Setup: Copy starter prompt only
+      const copyStarterPrompt = async () => {
+        // Validate required items
+        const model = ($("modelUsed").value || "").trim();
+        const course = ($("ctxCourse").value || "").trim();
+        const area = ($("ctxArea").value || "").trim();
+        const notes = ($("ctxNotes").value || "").trim();
+        const questionCount = ($("ctxQuestionCount").value || "10").trim() || "10";
+
+        $("setupMsg").textContent = "";
+        $("setupMsg").style.display = "none";
+
+        if (!model || !isStarterSetupValid()) {
+          $("setupMsg").textContent = "Please select a model and fill in course + content area before continuing.";
+          $("setupMsg").style.display = "block";
+          showExistingErrorToast("Complete required fields");
+          return;
+        }
+
+        if (!isLlmConfirmationComplete() || localStorage.getItem(KEYS.productVersionConfirmed) !== "true") {
+          $("setupMsg").textContent = "Please confirm product mode before continuing.";
+          $("setupMsg").style.display = "block";
+          showExistingErrorToast("Complete required fields");
+          return;
+        }
+
+        // Save model + context
+        localStorage.setItem(KEYS.modelUsed, model);
+        setContext({ course, area, notes, questionCount });
+
+        // Ensure access/session exist (in case someone bypassed sign-in state)
+        const code = localStorage.getItem(KEYS.accessCode);
+        if (!code) {
+          alert("No access code found. Please refresh and sign in again.");
+          return;
+        }
+        if (!localStorage.getItem(KEYS.sessionStartTime)) {
+          localStorage.setItem(KEYS.sessionStartTime, nowIso());
+        }
+        if (!localStorage.getItem(KEYS.sessionId)) {
+          localStorage.setItem(KEYS.sessionId, makeSessionId(code));
+        }
+
+        // Log + copy only
+        logEvent("starter_prepared", { accessCode: code, sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
+        refreshCopyCardPreviews();
+        const starterCard = $("starterCopyCard");
+        showCopyCardActiveState(starterCard);
+        const ok = await copyToClipboard(buildStarterPrompt(), getPromptTitle("starter", "Starter prompt"));
+        starterCard?.blur();
+        if (ok) {
+          logEvent("starter_copied", {});
+          const autosavePayload = buildAutosave("starter_prompt_copied", { promptName: "starter" });
+          console.log("Starter prompt autosave extraInstructions:", autosavePayload?.extraInstructions);
+          if (autosavePayload) sendAutosave(autosavePayload);
+          starterPromptCopied = true;
+          localStorage.setItem(KEYS.starterCopied, "true");
+          const copiedTip = $("starterCopiedTrainingTip");
+          if (isTrainingMode && copiedTip) {
+            copiedTip.hidden = false;
+            copiedTip.style.display = "block";
+          }
+          updateProceedToPromptsAvailability();
+          $("setupMsg").textContent = "Starter prompt copied. Paste it into your AI product, then click Proceed to 2) Making questions.";
+          $("setupMsg").style.display = "block";
+        }
+
+        applyStageUI();
+      };
+
+      // Register copy handler for document-level delegation (defined at module scope).
+      _copyCardHandlers["starterCopyCard"] = copyStarterPrompt;
+
+      $("btnGoPrompts").addEventListener("click", () => {
+        logEvent("go_prompts_clicked");
+        if (!isStarterSetupValid()) {
+          showExistingErrorToast("Please complete the required setup fields before copying the starter prompt.");
+          return;
+        }
+        if (!starterPromptCopied) {
+          showExistingErrorToast("Please copy the starter prompt before proceeding to Making questions.");
+          return;
+        }
+        if (!isSetupComplete()) {
+          showExistingErrorToast("Complete required fields");
+          return;
+        }
+        $("bandSetup").open = false;
+        setStage("prompts");
+      });
+
+      // Prompts controls
+      $("btnEditContext").addEventListener("click", () => {
+        logEvent("edit_context_clicked");
+        sendAutosave(buildAutosave("edit_context_clicked", { details: { toStage: "setup" } }));
+        setStage("setup");
+      });
+
+      $("btnReadyFinal").addEventListener("click", () => {
+        logEvent("done_making_questions_clicked");
+        sendAutosave(buildAutosave("question_making_completed", { details: { toStage: "finalize" } }));
+        const fp = buildFinalPrompt();
+        localStorage.setItem(KEYS.finalPrompt, fp);
+        if ($("finalCopyPreview")) $("finalCopyPreview").textContent = fp;
+        localStorage.setItem(KEYS.finalPromptCopied, "false");
+        logEvent("final_prompt_ready", {});
+        setStage("finalize");
+      });
+
+      // Finalize controls
+      $("btnBackToPrompts").addEventListener("click", () => {
+        logEvent("back_to_making_questions_clicked");
+        sendAutosave(buildAutosave("back_to_question_making_clicked", { details: { toStage: "prompts" } }));
+        logEvent("returned_from_finalize_to_prompts");
+        setStage("prompts");
+      });
+
+      const copyFinalPrompt = async () => {
+        refreshCopyCardPreviews();
+        const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+        const finalCard = $("finalCopyCard");
+        showCopyCardActiveState(finalCard);
+        const ok = await copyToClipboard(fp, getPromptTitle("final_prompt", "Final prompt"));
+        finalCard?.blur();
+        if (!ok) return;
+        localStorage.setItem(KEYS.finalPromptCopied, "true");
+        logEvent("final_prompt_copied", {});
+        sendAutosave(buildAutosave("final_prompt_copied", { promptName: "final_prompt" }));
+        const finalCopiedTip = $("finalCopiedTrainingTip");
+        if (isTrainingMode && finalCopiedTip) {
+          finalCopiedTip.hidden = false;
+        }
+        updateFinalizeContentUI();
+      };
+
+      // Register copy handler for document-level delegation (defined at module scope).
+      _copyCardHandlers["finalCopyCard"] = copyFinalPrompt;
+      refreshCopyCardPreviews();
+      updateStarterCopyAvailability();
+      updateProceedToPromptsAvailability();
+
+      $("llmResponse").addEventListener("input", () => {
+        updateFinalizeContentUI();
+        updateEndSessionState();
+      });
+      $("llmResponse").addEventListener("change", () => {
+        updateEndSessionState();
+      });
+
+
+      $("btnResetSession").addEventListener("click", () => {
+        try { logEvent("reset_opened"); } catch (err) { console.warn("Reset log failed", err); }
+        openModal("modalReset");
+      });
+      $("btnResetCancel").addEventListener("click", () => {
+        try { logEvent("reset_cancelled"); } catch (err) { console.warn("Reset log failed", err); }
+        closeModal("modalReset");
+      });
+      $("btnResetConfirm").addEventListener("click", () => {
+        try { logEvent("reset_confirmed"); } catch (err) { console.warn("Reset log failed", err); }
+        clearSessionData();
+        closeModal("modalReset");
+        location.reload();
+      });
+
+      $("btnEndSession").addEventListener("click", () => {
+        console.log("End Session clicked. canEndSession =", canEndSession());
+        if (!canEndSession()) {
+          toast("Please paste the AI-generated response into the final response box before ending the session.");
+          updateEndSessionState();
+          return;
+        }
+        logEvent("end_session_opened");
+        openModal("modalEnd");
+      });
+      $("btnEndCancel").addEventListener("click", () => {
+        logEvent("end_session_cancelled");
+        closeModal("modalEnd");
+      });
+      $("btnEndConfirm").addEventListener("click", () => {
+        console.log("End session confirm clicked");
+        logEvent("end_session_confirmed");
+        const autosavePayload = buildAutosave("session_ended", {
+          details: {
+            source: "end_confirm"
+          }
+        });
+        console.log("Final autosave payload:", autosavePayload);
+
+        const finishEndSession = () => {
+          clearSessionData();
+          sessionStorage.setItem("dissertation.ended", "true");
+          closeModal("modalEnd");
+
+          if (!isTrainingMode) {
+            location.reload();
+            return;
+          }
+          window.location.href = "training-complete.html";
+        };
+
+        if (autosavePayload) {
+          fetch(AUTOSAVE_URL, {
+            method: "POST",
+            body: new URLSearchParams({
+              payload: JSON.stringify(autosavePayload)
+            })
+          })
+            .then(r => r.text())
+            .then(text => {
+              console.log("Final autosave response:", text);
+            })
+            .catch(err => {
+              console.error("Final autosave failed:", err);
+            })
+            .finally(() => {
+              finishEndSession();
+            });
+        } else {
+          finishEndSession();
+        }
+      });
+
+      // Always show footer status immediately (even before access is verified)
+      refreshFooterInfo();
+
+      // Finally apply stage UI if already verified
+      if (alreadyVerified) {
+        // Ensure stage exists
+        if (!localStorage.getItem(KEYS.stage)) {
+          localStorage.setItem(KEYS.stage, "setup");
+        }
+        starterPromptCopied = localStorage.getItem(KEYS.starterCopied) === "true";
+        applyStageUI();
+      }
+    }
+
+    // =================================================================
+    // Context field input handling (document-level, outside init)
+    // =================================================================
+    // Registered at module scope so it's active from the moment the script
+    // loads. Previous attempts to attach listeners inside init() — both
+    // directly on elements and via bandSetup delegation — failed on
+    // first-load due to a timing issue with async init and hidden→visible
+    // DOM transitions.
+    document.addEventListener("input", (e) => {
+      const target = e.target;
+      if (!target || !target.id) return;
+
+      const isRequired = target.id === "ctxCourse" || target.id === "ctxArea";
+      const isOptional = target.id === "ctxNotes" || target.id === "ctxQuestionCount";
+      if (!isRequired && !isOptional) return;
+
+      const courseEl = document.getElementById("ctxCourse");
+      const areaEl = document.getElementById("ctxArea");
+      const notesEl = document.getElementById("ctxNotes");
+      const countEl = document.getElementById("ctxQuestionCount");
+
+      const ctx = {
+        course: (courseEl?.value || "").trim(),
+        area: (areaEl?.value || "").trim(),
+        notes: (notesEl?.value || "").trim(),
+        questionCount: (countEl?.value || "10").trim() || "10"
+      };
+      saveJSON(KEYS.context, ctx);
+
+      if (isRequired) {
+        invalidateStarterPromptCopied();
+        updateStarterCopyAvailability();
+        updateProceedToPromptsAvailability();
+      }
+      applyStageUI();
+      const preview = document.getElementById("starterCopyPreview");
+      if (preview) preview.textContent = buildStarterPrompt();
+    });
+
+    // =================================================================
+    // Copy card click handling (document-level, outside init)
+    // =================================================================
+    // Same issue as input listeners: click handlers attached to elements
+    // inside init() silently fail on first-load. Document-level delegation
+    // bypasses the problem entirely.
+    //
+    // _copyCardHandlers is populated by init() when copyStarterPrompt and
+    // copyFinalPrompt are defined. The delegation layer routes clicks to
+    // the correct handler by card ID.
+    const _copyCardHandlers = {};
+
+    document.addEventListener("click", async (e) => {
+      // Handle chevron toggle (expand/collapse prompt details)
+      const chevron = e.target.closest(".copyCard .promptChevronBtn");
+      if (chevron) {
+        e.preventDefault();
+        e.stopPropagation();
+        const card = chevron.closest(".copyCard");
+        if (!card) return;
+        const isExpanded = !card.classList.contains("is-expanded");
+        card.classList.toggle("is-expanded", isExpanded);
+        chevron.setAttribute("aria-expanded", String(isExpanded));
+        return;
+      }
+
+      // Handle card click (copy action)
+      const card = e.target.closest(".copyCard");
+      if (!card || !card.id) return;
+
+      const handler = _copyCardHandlers[card.id];
+      if (typeof handler === "function") {
+        await handler();
+      }
+    });
+
+    document.addEventListener("keydown", async (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const card = e.target.closest(".copyCard");
+      if (!card || !card.id) return;
+
+      const chevron = e.target.closest(".promptChevronBtn");
+      if (chevron) {
+        e.preventDefault();
+        e.stopPropagation();
+        const isExpanded = !card.classList.contains("is-expanded");
+        card.classList.toggle("is-expanded", isExpanded);
+        chevron.setAttribute("aria-expanded", String(isExpanded));
+        return;
+      }
+
+      const handler = _copyCardHandlers[card.id];
+      if (typeof handler === "function") {
+        e.preventDefault();
+        await handler();
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>
