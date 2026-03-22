@@ -105,7 +105,11 @@
     }
 
     .btn:hover {
-      filter: brightness(0.99);
+      box-shadow: 0 2px 6px rgba(16,33,61,0.08);
+    }
+    .btn.primary:hover {
+      background: #2560c2;
+      box-shadow: 0 2px 8px rgba(47,110,220,0.25);
     }
 
     .pill {
@@ -148,6 +152,12 @@
       padding:10px 12px;
       box-sizing:border-box;
       font: inherit;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .searchInput:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(47,110,220,0.12);
     }
 
     .statusCard {
@@ -193,10 +203,17 @@
       border-radius: 12px;
       background:#f8fbff;
       overflow:hidden;
+      transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    details.faqItem:hover {
+      border-color: #a9bfdc;
+      box-shadow: 0 1px 4px rgba(16,33,61,0.06);
     }
 
     details.faqItem[open] {
       background:#ffffff;
+      border-color: #a9bfdc;
     }
 
     details.faqItem > summary {
@@ -210,6 +227,10 @@
       padding: 12px 14px;
       font-weight: 700;
       line-height: 1.35;
+      transition: color 0.12s ease;
+    }
+    details.faqItem > summary:hover .faqQuestion {
+      color: var(--accent);
     }
 
     details.faqItem > summary::-webkit-details-marker {
@@ -298,7 +319,7 @@
         href="https://jin-dissertation.github.io/dissertation-app/"
         class="topLink"
       >
-        ← Return to Dissertation Prompt App
+        ← Back to app
       </a>
       <span class="pill">Help / FAQ</span>
     </div>
@@ -387,8 +408,41 @@
     function formatAnswer(text) {
       let html = escapeHTML(normalizeText(text));
 
+      // Bold
       html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+      // Email addresses → mailto links
+      html = html.replace(/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/g,
+        '<a href="mailto:$1" style="color:var(--accent);">$1</a>');
+
+      // Convert bullet lines (• item) into an HTML list
+      const lines = html.split("\n");
+      let result = [];
+      let inList = false;
+
+      for (const line of lines) {
+        const bulletMatch = line.match(/^\u2022\s*(.*)/);
+        if (bulletMatch) {
+          if (!inList) { result.push("<ul style=\"margin:6px 0 6px 4px;padding-left:18px;\">"); inList = true; }
+          result.push("<li>" + bulletMatch[1] + "</li>");
+        } else {
+          if (inList) { result.push("</ul>"); inList = false; }
+          result.push(line);
+        }
+      }
+      if (inList) result.push("</ul>");
+
+      html = result.join("\n");
+
+      // Convert numbered lines (1. item) at start of line
+      html = html.replace(/^(\d+)\.\s/gm, "<strong>$1.</strong> ");
+
+      // Remaining newlines to <br>
       html = html.replace(/\n/g, "<br>");
+
+      // Clean up double <br> around lists
+      html = html.replace(/<br><ul/g, "<ul");
+      html = html.replace(/<\/ul><br>/g, "</ul>");
 
       return html;
     }
