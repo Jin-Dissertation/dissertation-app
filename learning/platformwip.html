@@ -3600,6 +3600,7 @@ function renderFITBQuestion(q, index, total) {
   if (!container) return;
 
   const stateKey = getPracticeQuestionStateKey(q);
+  const acceptedAnswers = parseAcceptedFitbAnswers(q.correct_blob || '');
 
   container.innerHTML = `
     <div class="practice-question-card">
@@ -3671,7 +3672,7 @@ function renderFITBQuestion(q, index, total) {
       handlePracticeFITBAnswer(
         q,
         selected,
-        String(q.correct_blob || "").trim(),
+        acceptedAnswers,
         q.rationale || ""
       );
     });
@@ -4174,7 +4175,7 @@ function handlePracticeAnswer(question, selected, correct, rationale) {
   }
 }
 
-function handlePracticeFITBAnswer(question, selected, correct, rationale) {
+function handlePracticeFITBAnswer(question, selected, correctInput, rationale) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
@@ -4184,17 +4185,11 @@ function handlePracticeFITBAnswer(question, selected, correct, rationale) {
   const input = container.querySelector("#practice-fitb-input");
   const submitBtn = container.querySelector("#practice-fitb-submit");
 
-  const normalize = (value) =>
-    String(value || "")
-      .toLowerCase()
-      .replace(/[^\w\s]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-
-  const selectedNorm = normalize(selected);
-  const correctNorm = normalize(correct);
-
-  const isCorrect = selectedNorm === correctNorm;
+  const acceptedAnswers = Array.isArray(correctInput)
+    ? correctInput
+    : parseAcceptedFitbAnswers(correctInput);
+  const displayedCorrect = getDisplayedFitbAnswer(acceptedAnswers);
+  const isCorrect = isFitbAnswerCorrect(selected, acceptedAnswers);
 
   if (input) {
     input.disabled = true;
@@ -4219,7 +4214,7 @@ function handlePracticeFITBAnswer(question, selected, correct, rationale) {
       feedback.innerHTML = `
         <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#fef2f2; border:1px solid #991b1b; color:#991b1b;">
           <strong>Incorrect ❌</strong><br>
-          Correct answer: ${correct}
+          Correct answer: ${displayedCorrect}
         </div>
         ${buildPracticeRationaleHtml(rationale)}
       `;
@@ -4238,7 +4233,7 @@ function handlePracticeFITBAnswer(question, selected, correct, rationale) {
     practiceTestState.answerState[stateKey] = {
       type: question.item_type || question.question_type || 'fitb',
       selected,
-      correct,
+      correct: acceptedAnswers.join('|'),
       rationale: rationale || '',
       feedbackShown: true
     };
@@ -4865,6 +4860,32 @@ function normalizeGradedText(value) {
     .trim();
 }
 
+function parseAcceptedFitbAnswers(raw) {
+  const seenNormalized = new Set();
+  return String(raw || '')
+    .split('|')
+    .map(value => String(value || '').trim())
+    .filter(Boolean)
+    .filter(value => {
+      const normalized = normalizeGradedText(value);
+      if (!normalized || seenNormalized.has(normalized)) return false;
+      seenNormalized.add(normalized);
+      return true;
+    });
+}
+
+function isFitbAnswerCorrect(userAnswer, acceptedAnswers) {
+  const userNormalized = normalizeGradedText(userAnswer);
+  if (!userNormalized) return false;
+  return (Array.isArray(acceptedAnswers) ? acceptedAnswers : [])
+    .some(answer => normalizeGradedText(answer) === userNormalized);
+}
+
+function getDisplayedFitbAnswer(acceptedAnswers) {
+  if (!Array.isArray(acceptedAnswers)) return '';
+  return acceptedAnswers.find(answer => String(answer || '').trim()) || '';
+}
+
 function buildPracticeStyledResultHtml(isCorrect, correctAnswerText = '') {
   if (isCorrect) {
     return `
@@ -4898,7 +4919,7 @@ function adaptModuleCardToPracticeQuestion(item, sectionIndex) {
   const correctBlobByType = {
     sba: item.answers?.[0] || '',
     sba_image: item.answers?.[0] || '',
-    fitb: item.answers?.[0] || '',
+    fitb: (item.answers || []).join('|'),
     sata: (item.answers || []).join('|'),
     categorize: mappingBlob
   };
@@ -5014,9 +5035,10 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
   }
 
   if (type === 'fitb') {
-    const correct = String(question.correct_blob || '').trim();
-    if (!correct) return renderIncompleteCard(item, sectionIndex, onComplete, 'FITB card is missing answer data.');
-    const isCorrect = state.submitted ? normalizeGradedText(state.text) === normalizeGradedText(correct) : false;
+    const acceptedAnswers = parseAcceptedFitbAnswers(question.correct_blob || '');
+    const displayedCorrect = getDisplayedFitbAnswer(acceptedAnswers);
+    if (!acceptedAnswers.length) return renderIncompleteCard(item, sectionIndex, onComplete, 'FITB card is missing answer data.');
+    const isCorrect = state.submitted ? isFitbAnswerCorrect(state.text, acceptedAnswers) : false;
     renderFrame(`
       <div id="practice-stem" class="practice-stem">${question.stem}</div>
       <button id="practice-stem-toggle" class="practice-stem-toggle" style="display:none;" type="button">Expand case</button>
@@ -5025,7 +5047,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
       </div>
       ${!state.submitted ? '<div style="margin-top:10px;"><button type="button" class="action-btn module-fitb-submit">Check Answer</button></div>' : ''}
       <div class="practice-feedback" style="margin-top:8px;">
-        ${state.submitted ? `${buildPracticeStyledResultHtml(isCorrect, `Correct answer: ${html(correct)}`)}${buildPracticeRationaleHtml(question.rationale)}` : ''}
+        ${state.submitted ? `${buildPracticeStyledResultHtml(isCorrect, `Correct answer: ${html(displayedCorrect)}`)}${buildPracticeRationaleHtml(question.rationale)}` : ''}
       </div>
     `);
     initializePracticeStemToggle(block);
@@ -5036,7 +5058,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
         const val = String(input?.value || '').trim();
         if (!val) return;
         state.text = val;
-        markModuleQuestionSubmitted(state, normalizeGradedText(val) === normalizeGradedText(correct));
+        markModuleQuestionSubmitted(state, isFitbAnswerCorrect(val, acceptedAnswers));
         replaceCard(block, renderModuleQuestionCard(item, sectionIndex, onComplete));
       };
       submitBtn?.addEventListener('click', submit);
