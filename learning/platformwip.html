@@ -936,11 +936,25 @@
       box-shadow: var(--shadow);
     }
 
+    .video-card-header {
+      padding: 24px 24px 16px;
+    }
+
+    .video-card .content-header {
+      margin-bottom: 10px;
+    }
+
+    .video-card .content-body {
+      margin-bottom: 0;
+    }
+
     .video-wrapper {
       position: relative;
       padding-bottom: 56.25%;
       height: 0;
       background: #000;
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
     }
 
     .video-wrapper iframe {
@@ -968,10 +982,14 @@
     .video-footer {
       padding: 16px 20px;
       display: flex;
+      justify-content: flex-end;
       align-items: center;
-      justify-content: space-between;
       gap: 12px;
-      border-top: 1px solid var(--rule);
+      background: var(--white);
+    }
+
+    .video-footer .action-btn {
+      min-width: 120px;
     }
 
     .video-footer-label {
@@ -1757,8 +1775,8 @@
       /* Cards — tighter padding */
       .text-card,
       .question-card,
-      .video-card,
       .completion-card { padding: 20px; }
+      .video-card-header { padding: 20px 20px 14px; }
       .text-image-text,
       .question-image-question { padding: 20px; }
 
@@ -5212,8 +5230,10 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
   block.id = `section-${sectionIndex}`;
   block.innerHTML = baseCardShell(sectionIndex, 'Video', `
     <div class="video-card">
-      <h2 class="content-header">${html(item.header)}</h2>
-      <div class="content-body">${html(item.body)}</div>
+      <div class="video-card-header">
+        <h2 class="content-header">${html(item.header)}</h2>
+        <div class="content-body">${html(item.body)}</div>
+      </div>
       ${videoId
         ? `<div class="video-wrapper">
             <iframe src="https://www.youtube.com/embed/${html(videoId)}?rel=0&modestbranding=1" title="Training video ${sectionIndex + 1}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -5222,9 +5242,16 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
             <strong>Video unavailable</strong>
             <small>Source: ${html(item.mediaUrl)}</small>
           </div>`}
+      <div class="video-footer">
+        <button class="action-btn">Continue</button>
+      </div>
     </div>
   `);
-  attachContinue(block, sectionIndex, onComplete, item.slot);
+  const continueBtn = block.querySelector('.video-footer .action-btn');
+  continueBtn?.addEventListener('click', () => {
+    logEvent('continue_clicked', { slot: item.slot, sectionIndex });
+    onComplete();
+  }, { once: true });
   return block;
 }
 
