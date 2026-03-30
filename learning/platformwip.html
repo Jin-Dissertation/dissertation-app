@@ -5230,300 +5230,369 @@ function countAnsweredQuestionCards(structure, states) {
   return count;
 }
 
-function renderQuestionCard(item, sectionIndex, onComplete, withImage = false) {
-  if (!item.prompt || item.options.length === 0 || item.answers.length === 0) {
-    return renderIncompleteCard(item, sectionIndex, onComplete, 'Question card is missing prompt/options/answer data.');
-  }
-  const state = ensureCardState(sectionIndex, { submitted: false, selected: '', wasCorrect: false, completed: false });
-  const allowIdk = normalizeBool(item.settings.show_idk);
-  const correctAnswer = item.answers[0];
+function normalizeGradedText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-  const options = [...item.options];
-  if (allowIdk && !options.includes("I don't know yet")) options.push("I don't know yet");
+function buildPracticeStyledResultHtml(isCorrect, correctAnswerText = '') {
+  if (isCorrect) {
+    return `
+      <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#dcfce7; border:1px solid #166534; color:#14532d;">
+        <strong>Correct ✅</strong>
+      </div>
+    `;
+  }
+  return `
+    <div style="margin-top:6px; padding:12px 14px; border-radius:10px; background:#fef2f2; border:1px solid #991b1b; color:#991b1b;">
+      <strong>Incorrect ❌</strong>${correctAnswerText ? `<br>${correctAnswerText}` : ''}
+    </div>
+  `;
+}
+
+function markModuleQuestionSubmitted(state, isCorrect) {
+  if (!state.submitted && isQuestionCardType(state.type)) {
+    totalQuestions++;
+  }
+  state.submitted = true;
+  state.wasCorrect = !!isCorrect;
+  if (state.wasCorrect) correctFirst++;
+  interactionTimes.push(Date.now());
+  persistProgress();
+}
+
+function adaptModuleCardToPracticeQuestion(item, sectionIndex) {
+  const type = String(item.type || '').trim().toLowerCase();
+  const mappings = Array.isArray(item.categoryMappings) ? item.categoryMappings : [];
+  const mappingBlob = mappings.map(m => `${m.item}|${m.category}`).join('||');
+  const correctBlobByType = {
+    sba: item.answers?.[0] || '',
+    sba_image: item.answers?.[0] || '',
+    fitb: item.answers?.[0] || '',
+    sata: (item.answers || []).join('|'),
+    categorize: mappingBlob
+  };
+  const distractorsByType = {
+    sba: (item.options || []).filter(opt => opt !== (item.answers?.[0] || '')).join('|'),
+    sba_image: (item.options || []).filter(opt => opt !== (item.answers?.[0] || '')).join('|'),
+    fitb: '',
+    sata: (item.options || []).join('|'),
+    categorize: ''
+  };
+
+  return {
+    item_type: type,
+    stem: item.prompt || '',
+    rationale: item.rationale || '',
+    media_url: item.mediaUrl || '',
+    correct_blob: correctBlobByType[type] || '',
+    distractors_blob: distractorsByType[type] || '',
+    _moduleStateKey: `module::${sectionIndex}::${item.slot || ''}`
+  };
+}
+
+function renderModuleQuestionCard(item, sectionIndex, onComplete) {
+  const question = adaptModuleCardToPracticeQuestion(item, sectionIndex);
+  const type = question.item_type;
+  const state = ensureCardState(sectionIndex, {
+    type,
+    submitted: false,
+    completed: false,
+    wasCorrect: false,
+    selected: '',
+    selectedAnswers: [],
+    text: '',
+    placements: [],
+    mobileSelectedItem: ''
+  });
 
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
-  const optionsHtml = options.map((opt, idx) => `<label class="poll-option"><input type="radio" name="single-${sectionIndex}" value="${html(opt)}" ${state.selected===opt?'checked':''} ${state.submitted?'disabled':''}/> <span>${String.fromCharCode(65+idx)}. ${html(opt)}</span></label>`).join('');
-  const imageHtml = withImage ? `<div class="question-image-aside"><img src="${html(item.mediaUrl)}" alt="" /></div>` : '';
-  block.innerHTML = baseCardShell(sectionIndex, 'Knowledge Check', `
-    <div class="interactive-card ${withImage ? 'question-image-card' : ''}">
-      <h2 class="content-header">${html(item.header)}</h2>
-      <div class="content-body">${html(item.body)}</div>
-      <p class="question-stem">${html(item.prompt)}</p>
-      <div class="poll-options">${optionsHtml}</div>
-      <button class="action-btn">Check answer</button>
-      ${renderFeedbackAndRationale(item, state, state.submitted ? (state.wasCorrect ? 'correct':'incorrect') : 'neutral')}
-      ${interactiveContinueHtml(state)}
+
+  if (!question.stem) {
+    return renderIncompleteCard(item, sectionIndex, onComplete, 'Question card is missing prompt.');
+  }
+
+  const renderFrame = (inner) => {
+    block.innerHTML = baseCardShell(sectionIndex, 'Knowledge Check', `
+      <div class="interactive-card">
+        <h2 class="content-header">${html(item.header)}</h2>
+        <div class="content-body">${html(item.body)}</div>
+        ${inner}
+        ${interactiveContinueHtml(state)}
+      </div>
+    `);
+    bindInteractiveContinue(block, state, onComplete, item.slot, sectionIndex);
+    return block;
+  };
+
+  if (type === 'sba' || type === 'sba_image') {
+    const correct = String(question.correct_blob || '');
+    if (!correct) return renderIncompleteCard(item, sectionIndex, onComplete, 'SBA card is missing answer data.');
+    const distractors = splitBlob(question.distractors_blob);
+    const options = shuffleArray([correct, ...distractors]);
+    const imageHtml = type === 'sba_image' && question.media_url
+      ? `<div class="practice-image-wrap"><img src="${html(question.media_url)}" alt="Question image" class="practice-image" /></div>`
+      : '';
+
+    renderFrame(`
+      <div id="practice-stem" class="practice-stem">${question.stem}</div>
+      <button id="practice-stem-toggle" class="practice-stem-toggle" style="display:none;" type="button">Expand case</button>
       ${imageHtml}
-    </div>
-  `);
-  const btn = block.querySelector('.action-btn');
-  const submit = () => {
-    const selected = block.querySelector(`input[name="single-${sectionIndex}"]:checked`);
-    if (!selected) return;
-    if (!state.submitted && isQuestionCardType(item.type)) {
-      totalQuestions++;
-    }
-    state.submitted = true;
-    state.selected = selected.value;
-    state.wasCorrect = state.selected === correctAnswer;
-    if (state.wasCorrect) correctFirst++;
-    interactionTimes.push(Date.now());
-    persistProgress();
-    replaceCard(block, renderQuestionCard(item, sectionIndex, onComplete, withImage));
-  };
-  if (!state.submitted) btn.addEventListener('click', submit);
-  else btn.remove();
-  bindInteractiveContinue(block, state, onComplete, item.slot, sectionIndex);
-  return block;
-}
-
-function renderSelectAllCard(item, sectionIndex, onComplete) {
-  if (!item.prompt || item.options.length === 0 || item.answers.length === 0) {
-    return renderIncompleteCard(item, sectionIndex, onComplete, 'Select-all card is missing prompt/options/answers.');
-  }
-  const state = ensureCardState(sectionIndex, { submitted: false, selected: [], wasCorrect: false, completed: false });
-  const correctSet = new Set(item.answers);
-  const block = document.createElement('div');
-  block.className = 'section-block';
-  const optionsHtml = item.options.map(opt => `<label class="poll-option"><input type="checkbox" value="${html(opt)}" ${(state.selected||[]).includes(opt)?'checked':''} ${state.submitted?'disabled':''}/> <span>${html(opt)}</span></label>`).join('');
-  block.innerHTML = baseCardShell(sectionIndex, 'Knowledge Check', `
-    <div class="interactive-card">
-      <h2 class="content-header">${html(item.header)}</h2><div class="content-body">${html(item.body)}</div>
-      <p class="question-stem">${html(item.prompt)}</p>
-      <div class="poll-options">${optionsHtml}</div>
-      <button class="action-btn">Check answer</button>
-      ${renderFeedbackAndRationale(item, state, state.submitted ? (state.wasCorrect ? 'correct':'incorrect') : 'neutral')}
-      ${interactiveContinueHtml(state)}
-    </div>
-  `);
-  const btn = block.querySelector('.action-btn');
-  if (!state.submitted) btn.addEventListener('click', () => {
-    const selected = [...block.querySelectorAll('input[type="checkbox"]:checked')].map(el => el.value);
-    if (!state.submitted && isQuestionCardType(item.type)) totalQuestions++;
-    state.selected = selected;
-    state.submitted = true;
-    state.wasCorrect = selected.length === correctSet.size && selected.every(v => correctSet.has(v));
-    if (state.wasCorrect) correctFirst++;
-    persistProgress();
-    replaceCard(block, renderSelectAllCard(item, sectionIndex, onComplete));
-  }); else btn.remove();
-  bindInteractiveContinue(block, state, onComplete, item.slot, sectionIndex);
-  return block;
-}
-
-function renderFillBlankCard(item, sectionIndex, onComplete) {
-  if (!item.prompt || item.answers.length === 0) return renderIncompleteCard(item, sectionIndex, onComplete, 'Fill blank card is missing prompt/answers.');
-  const state = ensureCardState(sectionIndex, { submitted: false, text: '', wasCorrect: false, completed: false });
-  const caseInsensitive = isCaseInsensitive(item.settings);
-  const block = document.createElement('div');
-  block.className = 'section-block';
-  block.innerHTML = baseCardShell(sectionIndex, 'Knowledge Check', `
-    <div class="interactive-card">
-      <h2 class="content-header">${html(item.header)}</h2><div class="content-body">${html(item.body)}</div>
-      <p class="question-stem">${html(item.prompt)}</p>
-      <input class="gate-input" value="${html(state.text)}" ${state.submitted?'disabled':''} placeholder="Type your answer"/>
-      <button class="action-btn">Check answer</button>
-      ${renderFeedbackAndRationale(item, state, state.submitted ? (state.wasCorrect ? 'correct':'incorrect') : 'neutral')}
-      ${interactiveContinueHtml(state)}
-    </div>
-  `);
-  const btn = block.querySelector('.action-btn');
-  if (!state.submitted) btn.addEventListener('click', () => {
-    const val = block.querySelector('input').value.trim();
-    if (!val) return;
-    const norm = x => caseInsensitive ? String(x).trim().toLowerCase() : String(x).trim();
-    if (!state.submitted && isQuestionCardType(item.type)) totalQuestions++;
-    state.text = val;
-    state.submitted = true;
-    state.wasCorrect = item.answers.map(norm).includes(norm(val));
-    if (state.wasCorrect) correctFirst++;
-    persistProgress();
-    replaceCard(block, renderFillBlankCard(item, sectionIndex, onComplete));
-  }); else btn.remove();
-  bindInteractiveContinue(block, state, onComplete, item.slot, sectionIndex);
-  return block;
-}
-
-function isCoarsePointerDevice() {
-  return !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
-}
-
-function assignSelectedItemToCategory(cardState, selectedItem, categoryName) {
-  if (!cardState || !selectedItem) return;
-
-  if (!categoryName) {
-    delete cardState.placements[selectedItem];
-  } else {
-    cardState.placements[selectedItem] = categoryName;
-  }
-
-  cardState.selectedItem = '';
-  persistProgress();
-}
-
-function renderCategorizeCard(item, sectionIndex, onComplete) {
-  const pairs = (item.categoryMappings || []).flatMap(m => {
-    if (m && typeof m.item === 'string' && typeof m.category === 'string') {
-      return [{ item: m.item, category: m.category }];
-    }
-    if (m && typeof m.category === 'string' && Array.isArray(m.items)) {
-      return m.items
-        .map(i => String(i || '').trim())
-        .filter(Boolean)
-        .map(i => ({ item: i, category: m.category }));
-    }
-    return [];
-  });
-
-  if (!item.prompt || pairs.length === 0) {
-    return renderIncompleteCard(item, sectionIndex, onComplete, 'Categorize card data is malformed.');
-  }
-
-  const state = ensureCardState(sectionIndex, {
-    submitted: false,
-    placements: {},
-    selectedItem: '',
-    wasCorrect: false,
-    completed: false
-  });
-
-  if (typeof state.selectedItem !== 'string') state.selectedItem = '';
-
-  const categories = [...new Set(pairs.map(p => p.category))];
-  const allItems = [...new Set(pairs.map(p => p.item))];
-
-  const expected = {};
-  pairs.forEach(p => {
-    expected[p.item] = p.category;
-  });
-
-  const isCoarsePointer = isCoarsePointerDevice();
-
-  const block = document.createElement('div');
-  block.className = 'section-block';
-
-  const itemPool = allItems.filter(opt => !state.placements[opt]);
-
-  const poolHtml = itemPool.map(opt => {
-    const isSelected = !state.submitted && state.selectedItem === opt;
-    return `<div class="drag-item ${isSelected ? 'selected' : ''}" draggable="${state.submitted || isCoarsePointer ? 'false' : 'true'}" data-item="${html(opt)}">${html(opt)}</div>`;
-  }).join('');
-
-  const zonesHtml = categories.map(cat => {
-    const items = Object.entries(state.placements)
-      .filter(([, c]) => c === cat)
-      .map(([i]) => {
-        const isSelected = !state.submitted && state.selectedItem === i;
-        const classes = `drag-item placed ${isSelected ? 'selected' : ''}`.trim();
-        return `<div class="${classes}" data-item="${html(i)}" draggable="${state.submitted || isCoarsePointer ? 'false' : 'true'}">${html(i)}</div>`;
-      }).join('');
-
-    return `<div class="drop-zone" data-category="${html(cat)}"><div class="drop-zone-title">${html(cat)}</div>${items}</div>`;
-  }).join('');
-
-  const hasPlacements = Object.keys(state.placements).length > 0;
-  const helperHtml = isCoarsePointer && !state.submitted
-    ? `<div class="categorize-mobile-helper">Tap an item, then tap a category.</div>`
-    : '';
-
-  block.innerHTML = baseCardShell(sectionIndex, 'Knowledge Check', `
-    <div class="interactive-card">
-      <h2 class="content-header">${html(item.header)}</h2><div class="content-body">${html(item.body)}</div>
-      <p class="question-stem">${html(item.prompt)}</p>
-      <div class="categorize-toolbar">
-        ${helperHtml}
-        <button class="categorize-reset-btn" ${state.submitted || !hasPlacements ? 'disabled' : ''}>Reset</button>
+      <div style="margin-top:10px;">
+        ${options.map(answer => `
+          <button type="button" class="action-btn practice-answer-btn" data-answer="${html(answer)}" ${state.submitted ? 'disabled' : ''}>
+            <span class="practice-answer-text">${html(answer)}</span>
+          </button>
+        `).join('')}
       </div>
-      <div class="categorize-layout">
-        <div class="drag-pool" data-category="">${poolHtml}</div>
-        <div class="drop-zones">${zonesHtml}</div>
+      <div class="practice-feedback" style="margin-top:8px;">
+        ${state.submitted ? `${buildPracticeStyledResultHtml(state.wasCorrect, `Correct answer: ${html(correct)}`)}${buildPracticeRationaleHtml(question.rationale)}` : ''}
       </div>
-      <button class="action-btn">Check answer</button>
-      ${renderFeedbackAndRationale(item, state, state.submitted ? (state.wasCorrect ? 'correct' : 'incorrect') : 'neutral')}
-      ${interactiveContinueHtml(state)}
-    </div>
-  `);
+    `);
 
-  const assignFromElement = (el, category) => {
-    const itemName = el?.dataset?.item || '';
-    if (!itemName || state.submitted) return;
-    assignSelectedItemToCategory(state, itemName, category);
-    replaceCard(block, renderCategorizeCard(item, sectionIndex, onComplete));
-  };
-
-  const draggableItems = [...block.querySelectorAll('.drag-item')];
-  const dropZones = [...block.querySelectorAll('.drag-pool, .drop-zone')];
-
-  draggableItems.forEach(el => {
-    el.addEventListener('dragstart', e => {
-      if (state.submitted || isCoarsePointer) return;
-      e.dataTransfer.setData('text/plain', el.dataset.item || '');
+    initializePracticeStemToggle(block);
+    const buttons = block.querySelectorAll('.practice-answer-btn');
+    buttons.forEach(button => {
+      const answer = button.getAttribute('data-answer') || '';
+      if (!state.submitted && state.selected && state.selected === answer) {
+        button.style.border = '2px solid #2f6edc';
+        button.style.background = '#e7f0ff';
+        button.style.color = '#10213d';
+      }
+      if (state.submitted) {
+        if (answer === correct) {
+          button.style.border = '2px solid #166534';
+          button.style.background = '#166534';
+          button.style.color = '#ffffff';
+        } else if (answer === state.selected && !state.wasCorrect) {
+          button.style.border = '2px solid #991b1b';
+          button.style.background = '#991b1b';
+          button.style.color = '#ffffff';
+        }
+      }
+      if (!state.submitted) {
+        button.addEventListener('click', () => {
+          state.selected = answer;
+          markModuleQuestionSubmitted(state, answer === correct);
+          replaceCard(block, renderModuleQuestionCard(item, sectionIndex, onComplete));
+        });
+      }
     });
+    return block;
+  }
 
-    if (isCoarsePointer && !state.submitted) {
-      el.addEventListener('click', () => {
-        state.selectedItem = (state.selectedItem === el.dataset.item) ? '' : (el.dataset.item || '');
+  if (type === 'fitb') {
+    const correct = String(question.correct_blob || '').trim();
+    if (!correct) return renderIncompleteCard(item, sectionIndex, onComplete, 'FITB card is missing answer data.');
+    const isCorrect = state.submitted ? normalizeGradedText(state.text) === normalizeGradedText(correct) : false;
+    renderFrame(`
+      <div id="practice-stem" class="practice-stem">${question.stem}</div>
+      <button id="practice-stem-toggle" class="practice-stem-toggle" style="display:none;" type="button">Expand case</button>
+      <div style="margin-top:10px;">
+        <input type="text" class="gate-input module-fitb-input" value="${html(state.text || '')}" placeholder="Type your answer" ${state.submitted ? 'disabled' : ''} />
+      </div>
+      ${!state.submitted ? '<div style="margin-top:10px;"><button type="button" class="action-btn module-fitb-submit">Check Answer</button></div>' : ''}
+      <div class="practice-feedback" style="margin-top:8px;">
+        ${state.submitted ? `${buildPracticeStyledResultHtml(isCorrect, `Correct answer: ${html(correct)}`)}${buildPracticeRationaleHtml(question.rationale)}` : ''}
+      </div>
+    `);
+    initializePracticeStemToggle(block);
+    if (!state.submitted) {
+      const input = block.querySelector('.module-fitb-input');
+      const submitBtn = block.querySelector('.module-fitb-submit');
+      const submit = () => {
+        const val = String(input?.value || '').trim();
+        if (!val) return;
+        state.text = val;
+        markModuleQuestionSubmitted(state, normalizeGradedText(val) === normalizeGradedText(correct));
+        replaceCard(block, renderModuleQuestionCard(item, sectionIndex, onComplete));
+      };
+      submitBtn?.addEventListener('click', submit);
+      input?.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          submit();
+        }
+      });
+    }
+    return block;
+  }
+
+  if (type === 'sata') {
+    const correctAnswers = splitBlob(question.correct_blob);
+    const options = shuffleArray([...new Set(splitBlob(question.distractors_blob))]);
+    if (!correctAnswers.length || !options.length) return renderIncompleteCard(item, sectionIndex, onComplete, 'SATA card is missing option/answer data.');
+    const correctNorm = correctAnswers.map(normalizeGradedText).sort();
+    renderFrame(`
+      <div id="practice-stem" class="practice-stem">${question.stem}</div>
+      <button id="practice-stem-toggle" class="practice-stem-toggle" style="display:none;" type="button">Expand case</button>
+      <div style="margin-top:10px; margin-bottom:12px; font-size:0.86rem; color:#5f718f;">Select all that apply.</div>
+      <div class="practice-sata-options">
+        ${options.map(answer => `
+          <button type="button" class="practice-sata-btn ${(state.selectedAnswers || []).includes(answer) ? 'selected' : ''}" data-answer="${html(answer)}" ${state.submitted ? 'disabled' : ''}>
+            <span class="practice-answer-text">${html(answer)}</span>
+            <span class="sata-check">✓</span>
+          </button>
+        `).join('')}
+      </div>
+      ${!state.submitted ? '<div style="margin-top:10px;"><button type="button" class="action-btn module-sata-submit">Check Answer</button></div>' : ''}
+      <div class="practice-feedback" style="margin-top:8px;">
+        ${state.submitted ? `${buildPracticeStyledResultHtml(state.wasCorrect, `Correct answer(s): ${html(correctAnswers.join(', '))}`)}${buildPracticeRationaleHtml(question.rationale)}` : ''}
+      </div>
+    `);
+    initializePracticeStemToggle(block);
+    const optionButtons = block.querySelectorAll('.practice-sata-btn');
+    optionButtons.forEach(button => {
+      const answer = button.getAttribute('data-answer') || '';
+      if (!state.submitted) {
+        button.addEventListener('click', () => {
+          button.classList.toggle('selected');
+          state.selectedAnswers = [...block.querySelectorAll('.practice-sata-btn.selected')].map(btn => btn.getAttribute('data-answer') || '');
+          persistProgress();
+        });
+      } else {
+        const norm = normalizeGradedText(answer);
+        const selected = (state.selectedAnswers || []).includes(answer);
+        if (correctNorm.includes(norm)) {
+          button.classList.add('correct-choice');
+        } else if (selected) {
+          button.classList.add('wrong-choice');
+        }
+      }
+    });
+    if (!state.submitted) {
+      block.querySelector('.module-sata-submit')?.addEventListener('click', () => {
+        const selected = [...block.querySelectorAll('.practice-sata-btn.selected')].map(btn => btn.getAttribute('data-answer') || '');
+        const selectedNorm = selected.map(normalizeGradedText).sort();
+        const isCorrect = selectedNorm.length === correctNorm.length && selectedNorm.every((v, idx) => v === correctNorm[idx]);
+        state.selectedAnswers = selected;
+        markModuleQuestionSubmitted(state, isCorrect);
+        replaceCard(block, renderModuleQuestionCard(item, sectionIndex, onComplete));
+      });
+    }
+    return block;
+  }
+
+  if (type === 'categorize') {
+    const mappings = parseCategoryMappings(question.correct_blob);
+    if (!mappings.length) return renderIncompleteCard(item, sectionIndex, onComplete, 'Categorize card is missing answer mappings.');
+    const categories = [...new Set(mappings.map(m => m.category))];
+    const items = shuffleArray([...new Set(mappings.map(m => m.item))]);
+    const isMobileMode = window.matchMedia('(max-width: 700px)').matches;
+    const placements = Array.isArray(state.placements) ? state.placements : [];
+    const placedMap = new Map(placements.map(p => [p.item, p.placedIn]));
+    const answerMap = new Map(mappings.map(p => [normalizeGradedText(p.item), normalizeGradedText(p.category)]));
+
+    renderFrame(`
+      <div id="practice-stem" class="practice-stem">${question.stem}</div>
+      <button id="practice-stem-toggle" class="practice-stem-toggle" style="display:none;" type="button">Expand case</button>
+      <div class="practice-categorize-helper">
+        ${isMobileMode ? 'Tap an item to select it, then tap a category area to place it.' : 'Drag each item into the correct category.'}
+      </div>
+      <div class="practice-categorize-layout">
+        <div class="practice-categorize-pool practice-categorize-dropzone" data-category="pool">
+          <div class="practice-categorize-pool-title">Items to place</div>
+          ${isMobileMode ? `<div class="practice-categorize-mobile-hint">${state.mobileSelectedItem ? `Selected: ${html(state.mobileSelectedItem)}` : 'No item selected.'}</div>` : ''}
+          <div class="practice-categorize-items">
+            ${items.filter(itemName => !placedMap.has(itemName)).map(itemName => `<div class="practice-categorize-item ${state.mobileSelectedItem === itemName ? 'selected' : ''}" draggable="${state.submitted ? 'false' : 'true'}" data-item="${html(itemName)}">${html(itemName)}</div>`).join('')}
+          </div>
+        </div>
+        <div>
+          ${categories.map(category => `
+            <div class="practice-categorize-zone practice-categorize-dropzone" data-category="${html(category)}" style="margin-bottom:12px;">
+              <div class="practice-categorize-zone-title">${html(category)}</div>
+              ${(placements || []).filter(p => p.placedIn === category).map(p => `<div class="practice-categorize-item ${state.mobileSelectedItem === p.item ? 'selected' : ''}" draggable="${state.submitted ? 'false' : 'true'}" data-item="${html(p.item)}">${html(p.item)}</div>`).join('')}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      ${!state.submitted ? '<div class="practice-categorize-controls"><button type="button" class="action-btn secondary module-categorize-reset">Reset placements</button><button type="button" class="action-btn module-categorize-submit">Check Answer</button></div>' : ''}
+      <div class="practice-feedback" style="margin-top:8px;">
+        ${state.submitted ? `${buildPracticeStyledResultHtml(state.wasCorrect, `Correct placement:<br><br>${mappings.map(m => `${html(m.item)} → ${html(m.category)}`).join('<br>')}`)}${buildPracticeRationaleHtml(question.rationale)}` : ''}
+      </div>
+    `);
+    initializePracticeStemToggle(block);
+
+    const getPlacementSnapshot = () => [...block.querySelectorAll('.practice-categorize-item')].map(node => ({
+      item: node.getAttribute('data-item') || '',
+      placedIn: node.parentElement?.getAttribute('data-category') || 'pool'
+    })).filter(p => p.item && p.placedIn !== 'pool');
+
+    let dragged = null;
+    const itemEls = block.querySelectorAll('.practice-categorize-item');
+    const zones = block.querySelectorAll('.practice-categorize-dropzone');
+    itemEls.forEach(node => {
+      node.addEventListener('dragstart', () => { if (!state.submitted) dragged = node; });
+      if (!state.submitted && isMobileMode) {
+        node.addEventListener('click', () => {
+          state.mobileSelectedItem = state.mobileSelectedItem === (node.dataset.item || '') ? '' : (node.dataset.item || '');
+          persistProgress();
+          replaceCard(block, renderModuleQuestionCard(item, sectionIndex, onComplete));
+        });
+      }
+    });
+    zones.forEach(zone => {
+      zone.addEventListener('dragover', e => { if (!state.submitted) e.preventDefault(); });
+      zone.addEventListener('drop', e => {
+        if (state.submitted || !dragged) return;
+        e.preventDefault();
+        const targetItems = zone.querySelector('.practice-categorize-items');
+        if (targetItems) targetItems.appendChild(dragged);
+        else zone.appendChild(dragged);
+        state.placements = getPlacementSnapshot();
+        state.mobileSelectedItem = '';
         persistProgress();
-        replaceCard(block, renderCategorizeCard(item, sectionIndex, onComplete));
+      });
+      if (!state.submitted && isMobileMode) {
+        zone.addEventListener('click', () => {
+          const selectedItem = state.mobileSelectedItem;
+          if (!selectedItem) return;
+          const moved = (state.placements || []).filter(p => p.item !== selectedItem);
+          const category = zone.getAttribute('data-category') || 'pool';
+          if (category !== 'pool') moved.push({ item: selectedItem, placedIn: category });
+          state.placements = moved;
+          state.mobileSelectedItem = '';
+          persistProgress();
+          replaceCard(block, renderModuleQuestionCard(item, sectionIndex, onComplete));
+        });
+      }
+    });
+    if (!state.submitted) {
+      block.querySelector('.module-categorize-reset')?.addEventListener('click', () => {
+        state.placements = [];
+        state.mobileSelectedItem = '';
+        persistProgress();
+        replaceCard(block, renderModuleQuestionCard(item, sectionIndex, onComplete));
+      });
+      block.querySelector('.module-categorize-submit')?.addEventListener('click', () => {
+        state.placements = getPlacementSnapshot();
+        const allPlaced = state.placements.length === items.length;
+        if (!allPlaced) return;
+        const isCorrect = state.placements.every(p => answerMap.get(normalizeGradedText(p.item)) === normalizeGradedText(p.placedIn));
+        markModuleQuestionSubmitted(state, isCorrect);
+        replaceCard(block, renderModuleQuestionCard(item, sectionIndex, onComplete));
+      });
+    } else {
+      block.querySelectorAll('.practice-categorize-item').forEach(node => {
+        const itemName = node.getAttribute('data-item') || '';
+        const placedIn = node.parentElement?.getAttribute('data-category') || 'pool';
+        const expected = answerMap.get(normalizeGradedText(itemName)) || '';
+        if (normalizeGradedText(placedIn) === expected) {
+          node.classList.add('correct');
+        } else {
+          node.classList.add('incorrect');
+        }
       });
     }
-  });
-
-  dropZones.forEach(zone => {
-    zone.addEventListener('dragover', e => {
-      if (state.submitted || isCoarsePointer) return;
-      e.preventDefault();
-    });
-
-    zone.addEventListener('drop', e => {
-      if (state.submitted || isCoarsePointer) return;
-      e.preventDefault();
-      const itemName = e.dataTransfer.getData('text/plain');
-      if (!itemName) return;
-      assignSelectedItemToCategory(state, itemName, zone.dataset.category || '');
-      replaceCard(block, renderCategorizeCard(item, sectionIndex, onComplete));
-    });
-
-    if (isCoarsePointer && !state.submitted) {
-      zone.addEventListener('click', () => {
-        if (!state.selectedItem) return;
-        assignSelectedItemToCategory(state, state.selectedItem, zone.dataset.category || '');
-        replaceCard(block, renderCategorizeCard(item, sectionIndex, onComplete));
-      });
-    }
-  });
-
-  const resetBtn = block.querySelector('.categorize-reset-btn');
-  if (resetBtn && !state.submitted) {
-    resetBtn.addEventListener('click', () => {
-      state.placements = {};
-      state.selectedItem = '';
-      persistProgress();
-      replaceCard(block, renderCategorizeCard(item, sectionIndex, onComplete));
-    });
+    return block;
   }
 
-  const btn = block.querySelector('.action-btn');
-  if (!state.submitted) {
-    btn.addEventListener('click', () => {
-      if (Object.keys(state.placements).length !== allItems.length) return;
-      if (!state.submitted && isQuestionCardType(item.type)) totalQuestions++;
-
-      state.submitted = true;
-      state.wasCorrect = allItems.every(i => state.placements[i] === expected[i]);
-      if (state.wasCorrect) correctFirst++;
-      interactionTimes.push(Date.now());
-      persistProgress();
-      replaceCard(block, renderCategorizeCard(item, sectionIndex, onComplete));
-    });
-  } else {
-    btn.remove();
-  }
-
-  bindInteractiveContinue(block, state, onComplete, item.slot, sectionIndex);
-  return block;
+  return renderIncompleteCard(item, sectionIndex, onComplete, `Unsupported question type: ${type || 'unknown'}`);
 }
 
 function renderReflectionCard(item, sectionIndex, onComplete) {
@@ -5598,28 +5667,7 @@ function renderCardByType(item, sectionIndex, onComplete) {
   if (type === 'text') return renderTextBlock(item, sectionIndex, onComplete);
   if (type === 'text_image') return renderTextImageBlock(item, sectionIndex, onComplete);
 
-  if (type === 'sba') {
-    return renderQuestionCard(item, sectionIndex, onComplete, false);
-  }
-
-  if (type === 'sba_image') {
-    if (!item.mediaUrl) {
-      return renderIncompleteCard(item, sectionIndex, onComplete, 'Question image card is missing media_url.');
-    }
-    return renderQuestionCard(item, sectionIndex, onComplete, true);
-  }
-
-  if (type === 'sata') {
-    return renderSelectAllCard(item, sectionIndex, onComplete);
-  }
-
-  if (type === 'fitb') {
-    return renderFillBlankCard(item, sectionIndex, onComplete);
-  }
-
-  if (type === 'categorize') {
-    return renderCategorizeCard(item, sectionIndex, onComplete);
-  }
+  if (isQuestionCardType(type)) return renderModuleQuestionCard(item, sectionIndex, onComplete);
 
   if (type === 'reflection') return renderReflectionCard(item, sectionIndex, onComplete);
   if (type === 'poll') return renderPollCard(item, sectionIndex, onComplete);
