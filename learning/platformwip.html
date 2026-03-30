@@ -879,7 +879,7 @@
 
     /* ── SECTION BLOCK ── */
     .section-block {
-      margin-top: 48px;
+      margin-top: 32px;
       display: none;
       opacity: 0;
       transform: translateY(20px);
@@ -948,6 +948,21 @@
       top: 0; left: 0;
       width: 100%; height: 100%;
       border: none;
+    }
+
+    .video-unavailable {
+      padding: 24px 20px;
+      border-top: 1px solid var(--rule);
+      background: #f8fbff;
+      color: var(--navy);
+    }
+
+    .video-unavailable small {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 1.4;
     }
 
     .video-footer {
@@ -1580,6 +1595,7 @@
     .text-image-inner {
       display: grid;
       grid-template-columns: 3fr 2fr;
+      align-items: stretch;
     }
 
     .text-image-text {
@@ -1591,13 +1607,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      min-height: 220px;
       padding: 20px;
       background: var(--cream-dark);
     }
 
     .text-image-img img {
+      display: block;
       max-width: 100%;
-      max-height: 280px;
+      max-height: 260px;
       object-fit: contain;
       border-radius: 6px;
       cursor: zoom-in;
@@ -1605,6 +1623,18 @@
     }
 
     .text-image-img img:hover { opacity: 0.88; }
+
+    .text-image-fallback {
+      width: 100%;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-style: italic;
+      border: 1px dashed var(--rule);
+      border-radius: 8px;
+      padding: 14px 10px;
+      background: var(--white);
+    }
 
     /* ── QUESTION + IMAGE BLOCK ── */
     .question-image-card {
@@ -2286,6 +2316,34 @@ function html(v) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function normalizeYouTubeVideoId(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+
+  const idPattern = /^[A-Za-z0-9_-]{11}$/;
+  if (idPattern.test(value)) return value;
+
+  try {
+    const url = new URL(value);
+    const host = url.hostname.replace(/^www\./i, '').toLowerCase();
+    let candidate = '';
+
+    if (host === 'youtube.com' || host.endsWith('.youtube.com')) {
+      if (url.pathname === '/watch') {
+        candidate = url.searchParams.get('v') || '';
+      } else if (url.pathname.startsWith('/embed/')) {
+        candidate = url.pathname.split('/')[2] || '';
+      }
+    } else if (host === 'youtu.be') {
+      candidate = url.pathname.replace(/^\/+/, '').split('/')[0] || '';
+    }
+
+    return idPattern.test(candidate) ? candidate : '';
+  } catch {
+    return '';
+  }
 }
 
 function formatDuration(ms) {
@@ -5147,6 +5205,8 @@ function replaceCard(block, nextBlock) {
 
 function renderVideoBlock(item, sectionIndex, onComplete) {
   if (!item.mediaUrl) return renderIncompleteCard(item, sectionIndex, onComplete, 'Video card is missing media_url (YouTube ID).');
+  // Video cards require a YouTube video ID (11 chars), not a channel ID.
+  const videoId = normalizeYouTubeVideoId(item.mediaUrl);
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
@@ -5154,9 +5214,14 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
     <div class="video-card">
       <h2 class="content-header">${html(item.header)}</h2>
       <div class="content-body">${html(item.body)}</div>
-      <div class="video-wrapper">
-        <iframe src="https://www.youtube.com/embed/${html(item.mediaUrl)}?rel=0&modestbranding=1" title="Training video ${sectionIndex + 1}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-      </div>
+      ${videoId
+        ? `<div class="video-wrapper">
+            <iframe src="https://www.youtube.com/embed/${html(videoId)}?rel=0&modestbranding=1" title="Training video ${sectionIndex + 1}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+          </div>`
+        : `<div class="video-unavailable">
+            <strong>Video unavailable</strong>
+            <small>Source: ${html(item.mediaUrl)}</small>
+          </div>`}
     </div>
   `);
   attachContinue(block, sectionIndex, onComplete, item.slot);
@@ -5189,7 +5254,7 @@ function renderTextImageBlock(item, sectionIndex, onComplete) {
           <h2 class="content-header">${html(item.header)}</h2>
           <div class="content-body">${html(item.body)}</div>
         </div>
-        <div class="text-image-img"><img src="${html(item.mediaUrl)}" alt="" /></div>
+        <div class="text-image-img"><img src="${html(item.mediaUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.parentElement.innerHTML='&lt;div class=&quot;text-image-fallback&quot;&gt;Image unavailable&lt;/div&gt;';" /></div>
       </div>
     </div>
   `);
