@@ -1724,7 +1724,7 @@
       <p class="completion-sub">You have finished the module. Please submit your session data below to complete the process.</p>
       <div class="completion-stats">
         <div class="stat-item"><strong id="stat-questions">—</strong>Questions answered</div>
-        <div class="stat-item"><strong id="stat-correct">—</strong>Correct on first try</div>
+        <div class="stat-item"><strong id="stat-correct">—</strong>Correct answers</div>
         <div class="stat-item"><strong id="stat-time">—</strong>Time elapsed</div>
       </div>
       <div class="completion-actions">
@@ -5041,10 +5041,15 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
   }
 
   const renderFrame = (inner) => {
+    const header = String(item.header || '').trim();
+    const body = String(item.body || '').trim();
+    const headerHtml = header ? `<h2 class="content-header">${html(header)}</h2>` : '';
+    const bodyHtml = body ? `<div class="content-body">${html(body)}</div>` : '';
+
     block.innerHTML = baseCardShell(sectionIndex, 'Knowledge Check', `
       <div class="interactive-card">
-        <h2 class="content-header">${html(item.header)}</h2>
-        <div class="content-body">${html(item.body)}</div>
+        ${headerHtml}
+        ${bodyHtml}
         ${inner}
         ${interactiveContinueHtml(state)}
       </div>
