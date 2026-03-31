@@ -1882,6 +1882,18 @@ function shuffleArray(arr) {
   }
   return a;
 }
+ function getStableOptionOrder(savedOrder, allOptions) {
+  const deduped = [...new Set((allOptions || []).filter(Boolean))];
+
+  if (!Array.isArray(savedOrder) || !savedOrder.length) {
+    return shuffleArray(deduped);
+  }
+
+  const kept = savedOrder.filter(opt => deduped.includes(opt));
+  const missing = deduped.filter(opt => !kept.includes(opt));
+
+  return kept.concat(missing);
+}
 
 function splitBlob(value) {
   return String(value || '')
@@ -3695,23 +3707,24 @@ function renderSATAQuestion(q, index, total) {
   const stateKey = getPracticeQuestionStateKey(q);
 
   const correctAnswers = String(q.correct_blob || "")
-    .split("|")
-    .map(s => s.trim())
-    .filter(Boolean);
+  .split("|")
+  .map(s => s.trim())
+  .filter(Boolean);
 
-  const options = String(q.distractors_blob || "")
-    .split("|")
-    .map(s => s.trim())
-    .filter(Boolean);
+const distractors = String(q.distractors_blob || "")
+  .split("|")
+  .map(s => s.trim())
+  .filter(Boolean);
 
-  const uniqueOptions = [...new Set(options)];
+const allOptions = [...correctAnswers, ...distractors];
+const uniqueOptions = [...new Set(allOptions)];
 
-  const shuffledOptions = uniqueOptions.slice();
-  for (let i = shuffledOptions.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-  }
-
+const shuffledOptions = uniqueOptions.slice();
+for (let i = shuffledOptions.length - 1; i > 0; i--) {
+  const j = Math.floor(Math.random() * (i + 1));
+  [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+}
+ 
   container.innerHTML = `
     <div class="practice-question-card">
 
@@ -5074,8 +5087,11 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
 
   if (type === 'sata') {
     const correctAnswers = splitBlob(question.correct_blob);
-    const options = shuffleArray([...new Set(splitBlob(question.distractors_blob))]);
-    if (!correctAnswers.length || !options.length) return renderIncompleteCard(item, sectionIndex, onComplete, 'SATA card is missing option/answer data.');
+    const distractors = splitBlob(question.distractors_blob);
+    const options = shuffleArray([...new Set([...correctAnswers, ...distractors])]);
+    if (!correctAnswers.length || !options.length) {
+  return renderIncompleteCard(item, sectionIndex, onComplete, 'SATA card is missing option/answer data.');
+}
     const correctNorm = correctAnswers.map(normalizeGradedText).sort();
     renderFrame(`
       <div id="practice-stem" class="practice-stem">${question.stem}</div>
@@ -5302,6 +5318,7 @@ function renderPollCard(item, sectionIndex, onComplete) {
       state.selected = selected.value;
     }
     state.submitted = true;
+    logEvent('poll_response', { slot: item.slot, sectionIndex: sectionIndex, header: item.header, selected: state.selected });
     persistProgress();
     replaceCard(block, renderPollCard(item, sectionIndex, onComplete));
   }); else btn.remove();
