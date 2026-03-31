@@ -540,10 +540,17 @@
     .practice-categorize-layout {
       display: grid;
       gap: 12px;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(220px, 0.9fr) minmax(320px, 1.5fr);
     }
 
-    .practice-categorize-pool,
+    .practice-categorize-pool {
+      border: 1px solid #e3e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+      padding: 12px;
+      min-height: 88px;
+    }
+
     .practice-categorize-zone {
       border: 1px solid #e3e8f0;
       border-radius: 12px;
