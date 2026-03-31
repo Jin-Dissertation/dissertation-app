@@ -5612,6 +5612,70 @@ function showCompletion() {
   }
 }
 
+function buildModuleResponseValues() {
+  const itemValues = [];
+  const itemMap = {};
+
+  let globalCardIndex = 0;
+  allSections.forEach(section => {
+    const cards = Array.isArray(section?.cards) ? section.cards : [];
+    cards.forEach(card => {
+      const type = String(card?.type || '').trim().toLowerCase();
+      const state = quizStates?.[globalCardIndex] || {};
+      let value = '';
+
+      if (isQuestionCardType(type)) {
+        value = state?.submitted ? (state?.wasCorrect ? 1 : 0) : '';
+      } else if (type === 'poll') {
+        if (Array.isArray(state?.selected)) value = state.selected.join(' | ');
+        else if (typeof state?.selected === 'string') value = state.selected;
+      } else if (type === 'reflection') {
+        value = typeof state?.text === 'string' ? state.text.trim() : '';
+      }
+
+      itemValues.push(value);
+      itemMap[`item_${globalCardIndex + 1}`] = value;
+      globalCardIndex += 1;
+    });
+  });
+
+  return { itemValues, itemMap };
+}
+
+function buildSubmissionPayload({
+  clockMinutes,
+  activeMinutes,
+  interactionRate,
+  deviceType
+}) {
+  const timestamp = now();
+  const { itemValues, itemMap } = buildModuleResponseValues();
+  console.log('[submitSession] unified item map', itemMap);
+
+  return {
+    action:            'submitSession',
+    participantEmail:  participantEmail,
+    participantCode:   participantCode,
+    moduleKey:         moduleKey,
+    sessionId:         sessionId,
+    sessionStart:      sessionStart ? new Date(sessionStart).toISOString() : null,
+    sessionEnd:        timestamp,
+    totalQuestions:    totalQuestions,
+    completionReached: completionReached,
+    clock_minutes:     clockMinutes,
+    active_minutes:    activeMinutes,
+    interaction_rate:  interactionRate,
+    device_type:       deviceType,
+    events,
+    email:             participantEmail,
+    module_key:        moduleKey,
+    timestamp:         timestamp,
+    item_values:       itemValues,
+    item_map:          itemMap,
+    item_count:        itemValues.length
+  };
+}
+
 async function submitSession() {
   const btn    = $('btn-submit-final');
   const status = $('submit-status');
@@ -5630,22 +5694,12 @@ async function submitSession() {
     : 0;
   const deviceType = getDeviceType();
 
-  const payload = {
-  action:            'submitSession',
-  participantEmail:  participantEmail,
-  participantCode:   participantCode,
-  moduleKey:         moduleKey,
-  sessionId:         sessionId,
-  sessionStart:      sessionStart ? new Date(sessionStart).toISOString() : null,
-  sessionEnd:        now(),
-  totalQuestions:    totalQuestions,
-  completionReached: completionReached,
-  clock_minutes:     clockMinutes,
-  active_minutes:    activeMinutes,
-  interaction_rate:  interactionRate,
-  device_type:       deviceType,
-  events
-};
+  const payload = buildSubmissionPayload({
+    clockMinutes,
+    activeMinutes,
+    interactionRate,
+    deviceType
+  });
   
 
   try {
@@ -5693,7 +5747,7 @@ function offerDownload(payload) {
   wrap.style.cssText = 'margin-top:14px; padding:14px 16px; background:#fef9ec; border:1px solid #c8a84b; border-radius:10px; font-size:0.88rem; line-height:1.6; color:#10213d;';
   wrap.innerHTML = `
     <strong style="display:block; margin-bottom:6px;">Automatic submission failed.</strong>
-    Please save your session data manually:
+    Please save your session data manually (includes per-card response data):
     <ol style="margin: 8px 0 12px 18px; padding:0;">
       <li>Click <strong>Download session file</strong> below.</li>
       <li>Email the downloaded file to <strong>tjin@crimson.ua.edu</strong>.</li>
@@ -5711,7 +5765,11 @@ function offerDownload(payload) {
   `;
 
   dlBtn.addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const backupPayload = {
+      ...payload,
+      backup_note: 'Contains unified per-card response data in item_values and item_map.'
+    };
+    const blob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `${payload.participantEmail || 'session'}_${payload.sessionId || 'data'}.json`;
