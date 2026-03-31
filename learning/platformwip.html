@@ -505,6 +505,13 @@
       color: #ffffff;
     }
 
+    .practice-sata-btn.missed-correct {
+      background: #dcfce7;
+      border-color: #166534;
+      border-style: dashed;
+      color: #14532d;
+    }
+
     .sata-check {
       opacity: 0;
       font-weight: 700;
@@ -513,7 +520,8 @@
 
     .practice-sata-btn.selected .sata-check,
     .practice-sata-btn.correct-choice .sata-check,
-    .practice-sata-btn.wrong-choice .sata-check {
+    .practice-sata-btn.wrong-choice .sata-check,
+    .practice-sata-btn.missed-correct .sata-check {
       opacity: 1;
     }
 
@@ -4285,16 +4293,18 @@ function handlePracticeSATAAnswer(question, selectedAnswers, correctAnswers, rat
   buttons.forEach(button => {
     const answer = button.getAttribute("data-answer") || "";
     const answerNorm = normalize(answer);
-    const isSelected = button.classList.contains("selected");
+    const isSelected = selectedNorm.includes(answerNorm);
     const isActuallyCorrect = correctNorm.includes(answerNorm);
 
     button.disabled = true;
-    button.classList.remove("selected", "correct-choice", "wrong-choice");
+    button.classList.remove("selected", "correct-choice", "wrong-choice", "missed-correct");
 
-    if (isActuallyCorrect) {
+    if (isSelected && isActuallyCorrect) {
       button.classList.add("correct-choice");
     } else if (isSelected && !isActuallyCorrect) {
       button.classList.add("wrong-choice");
+    } else if (!isSelected && isActuallyCorrect) {
+      button.classList.add("missed-correct");
     }
   });
 
@@ -5099,7 +5109,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
       <div style="margin-top:10px; margin-bottom:12px; font-size:0.86rem; color:#5f718f;">Select all that apply.</div>
       <div class="practice-sata-options">
         ${options.map(answer => `
-          <button type="button" class="practice-sata-btn ${(state.selectedAnswers || []).includes(answer) ? 'selected' : ''}" data-answer="${html(answer)}" ${state.submitted ? 'disabled' : ''}>
+          <button type="button" class="practice-sata-btn ${!state.submitted && (state.selectedAnswers || []).includes(answer) ? 'selected' : ''}" data-answer="${html(answer)}" ${state.submitted ? 'disabled' : ''}>
             <span class="practice-answer-text">${html(answer)}</span>
             <span class="sata-check">✓</span>
           </button>
@@ -5123,10 +5133,14 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
       } else {
         const norm = normalizeGradedText(answer);
         const selected = (state.selectedAnswers || []).includes(answer);
-        if (correctNorm.includes(norm)) {
+        const isActuallyCorrect = correctNorm.includes(norm);
+        button.classList.remove('selected', 'correct-choice', 'wrong-choice', 'missed-correct');
+        if (selected && isActuallyCorrect) {
           button.classList.add('correct-choice');
-        } else if (selected) {
+        } else if (selected && !isActuallyCorrect) {
           button.classList.add('wrong-choice');
+        } else if (!selected && isActuallyCorrect) {
+          button.classList.add('missed-correct');
         }
       }
     });
