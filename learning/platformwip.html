@@ -2023,6 +2023,35 @@ function updateProgress() {
   counter.style.opacity = totalSlots > 0 ? '1' : '0';
 }
 
+function resetTrainingUi() {
+  const sectionCounter = $('section-counter');
+  if (sectionCounter) {
+    sectionCounter.textContent = '';
+    sectionCounter.style.opacity = '0';
+  }
+
+  const progressFill = $('progress-fill');
+  if (progressFill) progressFill.style.width = '0%';
+
+  const completion = $('completion');
+  if (completion) completion.style.display = 'none';
+
+  const submitStatus = $('submit-status');
+  if (submitStatus) submitStatus.textContent = '';
+
+  const submitBtn = $('btn-submit-final');
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.style.background = '';
+    submitBtn.innerHTML = `
+      Submit session data
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M2 7h10M8 3l4 4-4 4"/>
+      </svg>
+    `;
+  }
+}
+
 
 function normalizeIdentityValue(value) {
   return String(value || '').trim().toLowerCase();
@@ -5719,7 +5748,6 @@ async function submitSession() {
       hasSuccessfulSubmission = true;
       trainingActive = false;
       completionReached = true;
-      clearSavedProgress();
       btn.textContent = '✓ Submitted';
       btn.style.background = '#166534';
       btn.disabled = true;
@@ -5835,11 +5863,14 @@ function resetModuleState() {
   interactionTimes.length = 0;
   totalQuestions = 0;
   correctFirst = 0;
+  totalSlots = 0;
   revealedSlots = 0;
   completedSlots = new Set();
+  currentSectionIndex = 0;
+  progressionSectionIndex = 0;
+  allSections = [];
   $('sections-container').innerHTML = '';
-  $('completion').style.display = 'none';
-  $('submit-status').textContent = '';
+  resetTrainingUi();
 }
 
 function clearTransientModuleLaunchState() {
@@ -5951,6 +5982,7 @@ function initializeGoogleSignIn() {
 
 
 function showScreen(name) {
+  if (name !== 'training') resetTrainingUi();
   $('auth-screen').style.display = name === 'auth' ? 'flex' : 'none';
   $('dashboard').style.display = name === 'dashboard' ? 'block' : 'none';
   $('loading').style.display = name === 'loading' ? 'flex' : 'none';
@@ -6080,22 +6112,27 @@ async function startModuleByKey(selectedModuleKey) {
   let savedState = null;
 
   if (saved) {
-    const choice = await askResumeChoice();
-    if (choice === 'continue') {
-      sessionId = saved.sessionId;
-      sessionStart = saved.sessionStart;
-      totalQuestions = saved.totalQuestions || 0;
-      correctFirst = saved.correctFirst || 0;
-      events = saved.events || [];
-      interactionTimes.length = 0;
-      interactionTimes.push(...(saved.interactionTimes || []));
-      completionReached = !!saved.completionReached;
-      hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
-      quizStates = saved.quizStates || {};
-      savedState = saved;
-    } else {
+    if (saved.hasSuccessfulSubmission === true || saved.completionReached === true) {
       clearSavedProgress();
       resetModuleState();
+    } else {
+      const choice = await askResumeChoice();
+      if (choice === 'continue') {
+        sessionId = saved.sessionId;
+        sessionStart = saved.sessionStart;
+        totalQuestions = saved.totalQuestions || 0;
+        correctFirst = saved.correctFirst || 0;
+        events = saved.events || [];
+        interactionTimes.length = 0;
+        interactionTimes.push(...(saved.interactionTimes || []));
+        completionReached = !!saved.completionReached;
+        hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
+        quizStates = saved.quizStates || {};
+        savedState = saved;
+      } else {
+        clearSavedProgress();
+        resetModuleState();
+      }
     }
   } else {
     resetModuleState();
@@ -6134,22 +6171,27 @@ async function startModuleByAssignmentKey() {
     participantCode = assignedKey;
 
     if (saved) {
-      const choice = await askResumeChoice();
-      if (choice === 'continue') {
-        sessionId = saved.sessionId;
-        sessionStart = saved.sessionStart;
-        totalQuestions = saved.totalQuestions || 0;
-        correctFirst = saved.correctFirst || 0;
-        events = saved.events || [];
-        interactionTimes.length = 0;
-        interactionTimes.push(...(saved.interactionTimes || []));
-        completionReached = !!saved.completionReached;
-        hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
-        quizStates = saved.quizStates || {};
-        savedState = saved;
-      } else {
+      if (saved.hasSuccessfulSubmission === true || saved.completionReached === true) {
         clearSavedProgress();
         resetModuleState();
+      } else {
+        const choice = await askResumeChoice();
+        if (choice === 'continue') {
+          sessionId = saved.sessionId;
+          sessionStart = saved.sessionStart;
+          totalQuestions = saved.totalQuestions || 0;
+          correctFirst = saved.correctFirst || 0;
+          events = saved.events || [];
+          interactionTimes.length = 0;
+          interactionTimes.push(...(saved.interactionTimes || []));
+          completionReached = !!saved.completionReached;
+          hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
+          quizStates = saved.quizStates || {};
+          savedState = saved;
+        } else {
+          clearSavedProgress();
+          resetModuleState();
+        }
       }
     } else {
       resetModuleState();
@@ -6339,6 +6381,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   $('btn-save-exit').addEventListener('click', () => { handleSaveAndExit(); });
   $('btn-back-dashboard').addEventListener('click', async () => {
+    if (hasSuccessfulSubmission && moduleKey) {
+      clearSavedProgress();
+    }
+    resetModuleState();
+    resetTrainingUi();
     trainingActive = false;
     showScreen('dashboard');
     try { await loadDashboard(); } catch (_) {}
