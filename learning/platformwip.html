@@ -3449,23 +3449,10 @@ function renderSBAImageQuestion(q, index, total) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
-  const correct = String(q.correct_blob || "");
-  const distractors = String(q.distractors_blob || "")
-    .split("|")
-    .map(s => s.trim())
-    .filter(Boolean);
-  const allOptions = [correct, ...distractors];
-  const uniqueOptions = [...new Set(allOptions.filter(Boolean))];
+  const correct = q.correct_blob || "";
+  const distractors = (q.distractors_blob || "").split("|").filter(Boolean);
+  const answers = [correct, ...distractors].sort(() => Math.random() - 0.5);
   const stateKey = getPracticeQuestionStateKey(q);
-  const previousState = stateKey ? practiceTestState.answerState?.[stateKey] || {} : {};
-  const optionOrder = getStableOptionOrder(previousState.optionOrder, uniqueOptions);
-
-  if (stateKey) {
-    practiceTestState.answerState[stateKey] = {
-      ...previousState,
-      optionOrder
-    };
-  }
 
   const imageHtml = q.media_url
     ? `
@@ -3497,7 +3484,7 @@ function renderSBAImageQuestion(q, index, total) {
       ${imageHtml}
 
       <div style="margin-top:10px;">
-        ${optionOrder.map(answer => `
+        ${answers.map(answer => `
           <button
             type="button"
             class="action-btn practice-answer-btn"
@@ -3552,16 +3539,12 @@ function renderSBAQuestion(q, index, total) {
     ? String(q.distractors_blob).split("|").map(s => s.trim()).filter(Boolean)
     : [];
 
-  const allOptions = [correct, ...distractors];
-  const uniqueOptions = [...new Set(allOptions.filter(Boolean))];
+  const answers = [correct, ...distractors];
   const stateKey = getPracticeQuestionStateKey(q);
-  const previousState = stateKey ? practiceTestState.answerState?.[stateKey] || {} : {};
-  const optionOrder = getStableOptionOrder(previousState.optionOrder, uniqueOptions);
-  if (stateKey) {
-    practiceTestState.answerState[stateKey] = {
-      ...previousState,
-      optionOrder
-    };
+
+  for (let i = answers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [answers[i], answers[j]] = [answers[j], answers[i]];
   }
 
   container.innerHTML = `
@@ -3579,7 +3562,7 @@ function renderSBAQuestion(q, index, total) {
       </button>
 
       <div style="margin-top:10px;">
-        ${optionOrder.map(answer => `
+        ${answers.map(answer => `
           <button
             type="button"
             class="action-btn practice-answer-btn"
@@ -3735,13 +3718,11 @@ const distractors = String(q.distractors_blob || "")
 
 const allOptions = [...correctAnswers, ...distractors];
 const uniqueOptions = [...new Set(allOptions)];
-const previousState = stateKey ? practiceTestState.answerState?.[stateKey] || {} : {};
-const optionOrder = getStableOptionOrder(previousState.optionOrder, uniqueOptions);
-if (stateKey) {
-  practiceTestState.answerState[stateKey] = {
-    ...previousState,
-    optionOrder
-  };
+
+const shuffledOptions = uniqueOptions.slice();
+for (let i = shuffledOptions.length - 1; i > 0; i--) {
+  const j = Math.floor(Math.random() * (i + 1));
+  [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
 }
  
   container.innerHTML = `
@@ -3764,7 +3745,7 @@ if (stateKey) {
       </div>
 
       <div id="practice-sata-options">
-        ${optionOrder.map(answer => `
+        ${shuffledOptions.map(answer => `
           <button
             type="button"
             class="practice-sata-btn"
@@ -4192,9 +4173,7 @@ function handlePracticeAnswer(question, selected, correct, rationale) {
 
   recordPracticeQuestionResult(question, selected === correct);
   if (stateKey) {
-    const previousState = practiceTestState.answerState?.[stateKey] || {};
     practiceTestState.answerState[stateKey] = {
-      ...previousState,
       type: question.item_type || question.question_type || 'sba',
       selected,
       correct,
@@ -4352,9 +4331,7 @@ function handlePracticeSATAAnswer(question, selectedAnswers, correctAnswers, rat
 
   recordPracticeQuestionResult(question, isCorrect);
   if (stateKey) {
-    const previousState = practiceTestState.answerState?.[stateKey] || {};
     practiceTestState.answerState[stateKey] = {
-      ...previousState,
       type: question.item_type || question.question_type || 'sata',
       selectedAnswers: Array.isArray(selectedAnswers) ? selectedAnswers : [],
       correctAnswers: Array.isArray(correctAnswers) ? correctAnswers : [],
@@ -5018,9 +4995,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
     const correct = String(question.correct_blob || '');
     if (!correct) return renderIncompleteCard(item, sectionIndex, onComplete, 'SBA card is missing answer data.');
     const distractors = splitBlob(question.distractors_blob);
-    const allOptions = [correct, ...distractors];
-    state.optionOrder = getStableOptionOrder(state.optionOrder, allOptions);
-    const options = state.optionOrder;
+    const options = shuffleArray([correct, ...distractors]);
     const imageHtml = type === 'sba_image' && question.media_url
       ? `<div class="practice-image-wrap"><img src="${html(question.media_url)}" alt="Question image" class="practice-image" /></div>`
       : '';
@@ -5113,9 +5088,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
   if (type === 'sata') {
     const correctAnswers = splitBlob(question.correct_blob);
     const distractors = splitBlob(question.distractors_blob);
-    const allOptions = [...new Set([...correctAnswers, ...distractors])];
-    state.optionOrder = getStableOptionOrder(state.optionOrder, allOptions);
-    const options = state.optionOrder;
+    const options = shuffleArray([...new Set([...correctAnswers, ...distractors])]);
     if (!correctAnswers.length || !options.length) {
   return renderIncompleteCard(item, sectionIndex, onComplete, 'SATA card is missing option/answer data.');
 }
