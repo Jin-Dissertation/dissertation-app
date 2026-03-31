@@ -1986,6 +1986,62 @@ function html(v) {
     .replace(/'/g, '&#39;');
 }
 
+// Lightweight body formatting (safe plain text only):
+// - blank lines => paragraph breaks
+// - lines starting with "-- " => bullet list items
+// - **bold**
+// - *italic*
+function formatBodyText(raw) {
+  const text = String(raw || '').replace(/\r\n?/g, '\n');
+  if (!text.trim()) return '';
+
+  const applyInlineFormatting = (value) => {
+    const escaped = html(value);
+    return escaped
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>');
+  };
+
+  const lines = text.split('\n');
+  const blocks = [];
+  let paragraphLines = [];
+  let listItems = [];
+
+  const flushParagraph = () => {
+    if (!paragraphLines.length) return;
+    blocks.push(`<p>${paragraphLines.join('<br>')}</p>`);
+    paragraphLines = [];
+  };
+
+  const flushList = () => {
+    if (!listItems.length) return;
+    blocks.push(`<ul>${listItems.map(item => `<li>${item}</li>`).join('')}</ul>`);
+    listItems = [];
+  };
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushParagraph();
+      flushList();
+      return;
+    }
+
+    if (trimmed.startsWith('-- ')) {
+      flushParagraph();
+      listItems.push(applyInlineFormatting(trimmed.slice(3)));
+      return;
+    }
+
+    flushList();
+    paragraphLines.push(applyInlineFormatting(trimmed));
+  });
+
+  flushParagraph();
+  flushList();
+  return blocks.join('');
+}
+
 function normalizeYouTubeVideoId(raw) {
   const value = String(raw || '').trim();
   if (!value) return '';
@@ -4861,11 +4917,12 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
+  const bodyHtml = formatBodyText(item.body);
   block.innerHTML = baseCardShell(sectionIndex, 'Video', `
     <div class="video-card">
       <div class="video-card-header">
         <h2 class="content-header">${html(item.header)}</h2>
-        <div class="content-body">${html(item.body)}</div>
+        ${bodyHtml ? `<div class="content-body">${bodyHtml}</div>` : ''}
       </div>
       ${videoId
         ? `<div class="video-wrapper">
@@ -4892,10 +4949,11 @@ function renderTextBlock(item, sectionIndex, onComplete) {
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
+  const bodyHtml = formatBodyText(item.body);
   block.innerHTML = baseCardShell(sectionIndex, 'Reading', `
     <div class="text-card">
       <h2 class="content-header">${html(item.header)}</h2>
-      <div class="content-body">${html(item.body)}</div>
+      ${bodyHtml ? `<div class="content-body">${bodyHtml}</div>` : ''}
     </div>
   `);
   attachContinue(block, sectionIndex, onComplete, item.slot);
@@ -4907,12 +4965,13 @@ function renderTextImageBlock(item, sectionIndex, onComplete) {
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
+  const bodyHtml = formatBodyText(item.body);
   block.innerHTML = baseCardShell(sectionIndex, 'Reading', `
     <div class="text-image-card">
       <div class="text-image-inner">
         <div class="text-image-text">
           <h2 class="content-header">${html(item.header)}</h2>
-          <div class="content-body">${html(item.body)}</div>
+          ${bodyHtml ? `<div class="content-body">${bodyHtml}</div>` : ''}
         </div>
         <div class="text-image-img"><img src="${html(item.mediaUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.parentElement.innerHTML='&lt;div class=&quot;text-image-fallback&quot;&gt;Image unavailable&lt;/div&gt;';" /></div>
       </div>
@@ -5072,7 +5131,8 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
     const header = String(item.header || '').trim();
     const body = String(item.body || '').trim();
     const headerHtml = header ? `<h2 class="content-header">${html(header)}</h2>` : '';
-    const bodyHtml = body ? `<div class="content-body">${html(body)}</div>` : '';
+    const formattedBody = body ? formatBodyText(body) : '';
+    const bodyHtml = formattedBody ? `<div class="content-body">${formattedBody}</div>` : '';
 
     block.innerHTML = baseCardShell(sectionIndex, 'Knowledge Check', `
       <div class="interactive-card">
@@ -5368,9 +5428,10 @@ function renderReflectionCard(item, sectionIndex, onComplete) {
   const state = ensureCardState(sectionIndex, { text: '', submitted: false, completed: false });
   const block = document.createElement('div');
   block.className = 'section-block';
+  const bodyHtml = formatBodyText(item.body);
   block.innerHTML = baseCardShell(sectionIndex, 'Reflection', `
     <div class="interactive-card">
-      <h2 class="content-header">${html(item.header)}</h2><div class="content-body">${html(item.body)}</div>
+      <h2 class="content-header">${html(item.header)}</h2>${bodyHtml ? `<div class="content-body">${bodyHtml}</div>` : ''}
       <p class="question-stem">${html(item.prompt)}</p>
       <textarea class="reflection-input" placeholder="Write your reflection..." ${state.submitted?'disabled':''}>${html(state.text)}</textarea>
       <button class="action-btn">Submit reflection</button>
@@ -5395,6 +5456,7 @@ function renderPollCard(item, sectionIndex, onComplete) {
   const state = ensureCardState(sectionIndex, { submitted: false, selected: multi ? [] : '', completed: false });
   const block = document.createElement('div');
   block.className = 'section-block';
+  const bodyHtml = formatBodyText(item.body);
   const inputType = multi ? 'checkbox' : 'radio';
   const optionsHtml = item.options.map(opt => {
     const checked = multi ? (state.selected||[]).includes(opt) : state.selected === opt;
@@ -5402,7 +5464,7 @@ function renderPollCard(item, sectionIndex, onComplete) {
   }).join('');
   block.innerHTML = baseCardShell(sectionIndex, 'Poll', `
     <div class="interactive-card">
-      <h2 class="content-header">${html(item.header)}</h2><div class="content-body">${html(item.body)}</div>
+      <h2 class="content-header">${html(item.header)}</h2>${bodyHtml ? `<div class="content-body">${bodyHtml}</div>` : ''}
       <p class="question-stem">${html(item.prompt)}</p>
       <div class="poll-options">${optionsHtml}</div>
       <button class="action-btn">Submit</button>
