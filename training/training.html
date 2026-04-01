@@ -930,6 +930,48 @@
       background: var(--cream-dark);
     }
 
+    /* ── RESUME MODAL ── */
+    #resume-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9500;
+      background: rgba(16, 33, 61, 0.55);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .resume-modal-card {
+      width: min(100%, 460px);
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 36px rgba(16, 33, 61, 0.2);
+      padding: 24px;
+    }
+
+    .resume-modal-card h2 {
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      line-height: 1.2;
+      margin-bottom: 10px;
+      color: var(--navy);
+    }
+
+    .resume-modal-card p {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .resume-modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
     /* ── IMAGE LIGHTBOX ── */
     #img-lightbox {
       display: none;
@@ -1085,6 +1127,18 @@
     </div>
   </div>
 
+</div>
+
+<!-- RESUME MODAL -->
+<div id="resume-modal" role="dialog" aria-modal="true" aria-label="Resume previous training session">
+  <div class="resume-modal-card">
+    <h2>Resume your training?</h2>
+    <p>We found saved progress for this participant code. Choose whether to continue or start over.</p>
+    <div class="resume-modal-actions">
+      <button class="action-btn" id="resume-continue-btn" type="button">Continue where I left off</button>
+      <button class="action-btn secondary" id="resume-startover-btn" type="button">Start over</button>
+    </div>
+  </div>
 </div>
 
 <!-- IMAGE LIGHTBOX -->
@@ -1372,6 +1426,29 @@ function loadSavedProgress() {
 
 function clearSavedProgress() {
   try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+}
+
+function askResumeChoice() {
+  return new Promise(resolve => {
+    const modal = $('resume-modal');
+    const continueBtn = $('resume-continue-btn');
+    const startOverBtn = $('resume-startover-btn');
+
+    const finish = choice => {
+      continueBtn.removeEventListener('click', onContinue);
+      startOverBtn.removeEventListener('click', onStartOver);
+      modal.style.display = 'none';
+      resolve(choice);
+    };
+
+    const onContinue = () => finish('continue');
+    const onStartOver = () => finish('startover');
+
+    continueBtn.addEventListener('click', onContinue);
+    startOverBtn.addEventListener('click', onStartOver);
+    modal.style.display = 'flex';
+    continueBtn.focus();
+  });
 }
 
 // ─────────────────────────────────────────────
@@ -2766,10 +2843,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const saved = loadSavedProgress();
     let resuming = false;
     if (saved && saved.participantCode === entered && saved.revealedSlots > 1) {
-      const doResume = confirm(
-        'You have a training session in progress.\n\nClick OK to resume where you left off, or Cancel to start over from the beginning.'
-      );
-      if (doResume) {
+      const choice = await askResumeChoice();
+      if (choice === 'continue') {
         participantCode = saved.participantCode;
         sessionId       = saved.sessionId;
         sessionStart    = saved.sessionStart;
