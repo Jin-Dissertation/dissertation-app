@@ -10,6 +10,7 @@
   <style>
     /* ── RESET & VARIABLES ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * { overflow-wrap: break-word; }
 
     :root {
       --navy:       #10213d;
@@ -39,7 +40,17 @@
       background: var(--cream);
       color: var(--navy);
       line-height: 1.7;
-      min-height: 100vh;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      min-height: 44px;
+      font-size: 16px;
     }
 
     /* ── PROGRESS BAR ── */
@@ -49,6 +60,14 @@
       height: 3px;
       background: var(--cream-dark);
       z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-2px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    body.training-mode #progress-bar {
+      opacity: 1;
+      transform: translateY(0);
     }
     #progress-fill {
       height: 100%;
@@ -85,7 +104,7 @@
 
     /* ── ACCESS GATE ── */
     #gate {
-      min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -174,7 +193,7 @@
 
     /* ── LOADING ── */
     #loading {
-      min-height: 100vh;
+      min-height: 100dvh;
       display: none;
       align-items: center;
       justify-content: center;
@@ -749,6 +768,7 @@
       font-size: 0.95rem;
       color: var(--navy);
       line-height: 1.75;
+      max-width: 100%;
     }
 
     /* ── TEXT + IMAGE BLOCK ── */
@@ -1178,6 +1198,10 @@ let interactionTimes = [];
 // ─────────────────────────────────────────────
 const $  = id => document.getElementById(id);
 const now = () => new Date().toISOString();
+
+function setTrainingMode(isTraining) {
+  document.body.classList.toggle('training-mode', !!isTraining);
+}
 
 function makeSessionId(code) {
   const rand  = Math.random().toString(36).slice(2,6).toUpperCase();
@@ -2818,6 +2842,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const codeInput = $('code-input');
   const gateError = $('gate-error');
 
+  setTrainingMode(false);
   codeInput.focus();
 
   gateForm.addEventListener('submit', async e => {
@@ -2875,6 +2900,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     $('gate').style.display    = 'none';
     $('loading').style.display = 'flex';
+    setTrainingMode(true);
 
     if (!resuming) logEvent('access_granted', { participantCode });
 
@@ -2887,6 +2913,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       $('loading').style.display    = 'none';
       $('training').style.display   = 'block';
+      setTrainingMode(true);
       $('participant-badge').textContent = `Participant: ${participantCode}`;
 
       renderTraining(structure, resuming ? saved : null);
@@ -2896,6 +2923,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       $('loading').style.display = 'none';
       $('gate').style.display    = 'flex';
+      setTrainingMode(false);
       gateError.textContent = `Failed to load training content: ${err.message}. Please refresh the page.`;
       logEvent('content_load_failed', { error: String(err.message) });
     }
