@@ -1313,42 +1313,47 @@ function normalizeGradedText(v) {
   return String(v || '').trim().toLowerCase();
 }
 
-function normalizeCategorizeValue(value) {
-  const trimmed = String(value || '').trim();
-  if (!trimmed) return '';
-  if (/^n\/?a$/i.test(trimmed)) return '';
-  return trimmed;
+function isCategorizeNA(v) {
+  const s = normalizeGradedText(v);
+  return s === '' || s === 'n/a' || s === 'na';
 }
 
 function parseCategorizeMappings(blob) {
   const raw = String(blob || '').replace(/\r\n?/g, '\n').trim();
   if (!raw) return [];
 
-  const parsePair = (left, right) => {
-    const item = normalizeCategorizeValue(left);
-    const category = normalizeCategorizeValue(right);
-    if (!item && !category) return null;
-    return { item, category };
-  };
+  const usesNewFormat = raw.includes('---');
 
-  const hasLineMappings = raw.includes('\n') && raw.includes('---');
-  const records = hasLineMappings ? raw.split('\n') : raw.split('||');
+  const entries = usesNewFormat
+    ? raw.split('\n').map(line => line.trim()).filter(Boolean)
+    : raw.split('||').map(part => part.trim()).filter(Boolean);
 
-  return records
-    .map(record => String(record || '').trim())
-    .filter(Boolean)
-    .map(record => {
-      const cleaned = hasLineMappings ? record.replace(/\|+\s*$/, '').trim() : record;
-      const sepIndex = cleaned.indexOf('---');
-      if (sepIndex >= 0) {
-        const left = cleaned.slice(0, sepIndex);
-        const right = cleaned.slice(sepIndex + 3);
-        return parsePair(left, right);
+  return entries
+    .map(entry => {
+      let left = '';
+      let right = '';
+
+      if (usesNewFormat) {
+        const parts = entry.split('---');
+        left = parts.shift() || '';
+        right = parts.join('---') || '';
+      } else {
+        const parts = entry.split('|');
+        left = parts[0] || '';
+        right = parts[1] || '';
       }
-      const [left, right] = cleaned.split('|');
-      return parsePair(left, right);
+
+      const rawItem = String(left).replace(/\|+$/g, '').trim();
+      const rawCategory = String(right).replace(/\|+$/g, '').trim();
+
+      return {
+        item: isCategorizeNA(rawItem) ? '' : rawItem,
+        category: isCategorizeNA(rawCategory) ? '' : rawCategory,
+        rawItem,
+        rawCategory
+      };
     })
-    .filter(Boolean);
+    .filter(entry => entry.rawItem || entry.rawCategory);
 }
 
 function getCategorizeMappingsAndCategories(blob) {
@@ -1359,17 +1364,20 @@ function getCategorizeMappingsAndCategories(blob) {
   const items = [];
 
   mappings.forEach(mapping => {
-    const itemKey = normalizeGradedText(mapping.item);
-    const categoryKey = normalizeGradedText(mapping.category);
-
-    if (mapping.item && !seenItems.has(itemKey)) {
-      seenItems.add(itemKey);
-      items.push(mapping.item);
+    if (mapping.item) {
+      const itemKey = normalizeGradedText(mapping.item);
+      if (!seenItems.has(itemKey)) {
+        seenItems.add(itemKey);
+        items.push(mapping.item);
+      }
     }
 
-    if (mapping.category && !seenCategories.has(categoryKey)) {
-      seenCategories.add(categoryKey);
-      categories.push(mapping.category);
+    if (mapping.category) {
+      const categoryKey = normalizeGradedText(mapping.category);
+      if (!seenCategories.has(categoryKey)) {
+        seenCategories.add(categoryKey);
+        categories.push(mapping.category);
+      }
     }
   });
 
@@ -2175,10 +2183,28 @@ function renderCategorizeBlock(item, sectionIndex, onComplete) {
   const continueBtn = block.querySelector('.continue-btn');
   let selectedItem = null;
   let draggedItem = null;
-  const answerMap = new Map(mappings.map(mapping => [
-    normalizeGradedText(mapping.item),
-    normalizeGradedText(mapping.category)
-  ]));
+  const answerMap = new Map(
+    mappings
+      .filter(mapping => mapping.item)
+      .map(mapping => [
+        normalizeGradedText(mapping.item),
+        normalizeGradedText(mapping.category || '')
+      ])
+  );
+
+  function isItemPlacementCorrect(itemEl) {
+    const itemKey = normalizeGradedText(itemEl.dataset.item);
+    const expected = answerMap.get(itemKey) || '';
+    const actual = normalizeGradedText(
+      itemEl.closest('[data-category]')?.dataset.category || 'pool'
+    );
+
+    if (!expected) {
+      return actual === 'pool';
+    }
+
+    return actual === expected;
+  }
 
   function setHint(text) {
     if (!mobileMode || !hintEl) return;
@@ -2252,15 +2278,6 @@ function renderCategorizeBlock(item, sectionIndex, onComplete) {
     resetBtn.disabled = true;
     checkBtn.disabled = true;
     saveProgress();
-  }
-
-  function gradeCategorizeItem(itemEl) {
-    const itemKey = normalizeGradedText(itemEl.dataset.item);
-    const expected = answerMap.get(itemKey) || '';
-    const actual = normalizeGradedText(itemEl.closest('[data-category]')?.dataset.category || 'pool');
-    const isCorrect = expected ? actual === expected : actual === 'pool';
-    itemEl.classList.add(isCorrect ? 'correct' : 'incorrect');
-    return isCorrect;
   }
 
   block.addEventListener('click', e => {
@@ -2339,7 +2356,8 @@ function renderCategorizeBlock(item, sectionIndex, onComplete) {
     let allCorrect = true;
 
     block.querySelectorAll('.categorize-item').forEach(itemEl => {
-      const isCorrect = gradeCategorizeItem(itemEl);
+      const isCorrect = isItemPlacementCorrect(itemEl);
+      itemEl.classList.add(isCorrect ? 'correct' : 'incorrect');
       if (!isCorrect) allCorrect = false;
     });
 
@@ -2378,7 +2396,8 @@ function renderCategorizeBlock(item, sectionIndex, onComplete) {
     resetBtn.disabled = true;
     block.querySelectorAll('.categorize-item').forEach(itemEl => {
       itemEl.draggable = false;
-      gradeCategorizeItem(itemEl);
+      itemEl.style.cursor = 'default';
+      itemEl.classList.add(isItemPlacementCorrect(itemEl) ? 'correct' : 'incorrect');
     });
     showFeedback(!!sectionState.isCorrect);
     continueRow.classList.add('show');
