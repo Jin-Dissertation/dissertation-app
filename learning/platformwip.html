@@ -3959,10 +3959,7 @@ function renderCategorizeQuestion(q, index, total) {
   if (!container) return;
 
   const mappings = parseCategorizeMappings(q.correct_blob);
-  const categories = String(q.distractors_blob || "")
-    .split("|")
-    .map(s => s.trim())
-    .filter(Boolean);
+  const categories = mappings.map(m => m.category);
 
   const uniqueCategories = [...new Set(categories)];
   const items = mappings.map(m => m.item);
