@@ -67,15 +67,23 @@
     #progress-bar {
       position: fixed;
       top: 0; left: 0; right: 0;
-      height: 3px;
-      background: var(--cream-dark);
+      height: 4px;
+      background: rgba(200, 216, 240, 0.45);
       z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-2px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    body.training-mode #progress-bar {
+      opacity: 1;
+      transform: translateY(0);
     }
     #progress-fill {
       height: 100%;
-      background: var(--gold);
+      background: linear-gradient(90deg, var(--gold), var(--gold-lt));
       width: 0%;
-      transition: width 0.5s ease;
+      transition: width 0.45s ease;
     }
 
     /* ── SECTION COUNTER ── */
@@ -1457,6 +1465,7 @@
 
     @media (max-width: 600px) {
       html { font-size: 16px; }
+      #progress-bar { display: none; }
 
       #app { padding: 0 16px 72px; }
 
@@ -1478,16 +1487,46 @@
         top: auto;
         bottom: 12px;
         right: 12px;
-        font-size: 0.68rem;
-        padding: 6px 10px;
+        font-size: 0.64rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        padding: 0;
+        width: 58px;
+        height: 58px;
         opacity: 0.88;
-        backdrop-filter: blur(4px);
-        box-shadow: 0 4px 10px rgba(16,33,61,0.08);
+        border: none;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--navy);
+        background:
+          conic-gradient(var(--gold) var(--mobile-progress-angle, 0deg), rgba(200, 216, 240, 0.65) 0);
+        box-shadow: 0 5px 16px rgba(16,33,61,0.12);
+      }
+      #section-counter::before {
+        content: '';
+        position: absolute;
+        inset: 4px;
+        border-radius: 50%;
+        background: rgba(237, 244, 255, 0.96);
+        box-shadow: inset 0 0 0 1px rgba(200, 216, 240, 0.9);
+      }
+      #section-counter span {
+        position: relative;
+        z-index: 1;
+        line-height: 1;
       }
 
       .video-wrapper {
         border-radius: 8px;
         overflow: hidden;
+      }
+    }
+
+    @media (min-width: 601px) {
+      #section-counter {
+        background: rgba(237, 244, 255, 0.94);
       }
     }
 
@@ -2125,16 +2164,19 @@ function scrollToEl(el, offset = 80) {
 
 function updateProgress() {
   const pct = totalSlots > 0 ? Math.round((completedSlots.size / totalSlots) * 100) : 0;
-  $('progress-fill').style.width = pct + '%';
+  const progressFill = $('progress-fill');
+  if (progressFill) progressFill.style.width = pct + '%';
   const counter = $('section-counter');
-  counter.textContent = `${completedSlots.size} / ${totalSlots}`;
+  counter.innerHTML = `<span>${completedSlots.size} / ${totalSlots}</span>`;
+  counter.style.setProperty('--mobile-progress-angle', `${Math.max(0, Math.min(100, pct)) * 3.6}deg`);
   counter.style.opacity = totalSlots > 0 ? '1' : '0';
 }
 
 function resetTrainingUi() {
   const sectionCounter = $('section-counter');
   if (sectionCounter) {
-    sectionCounter.textContent = '';
+    sectionCounter.innerHTML = '';
+    sectionCounter.style.removeProperty('--mobile-progress-angle');
     sectionCounter.style.opacity = '0';
   }
 
@@ -6125,6 +6167,7 @@ function initializeGoogleSignIn() {
 
 function showScreen(name) {
   if (name !== 'training') resetTrainingUi();
+  document.body.classList.toggle('training-mode', name === 'training');
   $('auth-screen').style.display = name === 'auth' ? 'flex' : 'none';
   $('dashboard').style.display = name === 'dashboard' ? 'block' : 'none';
   $('loading').style.display = name === 'loading' ? 'flex' : 'none';
