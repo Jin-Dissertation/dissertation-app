@@ -1152,8 +1152,8 @@
 <!-- RESUME MODAL -->
 <div id="resume-modal" role="dialog" aria-modal="true" aria-label="Resume previous training session">
   <div class="resume-modal-card">
-    <h2>Resume your training?</h2>
-    <p>We found saved progress for this participant code. Choose whether to continue or start over.</p>
+    <h2>Resume training?</h2>
+    <p>You have a training session in progress. Continue where you left off or start over from the beginning.</p>
     <div class="resume-modal-actions">
       <button class="action-btn" id="resume-continue-btn" type="button">Continue where I left off</button>
       <button class="action-btn secondary" id="resume-startover-btn" type="button">Start over</button>
@@ -1476,9 +1476,9 @@ function askResumeChoice() {
 }
 
 // ─────────────────────────────────────────────
-// BUILD CONTENT STRUCTURE FROM CSV ROWS
+// BUILD CONTENT STRUCTURE FROM TRAINING ROWS
 // ─────────────────────────────────────────────
-// SECTION GROUPING: CSV rows are grouped by section first, then by slot inside each section.
+// SECTION GROUPING: rows are grouped by section first, then by slot inside each section.
 function buildStructure(rows) {
   const normalized = rows.map((r, idx) => ({
     ...r,
@@ -2909,7 +2909,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const rows = Array.isArray(data.rows) ? data.rows : [];
       const structure = buildStructure(rows);
 
-      if (structure.length === 0) throw new Error('No content found in CSV.');
+      if (structure.length === 0) throw new Error('No training content was returned.');
 
       $('loading').style.display    = 'none';
       $('training').style.display   = 'block';
