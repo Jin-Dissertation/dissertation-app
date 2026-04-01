@@ -2715,6 +2715,7 @@ async function submitSession() {
 
   const elapsed = sessionStart ? Date.now() - sessionStart : 0;
   const activeSeconds = computeActiveSeconds(interactionTimes);
+  const { itemValues, itemMap, itemMeta } = buildCardResponseValues();
   const payload = {
     action:           'submitSession',
     source:           'training',
@@ -2727,6 +2728,10 @@ async function submitSession() {
     active_seconds:   activeSeconds,
     total_questions:  totalQuestions,
     correct_first:    correctFirst,
+    item_values:      itemValues,
+    item_map:         itemMap,
+    item_meta:        itemMeta,
+    item_count:       itemValues.length,
     events
   };
 
@@ -2752,6 +2757,52 @@ async function submitSession() {
     logEvent('session_submit_failed', { error: String(err.message) });
     offerDownload(payload);
   }
+}
+
+function buildCardResponseValues() {
+  const itemValues = [];
+  const itemMap = {};
+  const itemMeta = [];
+  let globalCardIndex = 0;
+
+  allSections.forEach(section => {
+    const sectionTitle = section?.title || '';
+    (section.cards || []).forEach(card => {
+      const state = quizStates?.[globalCardIndex] || {};
+      let value = '';
+
+      if (card?.type === 'question_image') {
+        if (state.answered) value = state.isCorrect ? 1 : 0;
+      } else if (card?.type === 'categorize') {
+        if (state.submitted) value = state.isCorrect ? 1 : 0;
+      } else if (card?.type === 'quiz') {
+        if (state.completed) {
+          const questions = Array.isArray(state.questions) ? state.questions : null;
+          if (questions && questions.length > 0) {
+            const totalQuestionCount = questions.length;
+            const correctFirstCount = questions.filter(q => q && q.isCorrect === true).length;
+            value = `${correctFirstCount}/${totalQuestionCount}`;
+          }
+        }
+      } else if (card?.type === 'video' || card?.type === 'text' || card?.type === 'text_image') {
+        value = '';
+      } else {
+        value = '';
+      }
+
+      itemValues.push(value);
+      itemMap[`item_${globalCardIndex + 1}`] = value;
+      itemMeta.push({
+        item_index: globalCardIndex + 1,
+        type: card?.type || '',
+        slot: card?.slot || '',
+        section_title: sectionTitle
+      });
+      globalCardIndex += 1;
+    });
+  });
+
+  return { itemValues, itemMap, itemMeta };
 }
 
 function offerDownload(payload) {
