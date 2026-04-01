@@ -41,6 +41,8 @@
       color: var(--navy);
       line-height: 1.7;
       min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
       -webkit-font-smoothing: antialiased;
       -webkit-tap-highlight-color: transparent;
     }
@@ -98,13 +100,17 @@
     /* ── PAGE SHELL ── */
     #app {
       max-width: 760px;
+      width: 100%;
       margin: 0 auto;
-      padding: 0 28px 100px;
+      padding: 0 28px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     /* ── ACCESS GATE ── */
     #gate {
-      min-height: 100dvh;
+      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -193,7 +199,7 @@
 
     /* ── LOADING ── */
     #loading {
-      min-height: 100dvh;
+      flex: 1;
       display: none;
       align-items: center;
       justify-content: center;
@@ -740,6 +746,16 @@
       font-style: italic;
     }
 
+
+    .page-footer {
+      text-align: center;
+      padding: 12px 24px 24px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: var(--sans);
+      flex-shrink: 0;
+    }
+
     /* ── ANIMATIONS ── */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(16px); }
@@ -1041,7 +1057,7 @@
     /* ── RESPONSIVE ── */
     @media (max-width: 800px) {
       /* Page shell */
-      #app { padding: 0 16px 80px; }
+      #app { padding: 0 16px; }
 
       /* Gate screen — cut the dead space */
       #gate { min-height: 0; padding: 72px 20px 60px; }
@@ -3157,7 +3173,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<footer style="text-align:center; padding: 12px 24px 24px; font-size: 0.72rem; color: var(--muted); font-family: var(--sans);">
+<footer class="page-footer">
   Last updated: <span id="last-updated"></span>
 </footer>
 <script>
