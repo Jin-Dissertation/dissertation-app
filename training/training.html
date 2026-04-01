@@ -2101,6 +2101,7 @@ function renderCategorizeBlock(item, sectionIndex, onComplete) {
     setSelectedItem(null);
     feedbackBox.className = 'feedback-box';
     feedbackBox.innerHTML = '';
+    continueRow.classList.remove('show');
     syncPlacementsFromDom();
   });
 
