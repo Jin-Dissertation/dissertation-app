@@ -182,6 +182,11 @@
 
     .gate-btn:hover { background: var(--navy-mid); }
 
+    .gate-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
     .gate-error {
       margin-top: 14px;
       font-size: 0.85rem;
@@ -1156,15 +1161,6 @@
 const LOAD_URL   = 'https://script.google.com/macros/s/AKfycbwsRmerE4CnZIIQ7F65yBo123VPl0oXyEhtJHZPuWhc5FElSKaJj5HSc-PegJIv5-u52g/exec';
 const SUBMIT_URL = LOAD_URL;
 const TRACK_URL  = LOAD_URL; // same deployment; Apps Script routes by action field
-
-const ACCESS_CODES = new Set([
-  'blue-sky','green-grass','bright-light','calm-water','morning-sun',
-  'quiet-night','tall-tree','warm-breeze','clear-path','soft-cloud',
-  'deep-ocean','fresh-air','open-field','gentle-rain','golden-hour',
-  'rising-tide','distant-hill','summer-wind','early-dawn','cool-shade',
-  'wide-river','bright-star','falling-leaf','white-sand','silver-moon',
-  'calm-harbor','quiet-forest','warm-sunlight','soft-snow','open-horizon','zzz'
-]);
 
 // ─────────────────────────────────────────────
 // STATE
@@ -2653,10 +2649,29 @@ document.addEventListener('DOMContentLoaded', () => {
   gateForm.addEventListener('submit', async e => {
     e.preventDefault();
     const entered = codeInput.value.trim().toLowerCase();
+    if (!entered) return;
 
-    if (!ACCESS_CODES.has(entered)) {
+    const submitBtn = gateForm.querySelector('button[type="submit"]');
+    gateError.textContent = '';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Checking…';
+
+    let valid = false;
+    try {
+      const result = await postToAppsScript(LOAD_URL, { action: 'validateCode', code: entered });
+      valid = result.valid === true;
+    } catch (_) {
+      gateError.textContent = 'Could not reach the server. Please check your connection and try again.';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Begin';
+      return;
+    }
+
+    if (!valid) {
       gateError.textContent = 'Access code not recognized. Please check your code and try again.';
       codeInput.select();
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Begin';
       return;
     }
 
