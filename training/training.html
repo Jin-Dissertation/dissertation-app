@@ -188,6 +188,44 @@
       transition: background 0.2s;
     }
 
+    .gate-btn {
+      position: relative;
+      min-width: 92px;
+    }
+
+    .gate-btn:disabled {
+      background: #8ea0bf;
+      cursor: wait;
+      opacity: 1;
+    }
+
+    .gate-btn.is-loading {
+      pointer-events: none;
+    }
+
+    .gate-btn-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gate-btn.is-loading .gate-btn-label::after {
+      content: '';
+      display: inline-block;
+      width: 1.1em;
+      text-align: left;
+      margin-left: 0.15em;
+      animation: gateDots 1s steps(4, end) infinite;
+    }
+
+    @keyframes gateDots {
+      0%   { content: ''; }
+      25%  { content: '.'; }
+      50%  { content: '..'; }
+      75%  { content: '...'; }
+      100% { content: ''; }
+    }
+
     .gate-btn:hover { background: var(--navy-mid); }
 
     .gate-error {
@@ -1117,10 +1155,22 @@
     <h1 class="gate-title">AI-Assisted MCQ Development for Nursing Education</h1>
     <p class="gate-sub">Enter your participant code to begin the training session.</p>
     <form class="gate-form" id="gate-form">
-      <input class="gate-input" id="code-input" type="text"
+      <input
+        class="gate-input"
+        id="code-input"
+        type="text"
         placeholder="your-code"
-        autocomplete="off" autocapitalize="none" spellcheck="false" />
-      <button class="gate-btn" type="submit">Begin</button>
+        autocomplete="off"
+        autocapitalize="none"
+        autocorrect="off"
+        spellcheck="false"
+        inputmode="text"
+        enterkeyhint="go"
+        aria-label="Participant code"
+      />
+      <button class="gate-btn" id="gate-submit-btn" type="submit">
+        <span class="gate-btn-label">Begin</span>
+      </button>
     </form>
     <p class="gate-error" id="gate-error"></p>
   </div>
@@ -3102,26 +3152,58 @@ document.addEventListener('DOMContentLoaded', () => {
   const gateForm = $('gate-form');
   const codeInput = $('code-input');
   const gateError = $('gate-error');
+  const gateSubmitBtn = $('gate-submit-btn');
+  const gateSubmitLabel = gateSubmitBtn?.querySelector('.gate-btn-label');
+
+  function setGateLoading(isLoading, text = 'Loading') {
+    if (!gateSubmitBtn || !gateSubmitLabel) return;
+    gateSubmitBtn.disabled = !!isLoading;
+    gateSubmitBtn.classList.toggle('is-loading', !!isLoading);
+    gateSubmitBtn.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+    gateSubmitLabel.textContent = isLoading ? text : 'Begin';
+  }
+
+  function focusCodeInput() {
+    if (!codeInput) return;
+    requestAnimationFrame(() => {
+      codeInput.focus({ preventScroll: true });
+      codeInput.select();
+    });
+  }
 
   setTrainingMode(false);
-  codeInput.focus();
+  focusCodeInput();
+  window.addEventListener('pageshow', focusCodeInput);
+
+  codeInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      gateForm.requestSubmit();
+    }
+  });
 
   gateForm.addEventListener('submit', async e => {
     e.preventDefault();
+    if (gateSubmitBtn?.disabled) return;
+    gateError.textContent = '';
+    setGateLoading(true, 'Checking');
     const entered = codeInput.value.trim().toLowerCase();
 
     let validateData = null;
     try {
       validateData = await postToAppsScript(API_URL, { action: 'validateCode', code: entered });
     } catch (err) {
+      setGateLoading(false);
+      focusCodeInput();
       gateError.textContent = `Failed to load training content: ${err.message}. Please refresh the page.`;
       logEvent('content_load_failed', { error: String(err.message) });
       return;
     }
 
     if (!validateData.valid) {
+      setGateLoading(false);
+      focusCodeInput();
       gateError.textContent = 'Access code not recognized. Please check your code and try again.';
-      codeInput.select();
       return;
     }
 
@@ -3161,6 +3243,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     markInteraction();
 
+    setGateLoading(true, 'Loading');
     $('gate').style.display    = 'none';
     $('loading').style.display = 'flex';
     setTrainingMode(true);
@@ -3185,9 +3268,11 @@ document.addEventListener('DOMContentLoaded', () => {
       sendLiveSessionUpdate('in_progress');
 
     } catch (err) {
+      setGateLoading(false);
       $('loading').style.display = 'none';
-      $('gate').style.display    = 'flex';
+      $('gate').style.display = 'flex';
       setTrainingMode(false);
+      focusCodeInput();
       gateError.textContent = `Failed to load training content: ${err.message}. Please refresh the page.`;
       logEvent('content_load_failed', { error: String(err.message) });
     }
