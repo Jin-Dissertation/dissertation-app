@@ -5418,7 +5418,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
     const poolItems = block.querySelector('.module-categorize-pool-items');
     const getPlacementSnapshot = () => [...getAllItems()].map(node => ({
       item: node.getAttribute('data-item') || '',
-      placedIn: node.parentElement?.getAttribute('data-category') || 'pool'
+      placedIn: node.closest('[data-category]')?.getAttribute('data-category') || 'pool'
     })).filter(p => p.item && p.placedIn !== 'pool');
     const refreshMobileSelection = () => {
       if (isMobileMode) {
