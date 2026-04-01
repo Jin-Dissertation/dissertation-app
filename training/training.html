@@ -1048,6 +1048,83 @@ function formatDuration(ms) {
   return `${s}s`;
 }
 
+function html(v) {
+  return String(v || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatBodyText(raw) {
+  const normalized = String(raw || '').replace(/\r\n?/g, '\n').trim();
+  if (!normalized) return '';
+
+  const applyInlineFormatting = text => text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  const blocks = normalized.split(/\n\s*\n/);
+  const htmlParts = [];
+
+  blocks.forEach(block => {
+    const lines = block.split('\n').filter(line => line.trim() !== '');
+    let i = 0;
+    while (i < lines.length) {
+      const current = lines[i].trim();
+      if (current.startsWith('-- ')) {
+        const listItems = [];
+        while (i < lines.length && lines[i].trim().startsWith('-- ')) {
+          const itemText = lines[i].trim().slice(3);
+          listItems.push(`<li>${applyInlineFormatting(html(itemText))}</li>`);
+          i++;
+        }
+        htmlParts.push(`<ul>${listItems.join('')}</ul>`);
+      } else {
+        const paragraphLines = [];
+        while (i < lines.length && !lines[i].trim().startsWith('-- ')) {
+          paragraphLines.push(applyInlineFormatting(html(lines[i].trim())));
+          i++;
+        }
+        htmlParts.push(`<p>${paragraphLines.join('<br />')}</p>`);
+      }
+    }
+  });
+
+  return htmlParts.join('');
+}
+
+function normalizeYouTubeVideoId(raw) {
+  const value = String(raw || '').trim();
+  const validId = /^[A-Za-z0-9_-]{11}$/;
+  if (!value) return '';
+  if (validId.test(value)) return value;
+
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+
+    if (host === 'youtu.be' || host.endsWith('.youtu.be')) {
+      const id = url.pathname.replace(/^\/+/, '').split('/')[0];
+      return validId.test(id) ? id : '';
+    }
+
+    if (host.includes('youtube.com')) {
+      const watchId = url.searchParams.get('v');
+      if (validId.test(watchId || '')) return watchId;
+
+      const parts = url.pathname.split('/').filter(Boolean);
+      const markerIndex = parts.findIndex(part => ['embed', 'shorts', 'live', 'v'].includes(part));
+      if (markerIndex >= 0 && validId.test(parts[markerIndex + 1] || '')) return parts[markerIndex + 1];
+    }
+  } catch (_) {
+    return '';
+  }
+
+  return '';
+}
+
 function scrollToEl(el, offset = 80) {
   const top = el.getBoundingClientRect().top + window.scrollY - offset;
   window.scrollTo({ top, behavior: 'smooth' });
@@ -1202,6 +1279,20 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
+  const videoId = normalizeYouTubeVideoId(item.youtubeId);
+  const videoEmbedHtml = videoId
+    ? `
+        <iframe
+          src="https://www.youtube.com/embed/${html(videoId)}?rel=0&modestbranding=1"
+          title="Training video ${sectionIndex + 1}"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen>
+        </iframe>
+      `
+    : `
+        <div class="video-unavailable">Video unavailable</div>
+        ${item.youtubeId ? `<small>${html(item.youtubeId)}</small>` : ''}
+      `;
 
   block.innerHTML = `
     <div class="section-label">
@@ -1211,12 +1302,7 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
     </div>
     <div class="video-card">
       <div class="video-wrapper">
-        <iframe
-          src="https://www.youtube.com/embed/${item.youtubeId}?rel=0&modestbranding=1"
-          title="Training video ${sectionIndex + 1}"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen>
-        </iframe>
+        ${videoEmbedHtml}
       </div>
       <div class="video-footer">
         <span class="video-footer-label">Watch the video above, then click when you're done.</span>
@@ -1264,6 +1350,8 @@ function renderTextBlock(item, sectionIndex, onComplete) {
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
+  const headerHtml = item.header ? `<h2 class="content-header">${html(item.header)}</h2>` : '';
+  const bodyHtml = formatBodyText(item.body);
 
   block.innerHTML = `
     <div class="section-label">
@@ -1272,8 +1360,8 @@ function renderTextBlock(item, sectionIndex, onComplete) {
       <span class="section-type-badge">Reading</span>
     </div>
     <div class="text-card">
-      <h2 class="content-header">${item.header}</h2>
-      <div class="content-body">${item.body}</div>
+      ${headerHtml}
+      ${bodyHtml ? `<div class="content-body">${bodyHtml}</div>` : ''}
     </div>
     <div class="continue-row show">
       <button class="action-btn continue-btn">
@@ -1308,6 +1396,8 @@ function renderTextImageBlock(item, sectionIndex, onComplete) {
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
+  const headerHtml = item.header ? `<h2 class="content-header">${html(item.header)}</h2>` : '';
+  const bodyHtml = formatBodyText(item.body);
 
   block.innerHTML = `
     <div class="section-label">
@@ -1318,11 +1408,11 @@ function renderTextImageBlock(item, sectionIndex, onComplete) {
     <div class="text-image-card">
       <div class="text-image-inner">
         <div class="text-image-text">
-          <h2 class="content-header">${item.header}</h2>
-          <div class="content-body">${item.body}</div>
+          ${headerHtml}
+          ${bodyHtml ? `<div class="content-body">${bodyHtml}</div>` : ''}
         </div>
         <div class="text-image-img">
-          <img src="${item.imageUrl}" alt="" />
+          <img src="${html(item.imageUrl)}" alt="" />
         </div>
       </div>
     </div>
@@ -1388,7 +1478,7 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
           data-is-correct="${opt === q.correct ? 'true' : 'false'}"
           data-is-idk="false">
           <span class="option-letter">${letters[oi]}</span>
-          <span class="option-text">${opt}</span>
+          <span class="option-text">${html(opt)}</span>
         </button>
       </li>
     `).join('');
@@ -1411,7 +1501,7 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
     questionsHTML += `
       <div class="question-block${qi === 0 ? ' active' : ''}" data-qi="${qi}">
         <p class="question-progress">Question ${qi + 1} of ${item.questions.length}</p>
-        <p class="question-stem">${q.stem}</p>
+        <p class="question-stem">${html(q.stem)}</p>
         <ul class="options-list">${optionsHTML}</ul>
         <div class="feedback-box">
           <span class="feedback-label"></span>
@@ -1433,7 +1523,7 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
     </div>
     <div class="quiz-card">
       <div class="quiz-header">
-        <p class="quiz-header-label">Knowledge Check ${item.quizNum}</p>
+        <p class="quiz-header-label">Knowledge Check ${html(item.quizNum)}</p>
         <p class="quiz-header-sub">${item.questions.length} question${item.questions.length !== 1 ? 's' : ''} — select the best answer for each.</p>
       </div>
       ${questionsHTML}
@@ -1659,7 +1749,7 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
         data-is-correct="${opt === item.correct ? 'true' : 'false'}"
         data-is-idk="false">
         <span class="option-letter">${letters[oi]}</span>
-        <span class="option-text">${opt}</span>
+        <span class="option-text">${html(opt)}</span>
       </button>
     </li>
   `).join('');
@@ -1687,7 +1777,7 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
     <div class="question-image-card">
       <div class="question-image-inner">
         <div class="question-image-question">
-          <p class="question-stem">${item.stem}</p>
+          <p class="question-stem">${html(item.stem)}</p>
           <ul class="options-list">${optionsHTML}</ul>
           <div class="feedback-box">
             <span class="feedback-label"></span>
@@ -1695,7 +1785,7 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
           </div>
         </div>
         <div class="question-image-aside">
-          <img src="${item.imageUrl}" alt="" />
+          <img src="${html(item.imageUrl)}" alt="" />
         </div>
       </div>
     </div>
@@ -1893,7 +1983,7 @@ function renderTraining(structure, savedState = null) {
     accordion.innerHTML = `
       <button class="section-toggle" type="button">
         <span class="section-title-wrap">
-          <strong>Section ${sectionIdx + 1}: ${section.title}</strong>
+          <strong>Section ${sectionIdx + 1}: ${html(section.title)}</strong>
           <span class="section-status">Not started</span>
         </span>
         <span class="section-chevron">▾</span>
