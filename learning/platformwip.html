@@ -465,8 +465,9 @@
     .practice-sata-btn {
       width: 100%;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      justify-content: flex-start;
+      align-items: flex-start;
+      gap: 10px;
 
       margin-bottom: 6px;
       padding: 9px 12px;
@@ -518,12 +519,6 @@
       border-color: #166534;
       border-style: dashed;
       color: #14532d;
-    }
-
-    .sata-check {
-      opacity: 0;
-      font-weight: 700;
-      margin-left: 12px;
     }
 
     .practice-sata-btn.selected .sata-check,
@@ -1074,16 +1069,6 @@
       cursor: default;
     }
 
-    .practice-sata-btn {
-      display: flex;
-      justify-content: flex-start;
-      align-items: flex-start;
-      gap: 10px;
-      background: #f7faff;
-      color: #10213d;
-      border: 1px solid #c6d5ea;
-    }
-
     .practice-sata-btn:hover:not(:disabled) {
       background: #eef5ff;
       color: #10213d;
@@ -1105,18 +1090,8 @@
       flex: 0 0 auto;
       align-self: center;
       margin-left: 0;
-    }
-
-    .practice-sata-btn.selected {
-      background: #e7f0ff;
-      border-color: #2f6edc;
-      color: #10213d;
-    }
-
-    .practice-stem {
-      font-size: 0.96rem;
-      line-height: 1.45;
-      padding: 10px 12px;
+      opacity: 0;
+      font-weight: 700;
     }
 
     .action-btn svg { flex: 0 0 14px; }
@@ -1690,11 +1665,6 @@
       }
     }
 
-    .action-btn.disabled {
-      background-color: #dbe9ff !important;
-      border-color: #c8d8f0 !important;
-      color: #5f718f !important;
-    }
   </style>
 </head>
 <body>
@@ -1878,7 +1848,7 @@
   }
 */
 const LOAD_URL = 'https://script.google.com/macros/s/AKfycbyxevT1EWOj_IgdmL2oFiubBWc3b1BC5BnUuCL5-w0PxLjVPE9xsO_m_3RoIgqZ9mvO_A/exec';
-const SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbyxevT1EWOj_IgdmL2oFiubBWc3b1BC5BnUuCL5-w0PxLjVPE9xsO_m_3RoIgqZ9mvO_A/exec';
+const SUBMIT_URL = LOAD_URL;
 const PRACTICE_API_URL = 'https://script.google.com/macros/s/AKfycbyGXa8KdMd5kYJrkOew56oljtPPNvKpNxMnMf1IsHp2C0XAeth7fP-MDhzPlkhUvPXlpQ/exec';
 const PRACTICE_SESSION_STORAGE_KEY = 'inProgressPracticeSession';
 const GOOGLE_CLIENT_ID = '534534627380-bd6hjuj4ihbf6i7r2qsjnen6cqhm14ma.apps.googleusercontent.com';
@@ -1936,7 +1906,6 @@ let trainingActive  = false;
 let completionReached = false;
 let hasSuccessfulSubmission = false;
 let quizStates = {};
-let currentSectionIndex = 0;
 let progressionSectionIndex = 0;
 let allSections = [];
 
@@ -1972,7 +1941,7 @@ function shuffleArray(arr) {
   }
   return a;
 }
- function getStableOptionOrder(savedOrder, allOptions) {
+function getStableOptionOrder(savedOrder, allOptions) {
   const deduped = [...new Set((allOptions || []).filter(Boolean))];
 
   if (!Array.isArray(savedOrder) || !savedOrder.length) {
@@ -4469,15 +4438,8 @@ function handlePracticeSATAAnswer(question, selectedAnswers, correctAnswers, rat
   const buttons = container.querySelectorAll(".practice-sata-btn");
   const submitBtn = container.querySelector("#practice-sata-submit");
 
-  const normalize = (value) =>
-    String(value || "")
-      .toLowerCase()
-      .replace(/[^\w\s]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-
-  const selectedNorm = selectedAnswers.map(normalize).sort();
-  const correctNorm = correctAnswers.map(normalize).sort();
+  const selectedNorm = selectedAnswers.map(normalizeGradedText).sort();
+  const correctNorm = correctAnswers.map(normalizeGradedText).sort();
 
   const isCorrect =
     selectedNorm.length === correctNorm.length &&
@@ -4485,7 +4447,7 @@ function handlePracticeSATAAnswer(question, selectedAnswers, correctAnswers, rat
 
   buttons.forEach(button => {
     const answer = button.getAttribute("data-answer") || "";
-    const answerNorm = normalize(answer);
+    const answerNorm = normalizeGradedText(answer);
     const isSelected = selectedNorm.includes(answerNorm);
     const isActuallyCorrect = correctNorm.includes(answerNorm);
 
@@ -4557,25 +4519,18 @@ function handlePracticeCategorizeAnswer(question, container, mappings, placement
   const submitBtn = container.querySelector("#practice-categorize-submit");
   const items = container.querySelectorAll(".practice-categorize-item");
 
-  const normalize = (value) =>
-    String(value || "")
-      .toLowerCase()
-      .replace(/[^\w\s]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-
   const answerMap = {};
   mappings.forEach(mapping => {
-    answerMap[normalize(mapping.item)] = normalize(mapping.category);
+    answerMap[normalizeGradedText(mapping.item)] = normalizeGradedText(mapping.category);
   });
 
   let allCorrect = true;
 
   items.forEach(item => {
     const itemLabel = item.getAttribute("data-item") || "";
-    const itemKey = normalize(itemLabel);
+    const itemKey = normalizeGradedText(itemLabel);
     const expectedCategory = answerMap[itemKey] || "";
-    const actualCategory = normalize(item.parentElement?.getAttribute("data-category") || "pool");
+    const actualCategory = normalizeGradedText(item.closest("[data-category]")?.getAttribute("data-category") || "pool");
 
     item.setAttribute("data-locked", "true");
     item.setAttribute("draggable", "false");
@@ -5667,7 +5622,6 @@ function renderTraining(structure, savedState = null) {
       st.expanded = i === idx;
       updateSectionUI(i);
     });
-    currentSectionIndex = idx;
     if (updateProgressPointer) progressionSectionIndex = idx;
     updateProgress();
   }
@@ -5677,7 +5631,6 @@ function renderTraining(structure, savedState = null) {
       if (i === progressionSectionIndex && st.unlocked && !st.expanded) st.expanded = true;
       updateSectionUI(i);
     });
-    currentSectionIndex = progressionSectionIndex;
     updateProgress();
   }
 
@@ -6051,7 +6004,6 @@ function resetModuleState() {
   totalSlots = 0;
   revealedSlots = 0;
   completedSlots = new Set();
-  currentSectionIndex = 0;
   progressionSectionIndex = 0;
   allSections = [];
   $('sections-container').innerHTML = '';
