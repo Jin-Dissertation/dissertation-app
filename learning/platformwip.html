@@ -5452,8 +5452,11 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
     } else {
       block.querySelectorAll('.practice-categorize-item').forEach(node => {
         const itemName = node.getAttribute('data-item') || '';
-        const placedIn = node.parentElement?.getAttribute('data-category') || 'pool';
+        const placedIn = node.closest('[data-category]')?.getAttribute('data-category') || 'pool';
         const expected = answerMap.get(normalizeGradedText(itemName)) || '';
+
+        node.classList.remove('correct', 'incorrect', 'selected');
+
         if (normalizeGradedText(placedIn) === expected) {
           node.classList.add('correct');
         } else {
