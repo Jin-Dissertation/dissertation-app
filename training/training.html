@@ -827,6 +827,109 @@
 
     .question-image-aside img:hover { opacity: 0.88; }
 
+    /* ── CATEGORIZE BLOCK ── */
+    .categorize-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .categorize-helper {
+      margin-top: 8px;
+      margin-bottom: 14px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .categorize-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .categorize-pool,
+    .categorize-zone {
+      background: var(--cream);
+      border: 1px dashed var(--rule);
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 120px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .categorize-pool-title,
+    .categorize-zone-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .categorize-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-content: flex-start;
+      min-height: 58px;
+    }
+
+    .categorize-item {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--rule);
+      background: var(--white);
+      color: var(--navy);
+      font-size: 0.84rem;
+      line-height: 1.2;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .categorize-item.selected {
+      border-color: var(--gold);
+      background: var(--cream-dark);
+      box-shadow: 0 0 0 1px rgba(47,110,220,0.18);
+    }
+
+    .categorize-item.correct {
+      border-color: var(--green);
+      background: var(--green-lt);
+      color: var(--green);
+    }
+
+    .categorize-item.incorrect {
+      border-color: var(--red);
+      background: var(--red-lt);
+      color: var(--red);
+    }
+
+    .categorize-controls {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .categorize-mobile-hint {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      min-height: 1.25em;
+    }
+
+    .categorize-drop-target-active {
+      border-color: var(--gold);
+      background: var(--cream-dark);
+    }
+
     /* ── IMAGE LIGHTBOX ── */
     #img-lightbox {
       display: none;
@@ -897,6 +1000,7 @@
          ("look at the image on the right") still makes sense */
       .question-image-inner { display: flex; flex-direction: column; }
       .question-image-aside { order: -1; border-bottom: 1px solid var(--rule); }
+      .categorize-layout { grid-template-columns: 1fr; }
 
       /* Cards — tighter padding */
       .text-card          { padding: 20px; }
@@ -1057,6 +1161,39 @@ function pickBodyText(item) {
   const mobileBody = String(item?.body_mobile || '').trim();
   if (isMobileLikeViewport() && mobileBody) return mobileBody;
   return desktopBody;
+}
+
+function normalizeGradedText(v) {
+  return String(v || '').trim().toLowerCase();
+}
+
+function parseCategorizeMappings(blob) {
+  return String(blob || '')
+    .split('||')
+    .map(part => part.split('|'))
+    .map(parts => ({
+      item: String(parts[0] || '').trim(),
+      category: String(parts[1] || '').trim()
+    }))
+    .filter(entry => entry.item && entry.category);
+}
+
+function getCategorizeMappingsAndCategories(blob) {
+  const mappings = parseCategorizeMappings(blob);
+  const seen = new Set();
+  const categories = [];
+  const items = [];
+
+  mappings.forEach(mapping => {
+    items.push(mapping.item);
+    const key = normalizeGradedText(mapping.category);
+    if (!seen.has(key)) {
+      seen.add(key);
+      categories.push(mapping.category);
+    }
+  });
+
+  return { mappings, categories, items };
 }
 
 function html(v) {
@@ -1265,6 +1402,18 @@ function buildCardsForSection(rows) {
     if (type === 'question_image') {
       const distractors = [first.distractor_1, first.distractor_2, first.distractor_3, first.distractor_4].filter(d => d && d.trim());
       return { type: 'question_image', slot, stem: first.stem, correct: first.correct, distractors, feedback: first.feedback, showIdk: first.show_idk?.toLowerCase() === 'yes', imageUrl: first.image_url };
+    }
+    if (type === 'categorize') {
+      return {
+        type: 'categorize',
+        slot,
+        header: first.header,
+        body: first.body,
+        body_mobile: first.body_mobile,
+        stem: first.stem,
+        feedback: first.feedback,
+        correctBlob: first.correct_blob
+      };
     }
 
     const qRows = slotRows.sort((a, b) => parseInt(a.question_num,10) - parseInt(b.question_num,10));
@@ -1730,6 +1879,300 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
 }
 
 // ─────────────────────────────────────────────
+// RENDER CATEGORIZE BLOCK
+// ─────────────────────────────────────────────
+function renderCategorizeBlock(item, sectionIndex, onComplete) {
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+
+  const { mappings, categories, items } = getCategorizeMappingsAndCategories(item.correctBlob);
+  const sectionState = quizStates[sectionIndex] || {
+    itemOrder: null,
+    placements: {},
+    submitted: false,
+    countedQuestion: false,
+    isCorrect: false,
+    continued: false
+  };
+  quizStates[sectionIndex] = sectionState;
+
+  if (!sectionState.itemOrder || sectionState.itemOrder.length !== items.length) {
+    sectionState.itemOrder = shuffleArray(items);
+  }
+
+  const headerHtml = item.header ? `<h2 class="content-header">${html(item.header)}</h2>` : '';
+  const bodyHtml = formatBodyText(pickBodyText(item));
+  const stemHtml = item.stem ? `<p class="question-stem">${html(item.stem)}</p>` : '';
+  const mobileMode = isMobileLikeViewport();
+  const helperText = mobileMode
+    ? 'Tap an item to select it, then tap a category area to place it.'
+    : 'Drag each item into the correct category.';
+
+  const poolItemsHtml = sectionState.itemOrder
+    .map((text, idx) => `<button class="categorize-item" data-item="${html(text)}" data-item-index="${idx}" type="button">${html(text)}</button>`)
+    .join('');
+
+  const zonesHtml = categories.map(category => `
+    <div class="categorize-zone" data-category="${html(category)}">
+      <p class="categorize-zone-title">${html(category)}</p>
+      <div class="categorize-items"></div>
+    </div>
+  `).join('');
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Knowledge Check</span>
+    </div>
+    <div class="categorize-card">
+      ${headerHtml}
+      ${bodyHtml ? `<div class="content-body">${bodyHtml}</div>` : ''}
+      ${stemHtml}
+      <p class="categorize-helper">${html(helperText)}</p>
+      <div class="categorize-layout">
+        <div class="categorize-pool" data-category="pool">
+          <p class="categorize-pool-title">Items to place</p>
+          <div class="categorize-items">${poolItemsHtml}</div>
+          <p class="categorize-mobile-hint"${mobileMode ? '' : ' style="display:none;"'}>No item selected.</p>
+        </div>
+        <div class="categorize-zones">${zonesHtml}</div>
+      </div>
+      <div class="categorize-controls">
+        <button class="action-btn secondary categorize-reset-btn" type="button">Reset placements</button>
+        <button class="action-btn categorize-check-btn" type="button">Check Answer</button>
+      </div>
+      <div class="feedback-box"></div>
+    </div>
+    <div class="continue-row">
+      <button class="action-btn continue-btn">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  const pool = block.querySelector('.categorize-pool');
+  const poolItems = pool.querySelector('.categorize-items');
+  const hintEl = block.querySelector('.categorize-mobile-hint');
+  const zones = [...block.querySelectorAll('.categorize-zone')];
+  const checkBtn = block.querySelector('.categorize-check-btn');
+  const resetBtn = block.querySelector('.categorize-reset-btn');
+  const feedbackBox = block.querySelector('.feedback-box');
+  const continueRow = block.querySelector('.continue-row');
+  const continueBtn = block.querySelector('.continue-btn');
+  let selectedItem = null;
+  let draggedItem = null;
+
+  function setHint(text) {
+    if (!mobileMode || !hintEl) return;
+    hintEl.textContent = text || 'No item selected.';
+  }
+
+  function clearItemMarks() {
+    block.querySelectorAll('.categorize-item').forEach(el => {
+      el.classList.remove('selected', 'correct', 'incorrect');
+    });
+  }
+
+  function syncPlacementsFromDom() {
+    const placements = {};
+    block.querySelectorAll('.categorize-item').forEach(el => {
+      const category = el.closest('[data-category]')?.dataset.category || 'pool';
+      placements[el.dataset.item] = category;
+    });
+    sectionState.placements = placements;
+    saveProgress();
+  }
+
+  function moveItemToCategory(itemEl, category) {
+    if (!itemEl || sectionState.submitted) return;
+    const targetWrap = category === 'pool'
+      ? pool
+      : zones.find(z => normalizeGradedText(z.dataset.category) === normalizeGradedText(category));
+    const targetContainer = targetWrap?.querySelector('.categorize-items');
+    if (!targetContainer) return;
+    targetContainer.appendChild(itemEl);
+    syncPlacementsFromDom();
+  }
+
+  function setSelectedItem(itemEl) {
+    if (sectionState.submitted || !mobileMode) return;
+    block.querySelectorAll('.categorize-item').forEach(el => el.classList.remove('selected'));
+    selectedItem = itemEl;
+    if (selectedItem) {
+      selectedItem.classList.add('selected');
+      setHint(`Selected: ${selectedItem.dataset.item}`);
+    } else {
+      setHint('No item selected.');
+    }
+  }
+
+  function applySavedPlacements() {
+    block.querySelectorAll('.categorize-item').forEach(itemEl => {
+      const savedCategory = sectionState.placements[itemEl.dataset.item] || 'pool';
+      moveItemToCategory(itemEl, savedCategory);
+    });
+  }
+
+  function showFeedback(allCorrect) {
+    const baseText = allCorrect ? 'Correct ✅' : 'Incorrect ❌';
+    const feedbackParts = [`<span class="feedback-label">${html(baseText)}</span>`];
+    if (item.feedback) {
+      feedbackParts.push(`<p>${html(item.feedback).replace(/\n/g, '<br />')}</p>`);
+    }
+    feedbackBox.className = `feedback-box show ${allCorrect ? 'correct-fb' : 'incorrect-fb'}`;
+    feedbackBox.innerHTML = feedbackParts.join('');
+  }
+
+  function lockCard() {
+    sectionState.submitted = true;
+    block.querySelectorAll('.categorize-item').forEach(el => {
+      el.draggable = false;
+      el.style.cursor = 'default';
+    });
+    resetBtn.disabled = true;
+    checkBtn.disabled = true;
+    saveProgress();
+  }
+
+  block.addEventListener('click', e => {
+    const itemEl = e.target.closest('.categorize-item');
+    if (!itemEl || sectionState.submitted) return;
+    if (!mobileMode) return;
+    if (selectedItem === itemEl) setSelectedItem(null);
+    else setSelectedItem(itemEl);
+  });
+
+  if (!mobileMode) {
+    block.querySelectorAll('.categorize-item').forEach(itemEl => {
+      itemEl.draggable = !sectionState.submitted;
+      itemEl.addEventListener('dragstart', e => {
+        if (sectionState.submitted) return;
+        draggedItem = itemEl;
+        itemEl.classList.remove('selected');
+        if (e.dataTransfer) e.dataTransfer.setData('text/plain', itemEl.dataset.item);
+      });
+      itemEl.addEventListener('dragend', () => {
+        draggedItem = null;
+        block.querySelectorAll('.categorize-drop-target-active').forEach(el => el.classList.remove('categorize-drop-target-active'));
+      });
+    });
+
+    const targets = [pool, ...zones];
+    targets.forEach(target => {
+      const itemContainer = target.querySelector('.categorize-items');
+      const activate = evt => {
+        evt.preventDefault();
+        if (sectionState.submitted) return;
+        target.classList.add('categorize-drop-target-active');
+      };
+      target.addEventListener('dragenter', activate);
+      target.addEventListener('dragover', activate);
+      target.addEventListener('dragleave', () => target.classList.remove('categorize-drop-target-active'));
+      target.addEventListener('drop', evt => {
+        evt.preventDefault();
+        target.classList.remove('categorize-drop-target-active');
+        if (sectionState.submitted || !draggedItem) return;
+        itemContainer.appendChild(draggedItem);
+        syncPlacementsFromDom();
+      });
+    });
+  } else {
+    [pool, ...zones].forEach(target => {
+      target.addEventListener('click', e => {
+        if (sectionState.submitted) return;
+        if (e.target.closest('.categorize-item')) return;
+        if (!selectedItem) return;
+        const destination = target.dataset.category || 'pool';
+        moveItemToCategory(selectedItem, destination);
+        setSelectedItem(null);
+      });
+    });
+  }
+
+  resetBtn.addEventListener('click', () => {
+    if (sectionState.submitted) return;
+    clearItemMarks();
+    block.querySelectorAll('.categorize-item').forEach(itemEl => poolItems.appendChild(itemEl));
+    setSelectedItem(null);
+    feedbackBox.className = 'feedback-box';
+    feedbackBox.innerHTML = '';
+    syncPlacementsFromDom();
+  });
+
+  checkBtn.addEventListener('click', () => {
+    if (sectionState.submitted) return;
+
+    clearItemMarks();
+    let allCorrect = true;
+    const answerMap = new Map(mappings.map(mapping => [
+      normalizeGradedText(mapping.item),
+      normalizeGradedText(mapping.category)
+    ]));
+
+    block.querySelectorAll('.categorize-item').forEach(itemEl => {
+      const itemKey = normalizeGradedText(itemEl.dataset.item);
+      const expected = answerMap.get(itemKey) || '';
+      const actual = normalizeGradedText(itemEl.closest('[data-category]')?.dataset.category || 'pool');
+      const isCorrect = actual !== 'pool' && actual === expected;
+      itemEl.classList.add(isCorrect ? 'correct' : 'incorrect');
+      if (!isCorrect) allCorrect = false;
+    });
+
+    if (!sectionState.countedQuestion) {
+      totalQuestions++;
+      if (allCorrect) correctFirst++;
+      sectionState.countedQuestion = true;
+    }
+    sectionState.isCorrect = allCorrect;
+
+    logEvent('categorize_answered', {
+      slot: item.slot,
+      sectionIndex,
+      is_correct: allCorrect
+    });
+
+    lockCard();
+    showFeedback(allCorrect);
+    continueRow.classList.add('show');
+    scrollToEl(continueRow, 100);
+  });
+
+  continueBtn.addEventListener('click', () => {
+    if (sectionState.continued) return;
+    sectionState.continued = true;
+    saveProgress();
+    onComplete();
+  });
+
+  applySavedPlacements();
+  setSelectedItem(null);
+
+  if (sectionState.submitted) {
+    checkBtn.disabled = true;
+    resetBtn.disabled = true;
+    block.querySelectorAll('.categorize-item').forEach(itemEl => {
+      itemEl.draggable = false;
+      const answerMap = new Map(mappings.map(mapping => [
+        normalizeGradedText(mapping.item),
+        normalizeGradedText(mapping.category)
+      ]));
+      const expected = answerMap.get(normalizeGradedText(itemEl.dataset.item)) || '';
+      const actual = normalizeGradedText(itemEl.closest('[data-category]')?.dataset.category || 'pool');
+      itemEl.classList.add(actual !== 'pool' && actual === expected ? 'correct' : 'incorrect');
+    });
+    showFeedback(!!sectionState.isCorrect);
+    continueRow.classList.add('show');
+  }
+
+  return block;
+}
+
+// ─────────────────────────────────────────────
 // RENDER QUESTION + IMAGE BLOCK  (question left, image right)
 // ─────────────────────────────────────────────
 function renderQuestionImageBlock(item, sectionIndex, onComplete) {
@@ -2047,6 +2490,7 @@ function renderTraining(structure, savedState = null) {
       else if (item.type === 'text') block = renderTextBlock(item, cardIndex, onComplete);
       else if (item.type === 'text_image') block = renderTextImageBlock(item, cardIndex, onComplete);
       else if (item.type === 'question_image') block = renderQuestionImageBlock(item, cardIndex, onComplete);
+      else if (item.type === 'categorize') block = renderCategorizeBlock(item, cardIndex, onComplete);
       else block = renderQuizBlock(item, cardIndex, onComplete);
 
       if (localCardIdx >= sectionState[sectionIdx].visibleCards) block.classList.remove('revealed');
