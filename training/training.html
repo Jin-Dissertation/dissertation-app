@@ -993,17 +993,7 @@
 // ─────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────
-const SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbwJQ3QfQ9AdniKd46SYoesy6GMx2GvP52-HWiqlPRTZ8zJuGoyzi7BiHN6sio7dJiLb/exec';
-const CSV_PATH   = 'content.csv';
-
-const ACCESS_CODES = new Set([
-  'blue-sky','green-grass','bright-light','calm-water','morning-sun',
-  'quiet-night','tall-tree','warm-breeze','clear-path','soft-cloud',
-  'deep-ocean','fresh-air','open-field','gentle-rain','golden-hour',
-  'rising-tide','distant-hill','summer-wind','early-dawn','cool-shade',
-  'wide-river','bright-star','falling-leaf','white-sand','silver-moon',
-  'calm-harbor','quiet-forest','warm-sunlight','soft-snow','open-horizon','zzz'
-]);
+const API_URL = 'https://script.google.com/macros/s/AKfycbwsRmerE4CnZIIQ7F65yBo123VPl0oXyEhtJHZPuWhc5FElSKaJj5HSc-PegJIv5-u52g/exec';
 
 // ─────────────────────────────────────────────
 // STATE
@@ -1063,6 +1053,33 @@ function scrollToEl(el, offset = 80) {
   window.scrollTo({ top, behavior: 'smooth' });
 }
 
+async function postToAppsScript(url, payload) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+    redirect: 'follow'
+  });
+
+  const text = await response.text();
+  let data = null;
+  try {
+    data = JSON.parse(text);
+  } catch (_) {
+    throw new Error(`Invalid JSON response from server (HTTP ${response.status})`);
+  }
+
+  if (!response.ok) {
+    throw new Error(data?.error || `HTTP ${response.status}`);
+  }
+
+  if (!data || data.ok === false) {
+    throw new Error(data?.error || 'unknown_error');
+  }
+
+  return data;
+}
+
 function updateProgress() {
   const pct = totalSlots > 0 ? Math.round((completedSlots.size / totalSlots) * 100) : 0;
   $('progress-fill').style.width = pct + '%';
@@ -1108,43 +1125,6 @@ function loadSavedProgress() {
 
 function clearSavedProgress() {
   try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
-}
-
-// ─────────────────────────────────────────────
-// CSV PARSER
-// ─────────────────────────────────────────────
-function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  if (lines.length < 2) return [];
-  const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
-  const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    const vals = parseCSVLine(line);
-    const row  = {};
-    headers.forEach((h, idx) => { row[h] = (vals[idx] || '').trim(); });
-    rows.push(row);
-  }
-  return rows;
-}
-
-function parseCSVLine(line) {
-  const result = [];
-  let cur = '', inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
-      else { inQuotes = !inQuotes; }
-    } else if (ch === ',' && !inQuotes) {
-      result.push(cur); cur = '';
-    } else {
-      cur += ch;
-    }
-  }
-  result.push(cur);
-  return result;
 }
 
 // ─────────────────────────────────────────────
@@ -2049,6 +2029,7 @@ async function submitSession() {
 
   const elapsed = sessionStart ? Date.now() - sessionStart : 0;
   const payload = {
+    action:           'submitSession',
     source:           'training',
     participant_code: participantCode,
     session_id:       sessionId,
@@ -2062,17 +2043,7 @@ async function submitSession() {
   };
 
   try {
-    const response = await fetch(SUBMIT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload),
-      redirect: 'follow'
-    });
-
-    const text = await response.text();
-    let data = null;
-    try { data = JSON.parse(text); }
-    catch (_) { data = { ok: false, error: 'invalid_json_response', raw: text }; }
+    const data = await postToAppsScript(API_URL, payload);
 
     if (data && data.ok) {
       hasSuccessfulSubmission = true;
@@ -2189,7 +2160,16 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     const entered = codeInput.value.trim().toLowerCase();
 
-    if (!ACCESS_CODES.has(entered)) {
+    let validateData = null;
+    try {
+      validateData = await postToAppsScript(API_URL, { action: 'validateCode', code: entered });
+    } catch (err) {
+      gateError.textContent = `Failed to load training content: ${err.message}. Please refresh the page.`;
+      logEvent('content_load_failed', { error: String(err.message) });
+      return;
+    }
+
+    if (!validateData.valid) {
       gateError.textContent = 'Access code not recognized. Please check your code and try again.';
       codeInput.select();
       return;
@@ -2233,10 +2213,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!resuming) logEvent('access_granted', { participantCode });
 
     try {
-      const res  = await fetch(CSV_PATH + '?nocache=' + Date.now());
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const text = await res.text();
-      const rows = parseCSV(text);
+      const data = await postToAppsScript(API_URL, { action: 'loadTraining' });
+      const rows = Array.isArray(data.rows) ? data.rows : [];
       const structure = buildStructure(rows);
 
       if (structure.length === 0) throw new Error('No content found in CSV.');
