@@ -2767,7 +2767,9 @@ function buildCardResponseValues() {
 
   allSections.forEach(section => {
     const sectionTitle = section?.title || '';
-    (section.cards || []).forEach(card => {
+    const cards = Array.isArray(section?.cards) ? section.cards : [];
+
+    cards.forEach(card => {
       const state = quizStates?.[globalCardIndex] || {};
       let value = '';
 
@@ -2795,8 +2797,8 @@ function buildCardResponseValues() {
       itemMeta.push({
         item_index: globalCardIndex + 1,
         type: card?.type || '',
-        slot: card?.slot || '',
-        section_title: sectionTitle
+        slot: card?.slot != null ? String(card.slot) : '',
+        section_title: String(sectionTitle)
       });
       globalCardIndex += 1;
     });
