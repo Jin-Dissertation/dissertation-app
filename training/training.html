@@ -1173,6 +1173,7 @@
 // ─────────────────────────────────────────────
 const API_URL = 'https://script.google.com/macros/s/AKfycbwsRmerE4CnZIIQ7F65yBo123VPl0oXyEhtJHZPuWhc5FElSKaJj5HSc-PegJIv5-u52g/exec';
 const APP_VERSION = '2026-04-01-a';
+const CONTENT_VERSION = '2026-04-01-content-a';
 
 // ─────────────────────────────────────────────
 // STATE
@@ -1193,6 +1194,7 @@ let quizStates = {};
 let progressionSectionIndex = 0;
 let allSections = [];
 let interactionTimes = [];
+let cardTimingState = {};
 
 // ─────────────────────────────────────────────
 // UTILITIES
@@ -1233,6 +1235,50 @@ function computeActiveSeconds(times) {
 
   return Math.round(totalMs / 1000);
 }
+
+
+function ensureCardTimingEntry(cardIndex) {
+  if (!cardTimingState[cardIndex]) {
+    cardTimingState[cardIndex] = {
+      enteredAt: null,
+      totalMs: 0,
+      completed: false
+    };
+  }
+  return cardTimingState[cardIndex];
+}
+
+function markCardEntered(cardIndex) {
+  const entry = ensureCardTimingEntry(cardIndex);
+  if (entry.completed) return;
+  if (!entry.enteredAt) entry.enteredAt = Date.now();
+}
+
+function markCardPaused(cardIndex) {
+  const entry = ensureCardTimingEntry(cardIndex);
+  if (!entry.enteredAt) return;
+  const delta = Date.now() - entry.enteredAt;
+  if (delta > 0) entry.totalMs += delta;
+  entry.enteredAt = null;
+}
+
+function markCardCompleted(cardIndex) {
+  const entry = ensureCardTimingEntry(cardIndex);
+  if (entry.completed) return;
+  markCardPaused(cardIndex);
+  entry.completed = true;
+}
+
+function getCardMs(cardIndex) {
+  const entry = ensureCardTimingEntry(cardIndex);
+  let total = entry.totalMs || 0;
+  if (entry.enteredAt) {
+    const delta = Date.now() - entry.enteredAt;
+    if (delta > 0) total += delta;
+  }
+  return Math.max(0, Math.round(total));
+}
+
 
 function shuffleArray(arr) {
   const a = [...arr];
@@ -1439,7 +1485,8 @@ function saveProgress() {
       completionReached,
       hasSuccessfulSubmission,
       quizStates,
-      interactionTimes
+      interactionTimes,
+      cardTimingState
     }));
   } catch (_) {}
 }
@@ -2562,7 +2609,13 @@ function renderTraining(structure, savedState = null) {
   // so they do not reserve blank layout space.
   function revealCard(sectionIdx, cardIdx) {
     const el = sectionState[sectionIdx].cardEls[cardIdx];
-    if (el) el.classList.add('revealed');
+    if (el) {
+      el.classList.add('revealed');
+      const revealedCardIndex = Number(el.dataset.cardIndex);
+      if (Number.isInteger(revealedCardIndex) && !completedSlots.has(revealedCardIndex)) {
+        markCardEntered(revealedCardIndex);
+      }
+    }
     sectionState[sectionIdx].visibleCards = Math.max(sectionState[sectionIdx].visibleCards, cardIdx + 1);
     revealedSlots = Math.max(revealedSlots, completedSlots.size + 1);
   }
@@ -2596,6 +2649,7 @@ function renderTraining(structure, savedState = null) {
 
       const onComplete = () => {
         if (completedSlots.has(cardIndex)) return;
+        markCardCompleted(cardIndex);
         completedSlots.add(cardIndex);
         sectionState[sectionIdx].completedCards += 1;
 
@@ -2621,6 +2675,7 @@ function renderTraining(structure, savedState = null) {
         if (sectionIdx + 1 < allSections.length) updateSectionUI(sectionIdx + 1);
         saveProgress();
         updateProgress();
+        sendLiveSessionUpdate('in_progress');
       };
 
       let block;
@@ -2630,9 +2685,13 @@ function renderTraining(structure, savedState = null) {
       else if (item.type === 'question_image') block = renderQuestionImageBlock(item, cardIndex, onComplete);
       else if (item.type === 'categorize') block = renderCategorizeBlock(item, cardIndex, onComplete);
       else block = renderQuizBlock(item, cardIndex, onComplete);
+      block.dataset.cardIndex = String(cardIndex);
 
       if (localCardIdx >= sectionState[sectionIdx].visibleCards) block.classList.remove('revealed');
-      else block.classList.add('revealed');
+      else {
+        block.classList.add('revealed');
+        if (!completedSlots.has(cardIndex)) markCardEntered(cardIndex);
+      }
 
       sectionState[sectionIdx].cardEls.push(block);
       content.appendChild(block);
@@ -2644,14 +2703,16 @@ function renderTraining(structure, savedState = null) {
   for (let i = 0; i < preRevealCount; i++) {
     const found = cardLookup[i];
     if (!found) continue;
-    sectionState[found.sectionIdx].visibleCards = Math.max(sectionState[found.sectionIdx].visibleCards, found.cardIdx + 1);
-    sectionState[found.sectionIdx].cardEls.slice(0, found.cardIdx + 1).forEach(el => el.classList.add('revealed'));
+    for (let cardIdx = 0; cardIdx <= found.cardIdx; cardIdx++) {
+      revealCard(found.sectionIdx, cardIdx);
+    }
   }
 
 
   preCompletedSet.forEach(idx => {
     const found = cardLookup[idx];
     if (!found) return;
+    markCardCompleted(idx);
     completedSlots.add(idx);
     sectionState[found.sectionIdx].completedCards += 1;
   });
@@ -2673,6 +2734,18 @@ function renderTraining(structure, savedState = null) {
 
   revealedSlots = Math.max(preRevealCount, completedSlots.size);
   if (completionReached) showCompletion();
+
+  sectionState.forEach(st => {
+    for (let cardIdx = 0; cardIdx < st.visibleCards; cardIdx++) {
+      const el = st.cardEls[cardIdx];
+      if (!el || !el.classList.contains('revealed')) continue;
+      const visibleCardIndex = Number(el.dataset.cardIndex);
+      if (Number.isInteger(visibleCardIndex) && !completedSlots.has(visibleCardIndex)) {
+        markCardEntered(visibleCardIndex);
+      }
+    }
+  });
+
   saveProgress();
   updateProgress();
 }
@@ -2697,6 +2770,7 @@ function showCompletion() {
     duration_ms:     elapsed,
     active_seconds:  computeActiveSeconds(interactionTimes)
   });
+  sendLiveSessionUpdate('completed');
 
   if (!$('btn-submit-final').dataset.bound) {
     $('btn-submit-final').addEventListener('click', () => {
@@ -2717,10 +2791,13 @@ async function submitSession() {
   const elapsed = sessionStart ? Date.now() - sessionStart : 0;
   const activeSeconds = computeActiveSeconds(interactionTimes);
   const { itemValues, itemMap, itemMeta } = buildCardResponseValues();
+  const { itemMsValues, itemMsMap } = buildCardMsValues();
+  sendLiveSessionUpdate('submitted');
   const payload = {
     action:           'submitSession',
     source:           'training',
     app_version:      APP_VERSION,
+    content_version:  CONTENT_VERSION,
     participant_code: participantCode,
     session_id:       sessionId,
     session_start:    sessionStart ? new Date(sessionStart).toISOString() : null,
@@ -2731,7 +2808,9 @@ async function submitSession() {
     total_questions:  totalQuestions,
     correct_first:    correctFirst,
     item_values:      itemValues,
+    item_ms_values:   itemMsValues,
     item_map:         itemMap,
+    item_ms_map:      itemMsMap,
     item_meta:        itemMeta,
     item_count:       itemValues.length,
     events
@@ -2807,6 +2886,62 @@ function buildCardResponseValues() {
   });
 
   return { itemValues, itemMap, itemMeta };
+}
+
+function buildCardMsValues() {
+  const itemMsValues = [];
+  const itemMsMap = {};
+  let globalCardIndex = 0;
+
+  allSections.forEach(section => {
+    const cards = Array.isArray(section?.cards) ? section.cards : [];
+
+    cards.forEach(() => {
+      const entry = cardTimingState?.[globalCardIndex];
+      const value = entry ? getCardMs(globalCardIndex) : '';
+      itemMsValues.push(value);
+      itemMsMap[`item_${globalCardIndex + 1}_ms`] = value;
+      globalCardIndex += 1;
+    });
+  });
+
+  return { itemMsValues, itemMsMap };
+}
+
+function buildLiveSessionSnapshot(statusOverride = 'in_progress') {
+  const { itemValues, itemMap, itemMeta } = buildCardResponseValues();
+  const { itemMsValues, itemMsMap } = buildCardMsValues();
+
+  return {
+    action: 'updateLiveSession',
+    source: 'training',
+    user_id: participantCode,
+    participant_code: participantCode,
+    session_id: sessionId,
+    session_start: sessionStart ? new Date(sessionStart).toISOString() : null,
+    last_activity_at: now(),
+    status: statusOverride,
+    app_version: APP_VERSION,
+    content_version: CONTENT_VERSION,
+    item_values: itemValues,
+    item_ms_values: itemMsValues,
+    item_map: itemMap,
+    item_ms_map: itemMsMap,
+    item_meta: itemMeta,
+    item_count: itemValues.length
+  };
+}
+
+function sendLiveSessionUpdate(statusOverride = 'in_progress') {
+  const payload = buildLiveSessionSnapshot(statusOverride);
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+    keepalive: true
+  }).catch(err => {
+    console.warn('Live session update failed', err);
+  });
 }
 
 function offerDownload(payload) {
@@ -2935,6 +3070,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
         quizStates = saved.quizStates || {};
         interactionTimes = Array.isArray(saved.interactionTimes) ? saved.interactionTimes.map(Number).filter(Number.isFinite) : [];
+        cardTimingState = saved.cardTimingState && typeof saved.cardTimingState === 'object' ? saved.cardTimingState : {};
         resuming        = true;
       } else {
         clearSavedProgress();
@@ -2949,6 +3085,7 @@ document.addEventListener('DOMContentLoaded', () => {
       hasSuccessfulSubmission = false;
       quizStates = {};
       interactionTimes = [Date.now()];
+      cardTimingState = {};
     }
 
     markInteraction();
@@ -2974,6 +3111,7 @@ document.addEventListener('DOMContentLoaded', () => {
       renderTraining(structure, resuming ? saved : null);
 
       logEvent('content_loaded', { sections: structure.length, cards: structure.reduce((n, sec) => n + sec.cards.length, 0), resumed: resuming });
+      sendLiveSessionUpdate('in_progress');
 
     } catch (err) {
       $('loading').style.display = 'none';
