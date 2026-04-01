@@ -1988,6 +1988,15 @@ function parseCategoryMappings(blob) {
     })
     .filter(Boolean);
 }
+
+function getCategorizeMappingsAndCategories(blob) {
+  const mappings = parseCategoryMappings(blob);
+  return {
+    mappings,
+    categories: [...new Set(mappings.map(mapping => mapping.category))],
+    items: [...new Set(mappings.map(mapping => mapping.item))]
+  };
+}
 function normalizeBool(value) {
   return ['true', 'yes', '1'].includes(String(value || '').trim().toLowerCase());
 }
@@ -3973,11 +3982,7 @@ function renderCategorizeQuestion(q, index, total) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
-  const mappings = parseCategorizeMappings(q.correct_blob);
-  const categories = mappings.map(m => m.category);
-
-  const uniqueCategories = [...new Set(categories)];
-  const items = mappings.map(m => m.item);
+  const { mappings, categories: uniqueCategories, items } = getCategorizeMappingsAndCategories(q.correct_blob);
 
   const shuffledItems = items.slice();
   for (let i = shuffledItems.length - 1; i > 0; i--) {
@@ -5319,12 +5324,17 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
   }
 
   if (type === 'categorize') {
-    const mappings = parseCategoryMappings(question.correct_blob);
+    const { mappings, categories, items: uniqueItems } = getCategorizeMappingsAndCategories(question.correct_blob);
     if (!mappings.length) return renderIncompleteCard(item, sectionIndex, onComplete, 'Categorize card is missing answer mappings.');
-    const categories = [...new Set(mappings.map(m => m.category))];
-    const items = shuffleArray([...new Set(mappings.map(m => m.item))]);
+    state.itemOrder = getStableOptionOrder(state.itemOrder, uniqueItems);
+    const items = state.itemOrder;
     const isMobileMode = window.matchMedia('(max-width: 700px)').matches;
-    const placements = Array.isArray(state.placements) ? state.placements : [];
+    const validCategories = new Set(categories);
+    const itemSet = new Set(items);
+    const placements = Array.isArray(state.placements)
+      ? state.placements.filter(p => itemSet.has(p.item) && validCategories.has(p.placedIn))
+      : [];
+    state.placements = placements;
     const placedMap = new Map(placements.map(p => [p.item, p.placedIn]));
     const answerMap = new Map(mappings.map(p => [normalizeGradedText(p.item), normalizeGradedText(p.category)]));
 
@@ -5337,8 +5347,8 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
       <div class="practice-categorize-layout">
         <div class="practice-categorize-pool practice-categorize-dropzone" data-category="pool">
           <div class="practice-categorize-pool-title">Items to place</div>
-          ${isMobileMode ? `<div class="practice-categorize-mobile-hint">${state.mobileSelectedItem ? `Selected: ${html(state.mobileSelectedItem)}` : 'No item selected.'}</div>` : ''}
-          <div class="practice-categorize-items">
+          ${isMobileMode ? `<div class="practice-categorize-mobile-hint module-categorize-selection-hint">${state.mobileSelectedItem ? `Selected: ${html(state.mobileSelectedItem)}` : 'No item selected.'}</div>` : ''}
+          <div class="practice-categorize-items module-categorize-pool-items">
             ${items.filter(itemName => !placedMap.has(itemName)).map(itemName => `<div class="practice-categorize-item ${state.mobileSelectedItem === itemName ? 'selected' : ''}" draggable="${state.submitted ? 'false' : 'true'}" data-item="${html(itemName)}">${html(itemName)}</div>`).join('')}
           </div>
         </div>
@@ -5346,7 +5356,9 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
           ${categories.map(category => `
             <div class="practice-categorize-zone practice-categorize-dropzone" data-category="${html(category)}" style="margin-bottom:12px;">
               <div class="practice-categorize-zone-title">${html(category)}</div>
-              ${(placements || []).filter(p => p.placedIn === category).map(p => `<div class="practice-categorize-item ${state.mobileSelectedItem === p.item ? 'selected' : ''}" draggable="${state.submitted ? 'false' : 'true'}" data-item="${html(p.item)}">${html(p.item)}</div>`).join('')}
+              <div class="practice-categorize-items">
+                ${items.filter(itemName => placedMap.get(itemName) === category).map(itemName => `<div class="practice-categorize-item ${state.mobileSelectedItem === itemName ? 'selected' : ''}" draggable="${state.submitted ? 'false' : 'true'}" data-item="${html(itemName)}">${html(itemName)}</div>`).join('')}
+              </div>
             </div>
           `).join('')}
         </div>
@@ -5358,21 +5370,51 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
     `);
     initializePracticeStemToggle(block);
 
-    const getPlacementSnapshot = () => [...block.querySelectorAll('.practice-categorize-item')].map(node => ({
+    const selectionHint = block.querySelector('.module-categorize-selection-hint');
+    const getAllItems = () => block.querySelectorAll('.practice-categorize-item');
+    const poolItems = block.querySelector('.module-categorize-pool-items');
+    const getPlacementSnapshot = () => [...getAllItems()].map(node => ({
       item: node.getAttribute('data-item') || '',
       placedIn: node.parentElement?.getAttribute('data-category') || 'pool'
     })).filter(p => p.item && p.placedIn !== 'pool');
+    const refreshMobileSelection = () => {
+      if (isMobileMode) {
+        getAllItems().forEach(node => {
+          const isSelected = (node.getAttribute('data-item') || '') === (state.mobileSelectedItem || '');
+          node.classList.toggle('selected', isSelected);
+        });
+        if (selectionHint) {
+          selectionHint.textContent = state.mobileSelectedItem ? `Selected: ${state.mobileSelectedItem}` : 'No item selected.';
+        }
+      }
+    };
+    const moveItemToCategory = (itemNode, category) => {
+      if (!itemNode) return;
+      if (category === 'pool') {
+        poolItems?.appendChild(itemNode);
+      } else {
+        const targetZone = [...block.querySelectorAll('.practice-categorize-zone')].find(zone => (zone.getAttribute('data-category') || '') === category);
+        const targetItems = targetZone?.querySelector('.practice-categorize-items');
+        targetItems?.appendChild(itemNode);
+      }
+      state.placements = getPlacementSnapshot();
+      state.mobileSelectedItem = '';
+      persistProgress();
+      refreshMobileSelection();
+    };
 
     let dragged = null;
-    const itemEls = block.querySelectorAll('.practice-categorize-item');
+    const itemEls = getAllItems();
     const zones = block.querySelectorAll('.practice-categorize-dropzone');
     itemEls.forEach(node => {
       node.addEventListener('dragstart', () => { if (!state.submitted) dragged = node; });
       if (!state.submitted && isMobileMode) {
-        node.addEventListener('click', () => {
+        node.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
           state.mobileSelectedItem = state.mobileSelectedItem === (node.dataset.item || '') ? '' : (node.dataset.item || '');
           persistProgress();
-          replaceCard(block, renderModuleQuestionCard(item, sectionIndex, onComplete));
+          refreshMobileSelection();
         });
       }
     });
@@ -5381,33 +5423,25 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
       zone.addEventListener('drop', e => {
         if (state.submitted || !dragged) return;
         e.preventDefault();
-        const targetItems = zone.querySelector('.practice-categorize-items');
-        if (targetItems) targetItems.appendChild(dragged);
-        else zone.appendChild(dragged);
-        state.placements = getPlacementSnapshot();
-        state.mobileSelectedItem = '';
-        persistProgress();
+        moveItemToCategory(dragged, zone.getAttribute('data-category') || 'pool');
       });
       if (!state.submitted && isMobileMode) {
         zone.addEventListener('click', () => {
-          const selectedItem = state.mobileSelectedItem;
+          const selectedItem = state.mobileSelectedItem || '';
           if (!selectedItem) return;
-          const moved = (state.placements || []).filter(p => p.item !== selectedItem);
-          const category = zone.getAttribute('data-category') || 'pool';
-          if (category !== 'pool') moved.push({ item: selectedItem, placedIn: category });
-          state.placements = moved;
-          state.mobileSelectedItem = '';
-          persistProgress();
-          replaceCard(block, renderModuleQuestionCard(item, sectionIndex, onComplete));
+          const selectedNode = [...getAllItems()].find(node => (node.getAttribute('data-item') || '') === selectedItem);
+          if (!selectedNode) return;
+          moveItemToCategory(selectedNode, zone.getAttribute('data-category') || 'pool');
         });
       }
     });
     if (!state.submitted) {
       block.querySelector('.module-categorize-reset')?.addEventListener('click', () => {
+        getAllItems().forEach(node => poolItems?.appendChild(node));
         state.placements = [];
         state.mobileSelectedItem = '';
         persistProgress();
-        replaceCard(block, renderModuleQuestionCard(item, sectionIndex, onComplete));
+        refreshMobileSelection();
       });
       block.querySelector('.module-categorize-submit')?.addEventListener('click', () => {
         state.placements = getPlacementSnapshot();
@@ -5429,6 +5463,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
         }
       });
     }
+    refreshMobileSelection();
     return block;
   }
 
