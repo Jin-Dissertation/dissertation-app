@@ -5366,9 +5366,10 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
   }
 
   if (type === 'categorize') {
-    const { mappings, categories, items: uniqueItems } = getCategorizeMappingsAndCategories(question.correct_blob);
+    const { mappings, categories } = getCategorizeMappingsAndCategories(question.correct_blob);
     if (!mappings.length) return renderIncompleteCard(item, sectionIndex, onComplete, 'Categorize card is missing answer mappings.');
-    state.itemOrder = getStableOptionOrder(state.itemOrder, uniqueItems);
+    const allItems = [...new Set(mappings.map(m => m.item))];
+    state.itemOrder = getStableOptionOrder(state.itemOrder, allItems);
     const items = state.itemOrder;
     const isMobileMode = window.matchMedia('(max-width: 700px)').matches;
     const validCategories = new Set(categories);
