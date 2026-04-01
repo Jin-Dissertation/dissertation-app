@@ -1,0 +1,2272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI-Assisted MCQ Development — Training Module</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet" />
+  <style>
+    /* ── RESET & VARIABLES ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:       #10213d;
+      --navy-mid:   #1a3560;
+      --cream:      #edf4ff;
+      --cream-dark: #dbe9ff;
+      --gold:       #2f6edc;
+      --gold-lt:    #4d87f0;
+      --green:      #166534;
+      --green-lt:   #dcfce7;
+      --red:        #991b1b;
+      --red-lt:     #fef2f2;
+      --muted:      #5f718f;
+      --rule:       #c8d8f0;
+      --white:      #ffffff;
+      --serif:      'Playfair Display', Georgia, serif;
+      --sans:       'Source Sans 3', 'Gill Sans', Optima, sans-serif;
+      --radius:     10px;
+      --shadow:     0 4px 10px rgba(16,33,61,0.05);
+    }
+
+    html { font-size: 17px; scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      font-weight: 300;
+      background: var(--cream);
+      color: var(--navy);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* ── PROGRESS BAR ── */
+    #progress-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--cream-dark);
+      z-index: 200;
+    }
+    #progress-fill {
+      height: 100%;
+      background: var(--gold);
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+
+    /* ── SECTION COUNTER ── */
+    #section-counter {
+      position: fixed;
+      top: 12px; right: 18px;
+      font-family: var(--sans);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--cream);
+      padding: 4px 10px;
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      z-index: 200;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    /* ── PAGE SHELL ── */
+    #app {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 28px 100px;
+    }
+
+    /* ── ACCESS GATE ── */
+    #gate {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 28px;
+      text-align: center;
+    }
+
+    .gate-eyebrow {
+      font-family: var(--sans);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    .gate-title {
+      font-family: var(--serif);
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.2;
+      margin-bottom: 12px;
+      max-width: 520px;
+    }
+
+    .gate-sub {
+      font-size: 0.95rem;
+      color: var(--muted);
+      font-style: italic;
+      margin-bottom: 36px;
+      max-width: 420px;
+    }
+
+    .gate-form {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .gate-input {
+      font-family: var(--sans);
+      font-size: 1rem;
+      font-weight: 400;
+      padding: 12px 18px;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--white);
+      color: var(--navy);
+      width: 220px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .gate-input:focus { border-color: var(--gold); }
+
+    .gate-input::placeholder { color: #aaa; font-style: italic; }
+
+    .gate-btn {
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 12px 24px;
+      background: var(--navy);
+      color: var(--cream);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .gate-btn:hover { background: var(--navy-mid); }
+
+    .gate-error {
+      margin-top: 14px;
+      font-size: 0.85rem;
+      color: var(--red);
+      min-height: 1.2em;
+    }
+
+    /* ── LOADING ── */
+    #loading {
+      min-height: 100vh;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .spinner {
+      width: 32px; height: 32px;
+      border: 2px solid var(--rule);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-style: italic;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── TRAINING SHELL ── */
+    #training { display: none; }
+
+    /* ── MODULE HEADER ── */
+    .module-header {
+      padding: 36px 0 28px;
+      border-bottom: 1px solid var(--rule);
+      margin-bottom: 0;
+    }
+
+    .module-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .module-title {
+      font-family: var(--serif);
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-weight: 700;
+      color: var(--navy);
+      margin-top: 6px;
+      line-height: 1.2;
+    }
+
+    .module-participant {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: var(--cream-dark);
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--rule);
+    }
+
+
+    .overall-progress {
+      margin-top: 16px;
+      display: inline-flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 0.74rem;
+      color: var(--muted);
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      padding: 5px 12px;
+    }
+
+    .section-accordion {
+      margin-top: 18px;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--white);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .section-accordion.locked { opacity: 0.7; }
+
+    .section-toggle {
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: var(--cream-dark);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .section-toggle:disabled { cursor: not-allowed; }
+
+    .section-title-wrap { display: flex; align-items: center; gap: 10px; }
+    .section-status { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+    .section-chevron { font-size: 0.9rem; color: var(--muted); }
+
+    .section-accordion.collapsed .section-content { display: none; }
+    .section-accordion.collapsed .section-chevron { transform: rotate(-90deg); }
+    .section-content { padding: 0 16px 18px; }
+
+    /* ── SECTION BLOCK ── */
+    .section-block {
+      margin-top: 48px;
+      display: none;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      pointer-events: none;
+    }
+
+    .section-block.revealed {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-num {
+      font-family: var(--serif);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.06em;
+    }
+
+    .section-rule {
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    .section-type-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 2px 8px;
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+    }
+
+    /* ── VIDEO BLOCK ── */
+    .video-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .video-wrapper {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      background: #000;
+    }
+
+    .video-wrapper iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: none;
+    }
+
+    .video-footer {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-top: 1px solid var(--rule);
+    }
+
+    .video-footer-label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* ── QUIZ BLOCK ── */
+    .quiz-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .quiz-header {
+      padding: 16px 22px 12px;
+      border-bottom: 1px solid var(--rule);
+      background: var(--cream-dark);
+    }
+
+    .quiz-header-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 2px;
+    }
+
+    .quiz-header-sub {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    /* ── QUESTION ── */
+    .question-block {
+      padding: 24px 22px;
+      border-bottom: 1px solid var(--rule);
+      display: none;
+    }
+
+    .question-block.active { display: block; }
+    .question-block.answered { display: block; }
+
+    .question-progress {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .question-stem {
+      font-family: var(--serif);
+      font-size: 1.05rem;
+      font-weight: 500;
+      line-height: 1.5;
+      color: var(--navy);
+      margin-bottom: 20px;
+    }
+
+    /* ── OPTIONS ── */
+    .options-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .option-btn {
+      width: 100%;
+      text-align: left;
+      padding: 12px 16px;
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      font-family: var(--sans);
+      font-size: 0.92rem;
+      font-weight: 300;
+      color: var(--navy);
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      transition: background 0.15s, border-color 0.15s;
+      line-height: 1.5;
+    }
+
+    .option-btn:hover:not(:disabled) {
+      background: var(--cream);
+      border-color: var(--gold);
+    }
+
+    .option-letter {
+      flex: 0 0 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 1px solid var(--rule);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-top: 1px;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .option-btn:hover:not(:disabled) .option-letter {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--white);
+    }
+
+    /* Correct state */
+    .option-btn.correct {
+      background: var(--green-lt);
+      border-color: var(--green);
+      cursor: default;
+    }
+
+    .option-btn.correct .option-letter {
+      background: var(--green);
+      border-color: var(--green);
+      color: var(--white);
+    }
+
+    /* Incorrect state */
+    .option-btn.incorrect {
+      background: var(--red-lt);
+      border-color: var(--red);
+      cursor: default;
+    }
+
+    .option-btn.incorrect .option-letter {
+      background: var(--red);
+      border-color: var(--red);
+      color: var(--white);
+    }
+
+    /* Dimmed (other options after answering) */
+    .option-btn.dimmed {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    /* IDK option */
+    .option-btn.idk-option {
+      border-style: dashed;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .option-btn.idk-option .option-letter {
+      font-style: normal;
+    }
+
+    .option-btn:disabled { cursor: default; }
+
+    /* ── FEEDBACK ── */
+    .feedback-box {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      line-height: 1.65;
+      display: none;
+    }
+
+    .feedback-box.show { display: block; }
+
+    .feedback-box.correct-fb {
+      background: var(--green-lt);
+      border: 1px solid var(--green);
+      color: #14532d;
+    }
+
+    .feedback-box.incorrect-fb {
+      background: var(--red-lt);
+      border: 1px solid #d97777;
+      color: var(--red);
+    }
+
+    .feedback-label {
+      font-weight: 600;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .feedback-next-btn {
+      margin-top: 14px;
+      font-family: var(--sans);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 9px 18px;
+      background: var(--navy);
+      color: var(--cream);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.2s;
+      display: none;
+    }
+
+    .feedback-next-btn.show { display: inline-block; }
+    .feedback-next-btn:hover { background: var(--navy-mid); }
+
+    /* ── QUIZ COMPLETE ── */
+    .quiz-complete {
+      padding: 22px 22px;
+      display: none;
+      align-items: center;
+      gap: 14px;
+      background: var(--green-lt);
+      border-top: 1px solid var(--green);
+    }
+
+    .quiz-complete.show { display: flex; }
+
+    .quiz-complete-icon {
+      font-size: 1.4rem;
+      flex: 0 0 auto;
+    }
+
+    .quiz-complete-text {
+      flex: 1;
+    }
+
+    .quiz-complete-text strong {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--green);
+      margin-bottom: 2px;
+    }
+
+    .quiz-complete-text span {
+      font-size: 0.82rem;
+      color: var(--green);
+      opacity: 0.8;
+    }
+
+    /* ── ACTION BUTTON (Done Watching / Continue) ── */
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 11px 22px;
+      background: var(--navy);
+      color: var(--cream);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .action-btn:hover { background: var(--navy-mid); transform: translateY(-1px); }
+    .action-btn:active { transform: translateY(0); }
+
+    .action-btn svg { flex: 0 0 14px; }
+
+    .action-btn.secondary {
+      background: transparent;
+      border: 1px solid var(--navy);
+      color: var(--navy);
+    }
+
+    .action-btn.secondary:hover {
+      background: var(--navy);
+      color: var(--cream);
+    }
+
+    /* ── CONTINUE ROW ── */
+    .continue-row {
+      margin-top: 20px;
+      display: flex;
+      justify-content: flex-end;
+      display: none;
+    }
+
+    .continue-row.show { display: flex; }
+
+    /* ── COMPLETION SCREEN ── */
+    #completion {
+      display: none;
+      padding: 60px 0 40px;
+      text-align: center;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .completion-icon {
+      font-size: 3rem;
+      margin-bottom: 20px;
+    }
+
+    .completion-title {
+      font-family: var(--serif);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 12px;
+    }
+
+    .completion-sub {
+      font-size: 0.95rem;
+      color: var(--muted);
+      font-style: italic;
+      margin-bottom: 32px;
+      max-width: 460px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .completion-stats {
+      display: inline-flex;
+      gap: 24px;
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      padding: 18px 28px;
+      margin-bottom: 32px;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    .stat-item strong {
+      display: block;
+      font-family: var(--serif);
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+
+    .submit-status {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-top: 14px;
+      font-style: italic;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── TEXT BLOCK ── */
+    .text-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      padding: 28px 30px;
+      box-shadow: var(--shadow);
+    }
+
+    .content-header {
+      font-family: var(--serif);
+      font-size: clamp(1.1rem, 3vw, 1.4rem);
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.3;
+      margin-bottom: 14px;
+    }
+
+    .content-body {
+      font-size: 0.95rem;
+      color: var(--navy);
+      line-height: 1.75;
+    }
+
+    /* ── TEXT + IMAGE BLOCK ── */
+    .text-image-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .text-image-inner {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+    }
+
+    .text-image-text {
+      padding: 28px 28px;
+      border-right: 1px solid var(--rule);
+    }
+
+    .text-image-img {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: var(--cream-dark);
+    }
+
+    .text-image-img img {
+      max-width: 100%;
+      max-height: 280px;
+      object-fit: contain;
+      border-radius: 6px;
+      cursor: zoom-in;
+      transition: opacity 0.15s;
+    }
+
+    .text-image-img img:hover { opacity: 0.88; }
+
+    /* ── QUESTION + IMAGE BLOCK ── */
+    .question-image-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .question-image-inner {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      align-items: start;
+    }
+
+    .question-image-question {
+      padding: 24px 22px;
+      border-right: 1px solid var(--rule);
+    }
+
+    .question-image-aside {
+      background: var(--cream-dark);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 18px;
+    }
+
+    .question-image-aside img {
+      max-width: 100%;
+      object-fit: contain;
+      border-radius: 6px;
+      cursor: zoom-in;
+      transition: opacity 0.15s;
+    }
+
+    .question-image-aside img:hover { opacity: 0.88; }
+
+    /* ── IMAGE LIGHTBOX ── */
+    #img-lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(10, 20, 40, 0.88);
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+      padding: 24px;
+      animation: fadeIn 0.18s ease;
+    }
+
+    #img-lightbox.open { display: flex; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    #img-lightbox img {
+      max-width: min(92vw, 900px);
+      max-height: 88vh;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+      cursor: zoom-out;
+    }
+
+    #img-lightbox-close {
+      position: absolute;
+      top: 16px; right: 20px;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.8rem;
+      line-height: 1;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.15s;
+      padding: 4px 8px;
+    }
+
+    #img-lightbox-close:hover { opacity: 1; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 800px) {
+      /* Page shell */
+      #app { padding: 0 16px 80px; }
+
+      /* Gate screen — cut the dead space */
+      #gate { min-height: 0; padding: 72px 20px 60px; }
+      .gate-form { flex-direction: column; align-items: stretch; width: 100%; max-width: 340px; }
+      .gate-input { width: 100%; }
+      .gate-btn   { width: 100%; }
+
+      /* Video footer */
+      .video-footer { flex-direction: column; align-items: flex-start; }
+
+      /* Two-column reading + question layouts → single column */
+      .text-image-inner,
+      .question-image-inner { grid-template-columns: 1fr; }
+      .text-image-text  { border-right: none; border-bottom: 1px solid var(--rule); }
+      .question-image-question { border-right: none; }
+
+      /* On mobile, show the image ABOVE the question so the stem
+         ("look at the image on the right") still makes sense */
+      .question-image-inner { display: flex; flex-direction: column; }
+      .question-image-aside { order: -1; border-bottom: 1px solid var(--rule); }
+
+      /* Cards — tighter padding */
+      .text-card          { padding: 20px; }
+      .text-image-text    { padding: 20px; }
+      .question-image-question { padding: 20px; }
+
+      /* Option buttons — bigger touch targets */
+      .option-btn { padding: 14px 16px; font-size: 0.95rem; }
+
+      /* Action buttons — full width */
+      .continue-row { justify-content: stretch; }
+      .continue-row .action-btn,
+      .video-footer  .action-btn { width: 100%; justify-content: center; }
+
+      /* Completion stats */
+      .completion-stats { flex-direction: column; gap: 14px; text-align: center; }
+
+      /* Lightbox close — bigger tap target */
+      #img-lightbox-close { font-size: 2.4rem; top: 8px; right: 10px; padding: 8px 14px; }
+
+      /* Hide section counter (too small to be useful) */
+      #section-counter { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="progress-bar"><div id="progress-fill"></div></div>
+<div id="section-counter"></div>
+
+<div id="app">
+
+  <!-- ACCESS GATE -->
+  <div id="gate">
+    <p class="gate-eyebrow">Professional Development Module</p>
+    <h1 class="gate-title">AI-Assisted MCQ Development for Nursing Education</h1>
+    <p class="gate-sub">Enter your participant code to begin the training session.</p>
+    <form class="gate-form" id="gate-form">
+      <input class="gate-input" id="code-input" type="text"
+        placeholder="your-code"
+        autocomplete="off" autocapitalize="none" spellcheck="false" />
+      <button class="gate-btn" type="submit">Begin</button>
+    </form>
+    <p class="gate-error" id="gate-error"></p>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p class="loading-text">Loading training content…</p>
+  </div>
+
+  <!-- TRAINING CONTENT -->
+  <div id="training">
+    <header class="module-header">
+      <p class="module-label">Professional Development Module</p>
+      <h1 class="module-title">AI-Assisted MCQ Development<br>for Nursing Education</h1>
+      <span class="module-participant" id="participant-badge"></span>
+      <div class="overall-progress" id="overall-progress">
+        <span id="overall-total">Sections: 0</span>
+        <span id="overall-current">Current: —</span>
+        <span id="overall-completed">Completed: 0</span>
+      </div>
+    </header>
+    <div id="sections-container"></div>
+    <div id="completion">
+      <div class="completion-icon">✓</div>
+      <h2 class="completion-title">Training Complete</h2>
+      <p class="completion-sub">Thank you for completing the module. Your session data has been recorded.</p>
+      <div class="completion-stats">
+        <div class="stat-item"><strong id="stat-questions">—</strong>Questions answered</div>
+        <div class="stat-item"><strong id="stat-correct">—</strong>Correct on first try</div>
+        <div class="stat-item"><strong id="stat-time">—</strong>Time elapsed</div>
+      </div>
+      <button class="action-btn" id="btn-submit-final">
+        Submit session data
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+      <p class="submit-status" id="submit-status"></p>
+    </div>
+  </div>
+
+</div>
+
+<!-- IMAGE LIGHTBOX -->
+<div id="img-lightbox" role="dialog" aria-modal="true" aria-label="Image zoom">
+  <button id="img-lightbox-close" aria-label="Close">&times;</button>
+  <img id="img-lightbox-img" src="" alt="" />
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────
+const SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbwJQ3QfQ9AdniKd46SYoesy6GMx2GvP52-HWiqlPRTZ8zJuGoyzi7BiHN6sio7dJiLb/exec';
+const CSV_PATH   = 'content.csv';
+
+const ACCESS_CODES = new Set([
+  'blue-sky','green-grass','bright-light','calm-water','morning-sun',
+  'quiet-night','tall-tree','warm-breeze','clear-path','soft-cloud',
+  'deep-ocean','fresh-air','open-field','gentle-rain','golden-hour',
+  'rising-tide','distant-hill','summer-wind','early-dawn','cool-shade',
+  'wide-river','bright-star','falling-leaf','white-sand','silver-moon',
+  'calm-harbor','quiet-forest','warm-sunlight','soft-snow','open-horizon','zzz'
+]);
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let participantCode = '';
+let sessionId       = '';
+let sessionStart    = null;
+let events          = [];
+let totalQuestions  = 0;
+let correctFirst    = 0;
+let totalSlots      = 0;
+let revealedSlots   = 0;
+let completedSlots  = new Set();
+let trainingActive  = false;
+let completionReached = false;
+let hasSuccessfulSubmission = false;
+let quizStates = {};
+let currentSectionIndex = 0;
+let progressionSectionIndex = 0;
+let allSections = [];
+
+// ─────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────
+const $  = id => document.getElementById(id);
+const now = () => new Date().toISOString();
+
+function makeSessionId(code) {
+  const rand  = Math.random().toString(36).slice(2,6).toUpperCase();
+  const stamp = new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
+  return `${code}-${stamp}-${rand}`;
+}
+
+function logEvent(type, data = {}) {
+  events.push({ t: now(), type, participant: participantCode, session: sessionId, ...data });
+}
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function formatDuration(ms) {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const h = Math.floor(m / 60);
+  if (h > 0) return `${h}h ${m % 60}m`;
+  if (m > 0) return `${m}m ${s % 60}s`;
+  return `${s}s`;
+}
+
+function scrollToEl(el, offset = 80) {
+  const top = el.getBoundingClientRect().top + window.scrollY - offset;
+  window.scrollTo({ top, behavior: 'smooth' });
+}
+
+function updateProgress() {
+  const pct = totalSlots > 0 ? Math.round((completedSlots.size / totalSlots) * 100) : 0;
+  $('progress-fill').style.width = pct + '%';
+  const counter = $('section-counter');
+  counter.textContent = `${completedSlots.size} / ${totalSlots}`;
+  counter.style.opacity = totalSlots > 0 ? '1' : '0';
+
+  const completedSections = allSections.filter(sec => sec.completed).length;
+  $('overall-total').textContent = `Sections: ${allSections.length}`;
+  $('overall-current').textContent = `Current: ${Math.min(progressionSectionIndex + 1, allSections.length)} / ${allSections.length}`;
+  $('overall-completed').textContent = `Completed: ${completedSections}`;
+}
+
+
+// ─────────────────────────────────────────────
+// PROGRESS PERSISTENCE
+// ─────────────────────────────────────────────
+const STORAGE_KEY = 'training_progress_v1';
+
+function saveProgress() {
+  if (!participantCode) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      participantCode,
+      sessionId,
+      sessionStart,
+      revealedSlots,
+      completedSlotIndices: [...completedSlots],
+      totalQuestions,
+      correctFirst,
+      events,
+      completionReached,
+      hasSuccessfulSubmission,
+      quizStates
+    }));
+  } catch (_) {}
+}
+
+function loadSavedProgress() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); }
+  catch (_) { return null; }
+}
+
+function clearSavedProgress() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+}
+
+// ─────────────────────────────────────────────
+// CSV PARSER
+// ─────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = parseCSVLine(line);
+    const row  = {};
+    headers.forEach((h, idx) => { row[h] = (vals[idx] || '').trim(); });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let cur = '', inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
+      else { inQuotes = !inQuotes; }
+    } else if (ch === ',' && !inQuotes) {
+      result.push(cur); cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+// ─────────────────────────────────────────────
+// BUILD CONTENT STRUCTURE FROM CSV ROWS
+// ─────────────────────────────────────────────
+// SECTION GROUPING: CSV rows are grouped by section first, then by slot inside each section.
+function buildStructure(rows) {
+  const normalized = rows.map((r, idx) => ({
+    ...r,
+    section_id: (r.section_id || 'training').trim() || 'training',
+    section_title: (r.section_title || 'Training').trim() || 'Training',
+    section_order: Number.parseInt(r.section_order, 10) || 1,
+    _rowIndex: idx
+  }));
+
+  const sectionMap = new Map();
+  normalized.forEach(row => {
+    const key = `${row.section_order}__${row.section_id}`;
+    if (!sectionMap.has(key)) {
+      sectionMap.set(key, {
+        id: row.section_id,
+        title: row.section_title,
+        order: row.section_order,
+        rows: []
+      });
+    }
+    sectionMap.get(key).rows.push(row);
+  });
+
+  const sections = [...sectionMap.values()]
+    .sort((a,b) => a.order - b.order || a.id.localeCompare(b.id))
+    .map(section => ({
+      ...section,
+      cards: buildCardsForSection(section.rows)
+    }));
+
+  return sections;
+}
+
+function buildCardsForSection(rows) {
+  const allSlots = [...new Set(rows.map(r => parseInt(r.slot, 10)).filter(n => !Number.isNaN(n)))].sort((a,b)=>a-b);
+  return allSlots.map(slot => {
+    const slotRows = rows.filter(r => parseInt(r.slot, 10) === slot);
+    const type  = slotRows[0]?.type;
+    const first = slotRows[0];
+
+    if (type === 'video') return { type: 'video', slot, youtubeId: first.youtube_id };
+    if (type === 'text') return { type: 'text', slot, header: first.header, body: first.body };
+    if (type === 'text_image') return { type: 'text_image', slot, header: first.header, body: first.body, imageUrl: first.image_url };
+    if (type === 'question_image') {
+      const distractors = [first.distractor_1, first.distractor_2, first.distractor_3, first.distractor_4].filter(d => d && d.trim());
+      return { type: 'question_image', slot, stem: first.stem, correct: first.correct, distractors, feedback: first.feedback, showIdk: first.show_idk?.toLowerCase() === 'yes', imageUrl: first.image_url };
+    }
+
+    const qRows = slotRows.sort((a, b) => parseInt(a.question_num,10) - parseInt(b.question_num,10));
+    const quizNum = qRows[0]?.quiz_num || slot;
+    const questions = qRows.map(r => ({
+      quizNum: r.quiz_num,
+      questionNum: r.question_num,
+      stem: r.stem,
+      correct: r.correct,
+      distractors: [r.distractor_1, r.distractor_2, r.distractor_3, r.distractor_4].filter(d => d && d.trim()),
+      feedback: r.feedback,
+      showIdk: r.show_idk?.toLowerCase() === 'yes'
+    }));
+    return { type: 'quiz', slot, quizNum, questions };
+  });
+}
+
+
+// ─────────────────────────────────────────────
+// RENDER VIDEO BLOCK
+// ─────────────────────────────────────────────
+function renderVideoBlock(item, sectionIndex, onComplete) {
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Video</span>
+    </div>
+    <div class="video-card">
+      <div class="video-wrapper">
+        <iframe
+          src="https://www.youtube.com/embed/${item.youtubeId}?rel=0&modestbranding=1"
+          title="Training video ${sectionIndex + 1}"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen>
+        </iframe>
+      </div>
+      <div class="video-footer">
+        <span class="video-footer-label">Watch the video above, then click when you're done.</span>
+        <button class="action-btn" id="video-done-${sectionIndex}">
+          Done watching
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 7h10M8 3l4 4-4 4"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  `;
+
+  const doneBtn = block.querySelector(`#video-done-${sectionIndex}`);
+  let videoStart = null;
+
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && !videoStart) {
+      videoStart = Date.now();
+      logEvent('video_visible', { slot: item.slot, sectionIndex, youtubeId: item.youtubeId });
+    }
+  }, { threshold: 0.3 });
+  observer.observe(block);
+
+  doneBtn.addEventListener('click', () => {
+    const watchMs = videoStart ? Date.now() - videoStart : null;
+    logEvent('video_completed', {
+      slot: item.slot, sectionIndex,
+      youtubeId: item.youtubeId,
+      watch_duration_ms: watchMs
+    });
+    doneBtn.disabled = true;
+    doneBtn.textContent = '✓ Watched';
+    doneBtn.style.background = '#2d7a4f';
+    onComplete();
+  });
+
+  return block;
+}
+
+// ─────────────────────────────────────────────
+// RENDER TEXT BLOCK  (header + body)
+// ─────────────────────────────────────────────
+function renderTextBlock(item, sectionIndex, onComplete) {
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Reading</span>
+    </div>
+    <div class="text-card">
+      <h2 class="content-header">${item.header}</h2>
+      <div class="content-body">${item.body}</div>
+    </div>
+    <div class="continue-row show" id="continue-row-${sectionIndex}">
+      <button class="action-btn" id="continue-btn-${sectionIndex}">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) {
+      logEvent('text_visible', { slot: item.slot, sectionIndex });
+      observer.disconnect();
+    }
+  }, { threshold: 0.3 });
+  observer.observe(block);
+
+  block.querySelector(`#continue-btn-${sectionIndex}`).addEventListener('click', () => {
+    logEvent('text_continued', { slot: item.slot, sectionIndex });
+    onComplete();
+  }, { once: true });
+
+  return block;
+}
+
+// ─────────────────────────────────────────────
+// RENDER TEXT + IMAGE BLOCK  (header + body left, image right)
+// ─────────────────────────────────────────────
+function renderTextImageBlock(item, sectionIndex, onComplete) {
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Reading</span>
+    </div>
+    <div class="text-image-card">
+      <div class="text-image-inner">
+        <div class="text-image-text">
+          <h2 class="content-header">${item.header}</h2>
+          <div class="content-body">${item.body}</div>
+        </div>
+        <div class="text-image-img">
+          <img src="${item.imageUrl}" alt="" />
+        </div>
+      </div>
+    </div>
+    <div class="continue-row show" id="continue-row-${sectionIndex}">
+      <button class="action-btn" id="continue-btn-${sectionIndex}">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) {
+      logEvent('text_image_visible', { slot: item.slot, sectionIndex });
+      observer.disconnect();
+    }
+  }, { threshold: 0.3 });
+  observer.observe(block);
+
+  block.querySelector(`#continue-btn-${sectionIndex}`).addEventListener('click', () => {
+    logEvent('text_image_continued', { slot: item.slot, sectionIndex });
+    onComplete();
+  }, { once: true });
+
+  return block;
+}
+
+// ─────────────────────────────────────────────
+// RENDER QUIZ BLOCK
+// ─────────────────────────────────────────────
+function renderQuizBlock(item, sectionIndex, onComplete) {
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+
+  const letters = ['A','B','C','D','E'];
+
+  const sectionState = quizStates[sectionIndex] || {
+    currentQi: 0,
+    completed: false,
+    questions: [],
+    optionOrders: []
+  };
+  quizStates[sectionIndex] = sectionState;
+
+  let questionsHTML = '';
+  item.questions.forEach((q, qi) => {
+    let allOptions = sectionState.optionOrders[qi];
+    if (!allOptions || allOptions.length === 0) {
+      const shuffledDistractors = shuffleArray(q.distractors);
+      const insertPos = Math.floor(Math.random() * (shuffledDistractors.length + 1));
+      shuffledDistractors.splice(insertPos, 0, q.correct);
+      allOptions = shuffledDistractors;
+      sectionState.optionOrders[qi] = allOptions;
+    }
+
+    let optionsHTML = allOptions.map((opt, oi) => `
+      <li>
+        <button class="option-btn"
+          data-qi="${qi}" data-oi="${oi}"
+          data-is-correct="${opt === q.correct ? 'true' : 'false'}"
+          data-is-idk="false">
+          <span class="option-letter">${letters[oi]}</span>
+          <span class="option-text">${opt}</span>
+        </button>
+      </li>
+    `).join('');
+
+    if (q.showIdk) {
+      const idkIdx = allOptions.length;
+      optionsHTML += `
+        <li>
+          <button class="option-btn idk-option"
+            data-qi="${qi}" data-oi="${idkIdx}"
+            data-is-correct="false"
+            data-is-idk="true">
+            <span class="option-letter">?</span>
+            <span class="option-text">I don't know</span>
+          </button>
+        </li>
+      `;
+    }
+
+    questionsHTML += `
+      <div class="question-block${qi === 0 ? ' active' : ''}" data-qi="${qi}">
+        <p class="question-progress">Question ${qi + 1} of ${item.questions.length}</p>
+        <p class="question-stem">${q.stem}</p>
+        <ul class="options-list">${optionsHTML}</ul>
+        <div class="feedback-box" id="fb-${sectionIndex}-${qi}">
+          <span class="feedback-label" id="fb-label-${sectionIndex}-${qi}"></span>
+          <span id="fb-text-${sectionIndex}-${qi}"></span>
+          <br/>
+          <button class="feedback-next-btn" id="fb-next-${sectionIndex}-${qi}">
+            ${qi < item.questions.length - 1 ? 'Next question →' : 'Continue →'}
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Knowledge Check</span>
+    </div>
+    <div class="quiz-card">
+      <div class="quiz-header">
+        <p class="quiz-header-label">Knowledge Check ${item.quizNum}</p>
+        <p class="quiz-header-sub">${item.questions.length} question${item.questions.length !== 1 ? 's' : ''} — select the best answer for each.</p>
+      </div>
+      ${questionsHTML}
+      <div class="quiz-complete" id="quiz-complete-${sectionIndex}">
+        <span class="quiz-complete-icon">✓</span>
+        <div class="quiz-complete-text">
+          <strong>Knowledge check complete</strong>
+          <span id="quiz-score-${sectionIndex}">Review any feedback above before continuing.</span>
+        </div>
+      </div>
+    </div>
+    <div class="continue-row" id="continue-row-${sectionIndex}">
+      <button class="action-btn" id="continue-btn-${sectionIndex}">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  let currentQi  = sectionState.currentQi || 0;
+  let qCorrectFirst = new Array(item.questions.length).fill(null);
+  let quizStartTime = null;
+
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && !quizStartTime) {
+      quizStartTime = Date.now();
+      logEvent('quiz_visible', { slot: item.slot, sectionIndex, quizNum: item.quizNum });
+    }
+  }, { threshold: 0.2 });
+  observer.observe(block);
+
+  block.addEventListener('click', e => {
+    const btn = e.target.closest('.option-btn');
+    if (!btn || btn.disabled) return;
+
+    const qi        = parseInt(btn.dataset.qi, 10);
+    const isCorrect = btn.dataset.isCorrect === 'true';
+    const isIdk     = btn.dataset.isIdk === 'true';
+    const q         = item.questions[qi];
+    const answerMs  = quizStartTime ? Date.now() - quizStartTime : null;
+
+    const existingAnswer = sectionState.questions[qi];
+    const isFirstAttempt = qCorrectFirst[qi] === null && !existingAnswer;
+    if (isFirstAttempt) {
+      qCorrectFirst[qi] = isCorrect && !isIdk;
+      totalQuestions++;
+      if (isCorrect && !isIdk) correctFirst++;
+    }
+
+    sectionState.questions[qi] = {
+      selectedText: isIdk ? 'I don\'t know' : btn.querySelector('.option-text').textContent,
+      isCorrect: isCorrect && !isIdk,
+      isIdk
+    };
+    sectionState.currentQi = currentQi;
+    saveProgress();
+
+    logEvent('question_answered', {
+      slot:        item.slot,
+      sectionIndex,
+      quizNum:     item.quizNum,
+      questionNum: q.questionNum,
+      qi,
+      stem:        q.stem,
+      selected:    isIdk ? 'I don\'t know' : btn.querySelector('.option-text').textContent,
+      correct:     q.correct,
+      is_correct:  isCorrect && !isIdk,
+      is_idk:      isIdk,
+      is_first_attempt: isFirstAttempt,
+      answer_duration_ms: answerMs
+    });
+
+    const qBlock = block.querySelector(`.question-block[data-qi="${qi}"]`);
+    qBlock.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      if (b === btn) {
+        b.classList.add(isCorrect && !isIdk ? 'correct' : 'incorrect');
+      } else if (b.dataset.isCorrect === 'true') {
+        if (!isCorrect || isIdk) b.classList.add('correct');
+        else b.classList.add('dimmed');
+      } else {
+        b.classList.add('dimmed');
+      }
+    });
+
+    const fbBox   = $(`fb-${sectionIndex}-${qi}`);
+    const fbLabel = $(`fb-label-${sectionIndex}-${qi}`);
+    const fbText  = $(`fb-text-${sectionIndex}-${qi}`);
+    const fbNext  = $(`fb-next-${sectionIndex}-${qi}`);
+
+    if (isCorrect && !isIdk) {
+      fbBox.className   = 'feedback-box show correct-fb';
+      fbLabel.textContent = '✓ Correct';
+      fbText.textContent  = q.feedback || 'Well done!';
+    } else {
+      fbBox.className   = 'feedback-box show incorrect-fb';
+      fbLabel.textContent = isIdk ? 'Here\'s the explanation:' : '✗ Not quite';
+      fbText.textContent  = q.feedback || `The correct answer is: ${q.correct}`;
+    }
+
+    fbNext.classList.add('show');
+
+    fbNext.addEventListener('click', () => {
+      logEvent('feedback_dismissed', { slot: item.slot, sectionIndex, qi });
+
+      if (qi < item.questions.length - 1) {
+        qBlock.classList.remove('active');
+        qBlock.classList.add('answered');
+        currentQi = qi + 1;
+        sectionState.currentQi = currentQi;
+        const nextBlock = block.querySelector(`.question-block[data-qi="${currentQi}"]`);
+        nextBlock.classList.add('active');
+        saveProgress();
+        scrollToEl(nextBlock, 100);
+      } else {
+        const correct = qCorrectFirst.filter(Boolean).length;
+        const scoreEl = $(`quiz-score-${sectionIndex}`);
+        scoreEl.textContent = `You got ${correct} of ${item.questions.length} correct on the first attempt.`;
+        $(`quiz-complete-${sectionIndex}`).classList.add('show');
+
+        logEvent('quiz_completed', {
+          slot: item.slot, sectionIndex,
+          quizNum: item.quizNum,
+          correct_first: correct,
+          total: item.questions.length,
+          duration_ms: quizStartTime ? Date.now() - quizStartTime : null
+        });
+
+        const continueRow = $(`continue-row-${sectionIndex}`);
+        continueRow.classList.add('show');
+        sectionState.completed = true;
+        sectionState.currentQi = item.questions.length - 1;
+        saveProgress();
+        scrollToEl(continueRow, 100);
+
+        $(`continue-btn-${sectionIndex}`).addEventListener('click', () => {
+          logEvent('continue_clicked', { slot: item.slot, sectionIndex });
+          onComplete();
+        }, { once: true });
+      }
+    }, { once: true });
+  });
+
+  item.questions.forEach((q, qi) => {
+    const prior = sectionState.questions[qi];
+    if (!prior) return;
+    const qBlock = block.querySelector(`.question-block[data-qi="${qi}"]`);
+    qBlock.classList.remove('active');
+    qBlock.classList.add('answered');
+
+    qBlock.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      const text = b.querySelector('.option-text')?.textContent;
+      const isSelected = prior.isIdk ? b.dataset.isIdk === 'true' : text === prior.selectedText;
+      const isCorrect = b.dataset.isCorrect === 'true';
+      if (isSelected) {
+        b.classList.add(prior.isCorrect ? 'correct' : 'incorrect');
+      } else if (isCorrect) {
+        b.classList.add(prior.isCorrect ? 'dimmed' : 'correct');
+      } else {
+        b.classList.add('dimmed');
+      }
+    });
+
+    const fbBox   = $(`fb-${sectionIndex}-${qi}`);
+    const fbLabel = $(`fb-label-${sectionIndex}-${qi}`);
+    const fbText  = $(`fb-text-${sectionIndex}-${qi}`);
+    const fbNext  = $(`fb-next-${sectionIndex}-${qi}`);
+    if (prior.isCorrect) {
+      fbBox.className = 'feedback-box show correct-fb';
+      fbLabel.textContent = '✓ Correct';
+      fbText.textContent = q.feedback || 'Well done!';
+    } else {
+      fbBox.className = 'feedback-box show incorrect-fb';
+      fbLabel.textContent = prior.isIdk ? 'Here\'s the explanation:' : '✗ Not quite';
+      fbText.textContent = q.feedback || `The correct answer is: ${q.correct}`;
+    }
+    if (qi >= currentQi && !sectionState.completed) {
+      qBlock.classList.remove('answered');
+      qBlock.classList.add('active');
+      fbNext.classList.add('show');
+    }
+  });
+
+  if (sectionState.completed) {
+    $(`quiz-complete-${sectionIndex}`).classList.add('show');
+    $(`continue-row-${sectionIndex}`).classList.add('show');
+  }
+
+  return block;
+}
+
+// ─────────────────────────────────────────────
+// RENDER QUESTION + IMAGE BLOCK  (question left, image right)
+// ─────────────────────────────────────────────
+function renderQuestionImageBlock(item, sectionIndex, onComplete) {
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+
+  const letters = ['A','B','C','D','E'];
+
+  const sectionState = quizStates[sectionIndex] || {
+    answered: false, selectedText: null, isCorrect: false, isIdk: false, optionOrder: null
+  };
+  quizStates[sectionIndex] = sectionState;
+
+  if (!sectionState.optionOrder) {
+    const shuffled = shuffleArray(item.distractors);
+    const pos = Math.floor(Math.random() * (shuffled.length + 1));
+    shuffled.splice(pos, 0, item.correct);
+    sectionState.optionOrder = shuffled;
+  }
+
+  const allOptions = sectionState.optionOrder;
+
+  let optionsHTML = allOptions.map((opt, oi) => `
+    <li>
+      <button class="option-btn"
+        data-oi="${oi}"
+        data-is-correct="${opt === item.correct ? 'true' : 'false'}"
+        data-is-idk="false">
+        <span class="option-letter">${letters[oi]}</span>
+        <span class="option-text">${opt}</span>
+      </button>
+    </li>
+  `).join('');
+
+  if (item.showIdk) {
+    optionsHTML += `
+      <li>
+        <button class="option-btn idk-option"
+          data-oi="${allOptions.length}"
+          data-is-correct="false"
+          data-is-idk="true">
+          <span class="option-letter">?</span>
+          <span class="option-text">I don't know</span>
+        </button>
+      </li>
+    `;
+  }
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Knowledge Check</span>
+    </div>
+    <div class="question-image-card">
+      <div class="question-image-inner">
+        <div class="question-image-question">
+          <p class="question-stem">${item.stem}</p>
+          <ul class="options-list">${optionsHTML}</ul>
+          <div class="feedback-box" id="fb-${sectionIndex}-0">
+            <span class="feedback-label" id="fb-label-${sectionIndex}-0"></span>
+            <span id="fb-text-${sectionIndex}-0"></span>
+          </div>
+        </div>
+        <div class="question-image-aside">
+          <img src="${item.imageUrl}" alt="" />
+        </div>
+      </div>
+    </div>
+    <div class="continue-row" id="continue-row-${sectionIndex}">
+      <button class="action-btn" id="continue-btn-${sectionIndex}">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  let questionStartTime = null;
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && !questionStartTime) {
+      questionStartTime = Date.now();
+      logEvent('question_image_visible', { slot: item.slot, sectionIndex });
+    }
+  }, { threshold: 0.2 });
+  observer.observe(block);
+
+  function showFeedback(isCorrect, isIdk) {
+    const fbBox   = $(`fb-${sectionIndex}-0`);
+    const fbLabel = $(`fb-label-${sectionIndex}-0`);
+    const fbText  = $(`fb-text-${sectionIndex}-0`);
+    if (isCorrect && !isIdk) {
+      fbBox.className     = 'feedback-box show correct-fb';
+      fbLabel.textContent = '✓ Correct';
+      fbText.textContent  = item.feedback || 'Well done!';
+    } else {
+      fbBox.className     = 'feedback-box show incorrect-fb';
+      fbLabel.textContent = isIdk ? "Here's the explanation:" : '✗ Not quite';
+      fbText.textContent  = item.feedback || `The correct answer is: ${item.correct}`;
+    }
+  }
+
+  function showContinue() {
+    const continueRow = $(`continue-row-${sectionIndex}`);
+    continueRow.classList.add('show');
+    $(`continue-btn-${sectionIndex}`).addEventListener('click', () => {
+      logEvent('continue_clicked', { slot: item.slot, sectionIndex });
+      onComplete();
+    }, { once: true });
+    scrollToEl(continueRow, 100);
+  }
+
+  block.addEventListener('click', e => {
+    const btn = e.target.closest('.option-btn');
+    if (!btn || btn.disabled) return;
+
+    const isCorrect = btn.dataset.isCorrect === 'true';
+    const isIdk     = btn.dataset.isIdk === 'true';
+    const answerMs  = questionStartTime ? Date.now() - questionStartTime : null;
+
+    if (!sectionState.answered) {
+      totalQuestions++;
+      if (isCorrect && !isIdk) correctFirst++;
+    }
+
+    sectionState.answered     = true;
+    sectionState.selectedText = isIdk ? "I don't know" : btn.querySelector('.option-text').textContent;
+    sectionState.isCorrect    = isCorrect && !isIdk;
+    sectionState.isIdk        = isIdk;
+    saveProgress();
+
+    logEvent('question_answered', {
+      slot: item.slot, sectionIndex,
+      stem:     item.stem,
+      selected: sectionState.selectedText,
+      correct:  item.correct,
+      is_correct:       sectionState.isCorrect,
+      is_idk:           isIdk,
+      is_first_attempt: true,
+      answer_duration_ms: answerMs
+    });
+
+    block.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      if (b === btn) {
+        b.classList.add(isCorrect && !isIdk ? 'correct' : 'incorrect');
+      } else if (b.dataset.isCorrect === 'true') {
+        b.classList.add(!isCorrect || isIdk ? 'correct' : 'dimmed');
+      } else {
+        b.classList.add('dimmed');
+      }
+    });
+
+    showFeedback(isCorrect, isIdk);
+    showContinue();
+  });
+
+  // Restore previously answered state
+  if (sectionState.answered) {
+    block.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      const text       = b.querySelector('.option-text')?.textContent;
+      const isSelected = sectionState.isIdk
+        ? b.dataset.isIdk === 'true'
+        : text === sectionState.selectedText;
+      const isCorrect  = b.dataset.isCorrect === 'true';
+      if (isSelected) {
+        b.classList.add(sectionState.isCorrect ? 'correct' : 'incorrect');
+      } else if (isCorrect) {
+        b.classList.add(sectionState.isCorrect ? 'dimmed' : 'correct');
+      } else {
+        b.classList.add('dimmed');
+      }
+    });
+    showFeedback(sectionState.isCorrect, sectionState.isIdk);
+    showContinue();
+  }
+
+  return block;
+}
+
+// Warn before leaving while training is active
+window.addEventListener('beforeunload', e => {
+  if (participantCode && !hasSuccessfulSubmission) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+// ─────────────────────────────────────────────
+// RENDER ALL SECTIONS
+// ─────────────────────────────────────────────
+function renderTraining(structure, savedState = null) {
+  const container = $('sections-container');
+  container.innerHTML = '';
+  allSections = structure.map(section => ({ ...section, completed: false, unlocked: false }));
+  totalSlots = allSections.reduce((sum, section) => sum + section.cards.length, 0);
+  completedSlots = new Set();
+  trainingActive = true;
+  completionReached = !!savedState?.completionReached;
+
+  const preRevealCount  = savedState ? Math.min(savedState.revealedSlots || 1, totalSlots) : 1;
+  const preCompletedSet = savedState ? new Set(savedState.completedSlotIndices || []) : new Set();
+
+  let globalCardIndex = 0;
+  const cardLookup = [];
+
+  // DESKTOP BLOCKING: future sections remain locked/collapsed until progression unlocks them.
+  const sectionState = allSections.map((section, sectionIdx) => ({
+    visibleCards: sectionIdx === 0 ? 1 : 0,
+    completedCards: 0,
+    expanded: sectionIdx === 0,
+    unlocked: sectionIdx === 0,
+    cardEls: []
+  }));
+
+
+  function sectionCompletionState(idx) {
+    const st = sectionState[idx];
+    const total = allSections[idx].cards.length;
+    if (st.completedCards === 0) return 'Not started';
+    if (st.completedCards >= total) return 'Completed';
+    return 'In progress';
+  }
+
+  function updateSectionUI(idx) {
+    const wrap = container.querySelector(`[data-section-idx="${idx}"]`);
+    if (!wrap) return;
+    const st = sectionState[idx];
+    const statusEl = wrap.querySelector('.section-status');
+    statusEl.textContent = sectionCompletionState(idx);
+    wrap.classList.toggle('collapsed', !st.expanded);
+    wrap.classList.toggle('locked', !st.unlocked);
+    wrap.querySelector('.section-toggle').disabled = !st.unlocked;
+    allSections[idx].completed = st.completedCards >= allSections[idx].cards.length;
+    allSections[idx].unlocked = st.unlocked;
+  }
+
+  // SECTION PROGRESSION TRACKING: progressionSectionIndex is the learner's true position.
+  // Manual review can open completed sections without changing this index.
+  function collapseAllExcept(idx, updateProgressPointer = true) {
+    sectionState.forEach((st, i) => { st.expanded = i === idx; updateSectionUI(i); });
+    currentSectionIndex = idx;
+    if (updateProgressPointer) progressionSectionIndex = idx;
+    updateProgress();
+  }
+
+  // NEXT CARD REVEAL: only reveal completed-through cards; hidden cards stay display:none
+  // so they do not reserve blank layout space.
+  function revealCard(sectionIdx, cardIdx) {
+    const el = sectionState[sectionIdx].cardEls[cardIdx];
+    if (el) el.classList.add('revealed');
+    sectionState[sectionIdx].visibleCards = Math.max(sectionState[sectionIdx].visibleCards, cardIdx + 1);
+    revealedSlots = Math.max(revealedSlots, completedSlots.size + 1);
+  }
+
+  allSections.forEach((section, sectionIdx) => {
+    const accordion = document.createElement('section');
+    accordion.className = 'section-accordion';
+    accordion.dataset.sectionIdx = sectionIdx;
+    accordion.innerHTML = `
+      <button class="section-toggle" type="button">
+        <span class="section-title-wrap">
+          <strong>Section ${sectionIdx + 1}: ${section.title}</strong>
+          <span class="section-status">Not started</span>
+        </span>
+        <span class="section-chevron">▾</span>
+      </button>
+      <div class="section-content"></div>
+    `;
+
+    accordion.querySelector('.section-toggle').addEventListener('click', () => {
+      if (!sectionState[sectionIdx].unlocked) return;
+      const isCompletedSection = sectionState[sectionIdx].completedCards >= allSections[sectionIdx].cards.length;
+      collapseAllExcept(sectionIdx, !isCompletedSection);
+    });
+
+    const content = accordion.querySelector('.section-content');
+    section.cards.forEach((item, localCardIdx) => {
+      const cardIndex = globalCardIndex++;
+      cardLookup[cardIndex] = { sectionIdx, cardIdx: localCardIdx };
+
+      const onComplete = () => {
+        if (completedSlots.has(cardIndex)) return;
+        completedSlots.add(cardIndex);
+        sectionState[sectionIdx].completedCards += 1;
+
+        const hasNextCard = localCardIdx + 1 < section.cards.length;
+        if (hasNextCard) {
+          revealCard(sectionIdx, localCardIdx + 1);
+          scrollToEl(sectionState[sectionIdx].cardEls[localCardIdx + 1], 80);
+        } else {
+          // SECTION COMPLETION -> collapse current and expand next unlocked section.
+          const nextSection = sectionIdx + 1;
+          if (nextSection < allSections.length) {
+            sectionState[nextSection].unlocked = true;
+            revealCard(nextSection, 0);
+            collapseAllExcept(nextSection, true);
+            scrollToEl(container.querySelector(`[data-section-idx="${nextSection}"]`), 80);
+          } else {
+            completionReached = true;
+            showCompletion();
+          }
+        }
+
+        updateSectionUI(sectionIdx);
+        if (sectionIdx + 1 < allSections.length) updateSectionUI(sectionIdx + 1);
+        saveProgress();
+        updateProgress();
+      };
+
+      let block;
+      if (item.type === 'video') block = renderVideoBlock(item, cardIndex, onComplete);
+      else if (item.type === 'text') block = renderTextBlock(item, cardIndex, onComplete);
+      else if (item.type === 'text_image') block = renderTextImageBlock(item, cardIndex, onComplete);
+      else if (item.type === 'question_image') block = renderQuestionImageBlock(item, cardIndex, onComplete);
+      else block = renderQuizBlock(item, cardIndex, onComplete);
+
+      if (localCardIdx >= sectionState[sectionIdx].visibleCards) block.classList.remove('revealed');
+      else block.classList.add('revealed');
+
+      sectionState[sectionIdx].cardEls.push(block);
+      content.appendChild(block);
+    });
+
+    container.appendChild(accordion);
+  });
+
+  for (let i = 0; i < preRevealCount; i++) {
+    const found = cardLookup[i];
+    if (!found) continue;
+    sectionState[found.sectionIdx].visibleCards = Math.max(sectionState[found.sectionIdx].visibleCards, found.cardIdx + 1);
+    sectionState[found.sectionIdx].cardEls.slice(0, found.cardIdx + 1).forEach(el => el.classList.add('revealed'));
+  }
+
+
+  preCompletedSet.forEach(idx => {
+    const found = cardLookup[idx];
+    if (!found) return;
+    completedSlots.add(idx);
+    sectionState[found.sectionIdx].completedCards += 1;
+  });
+
+  sectionState.forEach((st, idx) => {
+    if (st.visibleCards > 0 || st.completedCards > 0) st.unlocked = true;
+    const isComplete = st.completedCards >= allSections[idx].cards.length;
+    if (isComplete) {
+      st.visibleCards = allSections[idx].cards.length;
+      st.cardEls.forEach(el => el.classList.add('revealed'));
+    }
+    updateSectionUI(idx);
+  });
+
+  const firstIncomplete = sectionState.findIndex((st, idx) => st.completedCards < allSections[idx].cards.length && st.unlocked);
+  const initialSection = firstIncomplete >= 0 ? firstIncomplete : 0;
+  progressionSectionIndex = initialSection;
+  collapseAllExcept(initialSection, false);
+
+  revealedSlots = Math.max(preRevealCount, completedSlots.size);
+  if (completionReached) showCompletion();
+  saveProgress();
+  updateProgress();
+}
+
+
+// ─────────────────────────────────────────────
+// COMPLETION + SUBMIT
+// ─────────────────────────────────────────────
+function showCompletion() {
+  const completion = $('completion');
+  completion.style.display = 'block';
+  scrollToEl(completion, 60);
+
+  const elapsed = sessionStart ? Date.now() - sessionStart : 0;
+  $('stat-questions').textContent = totalQuestions;
+  $('stat-correct').textContent   = correctFirst;
+  $('stat-time').textContent      = formatDuration(elapsed);
+
+  logEvent('training_completed', {
+    total_questions: totalQuestions,
+    correct_first:   correctFirst,
+    duration_ms:     elapsed
+  });
+
+  if (!$('btn-submit-final').dataset.bound) {
+    $('btn-submit-final').addEventListener('click', submitSession);
+    $('btn-submit-final').dataset.bound = 'true';
+  }
+}
+
+async function submitSession() {
+  const btn    = $('btn-submit-final');
+  const status = $('submit-status');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+  status.textContent = '';
+
+  const elapsed = sessionStart ? Date.now() - sessionStart : 0;
+  const payload = {
+    source:           'training',
+    participant_code: participantCode,
+    session_id:       sessionId,
+    session_start:    sessionStart ? new Date(sessionStart).toISOString() : null,
+    session_end:      now(),
+    duration_ms:      elapsed,
+    duration_formatted: formatDuration(elapsed),
+    total_questions:  totalQuestions,
+    correct_first:    correctFirst,
+    events
+  };
+
+  try {
+    const response = await fetch(SUBMIT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+      redirect: 'follow'
+    });
+
+    const text = await response.text();
+    let data = null;
+    try { data = JSON.parse(text); }
+    catch (_) { data = { ok: false, error: 'invalid_json_response', raw: text }; }
+
+    if (data && data.ok) {
+      hasSuccessfulSubmission = true;
+      trainingActive = false;
+      completionReached = true;
+      clearSavedProgress();
+      btn.textContent = '✓ Submitted';
+      btn.style.background = '#166534';
+      btn.disabled = true;
+      status.textContent = 'Session data submitted successfully. You may now close this window.';
+      logEvent('session_submitted', { ok: true, fileName: data.fileName });
+    } else {
+      throw new Error(data?.error || 'unknown_error');
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = 'Retry submission';
+    logEvent('session_submit_failed', { error: String(err.message) });
+    offerDownload(payload);
+  }
+}
+
+function offerDownload(payload) {
+  const existing = $('download-backup-wrap');
+  if (existing) return;
+
+  const status = $('submit-status');
+
+  const wrap = document.createElement('div');
+  wrap.id = 'download-backup-wrap';
+  wrap.style.cssText = 'margin-top:14px; padding:14px 16px; background:#fef9ec; border:1px solid #c8a84b; border-radius:10px; font-size:0.88rem; line-height:1.6; color:#10213d;';
+  wrap.innerHTML = `
+    <strong style="display:block; margin-bottom:6px;">Automatic submission failed.</strong>
+    Please save your session data manually:
+    <ol style="margin: 8px 0 12px 18px; padding:0;">
+      <li>Click <strong>Download session file</strong> below.</li>
+      <li>Email the downloaded file to <strong>tjin@crimson.ua.edu</strong>.</li>
+    </ol>
+  `;
+
+  const dlBtn = document.createElement('button');
+  dlBtn.className = 'action-btn';
+  dlBtn.style.cssText = 'background:#2f6edc; font-size:0.82rem;';
+  dlBtn.innerHTML = `
+    Download session file (.json)
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" style="flex:0 0 14px">
+      <path d="M7 2v8M3 7l4 4 4-4M2 12h10"/>
+    </svg>
+  `;
+
+  dlBtn.addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${payload.participant_code}_${payload.session_id}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    logEvent('backup_downloaded', { participant: payload.participant_code });
+
+    dlBtn.remove();
+    const confirm = document.createElement('p');
+    confirm.style.cssText = 'margin-top:8px; font-size:0.85rem; color:#166534; font-weight:600;';
+    confirm.textContent = '✓ File downloaded. Please email it to tjin@crimson.ua.edu.';
+    wrap.appendChild(confirm);
+  });
+
+  wrap.appendChild(dlBtn);
+  status.insertAdjacentElement('afterend', wrap);
+}
+
+// ─────────────────────────────────────────────
+// IMAGE LIGHTBOX
+// ─────────────────────────────────────────────
+(function () {
+  const lightbox   = $('img-lightbox');
+  const lightboxImg = $('img-lightbox-img');
+  const closeBtn   = $('img-lightbox-close');
+
+  function openLightbox(src, alt) {
+    lightboxImg.src = src;
+    lightboxImg.alt = alt || '';
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    document.body.style.overflow = '';
+    lightboxImg.src = '';
+  }
+
+  // Delegate clicks on zoomable images
+  document.addEventListener('click', e => {
+    const img = e.target.closest('.text-image-img img, .question-image-aside img');
+    if (img) openLightbox(img.src, img.alt);
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+})();
+
+// ─────────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const gateForm = $('gate-form');
+  const codeInput = $('code-input');
+  const gateError = $('gate-error');
+
+  codeInput.focus();
+
+  gateForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const entered = codeInput.value.trim().toLowerCase();
+
+    if (!ACCESS_CODES.has(entered)) {
+      gateError.textContent = 'Access code not recognized. Please check your code and try again.';
+      codeInput.select();
+      return;
+    }
+
+    // Check for saved progress with this code
+    const saved = loadSavedProgress();
+    let resuming = false;
+    if (saved && saved.participantCode === entered && saved.revealedSlots > 1) {
+      const doResume = confirm(
+        'You have a training session in progress.\n\nClick OK to resume where you left off, or Cancel to start over from the beginning.'
+      );
+      if (doResume) {
+        participantCode = saved.participantCode;
+        sessionId       = saved.sessionId;
+        sessionStart    = saved.sessionStart;
+        totalQuestions  = saved.totalQuestions || 0;
+        correctFirst    = saved.correctFirst || 0;
+        events          = saved.events || [];
+        completionReached = !!saved.completionReached;
+        hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
+        quizStates = saved.quizStates || {};
+        resuming        = true;
+      } else {
+        clearSavedProgress();
+      }
+    }
+
+    if (!resuming) {
+      participantCode = entered;
+      sessionId       = makeSessionId(entered);
+      sessionStart    = Date.now();
+      completionReached = false;
+      hasSuccessfulSubmission = false;
+      quizStates = {};
+    }
+
+    $('gate').style.display    = 'none';
+    $('loading').style.display = 'flex';
+
+    if (!resuming) logEvent('access_granted', { participantCode });
+
+    try {
+      const res  = await fetch(CSV_PATH + '?nocache=' + Date.now());
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      const rows = parseCSV(text);
+      const structure = buildStructure(rows);
+
+      if (structure.length === 0) throw new Error('No content found in CSV.');
+
+      $('loading').style.display    = 'none';
+      $('training').style.display   = 'block';
+      $('participant-badge').textContent = `Participant: ${participantCode}`;
+
+      renderTraining(structure, resuming ? saved : null);
+
+      logEvent('content_loaded', { sections: structure.length, cards: structure.reduce((n, sec) => n + sec.cards.length, 0), resumed: resuming });
+
+    } catch (err) {
+      $('loading').style.display = 'none';
+      $('gate').style.display    = 'flex';
+      gateError.textContent = `Failed to load training content: ${err.message}. Please refresh the page.`;
+      logEvent('content_load_failed', { error: String(err.message) });
+    }
+  });
+});
+</script>
+
+</body>
+<footer style="text-align:center; padding: 12px 24px 24px; font-size: 0.72rem; color: var(--muted); font-family: var(--sans);">
+  Last updated: <span id="last-updated"></span>
+</footer>
+<script>
+  document.getElementById('last-updated').textContent = document.lastModified;
+</script>
+</html>
