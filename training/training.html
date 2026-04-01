@@ -1048,6 +1048,17 @@ function formatDuration(ms) {
   return `${s}s`;
 }
 
+function isMobileLikeViewport() {
+  return window.matchMedia('(max-width: 800px)').matches;
+}
+
+function pickBodyText(item) {
+  const desktopBody = String(item?.body || '');
+  const mobileBody = String(item?.body_mobile || '').trim();
+  if (isMobileLikeViewport() && mobileBody) return mobileBody;
+  return desktopBody;
+}
+
 function html(v) {
   return String(v || '')
     .replace(/&/g, '&amp;')
@@ -1249,8 +1260,8 @@ function buildCardsForSection(rows) {
     const first = slotRows[0];
 
     if (type === 'video') return { type: 'video', slot, youtubeId: first.youtube_id };
-    if (type === 'text') return { type: 'text', slot, header: first.header, body: first.body };
-    if (type === 'text_image') return { type: 'text_image', slot, header: first.header, body: first.body, imageUrl: first.image_url };
+    if (type === 'text') return { type: 'text', slot, header: first.header, body: first.body, body_mobile: first.body_mobile };
+    if (type === 'text_image') return { type: 'text_image', slot, header: first.header, body: first.body, body_mobile: first.body_mobile, imageUrl: first.image_url };
     if (type === 'question_image') {
       const distractors = [first.distractor_1, first.distractor_2, first.distractor_3, first.distractor_4].filter(d => d && d.trim());
       return { type: 'question_image', slot, stem: first.stem, correct: first.correct, distractors, feedback: first.feedback, showIdk: first.show_idk?.toLowerCase() === 'yes', imageUrl: first.image_url };
@@ -1351,7 +1362,7 @@ function renderTextBlock(item, sectionIndex, onComplete) {
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
   const headerHtml = item.header ? `<h2 class="content-header">${html(item.header)}</h2>` : '';
-  const bodyHtml = formatBodyText(item.body);
+  const bodyHtml = formatBodyText(pickBodyText(item));
 
   block.innerHTML = `
     <div class="section-label">
@@ -1397,7 +1408,7 @@ function renderTextImageBlock(item, sectionIndex, onComplete) {
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
   const headerHtml = item.header ? `<h2 class="content-header">${html(item.header)}</h2>` : '';
-  const bodyHtml = formatBodyText(item.body);
+  const bodyHtml = formatBodyText(pickBodyText(item));
 
   block.innerHTML = `
     <div class="section-label">
