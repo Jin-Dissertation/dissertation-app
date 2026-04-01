@@ -655,7 +655,6 @@
     /* ── CONTINUE ROW ── */
     .continue-row {
       margin-top: 20px;
-      display: flex;
       justify-content: flex-end;
       display: none;
     }
@@ -1022,7 +1021,6 @@ let trainingActive  = false;
 let completionReached = false;
 let hasSuccessfulSubmission = false;
 let quizStates = {};
-let currentSectionIndex = 0;
 let progressionSectionIndex = 0;
 let allSections = [];
 
@@ -1242,7 +1240,7 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
       </div>
       <div class="video-footer">
         <span class="video-footer-label">Watch the video above, then click when you're done.</span>
-        <button class="action-btn" id="video-done-${sectionIndex}">
+        <button class="action-btn video-done-btn">
           Done watching
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M2 7h10M8 3l4 4-4 4"/>
@@ -1252,7 +1250,7 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
     </div>
   `;
 
-  const doneBtn = block.querySelector(`#video-done-${sectionIndex}`);
+  const doneBtn = block.querySelector('.video-done-btn');
   let videoStart = null;
 
   const observer = new IntersectionObserver(entries => {
@@ -1297,8 +1295,8 @@ function renderTextBlock(item, sectionIndex, onComplete) {
       <h2 class="content-header">${item.header}</h2>
       <div class="content-body">${item.body}</div>
     </div>
-    <div class="continue-row show" id="continue-row-${sectionIndex}">
-      <button class="action-btn" id="continue-btn-${sectionIndex}">
+    <div class="continue-row show">
+      <button class="action-btn continue-btn">
         Continue
         <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M2 7h10M8 3l4 4-4 4"/>
@@ -1315,7 +1313,7 @@ function renderTextBlock(item, sectionIndex, onComplete) {
   }, { threshold: 0.3 });
   observer.observe(block);
 
-  block.querySelector(`#continue-btn-${sectionIndex}`).addEventListener('click', () => {
+  block.querySelector('.continue-btn').addEventListener('click', () => {
     logEvent('text_continued', { slot: item.slot, sectionIndex });
     onComplete();
   }, { once: true });
@@ -1348,8 +1346,8 @@ function renderTextImageBlock(item, sectionIndex, onComplete) {
         </div>
       </div>
     </div>
-    <div class="continue-row show" id="continue-row-${sectionIndex}">
-      <button class="action-btn" id="continue-btn-${sectionIndex}">
+    <div class="continue-row show">
+      <button class="action-btn continue-btn">
         Continue
         <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M2 7h10M8 3l4 4-4 4"/>
@@ -1366,7 +1364,7 @@ function renderTextImageBlock(item, sectionIndex, onComplete) {
   }, { threshold: 0.3 });
   observer.observe(block);
 
-  block.querySelector(`#continue-btn-${sectionIndex}`).addEventListener('click', () => {
+  block.querySelector('.continue-btn').addEventListener('click', () => {
     logEvent('text_image_continued', { slot: item.slot, sectionIndex });
     onComplete();
   }, { once: true });
@@ -1435,11 +1433,11 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
         <p class="question-progress">Question ${qi + 1} of ${item.questions.length}</p>
         <p class="question-stem">${q.stem}</p>
         <ul class="options-list">${optionsHTML}</ul>
-        <div class="feedback-box" id="fb-${sectionIndex}-${qi}">
-          <span class="feedback-label" id="fb-label-${sectionIndex}-${qi}"></span>
-          <span id="fb-text-${sectionIndex}-${qi}"></span>
+        <div class="feedback-box">
+          <span class="feedback-label"></span>
+          <span class="feedback-text"></span>
           <br/>
-          <button class="feedback-next-btn" id="fb-next-${sectionIndex}-${qi}">
+          <button class="feedback-next-btn">
             ${qi < item.questions.length - 1 ? 'Next question →' : 'Continue →'}
           </button>
         </div>
@@ -1459,16 +1457,16 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
         <p class="quiz-header-sub">${item.questions.length} question${item.questions.length !== 1 ? 's' : ''} — select the best answer for each.</p>
       </div>
       ${questionsHTML}
-      <div class="quiz-complete" id="quiz-complete-${sectionIndex}">
+      <div class="quiz-complete">
         <span class="quiz-complete-icon">✓</span>
         <div class="quiz-complete-text">
           <strong>Knowledge check complete</strong>
-          <span id="quiz-score-${sectionIndex}">Review any feedback above before continuing.</span>
+          <span class="quiz-score">Review any feedback above before continuing.</span>
         </div>
       </div>
     </div>
-    <div class="continue-row" id="continue-row-${sectionIndex}">
-      <button class="action-btn" id="continue-btn-${sectionIndex}">
+    <div class="continue-row">
+      <button class="action-btn continue-btn">
         Continue
         <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M2 7h10M8 3l4 4-4 4"/>
@@ -1543,10 +1541,10 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
       }
     });
 
-    const fbBox   = $(`fb-${sectionIndex}-${qi}`);
-    const fbLabel = $(`fb-label-${sectionIndex}-${qi}`);
-    const fbText  = $(`fb-text-${sectionIndex}-${qi}`);
-    const fbNext  = $(`fb-next-${sectionIndex}-${qi}`);
+    const fbBox   = qBlock.querySelector('.feedback-box');
+    const fbLabel = qBlock.querySelector('.feedback-label');
+    const fbText  = qBlock.querySelector('.feedback-text');
+    const fbNext  = qBlock.querySelector('.feedback-next-btn');
 
     if (isCorrect && !isIdk) {
       fbBox.className   = 'feedback-box show correct-fb';
@@ -1574,9 +1572,9 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
         scrollToEl(nextBlock, 100);
       } else {
         const correct = qCorrectFirst.filter(Boolean).length;
-        const scoreEl = $(`quiz-score-${sectionIndex}`);
+        const scoreEl = block.querySelector('.quiz-score');
         scoreEl.textContent = `You got ${correct} of ${item.questions.length} correct on the first attempt.`;
-        $(`quiz-complete-${sectionIndex}`).classList.add('show');
+        block.querySelector('.quiz-complete').classList.add('show');
 
         logEvent('quiz_completed', {
           slot: item.slot, sectionIndex,
@@ -1586,14 +1584,14 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
           duration_ms: quizStartTime ? Date.now() - quizStartTime : null
         });
 
-        const continueRow = $(`continue-row-${sectionIndex}`);
+        const continueRow = block.querySelector('.continue-row');
         continueRow.classList.add('show');
         sectionState.completed = true;
         sectionState.currentQi = item.questions.length - 1;
         saveProgress();
         scrollToEl(continueRow, 100);
 
-        $(`continue-btn-${sectionIndex}`).addEventListener('click', () => {
+        block.querySelector('.continue-btn').addEventListener('click', () => {
           logEvent('continue_clicked', { slot: item.slot, sectionIndex });
           onComplete();
         }, { once: true });
@@ -1622,10 +1620,10 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
       }
     });
 
-    const fbBox   = $(`fb-${sectionIndex}-${qi}`);
-    const fbLabel = $(`fb-label-${sectionIndex}-${qi}`);
-    const fbText  = $(`fb-text-${sectionIndex}-${qi}`);
-    const fbNext  = $(`fb-next-${sectionIndex}-${qi}`);
+    const fbBox   = qBlock.querySelector('.feedback-box');
+    const fbLabel = qBlock.querySelector('.feedback-label');
+    const fbText  = qBlock.querySelector('.feedback-text');
+    const fbNext  = qBlock.querySelector('.feedback-next-btn');
     if (prior.isCorrect) {
       fbBox.className = 'feedback-box show correct-fb';
       fbLabel.textContent = '✓ Correct';
@@ -1643,8 +1641,8 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
   });
 
   if (sectionState.completed) {
-    $(`quiz-complete-${sectionIndex}`).classList.add('show');
-    $(`continue-row-${sectionIndex}`).classList.add('show');
+    block.querySelector('.quiz-complete').classList.add('show');
+    block.querySelector('.continue-row').classList.add('show');
   }
 
   return block;
@@ -1711,9 +1709,9 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
         <div class="question-image-question">
           <p class="question-stem">${item.stem}</p>
           <ul class="options-list">${optionsHTML}</ul>
-          <div class="feedback-box" id="fb-${sectionIndex}-0">
-            <span class="feedback-label" id="fb-label-${sectionIndex}-0"></span>
-            <span id="fb-text-${sectionIndex}-0"></span>
+          <div class="feedback-box">
+            <span class="feedback-label"></span>
+            <span class="feedback-text"></span>
           </div>
         </div>
         <div class="question-image-aside">
@@ -1721,8 +1719,8 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
         </div>
       </div>
     </div>
-    <div class="continue-row" id="continue-row-${sectionIndex}">
-      <button class="action-btn" id="continue-btn-${sectionIndex}">
+    <div class="continue-row">
+      <button class="action-btn continue-btn">
         Continue
         <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M2 7h10M8 3l4 4-4 4"/>
@@ -1741,9 +1739,9 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
   observer.observe(block);
 
   function showFeedback(isCorrect, isIdk) {
-    const fbBox   = $(`fb-${sectionIndex}-0`);
-    const fbLabel = $(`fb-label-${sectionIndex}-0`);
-    const fbText  = $(`fb-text-${sectionIndex}-0`);
+    const fbBox   = block.querySelector('.feedback-box');
+    const fbLabel = block.querySelector('.feedback-label');
+    const fbText  = block.querySelector('.feedback-text');
     if (isCorrect && !isIdk) {
       fbBox.className     = 'feedback-box show correct-fb';
       fbLabel.textContent = '✓ Correct';
@@ -1756,9 +1754,9 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
   }
 
   function showContinue() {
-    const continueRow = $(`continue-row-${sectionIndex}`);
+    const continueRow = block.querySelector('.continue-row');
     continueRow.classList.add('show');
-    $(`continue-btn-${sectionIndex}`).addEventListener('click', () => {
+    block.querySelector('.continue-btn').addEventListener('click', () => {
       logEvent('continue_clicked', { slot: item.slot, sectionIndex });
       onComplete();
     }, { once: true });
@@ -1895,7 +1893,6 @@ function renderTraining(structure, savedState = null) {
   // Manual review can open completed sections without changing this index.
   function collapseAllExcept(idx, updateProgressPointer = true) {
     sectionState.forEach((st, i) => { st.expanded = i === idx; updateSectionUI(i); });
-    currentSectionIndex = idx;
     if (updateProgressPointer) progressionSectionIndex = idx;
     updateProgress();
   }
@@ -2262,11 +2259,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-</body>
 <footer style="text-align:center; padding: 12px 24px 24px; font-size: 0.72rem; color: var(--muted); font-family: var(--sans);">
   Last updated: <span id="last-updated"></span>
 </footer>
 <script>
   document.getElementById('last-updated').textContent = document.lastModified;
 </script>
+</body>
 </html>
