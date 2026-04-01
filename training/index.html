@@ -10,6 +10,7 @@
   <style>
     /* ── RESET & VARIABLES ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * { overflow-wrap: break-word; }
 
     :root {
       --navy:       #10213d;
@@ -39,7 +40,17 @@
       background: var(--cream);
       color: var(--navy);
       line-height: 1.7;
-      min-height: 100vh;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      min-height: 44px;
+      font-size: 16px;
     }
 
     /* ── PROGRESS BAR ── */
@@ -49,6 +60,12 @@
       height: 3px;
       background: var(--cream-dark);
       z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    body.training-active #progress-bar {
+      opacity: 1;
     }
     #progress-fill {
       height: 100%;
@@ -85,7 +102,7 @@
 
     /* ── ACCESS GATE ── */
     #gate {
-      min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -174,7 +191,7 @@
 
     /* ── LOADING ── */
     #loading {
-      min-height: 100vh;
+      min-height: 100dvh;
       display: none;
       align-items: center;
       justify-content: center;
@@ -655,9 +672,8 @@
     /* ── CONTINUE ROW ── */
     .continue-row {
       margin-top: 20px;
-      display: flex;
-      justify-content: flex-end;
       display: none;
+      justify-content: flex-end;
     }
 
     .continue-row.show { display: flex; }
@@ -921,6 +937,128 @@
       /* Hide section counter (too small to be useful) */
       #section-counter { display: none; }
     }
+
+    /* ── CATEGORIZE BLOCK ── */
+    .categorize-helper {
+      margin: 10px 0 12px;
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+
+    .categorize-layout {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: minmax(200px, 0.9fr) minmax(300px, 1.5fr);
+    }
+
+    .categorize-pool,
+    .categorize-zone {
+      border: 1px solid #e3e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+      padding: 12px;
+      min-height: 88px;
+    }
+
+    .categorize-pool-title,
+    .categorize-zone-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--navy-mid);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .categorize-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-content: flex-start;
+      min-height: 44px;
+    }
+
+    .categorize-item {
+      display: inline-flex;
+      align-items: center;
+      background: var(--navy);
+      color: var(--white);
+      border: 1px solid var(--navy);
+      border-radius: 999px;
+      padding: 7px 13px;
+      font-size: 0.84rem;
+      line-height: 1.2;
+      cursor: grab;
+      user-select: none;
+      transition: box-shadow 0.15s, background 0.15s;
+    }
+
+    .categorize-item.selected {
+      background: var(--gold);
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(47,110,220,0.25);
+    }
+
+    .categorize-item.correct  { background: var(--green); border-color: var(--green); }
+    .categorize-item.incorrect { background: var(--red);   border-color: var(--red); }
+
+    .categorize-drop-active {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 2px rgba(47,110,220,0.18);
+    }
+
+    .categorize-mobile-hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 6px;
+      min-height: 1.2em;
+    }
+
+    .categorize-controls {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .categorize-feedback {
+      margin-top: 10px;
+    }
+
+    @media (max-width: 700px) {
+      .categorize-layout {
+        grid-template-columns: 1fr;
+      }
+      .categorize-pool,
+      .categorize-zone {
+        min-height: 64px;
+        padding: 10px;
+      }
+      .categorize-items { min-height: 36px; }
+    }
+
+    /* ── RESUME MODAL ── */
+    #resume-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      background: rgba(10,20,40,0.45);
+      align-items: center;
+      justify-content: center;
+    }
+    #resume-modal.open { display: flex; }
+    .resume-modal-card {
+      width: min(420px, 92vw);
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 12px 32px rgba(16,33,61,0.15);
+    }
+    .resume-modal-card h3 { margin: 0 0 8px; font-family: var(--serif); font-size: 1.1rem; }
+    .resume-modal-card p  { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; }
+    .resume-modal-actions { display: flex; gap: 10px; flex-wrap: wrap; }
   </style>
 </head>
 <body>
@@ -990,12 +1128,34 @@
   <img id="img-lightbox-img" src="" alt="" />
 </div>
 
+<!-- RESUME MODAL -->
+<div id="resume-modal" role="dialog" aria-modal="true" aria-label="Resume session">
+  <div class="resume-modal-card">
+    <h3>Resume your session?</h3>
+    <p>You have a training session in progress. Would you like to pick up where you left off, or start over?</p>
+    <div class="resume-modal-actions">
+      <button class="action-btn" id="resume-continue-btn">Resume session</button>
+      <button class="action-btn secondary" id="resume-restart-btn">Start over</button>
+    </div>
+  </div>
+</div>
+
+<footer style="text-align:center; padding: 12px 24px 24px; font-size: 0.72rem; color: var(--muted); font-family: var(--sans);">
+  Last updated: <span id="last-updated"></span>
+</footer>
+
 <script>
+  document.getElementById('last-updated').textContent = document.lastModified;
+</script>
+
+</body>
+</html>
 // ─────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────
-const SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbwJQ3QfQ9AdniKd46SYoesy6GMx2GvP52-HWiqlPRTZ8zJuGoyzi7BiHN6sio7dJiLb/exec';
-const CSV_PATH   = 'content.csv';
+const LOAD_URL   = 'https://script.google.com/macros/s/AKfycbwsRmerE4CnZIIQ7F65yBo123VPl0oXyEhtJHZPuWhc5FElSKaJj5HSc-PegJIv5-u52g/exec';
+const SUBMIT_URL = LOAD_URL;
+const TRACK_URL  = LOAD_URL; // same deployment; Apps Script routes by action field
 
 const ACCESS_CODES = new Set([
   'blue-sky','green-grass','bright-light','calm-water','morning-sun',
@@ -1022,7 +1182,6 @@ let trainingActive  = false;
 let completionReached = false;
 let hasSuccessfulSubmission = false;
 let quizStates = {};
-let currentSectionIndex = 0;
 let progressionSectionIndex = 0;
 let allSections = [];
 
@@ -1040,6 +1199,23 @@ function makeSessionId(code) {
 
 function logEvent(type, data = {}) {
   events.push({ t: now(), type, participant: participantCode, session: sessionId, ...data });
+}
+
+// Fire-and-forget: appends a single row to the live tracking sheet.
+// Never blocks the UI — failures are silently swallowed.
+function sendLiveEvent(type, data = {}) {
+  const payload = {
+    action:           'logEvent',
+    t:                now(),
+    type,
+    participant_code: participantCode,
+    session_id:       sessionId,
+    ...data
+  };
+  fetch(TRACK_URL, {
+    method: 'POST',
+    body: new URLSearchParams({ payload: JSON.stringify(payload) })
+  }).catch(() => {});
 }
 
 function shuffleArray(arr) {
@@ -1065,9 +1241,122 @@ function scrollToEl(el, offset = 80) {
   window.scrollTo({ top, behavior: 'smooth' });
 }
 
+function html(v) {
+  return String(v || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Lightweight body formatter: blank lines → paragraphs, "-- " → bullets, **bold**, *italic*
+function formatBodyText(raw) {
+  const text = String(raw || '').replace(/\r\n?/g, '\n');
+  if (!text.trim()) return '';
+
+  const applyInline = v => html(v)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  const lines = text.split('\n');
+  const blocks = [];
+  let paraLines = [], listItems = [];
+
+  const flushPara = () => { if (paraLines.length) { blocks.push(`<p>${paraLines.join('<br>')}</p>`); paraLines = []; } };
+  const flushList = () => { if (listItems.length) { blocks.push(`<ul>${listItems.map(li => `<li>${li}</li>`).join('')}</ul>`); listItems = []; } };
+
+  lines.forEach(line => {
+    const t = line.trim();
+    if (!t) { flushPara(); flushList(); return; }
+    if (t.startsWith('-- ')) { flushPara(); listItems.push(applyInline(t.slice(3))); return; }
+    flushList();
+    paraLines.push(applyInline(t));
+  });
+  flushPara(); flushList();
+  return blocks.join('');
+}
+
+// Picks body_mobile on narrow screens if provided, falls back to body
+function resolveBody(item) {
+  if (window.matchMedia('(max-width: 700px)').matches) {
+    const m = String(item.bodyMobile || '').trim();
+    if (m) return m;
+  }
+  return item.body || '';
+}
+
+function normalizeYouTubeVideoId(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+  const idPattern = /^[A-Za-z0-9_-]{11}$/;
+  if (idPattern.test(value)) return value;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.replace(/^www\./i, '').toLowerCase();
+    let candidate = '';
+    if (host === 'youtube.com' || host.endsWith('.youtube.com')) {
+      candidate = url.pathname === '/watch'
+        ? url.searchParams.get('v') || ''
+        : url.pathname.startsWith('/embed/') ? url.pathname.split('/')[2] || '' : '';
+    } else if (host === 'youtu.be') {
+      candidate = url.pathname.replace(/^\/+/, '').split('/')[0] || '';
+    }
+    return idPattern.test(candidate) ? candidate : '';
+  } catch { return ''; }
+}
+
+const interactionTimes = [];
+function computeActiveSeconds() {
+  if (interactionTimes.length < 2) return 0;
+  let total = 0;
+  for (let i = 1; i < interactionTimes.length; i++) {
+    const gap = (interactionTimes[i] - interactionTimes[i - 1]) / 1000;
+    if (Number.isFinite(gap) && gap > 0) total += Math.min(gap, 60);
+  }
+  return total;
+}
+
+function normalizeText(value) {
+  return String(value || '').toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function parseCategoryMappings(blob) {
+  return String(blob || '').split('||').map(p => p.trim()).filter(Boolean).map(p => {
+    const parts = p.split('|').map(s => s.trim()).filter(Boolean);
+    if (parts.length < 2) return null;
+    return { item: parts[0], category: parts[1] };
+  }).filter(Boolean);
+}
+
+function getCategorizeMappingsAndCategories(blob) {
+  const mappings = parseCategoryMappings(blob);
+  return {
+    mappings,
+    categories: [...new Set(mappings.map(m => m.category))],
+    items:      [...new Set(mappings.map(m => m.item))]
+  };
+}
+
+async function postToAppsScript(url, body) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body),
+    redirect: 'follow'
+  });
+  const text = await response.text();
+  let data;
+  try { data = JSON.parse(text); }
+  catch (_) { throw new Error('Invalid response from server.'); }
+  if (!data.ok) throw new Error(data.error || 'API error');
+  return data;
+}
+
 function updateProgress() {
   const pct = totalSlots > 0 ? Math.round((completedSlots.size / totalSlots) * 100) : 0;
   $('progress-fill').style.width = pct + '%';
+  document.body.classList.toggle('training-active', trainingActive);
   const counter = $('section-counter');
   counter.textContent = `${completedSlots.size} / ${totalSlots}`;
   counter.style.opacity = totalSlots > 0 ? '1' : '0';
@@ -1113,46 +1402,9 @@ function clearSavedProgress() {
 }
 
 // ─────────────────────────────────────────────
-// CSV PARSER
+// BUILD CONTENT STRUCTURE FROM API ROWS
 // ─────────────────────────────────────────────
-function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  if (lines.length < 2) return [];
-  const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
-  const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    const vals = parseCSVLine(line);
-    const row  = {};
-    headers.forEach((h, idx) => { row[h] = (vals[idx] || '').trim(); });
-    rows.push(row);
-  }
-  return rows;
-}
-
-function parseCSVLine(line) {
-  const result = [];
-  let cur = '', inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
-      else { inQuotes = !inQuotes; }
-    } else if (ch === ',' && !inQuotes) {
-      result.push(cur); cur = '';
-    } else {
-      cur += ch;
-    }
-  }
-  result.push(cur);
-  return result;
-}
-
-// ─────────────────────────────────────────────
-// BUILD CONTENT STRUCTURE FROM CSV ROWS
-// ─────────────────────────────────────────────
-// SECTION GROUPING: CSV rows are grouped by section first, then by slot inside each section.
+// SECTION GROUPING: API rows are grouped by section first, then by slot inside each section.
 function buildStructure(rows) {
   const normalized = rows.map((r, idx) => ({
     ...r,
@@ -1194,8 +1446,9 @@ function buildCardsForSection(rows) {
     const first = slotRows[0];
 
     if (type === 'video') return { type: 'video', slot, youtubeId: first.youtube_id };
-    if (type === 'text') return { type: 'text', slot, header: first.header, body: first.body };
-    if (type === 'text_image') return { type: 'text_image', slot, header: first.header, body: first.body, imageUrl: first.image_url };
+    if (type === 'text') return { type: 'text', slot, header: first.header, body: first.body, bodyMobile: first.body_mobile || '' };
+    if (type === 'text_image') return { type: 'text_image', slot, header: first.header, body: first.body, bodyMobile: first.body_mobile || '', imageUrl: first.image_url };
+    if (type === 'categorize') return { type: 'categorize', slot, header: first.header, correctBlob: first.correct_blob, rationale: first.feedback || '' };
     if (type === 'question_image') {
       const distractors = [first.distractor_1, first.distractor_2, first.distractor_3, first.distractor_4].filter(d => d && d.trim());
       return { type: 'question_image', slot, stem: first.stem, correct: first.correct, distractors, feedback: first.feedback, showIdk: first.show_idk?.toLowerCase() === 'yes', imageUrl: first.image_url };
@@ -1225,6 +1478,8 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
 
+  const videoId = normalizeYouTubeVideoId(item.youtubeId);
+
   block.innerHTML = `
     <div class="section-label">
       <span class="section-num">Section ${sectionIndex + 1}</span>
@@ -1232,14 +1487,15 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
       <span class="section-type-badge">Video</span>
     </div>
     <div class="video-card">
+      ${videoId ? `
       <div class="video-wrapper">
         <iframe
-          src="https://www.youtube.com/embed/${item.youtubeId}?rel=0&modestbranding=1"
+          src="https://www.youtube.com/embed/${html(videoId)}?rel=0&modestbranding=1"
           title="Training video ${sectionIndex + 1}"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen>
         </iframe>
-      </div>
+      </div>` : `<div style="padding:24px 20px; color:var(--muted); font-style:italic;">Video unavailable.</div>`}
       <div class="video-footer">
         <span class="video-footer-label">Watch the video above, then click when you're done.</span>
         <button class="action-btn" id="video-done-${sectionIndex}">
@@ -1270,6 +1526,7 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
       youtubeId: item.youtubeId,
       watch_duration_ms: watchMs
     });
+    sendLiveEvent('video_completed', { slot: item.slot, watch_duration_ms: watchMs });
     doneBtn.disabled = true;
     doneBtn.textContent = '✓ Watched';
     doneBtn.style.background = '#2d7a4f';
@@ -1287,6 +1544,8 @@ function renderTextBlock(item, sectionIndex, onComplete) {
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
 
+  const bodyHtml = formatBodyText(resolveBody(item));
+
   block.innerHTML = `
     <div class="section-label">
       <span class="section-num">Section ${sectionIndex + 1}</span>
@@ -1294,8 +1553,8 @@ function renderTextBlock(item, sectionIndex, onComplete) {
       <span class="section-type-badge">Reading</span>
     </div>
     <div class="text-card">
-      <h2 class="content-header">${item.header}</h2>
-      <div class="content-body">${item.body}</div>
+      <h2 class="content-header">${html(item.header)}</h2>
+      <div class="content-body">${bodyHtml}</div>
     </div>
     <div class="continue-row show" id="continue-row-${sectionIndex}">
       <button class="action-btn" id="continue-btn-${sectionIndex}">
@@ -1331,6 +1590,8 @@ function renderTextImageBlock(item, sectionIndex, onComplete) {
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
 
+  const bodyHtml = formatBodyText(resolveBody(item));
+
   block.innerHTML = `
     <div class="section-label">
       <span class="section-num">Section ${sectionIndex + 1}</span>
@@ -1340,11 +1601,11 @@ function renderTextImageBlock(item, sectionIndex, onComplete) {
     <div class="text-image-card">
       <div class="text-image-inner">
         <div class="text-image-text">
-          <h2 class="content-header">${item.header}</h2>
-          <div class="content-body">${item.body}</div>
+          <h2 class="content-header">${html(item.header)}</h2>
+          <div class="content-body">${bodyHtml}</div>
         </div>
         <div class="text-image-img">
-          <img src="${item.imageUrl}" alt="" />
+          <img src="${html(item.imageUrl)}" alt="" />
         </div>
       </div>
     </div>
@@ -1410,7 +1671,7 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
           data-is-correct="${opt === q.correct ? 'true' : 'false'}"
           data-is-idk="false">
           <span class="option-letter">${letters[oi]}</span>
-          <span class="option-text">${opt}</span>
+          <span class="option-text">${html(opt)}</span>
         </button>
       </li>
     `).join('');
@@ -1433,7 +1694,7 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
     questionsHTML += `
       <div class="question-block${qi === 0 ? ' active' : ''}" data-qi="${qi}">
         <p class="question-progress">Question ${qi + 1} of ${item.questions.length}</p>
-        <p class="question-stem">${q.stem}</p>
+        <p class="question-stem">${html(q.stem)}</p>
         <ul class="options-list">${optionsHTML}</ul>
         <div class="feedback-box" id="fb-${sectionIndex}-${qi}">
           <span class="feedback-label" id="fb-label-${sectionIndex}-${qi}"></span>
@@ -1455,7 +1716,7 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
     </div>
     <div class="quiz-card">
       <div class="quiz-header">
-        <p class="quiz-header-label">Knowledge Check ${item.quizNum}</p>
+        <p class="quiz-header-label">Knowledge Check ${html(item.quizNum)}</p>
         <p class="quiz-header-sub">${item.questions.length} question${item.questions.length !== 1 ? 's' : ''} — select the best answer for each.</p>
       </div>
       ${questionsHTML}
@@ -1529,6 +1790,13 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
       is_first_attempt: isFirstAttempt,
       answer_duration_ms: answerMs
     });
+    if (isFirstAttempt) {
+      sendLiveEvent('question_answered', {
+        slot: item.slot, quiz_num: item.quizNum, question_num: q.questionNum,
+        is_correct: isCorrect && !isIdk, is_idk: isIdk,
+        answer_duration_ms: answerMs
+      });
+    }
 
     const qBlock = block.querySelector(`.question-block[data-qi="${qi}"]`);
     qBlock.querySelectorAll('.option-btn').forEach(b => {
@@ -1584,6 +1852,10 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
           correct_first: correct,
           total: item.questions.length,
           duration_ms: quizStartTime ? Date.now() - quizStartTime : null
+        });
+        sendLiveEvent('quiz_completed', {
+          slot: item.slot, quiz_num: item.quizNum,
+          correct_first: correct, total: item.questions.length
         });
 
         const continueRow = $(`continue-row-${sectionIndex}`);
@@ -1681,7 +1953,7 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
         data-is-correct="${opt === item.correct ? 'true' : 'false'}"
         data-is-idk="false">
         <span class="option-letter">${letters[oi]}</span>
-        <span class="option-text">${opt}</span>
+        <span class="option-text">${html(opt)}</span>
       </button>
     </li>
   `).join('');
@@ -1709,7 +1981,7 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
     <div class="question-image-card">
       <div class="question-image-inner">
         <div class="question-image-question">
-          <p class="question-stem">${item.stem}</p>
+          <p class="question-stem">${html(item.stem)}</p>
           <ul class="options-list">${optionsHTML}</ul>
           <div class="feedback-box" id="fb-${sectionIndex}-0">
             <span class="feedback-label" id="fb-label-${sectionIndex}-0"></span>
@@ -1717,7 +1989,7 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
           </div>
         </div>
         <div class="question-image-aside">
-          <img src="${item.imageUrl}" alt="" />
+          <img src="${html(item.imageUrl)}" alt="" />
         </div>
       </div>
     </div>
@@ -1794,6 +2066,10 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
       is_first_attempt: true,
       answer_duration_ms: answerMs
     });
+    sendLiveEvent('question_answered', {
+      slot: item.slot, is_correct: sectionState.isCorrect, is_idk: isIdk,
+      answer_duration_ms: answerMs
+    });
 
     block.querySelectorAll('.option-btn').forEach(b => {
       b.disabled = true;
@@ -1832,6 +2108,188 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
   }
 
   return block;
+}
+
+// ─────────────────────────────────────────────
+// RENDER CATEGORIZE BLOCK
+// ─────────────────────────────────────────────
+function renderCategorizeBlock(item, sectionIndex, onComplete) {
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+
+  const { mappings, categories, items } = getCategorizeMappingsAndCategories(item.correctBlob);
+  if (!mappings.length) {
+    block.innerHTML = `<div class="section-label"><span class="section-num">Section ${sectionIndex + 1}</span><div class="section-rule"></div><span class="section-type-badge">Categorize</span></div><div class="text-card"><p style="color:var(--muted);font-style:italic;">Categorize card is missing answer data.</p></div>`;
+    return block;
+  }
+
+  const state = quizStates[sectionIndex] || { submitted: false, placements: [], mobileSelected: '' };
+  quizStates[sectionIndex] = state;
+
+  const isMobile = window.matchMedia('(max-width: 700px)').matches;
+  const answerMap = new Map(mappings.map(m => [normalizeText(m.item), normalizeText(m.category)]));
+
+  // Stable shuffle: use saved order or create one
+  if (!state.itemOrder) state.itemOrder = [...items].sort(() => Math.random() - 0.5);
+  const orderedItems = state.itemOrder;
+  const placedMap = new Map((state.placements || []).map(p => [p.item, p.placedIn]));
+
+  const renderHTML = () => `
+    <div class="section-label">
+      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Categorize</span>
+    </div>
+    <div class="quiz-card">
+      <div class="quiz-header">
+        <p class="quiz-header-label">Categorize</p>
+        <p class="quiz-header-sub">${html(item.header || 'Place each item in the correct category.')}</p>
+      </div>
+      <div style="padding:16px 20px 0;">
+        <p class="categorize-helper">${isMobile ? 'Tap an item to select it, then tap a category to place it.' : 'Drag each item into the correct category.'}</p>
+        <div class="categorize-layout">
+          <div class="categorize-pool categorize-dropzone" data-category="pool">
+            <div class="categorize-pool-title">Items to place</div>
+            ${isMobile ? `<p class="categorize-mobile-hint" id="cat-hint-${sectionIndex}">${state.mobileSelected ? `Selected: ${html(state.mobileSelected)}` : 'No item selected.'}</p>` : ''}
+            <div class="categorize-items" id="cat-pool-${sectionIndex}">
+              ${orderedItems.filter(it => !placedMap.has(it)).map(it => `<div class="categorize-item${state.mobileSelected === it ? ' selected' : ''}" draggable="${state.submitted ? 'false' : 'true'}" data-item="${html(it)}">${html(it)}</div>`).join('')}
+            </div>
+          </div>
+          <div>
+            ${categories.map(cat => `
+              <div class="categorize-zone categorize-dropzone" data-category="${html(cat)}" style="margin-bottom:10px;">
+                <div class="categorize-zone-title">${html(cat)}</div>
+                <div class="categorize-items">
+                  ${orderedItems.filter(it => placedMap.get(it) === cat).map(it => `<div class="categorize-item${state.mobileSelected === it ? ' selected' : ''}${state.submitted ? (answerMap.get(normalizeText(it)) === normalizeText(cat) ? ' correct' : ' incorrect') : ''}" draggable="${state.submitted ? 'false' : 'true'}" data-item="${html(it)}">${html(it)}</div>`).join('')}
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>
+        ${!state.submitted ? `
+          <div class="categorize-controls">
+            <button type="button" class="action-btn secondary" id="cat-reset-${sectionIndex}">Reset</button>
+            <button type="button" class="action-btn" id="cat-submit-${sectionIndex}">Check Answer</button>
+          </div>` : ''}
+        <div class="categorize-feedback" id="cat-feedback-${sectionIndex}">
+          ${state.submitted ? buildCategorizeFeedback(state.wasCorrect, mappings, item.rationale) : ''}
+        </div>
+      </div>
+    </div>
+    ${state.submitted ? `
+    <div class="continue-row show" id="continue-row-${sectionIndex}">
+      <button class="action-btn" id="continue-btn-${sectionIndex}">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+      </button>
+    </div>` : `<div class="continue-row" id="continue-row-${sectionIndex}"></div>`}
+  `;
+
+  block.innerHTML = renderHTML();
+
+  if (state.submitted) {
+    block.querySelector(`#continue-btn-${sectionIndex}`)?.addEventListener('click', () => {
+      logEvent('continue_clicked', { slot: item.slot, sectionIndex });
+      onComplete();
+    }, { once: true });
+    return block;
+  }
+
+  const getAllItems = () => block.querySelectorAll('.categorize-item');
+  const poolEl = block.querySelector(`#cat-pool-${sectionIndex}`);
+  const hint = block.querySelector(`#cat-hint-${sectionIndex}`);
+  const dropzones = block.querySelectorAll('.categorize-dropzone');
+
+  const snapshot = () => {
+    state.placements = [...getAllItems()].map(node => ({
+      item: node.getAttribute('data-item') || '',
+      placedIn: node.closest('[data-category]')?.getAttribute('data-category') || 'pool'
+    })).filter(p => p.item && p.placedIn !== 'pool');
+    saveProgress();
+  };
+
+  const refreshHint = () => {
+    if (hint) hint.textContent = state.mobileSelected ? `Selected: ${state.mobileSelected}` : 'No item selected.';
+  };
+
+  const moveTo = (itemNode, category) => {
+    if (!itemNode) return;
+    if (category === 'pool') {
+      poolEl?.appendChild(itemNode);
+    } else {
+      const zone = [...block.querySelectorAll('.categorize-zone')].find(z => z.getAttribute('data-category') === category);
+      zone?.querySelector('.categorize-items')?.appendChild(itemNode);
+    }
+    itemNode.classList.remove('selected');
+    state.mobileSelected = '';
+    snapshot();
+    refreshHint();
+  };
+
+  let dragged = null;
+  getAllItems().forEach(node => {
+    node.addEventListener('dragstart', () => { dragged = node; });
+    node.addEventListener('dragend', () => { dragged = null; dropzones.forEach(z => z.classList.remove('categorize-drop-active')); });
+    if (isMobile) {
+      node.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        state.mobileSelected = state.mobileSelected === (node.dataset.item || '') ? '' : (node.dataset.item || '');
+        getAllItems().forEach(n => n.classList.toggle('selected', n.dataset.item === state.mobileSelected));
+        saveProgress();
+        refreshHint();
+      });
+    }
+  });
+
+  dropzones.forEach(zone => {
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('categorize-drop-active'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('categorize-drop-active'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault(); zone.classList.remove('categorize-drop-active');
+      if (dragged) moveTo(dragged, zone.getAttribute('data-category') || 'pool');
+    });
+    if (isMobile) {
+      zone.addEventListener('click', () => {
+        if (!state.mobileSelected) return;
+        const node = [...getAllItems()].find(n => n.getAttribute('data-item') === state.mobileSelected);
+        if (node) moveTo(node, zone.getAttribute('data-category') || 'pool');
+      });
+    }
+  });
+
+  block.querySelector(`#cat-reset-${sectionIndex}`)?.addEventListener('click', () => {
+    getAllItems().forEach(node => poolEl?.appendChild(node));
+    state.placements = []; state.mobileSelected = '';
+    saveProgress(); refreshHint();
+  });
+
+  block.querySelector(`#cat-submit-${sectionIndex}`)?.addEventListener('click', () => {
+    snapshot();
+    const allPlaced = orderedItems.every(it => state.placements.some(p => p.item === it));
+    if (!allPlaced) return;
+    const isCorrect = state.placements.every(p => answerMap.get(normalizeText(p.item)) === normalizeText(p.placedIn));
+    state.submitted = true;
+    state.wasCorrect = isCorrect;
+    totalQuestions++;
+    if (isCorrect) correctFirst++;
+    logEvent('categorize_answered', { slot: item.slot, sectionIndex, is_correct: isCorrect });
+    sendLiveEvent('categorize_answered', { slot: item.slot, is_correct: isCorrect });
+    saveProgress();
+    // Re-render from state
+    const fresh = renderCategorizeBlock(item, sectionIndex, onComplete);
+    block.replaceWith(fresh);
+  });
+
+  return block;
+}
+
+function buildCategorizeFeedback(isCorrect, mappings, rationale) {
+  const answerText = mappings.map(m => `${html(m.item)} → ${html(m.category)}`).join('<br>');
+  const box = isCorrect
+    ? `<div style="padding:12px 14px;border-radius:10px;background:var(--green-lt);border:1px solid var(--green);color:#14532d;"><strong>✓ Correct</strong></div>`
+    : `<div style="padding:12px 14px;border-radius:10px;background:var(--red-lt);border:1px solid var(--red);color:var(--red);"><strong>✗ Incorrect</strong><br>Correct placement:<br><br>${answerText}</div>`;
+  const rationaleBox = rationale ? `<div class="feedback-box show correct-fb" style="margin-top:8px;"><span class="feedback-label">Rationale</span>${html(rationale)}</div>` : '';
+  return box + rationaleBox;
 }
 
 // Warn before leaving while training is active
@@ -1895,7 +2353,6 @@ function renderTraining(structure, savedState = null) {
   // Manual review can open completed sections without changing this index.
   function collapseAllExcept(idx, updateProgressPointer = true) {
     sectionState.forEach((st, i) => { st.expanded = i === idx; updateSectionUI(i); });
-    currentSectionIndex = idx;
     if (updateProgressPointer) progressionSectionIndex = idx;
     updateProgress();
   }
@@ -1907,6 +2364,8 @@ function renderTraining(structure, savedState = null) {
     if (el) el.classList.add('revealed');
     sectionState[sectionIdx].visibleCards = Math.max(sectionState[sectionIdx].visibleCards, cardIdx + 1);
     revealedSlots = Math.max(revealedSlots, completedSlots.size + 1);
+    const card = allSections[sectionIdx]?.cards[cardIdx];
+    sendLiveEvent('card_started', { slot: card?.slot, card_type: card?.type });
   }
 
   allSections.forEach((section, sectionIdx) => {
@@ -1916,7 +2375,7 @@ function renderTraining(structure, savedState = null) {
     accordion.innerHTML = `
       <button class="section-toggle" type="button">
         <span class="section-title-wrap">
-          <strong>Section ${sectionIdx + 1}: ${section.title}</strong>
+          <strong>Section ${sectionIdx + 1}: ${html(section.title)}</strong>
           <span class="section-status">Not started</span>
         </span>
         <span class="section-chevron">▾</span>
@@ -1968,6 +2427,7 @@ function renderTraining(structure, savedState = null) {
       if (item.type === 'video') block = renderVideoBlock(item, cardIndex, onComplete);
       else if (item.type === 'text') block = renderTextBlock(item, cardIndex, onComplete);
       else if (item.type === 'text_image') block = renderTextImageBlock(item, cardIndex, onComplete);
+      else if (item.type === 'categorize') block = renderCategorizeBlock(item, cardIndex, onComplete);
       else if (item.type === 'question_image') block = renderQuestionImageBlock(item, cardIndex, onComplete);
       else block = renderQuizBlock(item, cardIndex, onComplete);
 
@@ -2036,6 +2496,11 @@ function showCompletion() {
     correct_first:   correctFirst,
     duration_ms:     elapsed
   });
+  sendLiveEvent('training_completed', {
+    total_questions: totalQuestions,
+    correct_first:   correctFirst,
+    duration_ms:     elapsed
+  });
 
   if (!$('btn-submit-final').dataset.bound) {
     $('btn-submit-final').addEventListener('click', submitSession);
@@ -2051,45 +2516,38 @@ async function submitSession() {
   status.textContent = '';
 
   const elapsed = sessionStart ? Date.now() - sessionStart : 0;
+  const activeSeconds = computeActiveSeconds();
+
   const payload = {
-    source:           'training',
-    participant_code: participantCode,
-    session_id:       sessionId,
-    session_start:    sessionStart ? new Date(sessionStart).toISOString() : null,
-    session_end:      now(),
-    duration_ms:      elapsed,
+    source:             'training',
+    participant_code:   participantCode,
+    session_id:         sessionId,
+    session_start:      sessionStart ? new Date(sessionStart).toISOString() : null,
+    session_end:        now(),
+    duration_ms:        elapsed,
     duration_formatted: formatDuration(elapsed),
-    total_questions:  totalQuestions,
-    correct_first:    correctFirst,
+    active_seconds:     Math.round(activeSeconds),
+    total_questions:    totalQuestions,
+    correct_first:      correctFirst,
     events
   };
 
   try {
-    const response = await fetch(SUBMIT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload),
-      redirect: 'follow'
+    await postToAppsScript(SUBMIT_URL, { action: 'submitSession', ...payload });
+    hasSuccessfulSubmission = true;
+    trainingActive = false;
+    document.body.classList.remove('training-active');
+    completionReached = true;
+    clearSavedProgress();
+    btn.textContent = '✓ Submitted';
+    btn.style.background = '#166534';
+    btn.disabled = true;
+    status.textContent = 'Session data submitted successfully. You may now close this window.';
+    logEvent('session_submitted', { ok: true });
+    sendLiveEvent('session_submitted', {
+      total_questions: totalQuestions,
+      correct_first:   correctFirst
     });
-
-    const text = await response.text();
-    let data = null;
-    try { data = JSON.parse(text); }
-    catch (_) { data = { ok: false, error: 'invalid_json_response', raw: text }; }
-
-    if (data && data.ok) {
-      hasSuccessfulSubmission = true;
-      trainingActive = false;
-      completionReached = true;
-      clearSavedProgress();
-      btn.textContent = '✓ Submitted';
-      btn.style.background = '#166534';
-      btn.disabled = true;
-      status.textContent = 'Session data submitted successfully. You may now close this window.';
-      logEvent('session_submitted', { ok: true, fileName: data.fileName });
-    } else {
-      throw new Error(data?.error || 'unknown_error');
-    }
   } catch (err) {
     btn.disabled = false;
     btn.textContent = 'Retry submission';
@@ -2182,9 +2640,13 @@ function offerDownload(payload) {
 // BOOT
 // ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  const gateForm = $('gate-form');
+  const gateForm  = $('gate-form');
   const codeInput = $('code-input');
   const gateError = $('gate-error');
+
+  // Active-time tracking — record timestamps on user interactions
+  document.addEventListener('click', () => interactionTimes.push(Date.now()), { passive: true });
+  document.addEventListener('keydown', () => interactionTimes.push(Date.now()), { passive: true });
 
   codeInput.focus();
 
@@ -2198,14 +2660,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Check for saved progress with this code
     const saved = loadSavedProgress();
-    let resuming = false;
-    if (saved && saved.participantCode === entered && saved.revealedSlots > 1) {
-      const doResume = confirm(
-        'You have a training session in progress.\n\nClick OK to resume where you left off, or Cancel to start over from the beginning.'
-      );
-      if (doResume) {
+    const hasSaved = saved && saved.participantCode === entered && saved.revealedSlots > 1;
+
+    const proceed = (resuming) => {
+      if (resuming) {
         participantCode = saved.participantCode;
         sessionId       = saved.sessionId;
         sessionStart    = saved.sessionStart;
@@ -2214,59 +2673,80 @@ document.addEventListener('DOMContentLoaded', () => {
         events          = saved.events || [];
         completionReached = !!saved.completionReached;
         hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
-        quizStates = saved.quizStates || {};
-        resuming        = true;
+        quizStates      = saved.quizStates || {};
       } else {
         clearSavedProgress();
+        participantCode = entered;
+        sessionId       = makeSessionId(entered);
+        sessionStart    = Date.now();
+        completionReached = false;
+        hasSuccessfulSubmission = false;
+        quizStates = {};
       }
+
+      $('gate').style.display    = 'none';
+      $('loading').style.display = 'flex';
+
+      if (!resuming) {
+      logEvent('access_granted', { participantCode });
+      sendLiveEvent('access_granted');
     }
 
-    if (!resuming) {
-      participantCode = entered;
-      sessionId       = makeSessionId(entered);
-      sessionStart    = Date.now();
-      completionReached = false;
-      hasSuccessfulSubmission = false;
-      quizStates = {};
-    }
+      loadContent(resuming ? saved : null);
+    };
 
-    $('gate').style.display    = 'none';
-    $('loading').style.display = 'flex';
-
-    if (!resuming) logEvent('access_granted', { participantCode });
-
-    try {
-      const res  = await fetch(CSV_PATH + '?nocache=' + Date.now());
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const text = await res.text();
-      const rows = parseCSV(text);
-      const structure = buildStructure(rows);
-
-      if (structure.length === 0) throw new Error('No content found in CSV.');
-
-      $('loading').style.display    = 'none';
-      $('training').style.display   = 'block';
-      $('participant-badge').textContent = `Participant: ${participantCode}`;
-
-      renderTraining(structure, resuming ? saved : null);
-
-      logEvent('content_loaded', { sections: structure.length, cards: structure.reduce((n, sec) => n + sec.cards.length, 0), resumed: resuming });
-
-    } catch (err) {
-      $('loading').style.display = 'none';
-      $('gate').style.display    = 'flex';
-      gateError.textContent = `Failed to load training content: ${err.message}. Please refresh the page.`;
-      logEvent('content_load_failed', { error: String(err.message) });
+    if (hasSaved) {
+      const modal = $('resume-modal');
+      modal.classList.add('open');
+      $('resume-continue-btn').addEventListener('click', () => { modal.classList.remove('open'); proceed(true); }, { once: true });
+      $('resume-restart-btn').addEventListener('click', () => { modal.classList.remove('open'); proceed(false); }, { once: true });
+    } else {
+      proceed(false);
     }
   });
 });
+
+async function loadContent(savedState) {
+  const gateError = $('gate-error');
+  try {
+    const data = await postToAppsScript(LOAD_URL, {
+      action: 'loadTraining',
+      code: participantCode
+    });
+
+    const rows = Array.isArray(data.rows) ? data.rows : [];
+    if (!rows.length) throw new Error('No content found for this module.');
+
+    const structure = buildStructure(rows);
+    if (!structure.length) throw new Error('No sections could be built from the content.');
+
+    $('loading').style.display  = 'none';
+    $('training').style.display = 'block';
+    $('participant-badge').textContent = `Participant: ${participantCode}`;
+
+    renderTraining(structure, savedState);
+
+    // Fire card_started for card 0 of section 0 on a fresh session —
+    // it's never passed through revealCard since it's revealed during init.
+    if (!savedState) {
+      const firstCard = structure[0]?.cards[0];
+      if (firstCard) sendLiveEvent('card_started', { slot: firstCard.slot, card_type: firstCard.type });
+    }
+
+    logEvent('content_loaded', {
+      sections: structure.length,
+      cards: structure.reduce((n, sec) => n + sec.cards.length, 0),
+      resumed: !!savedState
+    });
+
+  } catch (err) {
+    $('loading').style.display = 'none';
+    $('gate').style.display    = 'flex';
+    gateError.textContent = `Failed to load training content: ${err.message}. Please refresh the page.`;
+    logEvent('content_load_failed', { error: String(err.message) });
+  }
+}
 </script>
 
 </body>
-<footer style="text-align:center; padding: 12px 24px 24px; font-size: 0.72rem; color: var(--muted); font-family: var(--sans);">
-  Last updated: <span id="last-updated"></span>
-</footer>
-<script>
-  document.getElementById('last-updated').textContent = document.lastModified;
-</script>
 </html>
