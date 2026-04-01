@@ -1172,6 +1172,7 @@
 // CONFIG
 // ─────────────────────────────────────────────
 const API_URL = 'https://script.google.com/macros/s/AKfycbwsRmerE4CnZIIQ7F65yBo123VPl0oXyEhtJHZPuWhc5FElSKaJj5HSc-PegJIv5-u52g/exec';
+const APP_VERSION = '2026-04-01-a';
 
 // ─────────────────────────────────────────────
 // STATE
@@ -1210,7 +1211,7 @@ function makeSessionId(code) {
 }
 
 function logEvent(type, data = {}) {
-  events.push({ t: now(), type, participant: participantCode, session: sessionId, ...data });
+  events.push({ t: now(), type, participant: participantCode, session: sessionId, app_version: APP_VERSION, ...data });
 }
 
 function markInteraction(ts = Date.now()) {
@@ -2719,6 +2720,7 @@ async function submitSession() {
   const payload = {
     action:           'submitSession',
     source:           'training',
+    app_version:      APP_VERSION,
     participant_code: participantCode,
     session_id:       sessionId,
     session_start:    sessionStart ? new Date(sessionStart).toISOString() : null,
