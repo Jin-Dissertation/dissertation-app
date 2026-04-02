@@ -1936,7 +1936,44 @@ function buildStructure(rows) {
       cards: buildCardsForSection(section.rows)
     }));
 
-  return sections;
+  return flattenMultiQuestionCards(sections);
+}
+
+function flattenMultiQuestionCards(structure) {
+  return structure.map(section => {
+    const flatCards = [];
+
+    section.cards.forEach(card => {
+      if (card && card.type === 'quiz' && Array.isArray(card.questions) && card.questions.length > 1) {
+        card.questions.forEach((q, idx) => {
+          flatCards.push({
+            ...card,
+            type: 'quiz_single',
+            questions: [q],
+            quizSeriesIndex: idx + 1,
+            quizSeriesSize: card.questions.length,
+            quizQuestion: q
+          });
+        });
+      } else if (card && card.type === 'quiz' && Array.isArray(card.questions) && card.questions.length === 1) {
+        flatCards.push({
+          ...card,
+          type: 'quiz_single',
+          questions: [card.questions[0]],
+          quizSeriesIndex: 1,
+          quizSeriesSize: 1,
+          quizQuestion: card.questions[0]
+        });
+      } else {
+        flatCards.push(card);
+      }
+    });
+
+    return {
+      ...section,
+      cards: flatCards
+    };
+  });
 }
 
 function buildCardsForSection(rows) {
@@ -2204,70 +2241,54 @@ function renderQuizBlock(item, cardIndex, onComplete, onContinue = onComplete) {
   block.id = `section-${sectionIndex}`;
 
   const letters = ['A','B','C','D','E'];
+  const q = Array.isArray(item.questions) ? item.questions[0] : item.quizQuestion;
+  if (!q) {
+    return renderIncompleteCard(item, cardIndex, onComplete, 'Quiz card is missing a question.');
+  }
 
   const sectionState = quizStates[sectionIndex] || {
-    currentQi: 0,
-    completed: false,
-    questions: [],
-    optionOrders: []
+    answered: false,
+    selectedText: null,
+    isCorrect: false,
+    isIdk: false,
+    optionOrder: null,
+    completed: false
   };
   quizStates[sectionIndex] = sectionState;
 
-  let questionsHTML = '';
-  item.questions.forEach((q, qi) => {
-    let allOptions = sectionState.optionOrders[qi];
-    if (!allOptions || allOptions.length === 0) {
-      const shuffledDistractors = shuffleArray(q.distractors);
-      const insertPos = Math.floor(Math.random() * (shuffledDistractors.length + 1));
-      shuffledDistractors.splice(insertPos, 0, q.correct);
-      allOptions = shuffledDistractors;
-      sectionState.optionOrders[qi] = allOptions;
-    }
+  if (!sectionState.optionOrder || sectionState.optionOrder.length === 0) {
+    const shuffledDistractors = shuffleArray(q.distractors || []);
+    const insertPos = Math.floor(Math.random() * (shuffledDistractors.length + 1));
+    shuffledDistractors.splice(insertPos, 0, q.correct);
+    sectionState.optionOrder = shuffledDistractors;
+  }
 
-    let optionsHTML = allOptions.map((opt, oi) => `
+  const allOptions = sectionState.optionOrder;
+  let optionsHTML = allOptions.map((opt, oi) => `
+    <li>
+      <button class="option-btn"
+        data-oi="${oi}"
+        data-is-correct="${opt === q.correct ? 'true' : 'false'}"
+        data-is-idk="false">
+        <span class="option-letter">${letters[oi]}</span>
+        <span class="option-text">${html(opt)}</span>
+      </button>
+    </li>
+  `).join('');
+
+  if (q.showIdk) {
+    optionsHTML += `
       <li>
-        <button class="option-btn"
-          data-qi="${qi}" data-oi="${oi}"
-          data-is-correct="${opt === q.correct ? 'true' : 'false'}"
-          data-is-idk="false">
-          <span class="option-letter">${letters[oi]}</span>
-          <span class="option-text">${html(opt)}</span>
+        <button class="option-btn idk-option"
+          data-oi="${allOptions.length}"
+          data-is-correct="false"
+          data-is-idk="true">
+          <span class="option-letter">?</span>
+          <span class="option-text">I don't know</span>
         </button>
       </li>
-    `).join('');
-
-    if (q.showIdk) {
-      const idkIdx = allOptions.length;
-      optionsHTML += `
-        <li>
-          <button class="option-btn idk-option"
-            data-qi="${qi}" data-oi="${idkIdx}"
-            data-is-correct="false"
-            data-is-idk="true">
-            <span class="option-letter">?</span>
-            <span class="option-text">I don't know</span>
-          </button>
-        </li>
-      `;
-    }
-
-    questionsHTML += `
-      <div class="question-block${qi === 0 ? ' active' : ''}" data-qi="${qi}">
-        <p class="question-progress">Question ${qi + 1} of ${item.questions.length}</p>
-        <p class="question-stem">${html(q.stem)}</p>
-        <ul class="options-list">${optionsHTML}</ul>
-        <div class="feedback-box">
-          <span class="feedback-label"></span>
-          <span class="feedback-text"></span>
-          <div class="feedback-actions">
-            <button class="feedback-next-btn">
-              ${qi < item.questions.length - 1 ? 'Next question →' : 'Continue →'}
-            </button>
-          </div>
-        </div>
-      </div>
     `;
-  });
+  }
 
   block.innerHTML = `
     <div class="section-label">
@@ -2277,15 +2298,14 @@ function renderQuizBlock(item, cardIndex, onComplete, onContinue = onComplete) {
     </div>
     <div class="quiz-card">
       <div class="quiz-header">
-        <p class="quiz-header-label">Knowledge Check ${html(item.quizNum)}</p>
-        <p class="quiz-header-sub">${item.questions.length} question${item.questions.length !== 1 ? 's' : ''} — select the best answer for each.</p>
+        <p class="quiz-header-label">Knowledge Check</p>
       </div>
-      ${questionsHTML}
-      <div class="quiz-complete">
-        <span class="quiz-complete-icon">✓</span>
-        <div class="quiz-complete-text">
-          <strong>Knowledge check complete</strong>
-          <span class="quiz-score">Review any feedback above before continuing.</span>
+      <div class="question-block active" data-qi="0">
+        <p class="question-stem">${html(q.stem)}</p>
+        <ul class="options-list">${optionsHTML}</ul>
+        <div class="feedback-box">
+          <span class="feedback-label"></span>
+          <span class="feedback-text"></span>
         </div>
       </div>
     </div>
@@ -2299,8 +2319,6 @@ function renderQuizBlock(item, cardIndex, onComplete, onContinue = onComplete) {
     </div>
   `;
 
-  let currentQi  = sectionState.currentQi || 0;
-  let qCorrectFirst = new Array(item.questions.length).fill(null);
   let quizStartTime = null;
 
   const observer = new IntersectionObserver(entries => {
@@ -2316,162 +2334,107 @@ function renderQuizBlock(item, cardIndex, onComplete, onContinue = onComplete) {
     if (!btn || btn.disabled) return;
     markInteraction();
 
-    const qi        = parseInt(btn.dataset.qi, 10);
     const isCorrect = btn.dataset.isCorrect === 'true';
-    const isIdk     = btn.dataset.isIdk === 'true';
-    const q         = item.questions[qi];
-    const answerMs  = quizStartTime ? Date.now() - quizStartTime : null;
+    const isIdk = btn.dataset.isIdk === 'true';
+    const answerMs = quizStartTime ? Date.now() - quizStartTime : null;
 
-    const existingAnswer = sectionState.questions[qi];
-    const isFirstAttempt = qCorrectFirst[qi] === null && !existingAnswer;
+    const isFirstAttempt = !sectionState.answered;
     if (isFirstAttempt) {
-      qCorrectFirst[qi] = isCorrect && !isIdk;
       totalQuestions++;
       if (isCorrect && !isIdk) correctFirst++;
     }
 
-    sectionState.questions[qi] = {
-      selectedText: isIdk ? 'I don\'t know' : btn.querySelector('.option-text').textContent,
-      isCorrect: isCorrect && !isIdk,
-      isIdk
-    };
-    sectionState.currentQi = currentQi;
+    sectionState.answered = true;
+    sectionState.selectedText = isIdk ? "I don't know" : btn.querySelector('.option-text').textContent;
+    sectionState.isCorrect = isCorrect && !isIdk;
+    sectionState.isIdk = isIdk;
+    sectionState.completed = true;
     saveProgress();
 
     logEvent('question_answered', {
-      slot:        item.slot,
+      slot: item.slot,
       sectionIndex,
-      quizNum:     item.quizNum,
+      quizNum: item.quizNum,
       questionNum: q.questionNum,
-      qi,
-      stem:        q.stem,
-      selected:    isIdk ? 'I don\'t know' : btn.querySelector('.option-text').textContent,
-      correct:     q.correct,
-      is_correct:  isCorrect && !isIdk,
-      is_idk:      isIdk,
+      stem: q.stem,
+      selected: sectionState.selectedText,
+      correct: q.correct,
+      is_correct: sectionState.isCorrect,
+      is_idk: isIdk,
       is_first_attempt: isFirstAttempt,
       answer_duration_ms: answerMs
     });
 
-    const qBlock = block.querySelector(`.question-block[data-qi="${qi}"]`);
+    const qBlock = block.querySelector('.question-block');
     qBlock.querySelectorAll('.option-btn').forEach(b => {
       b.disabled = true;
       if (b === btn) {
         b.classList.add(isCorrect && !isIdk ? 'correct' : 'incorrect');
       } else if (b.dataset.isCorrect === 'true') {
-        if (!isCorrect || isIdk) b.classList.add('correct');
-        else b.classList.add('dimmed');
+        b.classList.add(!isCorrect || isIdk ? 'correct' : 'dimmed');
       } else {
         b.classList.add('dimmed');
       }
     });
 
-    const fbBox   = qBlock.querySelector('.feedback-box');
+    const fbBox = qBlock.querySelector('.feedback-box');
     const fbLabel = qBlock.querySelector('.feedback-label');
-    const fbText  = qBlock.querySelector('.feedback-text');
-    const fbNext  = qBlock.querySelector('.feedback-next-btn');
-
+    const fbText = qBlock.querySelector('.feedback-text');
     if (isCorrect && !isIdk) {
-      fbBox.className   = 'feedback-box show correct-fb';
-      fbLabel.textContent = '✓ Correct';
-      fbText.textContent  = q.feedback || 'Well done!';
-    } else {
-      fbBox.className   = 'feedback-box show incorrect-fb';
-      fbLabel.textContent = isIdk ? 'Here\'s the explanation:' : '✗ Not quite';
-      fbText.textContent  = q.feedback || `The correct answer is: ${q.correct}`;
-    }
-
-    fbNext.classList.add('show');
-    const nextTarget = qi < item.questions.length - 1
-      ? fbNext
-      : block.querySelector('.continue-row') || block.querySelector('.quiz-complete') || fbNext;
-    requestAnimationFrame(() => {
-      scrollToEl(nextTarget, 100);
-    });
-
-    fbNext.addEventListener('click', () => {
-      markInteraction();
-      logEvent('feedback_dismissed', { slot: item.slot, sectionIndex, qi });
-
-      if (qi < item.questions.length - 1) {
-        qBlock.classList.remove('active');
-        qBlock.classList.add('answered');
-        currentQi = qi + 1;
-        sectionState.currentQi = currentQi;
-        const nextBlock = block.querySelector(`.question-block[data-qi="${currentQi}"]`);
-        nextBlock.classList.add('active');
-        saveProgress();
-        scrollToEl(nextBlock, 100);
-      } else {
-        const correct = qCorrectFirst.filter(Boolean).length;
-        const scoreEl = block.querySelector('.quiz-score');
-        scoreEl.textContent = `You got ${correct} of ${item.questions.length} correct on the first attempt.`;
-        block.querySelector('.quiz-complete').classList.add('show');
-
-        logEvent('quiz_completed', {
-          slot: item.slot, sectionIndex,
-          quizNum: item.quizNum,
-          correct_first: correct,
-          total: item.questions.length,
-          duration_ms: quizStartTime ? Date.now() - quizStartTime : null
-        });
-
-        const continueRow = block.querySelector('.continue-row');
-        continueRow.classList.add('show');
-        sectionState.completed = true;
-        sectionState.currentQi = item.questions.length - 1;
-        saveProgress();
-        scrollToEl(continueRow, 100);
-      }
-    }, { once: true });
-  });
-
-  item.questions.forEach((q, qi) => {
-    const prior = sectionState.questions[qi];
-    if (!prior) return;
-    const qBlock = block.querySelector(`.question-block[data-qi="${qi}"]`);
-    qBlock.classList.remove('active');
-    qBlock.classList.add('answered');
-
-    qBlock.querySelectorAll('.option-btn').forEach(b => {
-      b.disabled = true;
-      const text = b.querySelector('.option-text')?.textContent;
-      const isSelected = prior.isIdk ? b.dataset.isIdk === 'true' : text === prior.selectedText;
-      const isCorrect = b.dataset.isCorrect === 'true';
-      if (isSelected) {
-        b.classList.add(prior.isCorrect ? 'correct' : 'incorrect');
-      } else if (isCorrect) {
-        b.classList.add(prior.isCorrect ? 'dimmed' : 'correct');
-      } else {
-        b.classList.add('dimmed');
-      }
-    });
-
-    const fbBox   = qBlock.querySelector('.feedback-box');
-    const fbLabel = qBlock.querySelector('.feedback-label');
-    const fbText  = qBlock.querySelector('.feedback-text');
-    const fbNext  = qBlock.querySelector('.feedback-next-btn');
-    if (prior.isCorrect) {
       fbBox.className = 'feedback-box show correct-fb';
       fbLabel.textContent = '✓ Correct';
       fbText.textContent = q.feedback || 'Well done!';
     } else {
       fbBox.className = 'feedback-box show incorrect-fb';
-      fbLabel.textContent = prior.isIdk ? 'Here\'s the explanation:' : '✗ Not quite';
+      fbLabel.textContent = isIdk ? "Here's the explanation:" : '✗ Not quite';
       fbText.textContent = q.feedback || `The correct answer is: ${q.correct}`;
     }
-    if (qi >= currentQi && !sectionState.completed) {
-      qBlock.classList.remove('answered');
-      qBlock.classList.add('active');
-      fbNext.classList.add('show');
-      requestAnimationFrame(() => {
-        scrollToEl(qBlock, 100);
-      });
-    }
+
+    logEvent('quiz_completed', {
+      slot: item.slot,
+      sectionIndex,
+      quizNum: item.quizNum,
+      correct_first: isCorrect && !isIdk ? 1 : 0,
+      total: 1,
+      duration_ms: quizStartTime ? Date.now() - quizStartTime : null
+    });
+
+    const continueRow = block.querySelector('.continue-row');
+    continueRow.classList.add('show');
+    saveProgress();
+    scrollToEl(continueRow, 100);
   });
 
-  if (sectionState.completed) {
-    block.querySelector('.quiz-complete').classList.add('show');
+  if (sectionState.answered) {
+    const qBlock = block.querySelector('.question-block');
+    qBlock.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      const text = b.querySelector('.option-text')?.textContent;
+      const isSelected = sectionState.isIdk
+        ? b.dataset.isIdk === 'true'
+        : text === sectionState.selectedText;
+      const isCorrectOpt = b.dataset.isCorrect === 'true';
+      if (isSelected) {
+        b.classList.add(sectionState.isCorrect ? 'correct' : 'incorrect');
+      } else if (isCorrectOpt) {
+        b.classList.add(sectionState.isCorrect ? 'dimmed' : 'correct');
+      } else {
+        b.classList.add('dimmed');
+      }
+    });
+
+    const fbBox = qBlock.querySelector('.feedback-box');
+    const fbLabel = qBlock.querySelector('.feedback-label');
+    const fbText = qBlock.querySelector('.feedback-text');
+    if (sectionState.isCorrect) {
+      fbBox.className = 'feedback-box show correct-fb';
+      fbLabel.textContent = '✓ Correct';
+      fbText.textContent = q.feedback || 'Well done!';
+    } else {
+      fbBox.className = 'feedback-box show incorrect-fb';
+      fbLabel.textContent = sectionState.isIdk ? "Here's the explanation:" : '✗ Not quite';
+      fbText.textContent = q.feedback || `The correct answer is: ${q.correct}`;
+    }
     block.querySelector('.continue-row').classList.add('show');
   }
 
@@ -3163,6 +3126,7 @@ function renderTraining(structure, savedState = null) {
       else if (item.type === 'text_image') block = renderTextImageBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'question_image') block = renderQuestionImageBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'categorize') block = renderCategorizeBlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'quiz' || item.type === 'quiz_single') block = renderQuizBlock(item, cardIndex, onComplete, onContinue);
       else block = renderQuizBlock(item, cardIndex, onComplete, onContinue);
       block.dataset.cardIndex = String(cardIndex);
 
@@ -3403,6 +3367,8 @@ function buildCardResponseValues() {
             value = `${correctFirstCount}/${totalQuestionCount}`;
           }
         }
+      } else if (card?.type === 'quiz_single') {
+        if (state.answered) value = state.isCorrect ? 1 : 0;
       } else if (card?.type === 'video' || card?.type === 'text' || card?.type === 'text_image') {
         value = '';
       } else {
