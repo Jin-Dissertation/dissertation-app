@@ -1640,21 +1640,8 @@ const STORAGE_KEY = 'training_progress_v1';
 function saveProgress() {
   if (!participantCode) return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      participantCode,
-      sessionId,
-      sessionStart,
-      revealedSlots,
-      completedSlotIndices: [...completedSlots],
-      totalQuestions,
-      correctFirst,
-      events,
-      completionReached,
-      hasSuccessfulSubmission,
-      quizStates,
-      interactionTimes,
-      cardTimingState
-    }));
+    const snapshot = buildProgressSnapshot();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
   } catch (_) {}
 }
 
@@ -3003,6 +2990,8 @@ async function submitSession() {
     item_ms_map:      itemMsMap,
     item_meta:        itemMeta,
     item_count:       itemValues.length,
+    progress_json:    buildProgressSnapshot(),
+    progress_saved_at: now(),
     events
   };
 
@@ -3098,6 +3087,24 @@ function buildCardMsValues() {
   return { itemMsValues, itemMsMap };
 }
 
+function buildProgressSnapshot() {
+  return {
+    participantCode,
+    sessionId,
+    sessionStart,
+    revealedSlots,
+    completedSlotIndices: [...completedSlots],
+    totalQuestions,
+    correctFirst,
+    events,
+    interactionTimes,
+    completionReached,
+    hasSuccessfulSubmission,
+    quizStates,
+    cardTimingState
+  };
+}
+
 function buildLiveSessionSnapshot(statusOverride = 'in_progress') {
   const { itemValues, itemMap, itemMeta } = buildCardResponseValues();
   const { itemMsValues, itemMsMap } = buildCardMsValues();
@@ -3113,6 +3120,8 @@ function buildLiveSessionSnapshot(statusOverride = 'in_progress') {
     status: statusOverride,
     app_version: APP_VERSION,
     content_version: CONTENT_VERSION,
+    progress_json: buildProgressSnapshot(),
+    progress_saved_at: now(),
     item_values: itemValues,
     item_ms_values: itemMsValues,
     item_map: itemMap,
