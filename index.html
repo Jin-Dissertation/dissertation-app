@@ -2902,7 +2902,6 @@ const PROMPT_META = [
       const sessionStart = localStorage.getItem(KEYS.sessionStartTime) || "";
       const stage = getStage();
       const ctx = getContext();
-      const timerState = getCurrentTimerState();
       const events = loadJSON(KEYS.events, []);
       const llmResponse = ($("llmResponse")?.value || "").trim();
       const sessionNotes = ($("sessionNotes")?.value || "").trim();
@@ -2943,9 +2942,6 @@ const PROMPT_META = [
         llm_response_present: !!llmResponse,
         session_notes_present: !!sessionNotes,
         ...getAudioMetadata(),
-        timer_elapsed_ms: timerState.elapsedMs,
-        timer_elapsed_mmss: timerState.elapsedMmss,
-        timer_paused: timerState.timerPaused,
         active_seconds: computeActiveSeconds(interactionTimes),
         event_count: events.length,
         device_label: getCompactDeviceLabel(),
@@ -3009,7 +3005,6 @@ const PROMPT_META = [
       const modelUsed = localStorage.getItem(KEYS.modelUsed) || "";
       const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
       const llmExpectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-      const timerState = getCurrentTimerState();
       events.push({
         t: nowIso(),
         type,
@@ -3019,9 +3014,6 @@ const PROMPT_META = [
         modelUsed,
         llmProduct,
         llmExpectedChoice,
-        elapsed_ms: timerState.elapsedMs,
-        elapsed_mmss: timerState.elapsedMmss,
-        timer_paused: timerState.timerPaused,
         ...data
       });
       saveJSON(KEYS.events, events);
@@ -4658,9 +4650,6 @@ const PROMPT_META = [
         final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
         llm_response: llmResponse,
         session_notes: sessionNotes,
-        timer_elapsed_ms: timerState.elapsedMs,
-        timer_elapsed_mmss: timerState.elapsedMmss,
-        timer_paused: timerState.timerPaused,
         active_seconds: computeActiveSeconds(interactionTimes),
         duration_ms: elapsed,
         duration_formatted: formatElapsed(elapsed),
