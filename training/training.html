@@ -1302,7 +1302,7 @@
       <h2 class="completion-title">Training Complete</h2>
       <p class="completion-sub">Thank you for completing this module.</p>
       <p class="completion-note">Your session has been recorded. You may now close this browser window.</p>
-      <p class="completion-contact">If you have any remaining questions, please contact <a href="/cdn-cgi/l/email-protection#0276686b6c4261706b6f716d6c2c77632c676677"><span class="__cf_email__" data-cfemail="b9cdd3d0d7f9dacbd0d4cad6d797ccd897dcddcc">[email&#160;protected]</span></a>.</p>
+      <p class="completion-contact">If you have any remaining questions, please contact <a href="mailto:tjin@crimson.ua.edu">tjin@crimson.ua.edu</a>.</p>
     </div>
   </div>
 
@@ -1329,7 +1329,7 @@
   <img id="img-lightbox-img" src="" alt="" />
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 // ─────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────
@@ -1373,6 +1373,7 @@ let setGateLoading = null;
 function returnToGate() {
   $('training').style.display = 'none';
   $('loading').style.display = 'none';
+  $('completion').style.display = 'none';
   $('gate').style.display = 'flex';
   setTrainingMode(false);
 
@@ -3292,6 +3293,9 @@ async function handleSaveAndExit() {
   } catch (err) {
     console.warn('Save and exit failed', err);
     alert('Unable to save your place right now. Please try again.');
+    if (typeof setGateLoading === 'function') {
+      setGateLoading(false);
+    }
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -3377,6 +3381,7 @@ function buildProgressSnapshot() {
     completedSlotIndices: [...completedSlots],
     totalQuestions,
     correctFirst,
+    events,
     interactionTimes,
     completionReached,
     hasSuccessfulSubmission,
@@ -3553,6 +3558,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   gateForm.addEventListener('submit', async e => {
     e.preventDefault();
+    if (typeof setGateLoading === 'function' && !gateSubmitBtn?.disabled) {
+      setGateLoading(false);
+    }
     if (gateSubmitBtn?.disabled) return;
     gateError.textContent = '';
     setGateLoading(true, 'Checking');
@@ -3653,4 +3661,15 @@ document.addEventListener('DOMContentLoaded', () => {
       $('gate').style.display = 'flex';
       setTrainingMode(false);
       focusCodeInput();
-      gateError.textContent = `Failed to load training content: ${err.messag
+      gateError.textContent = `Failed to load training content: ${err.message}. Please refresh the page.`;
+      logEvent('content_load_failed', { error: String(err.message) });
+    }
+  });
+});
+</script>
+
+<script>
+  document.getElementById('last-updated').textContent = document.lastModified;
+</script>
+</body>
+</html>
