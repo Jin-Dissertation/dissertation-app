@@ -2299,13 +2299,16 @@
 
     const ACCESS_VERIFY_URL = "https://script.google.com/macros/s/AKfycbzlp6l70YV51i-jlnZr6_N1DVV_efWD3nf9n2aqvUPN7u92e5R2ZQ0zZbeCosSx2CZ78g/exec";
 
-    // Apps Script endpoint for background autosave events.
-    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbxL2vkcsWNQVRDug2rnZU01eQesd4S7QXY-3Qtm7ZeWgzTNw7jjvdYxT-DzMjD9gMTj/exec";
-    const REMOTE_CONFIG_URL = "https://script.google.com/macros/s/AKfycbw5i8StkIF_S0WxpAa4PQVZxzrsMTNBCQSP_g3MVmHNCHI0_DRTqDc_A1wNUT3TzWQ1pA/exec";
+    // Unified Apps Script backend endpoint for AQG (config + live updates + final submit).
+    const AQG_API_URL = "https://script.google.com/macros/s/AKfycbxL2vkcsWNQVRDug2rnZU01eQesd4S7QXY-3Qtm7ZeWgzTNw7jjvdYxT-DzMjD9gMTj/exec";
+    const REQUEST_TIMEOUT_MS = 15000;
+    const LIVE_UPDATE_DEBOUNCE_MS = 400;
+    const ACTIVE_IDLE_CAP_MS = 180000;
 
     let remoteConfig = {
       llmOptions: {},
-      prompts: {}
+      prompts: {},
+      generatedAt: ""
     };
 
     // Paste your webhook URL into LLM_MISMATCH_ALERT_WEBHOOK to receive immediate mismatch alerts.
@@ -2412,63 +2415,6 @@ const PROMPT_META = [
   }
 ];
 
-/* ==========================================
-   MODEL-SPECIFIC PROMPTS
-   Search for:
-   - PROMPT: STARTER
-   - PROMPT: NEXT_QUESTION
-   - PROMPT: FINAL_PROMPT
-   ========================================== */
-// Fallback prompts (flat — remote config is primary). All model variants identical.
-const PROMPTS_FALLBACK = {
-  starter: `I am a nursing school instructor and would like your help writing multiple-choice questions for my class. Consider the following:
-
-1. Class Context (e.g., subject, course objectives, level, etc.): {{COURSE}}
-2. Content Area (specific topic or unit): {{AREA}}
-3. Desired Number of Questions: {{QUESTION_COUNT}}
-4. Additional parameters to consider (if blank, ignore): {{NOTES_LINE}}
-
-I may attach documents (e.g., lecture notes, flashcards, readings) to guide question creation. Use them as a general reference, but do not rely on them exclusively. Try to create a question set that reflects the concepts within the content area that are most relevant to NCLEX and nursing practice and follows best practices for writing high-quality multiple-choice questions.
-
-When outputting the questions, do not use any interactive widgets, quizzes, or UI tools. Whenever a question is output, I want it presented strictly in text form and in the following order (do not include the labels in your output):
-Question Name
-Question Stem
-A. The correct answer.
-B. The first distractor.
-C. The second distractor.
-D. The third distractor.
-
-You will create 1 question at a time. Pause after each one so I can give feedback on the overall question set or on the individual question just generated. Once I respond, adjust if requested, or continue with the next question, until I have reached the goal number of questions.
-
-For now, respond with a table that outlines the plan for all of the questions with these headings: #; subtopic; key concept. I will let you know if I would like any adjustments.`,
-  next_question: `This question is acceptable. Please add it to the working list of questions and proceed to the next one.`,
-  replace_question: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic. Number each question clearly (1–5) before the question name so it is easy to reference which version should be kept.`,
-  correct_answer_options: `Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors. Number each option clearly (1–5) so it is easy to reference which version should be kept.`,
-  distractor_options: `I want to improve the distractors for this question. If any of the 3 original distractors are obviously different in length or complexity from the correct answer, please revise them so they better match the correct answer. Please list those 3 distractors, then add 10 additional plausible distractors that are similar in length and complexity to the correct answer. Present all distractors as a single numbered list (1–13) so I can easily indicate which ones I would like to keep.`,
-  pause_review: `Pause and show all questions generated so far in this session. Display them in a compact list with a numbered title, the question stem on the next line, and the answer options listed below using capital letters (A–D). Place the correct answer first and bold it.`,
-  rebalance_content: `Pause and audit how the questions are balanced between potential subtopics. Please break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance.`,
-  core_or_peripheral: `Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
-Core: The most common, obvious, first-line, or 'go-to' fact or intervention.
-Peripheral: A less obvious but still clinically important area.
-
-Provide the results in a table with the following columns and content:
-1. # -- Question Number
-2. Focus -- Core or Peripheral
-3. Topic Covered -- 2–4 word description
-4. Suggestion - If the question is core, suggest one peripheral angle within the same content area that has not yet been tested.`,
-  rebalance_question_type: `I would like to pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I rebalance the types of questions.`,
-  difficulty_audit: `Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix.`,
-  blooms_taxonomy_audit: `Please pause and audit my current MCQ set for Bloom’s taxonomy alignment. For each question, assign the primary level (Remember, Understand, Apply, Analyze, Evaluate, or Create). Show me the counts and percentages in each category. Then, suggest underrepresented levels and give me ideas for how to add or revise questions to cover them.`,
-  final_prompt: `Pause and show all questions that have been accepted and finalized so far in this session. Do not include any question that was just generated for consideration but has not yet been accepted or added to the set.
-
-Display the questions in a list with:
-A numbered title
-The question stem on the next line
-The answer options listed below using capital letters (A–D)
-
-Place the correct answer first and bold it.`,
-};
-
     // -----------------------------
     // Storage keys
     // -----------------------------
@@ -2553,18 +2499,71 @@ Place the correct answer first and bold it.`,
     function getPromptText(promptId) {
       const prompt = getPromptDefinition(promptId);
       if (prompt?.prompt_body) return prompt.prompt_body;
-      return getPromptBody(promptId, PROMPTS_FALLBACK[promptId] || "");
+      const llmKey = getSelectedLlmKey();
+      const msg = `Missing required prompt "${promptId}" for "${llmKey}". Please refresh and contact the study team if this continues.`;
+      console.error("AQG prompt missing", {
+        promptId,
+        llmKey,
+        availablePromptIds: Object.keys(remoteConfig?.prompts?.[llmKey] || {}),
+        configGeneratedAt: remoteConfig.generatedAt || ""
+      });
+      showExistingErrorToast(msg);
+      return "";
+    }
+
+    async function postToAppsScript(url, payload, options = {}) {
+      const retries = Number.isInteger(options.retries) ? options.retries : 1;
+      const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : REQUEST_TIMEOUT_MS;
+      let lastError = null;
+
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+          const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload),
+            redirect: "follow",
+            signal: controller.signal
+          });
+
+          const text = await response.text();
+          let data = null;
+          try {
+            data = JSON.parse(text);
+          } catch (_) {
+            throw new Error(`Invalid JSON response from server (HTTP ${response.status})`);
+          }
+
+          if (!response.ok) throw new Error(data?.error || `HTTP ${response.status}`);
+          if (!data || data.ok === false) throw new Error(data?.error || "unknown_error");
+          return data;
+        } catch (err) {
+          lastError = err?.name === "AbortError"
+            ? new Error(`Request timed out after ${Math.round(timeoutMs / 1000)} seconds.`)
+            : err;
+          if (attempt >= retries) break;
+          await new Promise((resolve) => window.setTimeout(resolve, 400 * (attempt + 1)));
+        } finally {
+          window.clearTimeout(timeoutId);
+        }
+      }
+
+      throw lastError || new Error("Request failed.");
     }
 
     async function loadRemoteConfig() {
-      const res = await fetch(REMOTE_CONFIG_URL, { cache: "no-store" });
-      if (!res.ok) throw new Error(`Config fetch failed: ${res.status}`);
-      const data = await res.json();
-      if (!data || !data.ok) throw new Error("Config response was not ok");
+      const data = await postToAppsScript(AQG_API_URL, {
+        action: "loadRemoteConfig",
+        source: "aqg"
+      }, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
 
       remoteConfig = {
         llmOptions: data.llmOptions || {},
-        prompts: data.prompts || {}
+        prompts: data.prompts || {},
+        generatedAt: data.generated_at || data.generatedAt || ""
       };
     }
 
@@ -2612,6 +2611,10 @@ Place the correct answer first and bold it.`,
     let copyHistory = [];  // Array of { text, label, timestamp }
     let sidebarMode = "preview";  // "preview" | "history" | "collapsed"
     let sessionTimerIntervalId = null;
+    let liveUpdateTimer = null;
+    let interactionTimes = [];
+    let activeMsBase = 0;
+    let submitInFlight = false;
     let llmMismatchReported = false;
     let llmMismatchAlertAttempted = false;
     let starterPromptCopied = false;
@@ -2792,66 +2795,179 @@ Place the correct answer first and bold it.`,
       return el ? el.textContent.trim() : "";
     }
 
-    function buildAutosave(eventType, extra = {}) {
-      const sessionId = localStorage.getItem(KEYS.sessionId) || "";
-      if (!sessionId) {
-        console.warn("Autosave skipped: no sessionId");
-        return null;
-      }
+    function getDeviceType() {
+      const width = Math.max(window.innerWidth || 0, document.documentElement?.clientWidth || 0, screen?.width || 0);
+      const ua = navigator.userAgent || "";
+      const touchCapable = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
 
-      // Tracks event order within a session.
-      const nextEventIndex = (Number(localStorage.getItem(KEYS.autosaveEventIndex) || "0") || 0) + 1;
-      localStorage.setItem(KEYS.autosaveEventIndex, String(nextEventIndex));
+      const isTablet =
+        /iPad|Tablet|PlayBook|Silk/i.test(ua) ||
+        (/Android/i.test(ua) && !/Mobile/i.test(ua)) ||
+        (touchCapable && width >= 768 && width <= 1100);
 
-      const modeParam = new URLSearchParams(window.location.search).get("mode");
-      const ctx = getContext();
-      const details = extra.details && typeof extra.details === "object" ? extra.details : {};
-      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      const mismatchDescription = (($("llmMismatchDescription")?.value || localStorage.getItem(KEYS.llmMismatchDescription) || "")).trim();
-      const versionValue = expectedChoice || "";
-
-      const payload = {
-        sessionId,
-        mode: modeParam || "standard",
-        accessCode: localStorage.getItem(KEYS.accessCode) || "",
-        eventIndex: nextEventIndex,
-        eventType,
-        promptName: extra.promptName || "",
-        product: localStorage.getItem(KEYS.llmProduct) || localStorage.getItem(KEYS.modelUsed) || "",
-        version: versionValue,
-        llmMismatchDescription: mismatchDescription,
-        desiredQuestions: ctx.questionCount || "",
-        courseContext: ctx.course || "",
-        questionContext: ctx.area || "",
-        extraInstructions: ($("ctxNotes")?.value || "").trim(),
-        currentStage: getStage(),
-        finalLlmResponse: ($("llmResponse")?.value || "").trim(),
-        sessionNotes: ($("sessionNotes")?.value || "").trim(),
-        audioFilename: uploadedAudioInfo?.audioFilename || "",
-        audioFileId: uploadedAudioInfo?.audioFileId || "",
-        audioFileUrl: uploadedAudioInfo?.audioFileUrl || "",
-        audioMimeType: uploadedAudioInfo?.audioMimeType || "",
-        audioDuration: uploadedAudioInfo?.audioDuration || "",
-        details,
-        appVersion: getAppVersion()
-      };
-      console.log("Autosave payload built", payload);
-      return payload;
+      if (isTablet) return "tablet";
+      if (width <= 767) return "mobile";
+      return "desktop";
     }
 
-    // Background autosave only: do not block UI actions on this network call.
-    function sendAutosave(payload) {
-      if (!payload) return;
-      console.log("Sending autosave", payload);
-      fetch(AUTOSAVE_URL, {
+    function getOsLabel() {
+      const ua = navigator.userAgent || "";
+      const platform = navigator.platform || "";
+
+      if (/Android/i.test(ua)) return "Android";
+      if (/iPhone|iPad|iPod/i.test(ua)) return "iOS";
+      if (/Mac/i.test(platform) || /Mac OS X/i.test(ua)) return "macOS";
+      if (/Win/i.test(platform) || /Windows/i.test(ua)) return "Windows";
+      if (/Linux/i.test(platform) || /Linux/i.test(ua)) return "Linux";
+      if (/CrOS/i.test(ua)) return "ChromeOS";
+      return "Unknown";
+    }
+
+    function getViewportWidth() {
+      return Math.max(window.innerWidth || 0, document.documentElement?.clientWidth || 0, screen?.width || 0);
+    }
+
+    function getCompactDeviceLabel() {
+      return `${getDeviceType()} ${getOsLabel()} ${getViewportWidth()}`.trim();
+    }
+
+    function markInteraction(ts = Date.now()) {
+      const currentTs = Number(ts);
+      if (!Number.isFinite(currentTs)) return;
+      if (Array.isArray(interactionTimes) && interactionTimes.length > 0) {
+        const prev = Number(interactionTimes[interactionTimes.length - 1]);
+        if (Number.isFinite(prev) && currentTs > prev) {
+          activeMsBase += Math.min(currentTs - prev, ACTIVE_IDLE_CAP_MS);
+        }
+      }
+      interactionTimes = [currentTs];
+    }
+
+    function computeActiveSeconds(times = interactionTimes, baseMs = activeMsBase) {
+      let totalMs = Number.isFinite(Number(baseMs)) ? Number(baseMs) : 0;
+      if (Array.isArray(times) && times.length >= 2) {
+        for (let i = 1; i < times.length; i++) {
+          const prev = Number(times[i - 1]);
+          const curr = Number(times[i]);
+          if (!Number.isFinite(prev) || !Number.isFinite(curr) || curr <= prev) continue;
+          totalMs += Math.min(curr - prev, ACTIVE_IDLE_CAP_MS);
+        }
+      }
+      return Math.round(totalMs / 1000);
+    }
+
+    function getAudioMetadata() {
+      return {
+        audio_present: !!uploadedAudioInfo,
+        audio_filename: uploadedAudioInfo?.audioFilename || "",
+        audio_file_id: uploadedAudioInfo?.audioFileId || "",
+        audio_file_url: uploadedAudioInfo?.audioFileUrl || "",
+        audio_mime_type: uploadedAudioInfo?.audioMimeType || "",
+        audio_duration: uploadedAudioInfo?.audioDuration || ""
+      };
+    }
+
+    function buildLiveSessionSnapshot(statusOverride = "in_progress") {
+      const accessCode = localStorage.getItem(KEYS.accessCode) || "";
+      const participantCode = localStorage.getItem(KEYS.participantId) || accessCode;
+      const sessionId = localStorage.getItem(KEYS.sessionId) || "";
+      const sessionStart = localStorage.getItem(KEYS.sessionStartTime) || "";
+      const stage = getStage();
+      const ctx = getContext();
+      const timerState = getCurrentTimerState();
+      const events = loadJSON(KEYS.events, []);
+      const llmResponse = ($("llmResponse")?.value || "").trim();
+      const sessionNotes = ($("sessionNotes")?.value || "").trim();
+      const finalPrompt = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+      const promptId = stage === "finalize" ? "final_prompt" : (stage === "setup" ? "starter" : "");
+      const modeParam = new URLSearchParams(window.location.search).get("mode");
+
+      return {
+        action: "updateLiveSession",
+        source: "aqg",
+        user_id: accessCode,
+        participant_code: participantCode,
+        session_id: sessionId,
+        session_start: sessionStart ? new Date(sessionStart).toISOString() : null,
+        last_activity_at: nowIso(),
+        status: statusOverride,
+        app_version: getAppVersion(),
+        mode: modeParam || "standard",
+        config_generated_at: remoteConfig.generatedAt || "",
+        current_stage: stage,
+        current_prompt_id: promptId,
+        llm_product: localStorage.getItem(KEYS.llmProduct) || "",
+        model_used: localStorage.getItem(KEYS.modelUsed) || "",
+        llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
+        llm_mismatch_description: localStorage.getItem(KEYS.llmMismatchDescription) || "",
+        product_version_confirmed: localStorage.getItem(KEYS.productVersionConfirmed) === "true",
+        desired_questions: ctx.questionCount || "",
+        course_context: ctx.course || "",
+        question_context: ctx.area || "",
+        extra_instructions: ($("ctxNotes")?.value || "").trim(),
+        starter_copied: localStorage.getItem(KEYS.starterCopied) === "true",
+        finalize_visited: localStorage.getItem(KEYS.finalizeVisited) === "true",
+        final_prompt_copied: localStorage.getItem(KEYS.finalPromptCopied) === "true",
+        submit_clicked: localStorage.getItem(KEYS.submitClicked) === "true",
+        llm_response_present: !!llmResponse,
+        session_notes_present: !!sessionNotes,
+        ...getAudioMetadata(),
+        timer_elapsed_ms: timerState.elapsedMs,
+        timer_elapsed_mmss: timerState.elapsedMmss,
+        timer_paused: timerState.timerPaused,
+        active_seconds: computeActiveSeconds(interactionTimes),
+        event_count: events.length,
+        device_label: getCompactDeviceLabel(),
+        progress_json: {
+          stage,
+          starterPromptCopied: localStorage.getItem(KEYS.starterCopied) === "true",
+          finalPromptCopied: localStorage.getItem(KEYS.finalPromptCopied) === "true",
+          finalizeVisited: localStorage.getItem(KEYS.finalizeVisited) === "true",
+          interactionTimes: Array.isArray(interactionTimes) ? interactionTimes.slice(-1) : [],
+          activeMsBase
+        },
+        final_prompt: finalPrompt,
+        llm_response: llmResponse,
+        session_notes: sessionNotes,
+        events
+      };
+    }
+
+    function cancelQueuedLiveSessionUpdate() {
+      if (liveUpdateTimer) {
+        window.clearTimeout(liveUpdateTimer);
+        liveUpdateTimer = null;
+      }
+    }
+
+    function sendLiveSessionUpdate(statusOverride = "in_progress") {
+      const payload = buildLiveSessionSnapshot(statusOverride);
+      fetch(AQG_API_URL, {
         method: "POST",
-        body: new URLSearchParams({
-          payload: JSON.stringify(payload)
-        })
-      })
-        .then(r => r.text())
-        .then(text => console.log("Autosave response", text))
-        .catch(err => console.error("Autosave failed", err));
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+        keepalive: true
+      }).catch((err) => {
+        console.warn("Live session update failed", err);
+      });
+    }
+
+    function queueLiveSessionUpdate(statusOverride = "in_progress", delay = LIVE_UPDATE_DEBOUNCE_MS) {
+      cancelQueuedLiveSessionUpdate();
+      if (statusOverride !== "in_progress" || delay <= 0) {
+        sendLiveSessionUpdate(statusOverride);
+        return;
+      }
+      liveUpdateTimer = window.setTimeout(() => {
+        liveUpdateTimer = null;
+        sendLiveSessionUpdate(statusOverride);
+      }, delay);
+    }
+
+    async function syncLiveSessionUpdate(statusOverride = "in_progress") {
+      cancelQueuedLiveSessionUpdate();
+      const payload = buildLiveSessionSnapshot(statusOverride);
+      return postToAppsScript(AQG_API_URL, payload, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
     }
 
     function logEvent(type, data = {}) {
@@ -2974,13 +3090,13 @@ Place the correct answer first and bold it.`,
         localStorage.setItem(KEYS.timerStartedAt, String(Date.now()));
         localStorage.setItem(KEYS.timerPaused, "false");
         logEvent("timer_resumed");
-        sendAutosave(buildAutosave("timer_resumed"));
+        queueLiveSessionUpdate("in_progress");
       } else {
         localStorage.setItem(KEYS.timerElapsedBeforePause, String(getTimerElapsedMs()));
         localStorage.removeItem(KEYS.timerStartedAt);
         localStorage.setItem(KEYS.timerPaused, "true");
         logEvent("timer_paused");
-        sendAutosave(buildAutosave("timer_paused"));
+        queueLiveSessionUpdate("in_progress");
       }
       updateSessionTimer();
     }
@@ -3051,7 +3167,9 @@ Place the correct answer first and bold it.`,
 
     function setContext(ctx) {
       saveJSON(KEYS.context, ctx);
+      markInteraction();
       logEvent("context_saved", { ctx });
+      queueLiveSessionUpdate("in_progress");
     }
 
     function getStage() {
@@ -3289,6 +3407,7 @@ Place the correct answer first and bold it.`,
 
     function setStage(stage) {
       const previousStage = getStage();
+      markInteraction();
       if (previousStage !== stage) {
         logEvent("stage_exited", { stage: previousStage });
         localStorage.setItem(KEYS.stage, stage);
@@ -3299,6 +3418,7 @@ Place the correct answer first and bold it.`,
         logEvent("stage_set", { stage });
       }
       applyStageUI();
+      queueLiveSessionUpdate("in_progress");
     }
 
     function markAnyCopy() {
@@ -3722,7 +3842,7 @@ Place the correct answer first and bold it.`,
     function uploadAudioWithProgress(payload, onProgress) {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open("POST", AUTOSAVE_URL, true);
+        xhr.open("POST", AQG_API_URL, true);
         xhr.setRequestHeader("Content-Type", "application/json");
 
         xhr.upload.onprogress = (event) => {
@@ -3774,7 +3894,7 @@ Place the correct answer first and bold it.`,
           audioBase64
         });
 
-        const fetchResponse = await fetch(AUTOSAVE_URL, {
+        const fetchResponse = await fetch(AQG_API_URL, {
           method: "POST",
           body
         });
@@ -3802,12 +3922,9 @@ Place the correct answer first and bold it.`,
         };
 
         audioSubmitted = true;
-        const audioUploadPayload = buildAutosave("audio_uploaded", {
-          details: {
-            source: "submit_audio_button"
-          }
-        });
-        sendAutosave(audioUploadPayload);
+        markInteraction();
+        logEvent("audio_uploaded", { source: "submit_audio_button" });
+        queueLiveSessionUpdate("in_progress");
         setAudioUploadButtonState("success", "Uploaded");
         updateAudioRecorderUI();
         toast("Audio submitted ✅");
@@ -3852,6 +3969,11 @@ Place the correct answer first and bold it.`,
 
     function setCopyCardExpanded(card, chevron, expanded, cardLabel) {
       if (!card || !chevron) return;
+      if (expanded) {
+        markInteraction();
+        logEvent("prompt_opened", { promptLabel: cardLabel });
+        queueLiveSessionUpdate("in_progress");
+      }
       card.classList.toggle("is-expanded", expanded);
       chevron.setAttribute("aria-expanded", String(expanded));
       chevron.setAttribute("aria-label", `${expanded ? "Hide" : "Show"} details for ${cardLabel}`);
@@ -4276,6 +4398,7 @@ Place the correct answer first and bold it.`,
         if (!chevron) return;
         const card = chevron.closest(".promptCard");
         if (!card) return;
+        markInteraction();
         const isExpanded = card.classList.toggle("is-expanded");
         chevron.setAttribute("aria-expanded", String(isExpanded));
         chevron.setAttribute(
@@ -4297,11 +4420,9 @@ Place the correct answer first and bold it.`,
         const ok = await copyToClipboard(promptText, promptTitle);
 
         if (ok) {
+          markInteraction();
           logEvent("prompt_copied", { promptId: id });
-          sendAutosave(buildAutosave("prompt_copied", {
-            promptName: id,
-            details: { promptId: id, promptTitle }
-          }));
+          queueLiveSessionUpdate("in_progress");
 
           card.classList.add("is-active");
           if (card._activeTimer) clearTimeout(card._activeTimer);
@@ -4437,8 +4558,9 @@ Place the correct answer first and bold it.`,
       initializeSessionTimerIfNeeded();
       startSessionTimerLoop();
       if ($("topUser")) $("topUser").textContent = code || "User";
+      markInteraction();
       logEvent("access_verified", { accessCode: code });
-      sendAutosave(buildAutosave("access_confirmed"));
+      queueLiveSessionUpdate("in_progress", 0);
       toast("Access verified ✅");
 
       applyStageUI();
@@ -4455,41 +4577,126 @@ Place the correct answer first and bold it.`,
     // -----------------------------
     function buildSessionRecord() {
       const timerState = getCurrentTimerState();
+      const ctx = getContext();
+      const events = loadJSON(KEYS.events, []);
+      const llmResponse = ($("llmResponse")?.value || "").trim();
+      const sessionNotes = ($("sessionNotes")?.value || "").trim();
+      const accessCode = localStorage.getItem(KEYS.accessCode) || "";
+      const participantCode = localStorage.getItem(KEYS.participantId) || accessCode;
+      const sessionStartRaw = localStorage.getItem(KEYS.sessionStartTime) || "";
+      const elapsed = sessionStartRaw ? Math.max(0, Date.now() - new Date(sessionStartRaw).getTime()) : timerState.elapsedMs;
+
       return {
-        source: 'dissertation',
-        participant_code: localStorage.getItem(KEYS.participantId) || "",
+        source: "aqg",
+        user_id: accessCode,
+        participant_code: participantCode,
         session_id: localStorage.getItem(KEYS.sessionId) || "",
-        session_started_at: localStorage.getItem(KEYS.sessionStartTime) || "",
-        product_used: localStorage.getItem(KEYS.modelUsed) || "",
+        session_start: sessionStartRaw ? new Date(sessionStartRaw).toISOString() : null,
+        session_end: nowIso(),
+        status: "submitted",
+        app_version: getAppVersion(),
+        mode: new URLSearchParams(window.location.search).get("mode") || "standard",
+        config_generated_at: remoteConfig.generatedAt || "",
         model_used: localStorage.getItem(KEYS.modelUsed) || "",
         llm_product: localStorage.getItem(KEYS.llmProduct) || "",
         llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
-        llm_mismatch_description: localStorage.getItem(KEYS.llmMismatchDescription) || "",
-        context: getContext(),
-        events: loadJSON(KEYS.events, []),
-        stage: getStage(),
-        final_prompt_copied: localStorage.getItem(KEYS.finalPromptCopied) || "false",
-        submit_clicked: localStorage.getItem(KEYS.submitClicked) || "false",
-        submission_attempted: localStorage.getItem(KEYS.submissionAttempted) === "true",
-        submission_status: localStorage.getItem(KEYS.submissionStatus) || "unknown",
-        submission_completed_at: localStorage.getItem(KEYS.submissionCompletedAt) || "",
-        submission_error: localStorage.getItem(KEYS.submissionError) || "",
-        apps_script_response_file_name: localStorage.getItem(KEYS.appsScriptResponseFileName) || "",
-        apps_script_response_file_id: localStorage.getItem(KEYS.appsScriptResponseFileId) || "",
-        last_copied_text: lastCopiedText || "",
+        llm_mismatch_description: ($("llmMismatchDescription")?.value || localStorage.getItem(KEYS.llmMismatchDescription) || "").trim(),
+        current_stage: getStage(),
+        current_prompt_id: getStage() === "finalize" ? "final_prompt" : (getStage() === "setup" ? "starter" : ""),
+        product_version_confirmed: localStorage.getItem(KEYS.productVersionConfirmed) === "true",
+        desired_questions: ctx.questionCount || "",
+        course_context: ctx.course || "",
+        question_context: ctx.area || "",
+        extra_instructions: ($("ctxNotes")?.value || "").trim(),
+        starter_copied: localStorage.getItem(KEYS.starterCopied) === "true",
+        finalize_visited: localStorage.getItem(KEYS.finalizeVisited) === "true",
+        final_prompt_copied: localStorage.getItem(KEYS.finalPromptCopied) === "true",
+        submit_clicked: true,
+        llm_response_present: !!llmResponse,
+        session_notes_present: !!sessionNotes,
+        ...getAudioMetadata(),
         final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
-        llm_response: ($("llmResponse").value || "").trim(),
-        session_notes: ($("sessionNotes")?.value || "").trim(),
+        llm_response: llmResponse,
+        session_notes: sessionNotes,
         timer_elapsed_ms: timerState.elapsedMs,
         timer_elapsed_mmss: timerState.elapsedMmss,
         timer_paused: timerState.timerPaused,
-        timer_started_at: localStorage.getItem(KEYS.timerStartedAt) || "",
-        timer_elapsed_before_pause: Number(localStorage.getItem(KEYS.timerElapsedBeforePause) || 0),
-        timer_warned_35: localStorage.getItem(KEYS.timerWarned35) === "true",
-        timer_warned_40: localStorage.getItem(KEYS.timerWarned40) === "true",
-        submitted_at: new Date().toISOString(),
-        page_last_updated: document.lastModified || ""
+        active_seconds: computeActiveSeconds(interactionTimes),
+        duration_ms: elapsed,
+        duration_formatted: formatElapsed(elapsed),
+        event_count: events.length,
+        device_label: getCompactDeviceLabel(),
+        progress_json: {
+          stage: getStage(),
+          starterPromptCopied: localStorage.getItem(KEYS.starterCopied) === "true",
+          finalPromptCopied: localStorage.getItem(KEYS.finalPromptCopied) === "true",
+          finalizeVisited: localStorage.getItem(KEYS.finalizeVisited) === "true",
+          interactionTimes: Array.isArray(interactionTimes) ? interactionTimes.slice(-1) : [],
+          activeMsBase
+        },
+        events
       };
+    }
+
+    function offerSubmissionDownload(payload) {
+      const existing = $("submissionFallbackWrap");
+      if (existing) return;
+      const endMsg = $("endMsg");
+      const wrap = document.createElement("div");
+      wrap.id = "submissionFallbackWrap";
+      wrap.style.cssText = "margin-top:10px;padding:10px 12px;background:#fef9ec;border:1px solid #c8a84b;border-radius:8px;font-size:0.88rem;";
+      wrap.innerHTML = "<strong>Submission failed.</strong> Download your session JSON and share it with the study team. Browser data has been kept.";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn";
+      btn.style.marginTop = "8px";
+      btn.textContent = "Download session JSON";
+      btn.addEventListener("click", () => {
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = buildSessionFilename(payload);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+      wrap.appendChild(btn);
+      if (endMsg) endMsg.appendChild(wrap);
+    }
+
+    async function submitSession() {
+      if (submitInFlight) return { ok: false, error: "submit_in_flight" };
+      submitInFlight = true;
+      localStorage.setItem(KEYS.submitClicked, "true");
+      markInteraction();
+      const payload = {
+        action: "submitSession",
+        ...buildSessionRecord()
+      };
+
+      try {
+        const data = await postToAppsScript(AQG_API_URL, payload, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
+        const success = !!(data?.ok || data?.duplicate);
+        if (!success) throw new Error(data?.error || "unknown_error");
+        localStorage.setItem(KEYS.submissionStatus, "success");
+        localStorage.setItem(KEYS.submissionCompletedAt, nowIso());
+        localStorage.removeItem(KEYS.submissionError);
+        if (data.fileName) localStorage.setItem(KEYS.appsScriptResponseFileName, data.fileName);
+        if (data.fileId) localStorage.setItem(KEYS.appsScriptResponseFileId, data.fileId);
+        logEvent("session_submitted", { ok: true, duplicate: !!data.duplicate, fileName: data.fileName || "" });
+        return { ok: true, data };
+      } catch (err) {
+        localStorage.setItem(KEYS.submissionStatus, "failed");
+        localStorage.setItem(KEYS.submissionError, String(err?.message || err || "unknown_error"));
+        logEvent("session_submit_failed", { error: String(err?.message || err || "unknown_error") });
+        queueLiveSessionUpdate("in_progress", 250);
+        offerSubmissionDownload(payload);
+        return { ok: false, error: err };
+      } finally {
+        submitInFlight = false;
+      }
     }
 
     function getShortSessionSuffix(sessionId) {
@@ -4510,7 +4717,7 @@ Place the correct answer first and bold it.`,
 
     function buildSessionFilename(record, { revised = false } = {}) {
       const participant = (record?.participant_code || "participant").trim() || "participant";
-      const datePart = formatDateYYYYMMDD(record?.submitted_at);
+      const datePart = formatDateYYYYMMDD(record?.session_end || nowIso());
       const shortSession = getShortSessionSuffix(record?.session_id);
       const revisedSuffix = revised ? "_REVISED" : "";
       return `${participant}_${datePart}_${shortSession}${revisedSuffix}.json`.replace(/[^\w.-]/g, "_");
@@ -4550,8 +4757,10 @@ Place the correct answer first and bold it.`,
       });
       localStorage.setItem(KEYS.llmProduct, llmProduct);
       if (logSelection) {
+        markInteraction();
         logEvent("llm_product_selected", { llmProduct });
         setProductVersionConfirmedState(false);
+        queueLiveSessionUpdate("in_progress");
       }
       renderLlmConfirmPanel(llmProduct);
       renderPromptList();
@@ -4660,7 +4869,7 @@ Place the correct answer first and bold it.`,
       $("ctxArea").value = ctx.area || "";
       $("ctxNotes").value = ctx.notes || "";
       $("ctxQuestionCount").value = ctx.questionCount || "10";
-      localStorage.setItem(KEYS.starterCopied, "false");
+      if (!localStorage.getItem(KEYS.starterCopied)) localStorage.setItem(KEYS.starterCopied, "false");
 
       document.querySelectorAll(".modelOption").forEach((btn) => {
         btn.addEventListener("click", (e) => {
@@ -4690,7 +4899,9 @@ Place the correct answer first and bold it.`,
           }
 
           logEvent("llm_expected_choice_selected", { llmProduct, expectedChoice });
+          markInteraction();
           setProductVersionConfirmedState(false);
+          queueLiveSessionUpdate("in_progress");
 
           if (expectedChoice === "different") {
             setLlmMismatchVisibility(true, true);
@@ -4708,9 +4919,11 @@ Place the correct answer first and bold it.`,
       if (llmMismatchDescriptionEl) {
         llmMismatchDescriptionEl.addEventListener("input", async () => {
           const mismatchDescription = llmMismatchDescriptionEl.value || "";
+          markInteraction();
           localStorage.setItem(KEYS.llmMismatchDescription, mismatchDescription);
           setProductVersionConfirmedState(false);
           updateSetupSubbandVisibility();
+          queueLiveSessionUpdate("in_progress");
 
           const trimmed = mismatchDescription.trim();
           const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
@@ -4723,6 +4936,7 @@ Place the correct answer first and bold it.`,
           }
 
           if (!llmMismatchReported && trimmed) {
+            markInteraction();
             llmMismatchReported = true;
             logEvent("llm_mismatch_reported", {
               llmProduct,
@@ -4761,8 +4975,9 @@ Place the correct answer first and bold it.`,
             return;
           }
           setProductVersionConfirmedState(true);
+          markInteraction();
           logEvent("product_version_confirm_clicked");
-          sendAutosave(buildAutosave("product_version_confirmed"));
+          queueLiveSessionUpdate("in_progress");
           console.log("Confirm product/version autosave call completed");
           updateSetupSubbandVisibility();
           applyStageUI();
@@ -4773,6 +4988,7 @@ Place the correct answer first and bold it.`,
       const reopenProductVersion = () => {
         setProductVersionConfirmedState(false);
         logEvent("product_version_reopened");
+        queueLiveSessionUpdate("in_progress");
         updateSetupSubbandVisibility();
         applyStageUI();
       };
@@ -4860,10 +5076,9 @@ Place the correct answer first and bold it.`,
         const ok = await copyToClipboard(buildStarterPrompt(), getPromptTitle("starter", "Starter prompt"));
         starterCard?.blur();
         if (ok) {
+          markInteraction();
           logEvent("starter_copied", {});
-          const autosavePayload = buildAutosave("starter_prompt_copied", { promptName: "starter" });
-          console.log("Starter prompt autosave extraInstructions:", autosavePayload?.extraInstructions);
-          if (autosavePayload) sendAutosave(autosavePayload);
+          queueLiveSessionUpdate("in_progress");
           starterPromptCopied = true;
           localStorage.setItem(KEYS.starterCopied, "true");
           const copiedTip = $("starterCopiedTrainingTip");
@@ -4883,6 +5098,7 @@ Place the correct answer first and bold it.`,
       _copyCardHandlers["starterCopyCard"] = copyStarterPrompt;
 
       $("btnGoPrompts").addEventListener("click", () => {
+        markInteraction();
         logEvent("go_prompts_clicked");
         if (!isStarterSetupValid()) {
           showExistingErrorToast("Please complete the required setup fields before copying the starter prompt.");
@@ -4902,14 +5118,16 @@ Place the correct answer first and bold it.`,
 
       // Prompts controls
       $("btnEditContext").addEventListener("click", () => {
+        markInteraction();
         logEvent("edit_context_clicked");
-        sendAutosave(buildAutosave("edit_context_clicked", { details: { toStage: "setup" } }));
+        queueLiveSessionUpdate("in_progress");
         setStage("setup");
       });
 
       $("btnReadyFinal").addEventListener("click", () => {
+        markInteraction();
         logEvent("done_making_questions_clicked");
-        sendAutosave(buildAutosave("question_making_completed", { details: { toStage: "finalize" } }));
+        queueLiveSessionUpdate("in_progress");
         const fp = buildFinalPrompt();
         localStorage.setItem(KEYS.finalPrompt, fp);
         if ($("finalCopyPreview")) $("finalCopyPreview").textContent = fp;
@@ -4920,8 +5138,9 @@ Place the correct answer first and bold it.`,
 
       // Finalize controls
       $("btnBackToPrompts").addEventListener("click", () => {
+        markInteraction();
         logEvent("back_to_making_questions_clicked");
-        sendAutosave(buildAutosave("back_to_question_making_clicked", { details: { toStage: "prompts" } }));
+        queueLiveSessionUpdate("in_progress");
         logEvent("returned_from_finalize_to_prompts");
         setStage("prompts");
       });
@@ -4935,8 +5154,9 @@ Place the correct answer first and bold it.`,
         finalCard?.blur();
         if (!ok) return;
         localStorage.setItem(KEYS.finalPromptCopied, "true");
+        markInteraction();
         logEvent("final_prompt_copied", {});
-        sendAutosave(buildAutosave("final_prompt_copied", { promptName: "final_prompt" }));
+        queueLiveSessionUpdate("in_progress");
         const finalCopiedTip = $("finalCopiedTrainingTip");
         if (isTrainingMode && finalCopiedTip) {
           finalCopiedTip.hidden = false;
@@ -4951,11 +5171,21 @@ Place the correct answer first and bold it.`,
       updateProceedToPromptsAvailability();
 
       $("llmResponse").addEventListener("input", () => {
+        markInteraction();
+        logEvent("llm_response_edited");
+        queueLiveSessionUpdate("in_progress");
         updateFinalizeContentUI();
         updateEndSessionState();
       });
       $("llmResponse").addEventListener("change", () => {
+        markInteraction();
+        queueLiveSessionUpdate("in_progress");
         updateEndSessionState();
+      });
+      $("sessionNotes")?.addEventListener("input", () => {
+        markInteraction();
+        logEvent("session_notes_edited");
+        queueLiveSessionUpdate("in_progress");
       });
 
 
@@ -4990,46 +5220,46 @@ Place the correct answer first and bold it.`,
       });
       $("btnEndConfirm").addEventListener("click", () => {
         console.log("End session confirm clicked");
+        markInteraction();
         logEvent("end_session_confirmed");
-        const autosavePayload = buildAutosave("session_ended", {
-          details: {
-            source: "end_confirm"
-          }
-        });
-        console.log("Final autosave payload:", autosavePayload);
+        const endMsg = $("endMsg");
+        const confirmBtn = $("btnEndConfirm");
+        const cancelBtn = $("btnEndCancel");
+        if (endMsg) {
+          endMsg.textContent = "";
+          endMsg.style.display = "none";
+        }
+        if (confirmBtn) {
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = "Submitting…";
+        }
+        if (cancelBtn) cancelBtn.disabled = true;
 
-        const finishEndSession = () => {
-          clearSessionData();
-          sessionStorage.setItem("dissertation.ended", "true");
-          closeModal("modalEnd");
-
-          if (!isTrainingMode) {
-            location.reload();
+        submitSession().then((result) => {
+          if (result?.ok) {
+            queueLiveSessionUpdate("completed", 0);
+            clearSessionData();
+            sessionStorage.setItem("dissertation.ended", "true");
+            closeModal("modalEnd");
+            if (!isTrainingMode) {
+              location.reload();
+              return;
+            }
+            window.location.href = "training-complete.html";
             return;
           }
-          window.location.href = "training-complete.html";
-        };
-
-        if (autosavePayload) {
-          fetch(AUTOSAVE_URL, {
-            method: "POST",
-            body: new URLSearchParams({
-              payload: JSON.stringify(autosavePayload)
-            })
-          })
-            .then(r => r.text())
-            .then(text => {
-              console.log("Final autosave response:", text);
-            })
-            .catch(err => {
-              console.error("Final autosave failed:", err);
-            })
-            .finally(() => {
-              finishEndSession();
-            });
-        } else {
-          finishEndSession();
-        }
+          if (endMsg) {
+            endMsg.textContent = "Submission failed. Please download your session JSON below and retry when possible.";
+            endMsg.style.display = "block";
+          }
+          toast("Submission failed. Data is still saved in this browser.", { duration: 3500 });
+        }).finally(() => {
+          if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = "End session";
+          }
+          if (cancelBtn) cancelBtn.disabled = false;
+        });
       });
 
       // Always show footer status immediately (even before access is verified)
@@ -5074,6 +5304,9 @@ Place the correct answer first and bold it.`,
         questionCount: (countEl?.value || "10").trim() || "10"
       };
       saveJSON(KEYS.context, ctx);
+      markInteraction();
+      logEvent("context_edited", { field: target.id });
+      queueLiveSessionUpdate("in_progress");
 
       if (isRequired) {
         invalidateStarterPromptCopied();
