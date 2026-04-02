@@ -1354,12 +1354,18 @@ function setTrainingMode(isTraining) {
   document.body.classList.toggle('training-mode', !!isTraining);
 }
 
+let setGateLoading = null;
+
 function returnToGate() {
   $('training').style.display = 'none';
   $('loading').style.display = 'none';
   $('completion').style.display = 'none';
   $('gate').style.display = 'flex';
   setTrainingMode(false);
+
+  if (typeof setGateLoading === 'function') {
+    setGateLoading(false);
+  }
 
   const codeInput = $('code-input');
   const gateError = $('gate-error');
@@ -3168,10 +3174,16 @@ async function handleSaveAndExit() {
     });
 
     await syncLiveSessionUpdate('in_progress');
+    $('loading').style.display = 'none';
+    $('training').style.display = 'none';
+    $('completion').style.display = 'none';
     returnToGate();
   } catch (err) {
     console.warn('Save and exit failed', err);
     alert('Unable to save your place right now. Please try again.');
+    if (typeof setGateLoading === 'function') {
+      setGateLoading(false);
+    }
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -3405,13 +3417,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const gateSubmitLabel = gateSubmitBtn?.querySelector('.gate-btn-label');
   $('btn-save-exit')?.addEventListener('click', handleSaveAndExit);
 
-  function setGateLoading(isLoading, text = 'Loading') {
+  setGateLoading = function setGateLoadingState(isLoading, text = 'Loading') {
     if (!gateSubmitBtn || !gateSubmitLabel) return;
     gateSubmitBtn.disabled = !!isLoading;
     gateSubmitBtn.classList.toggle('is-loading', !!isLoading);
     gateSubmitBtn.setAttribute('aria-busy', isLoading ? 'true' : 'false');
     gateSubmitLabel.textContent = isLoading ? text : 'Begin';
-  }
+  };
 
   function focusCodeInput() {
     if (!codeInput) return;
@@ -3434,6 +3446,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   gateForm.addEventListener('submit', async e => {
     e.preventDefault();
+    if (typeof setGateLoading === 'function' && !gateSubmitBtn?.disabled) {
+      setGateLoading(false);
+    }
     if (gateSubmitBtn?.disabled) return;
     gateError.textContent = '';
     setGateLoading(true, 'Checking');
