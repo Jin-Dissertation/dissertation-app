@@ -1735,6 +1735,16 @@ function refreshSaveExitAvailability() {
   setSaveExitEnabled(shouldEnable);
 }
 
+function shouldWarnBeforeUnload() {
+  const trainingVisible = $('training') && $('training').style.display !== 'none';
+  return !!(
+    trainingVisible &&
+    participantCode &&
+    !completionReached &&
+    !hasSuccessfulSubmission
+  );
+}
+
 
 // ─────────────────────────────────────────────
 // PROGRESS PERSISTENCE
@@ -2848,10 +2858,9 @@ function renderQuestionImageBlock(item, cardIndex, onComplete, onContinue = onCo
 
 // Warn before leaving while training is active
 window.addEventListener('beforeunload', e => {
-  if (participantCode && !hasSuccessfulSubmission) {
-    e.preventDefault();
-    e.returnValue = '';
-  }
+  if (!shouldWarnBeforeUnload()) return;
+  e.preventDefault();
+  e.returnValue = '';
 });
 
 // ─────────────────────────────────────────────
