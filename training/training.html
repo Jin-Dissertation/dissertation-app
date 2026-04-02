@@ -1653,6 +1653,26 @@ function scrollToEl(el, offset = 80) {
   window.scrollTo({ top, behavior: 'smooth' });
 }
 
+function getPreferredImageUrl(item) {
+  const desktopUrl = String(
+    item.imageUrl ||
+    item.image_url ||
+    item.mediaUrl ||
+    item.media_url ||
+    ''
+  ).trim();
+
+  const mobileOverride = String(
+    item.mobileImageUrl ||
+    item.mobile_image_url ||
+    ''
+  ).trim();
+
+  const isMobile = window.matchMedia('(max-width: 800px)').matches;
+
+  return (isMobile && mobileOverride) ? mobileOverride : desktopUrl;
+}
+
 async function postToAppsScript(url, payload) {
   const response = await fetch(url, {
     method: 'POST',
@@ -1864,10 +1884,10 @@ function buildCardsForSection(rows) {
 
     if (type === 'video') return { type: 'video', slot, youtubeId: first.youtube_id };
     if (type === 'text') return { type: 'text', slot, header: first.header, body: first.body, body_mobile: first.body_mobile };
-    if (type === 'text_image') return { type: 'text_image', slot, header: first.header, body: first.body, body_mobile: first.body_mobile, imageUrl: first.image_url };
+    if (type === 'text_image') return { type: 'text_image', slot, header: first.header, body: first.body, body_mobile: first.body_mobile, imageUrl: first.image_url, mobileImageUrl: first.mobile_image_url };
     if (type === 'question_image') {
       const distractors = [first.distractor_1, first.distractor_2, first.distractor_3, first.distractor_4].filter(d => d && d.trim());
-      return { type: 'question_image', slot, stem: first.stem, correct: first.correct, distractors, feedback: first.feedback, showIdk: first.show_idk?.toLowerCase() === 'yes', imageUrl: first.image_url };
+      return { type: 'question_image', slot, stem: first.stem, correct: first.correct, distractors, feedback: first.feedback, showIdk: first.show_idk?.toLowerCase() === 'yes', imageUrl: first.image_url, mobileImageUrl: first.mobile_image_url };
     }
     if (type === 'categorize') {
       return {
@@ -1897,6 +1917,43 @@ function buildCardsForSection(rows) {
   });
 }
 
+
+// ─────────────────────────────────────────────
+// RENDER INCOMPLETE CARD
+// ─────────────────────────────────────────────
+function renderIncompleteCard(item, cardIndex, onComplete, message = 'This card data is incomplete.') {
+  const sectionIndex = cardIndex;
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Card ${cardIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Needs Attention</span>
+    </div>
+    <div class="text-card">
+      <h2 class="content-header">Card setup issue</h2>
+      <div class="content-body"><p>${html(message)}</p></div>
+    </div>
+    <div class="continue-row show">
+      <button class="action-btn continue-btn">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  block.querySelector('.continue-btn').addEventListener('click', () => {
+    logEvent('incomplete_card_continued', { slot: item.slot, sectionIndex, message });
+    onComplete();
+  });
+
+  return block;
+}
 
 // ─────────────────────────────────────────────
 // RENDER VIDEO BLOCK
@@ -2020,6 +2077,10 @@ function renderTextBlock(item, cardIndex, onComplete, onContinue = onComplete) {
 // ─────────────────────────────────────────────
 function renderTextImageBlock(item, cardIndex, onComplete, onContinue = onComplete) {
   const sectionIndex = cardIndex;
+  const imageUrl = getPreferredImageUrl(item);
+  if (!imageUrl) {
+    return renderIncompleteCard(item, cardIndex, onComplete, 'Text + image card is missing an image URL.');
+  }
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
@@ -2039,7 +2100,7 @@ function renderTextImageBlock(item, cardIndex, onComplete, onContinue = onComple
           ${bodyHtml ? `<div class="content-body">${bodyHtml}</div>` : ''}
         </div>
         <div class="text-image-img">
-          <img src="${html(item.imageUrl)}" alt="" />
+          <img src="${html(imageUrl)}" alt="" />
         </div>
       </div>
     </div>
@@ -2674,6 +2735,7 @@ function renderCategorizeBlock(item, cardIndex, onComplete, onContinue = onCompl
 // ─────────────────────────────────────────────
 function renderQuestionImageBlock(item, cardIndex, onComplete, onContinue = onComplete) {
   const sectionIndex = cardIndex;
+  const imageUrl = getPreferredImageUrl(item);
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
@@ -2737,7 +2799,7 @@ function renderQuestionImageBlock(item, cardIndex, onComplete, onContinue = onCo
           </div>
         </div>
         <div class="question-image-aside">
-          <img src="${html(item.imageUrl)}" alt="" />
+          <img src="${html(imageUrl)}" alt="" />
         </div>
       </div>
     </div>
