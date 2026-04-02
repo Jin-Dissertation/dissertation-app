@@ -306,6 +306,18 @@
       border: 1px solid var(--rule);
     }
 
+    .module-header-actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .module-header-actions .action-btn {
+      min-width: 132px;
+    }
+
 
     .overall-progress {
       margin-top: 16px;
@@ -1148,6 +1160,8 @@
       .continue-row { justify-content: stretch; }
       .continue-row .action-btn,
       .video-footer  .action-btn { width: 100%; justify-content: center; }
+      .module-header-actions { align-items: stretch; }
+      .module-header-actions .action-btn { width: 100%; justify-content: center; }
 
       /* Completion stats */
       .completion-stats { flex-direction: column; gap: 14px; text-align: center; }
@@ -1240,7 +1254,10 @@
     <header class="module-header">
       <p class="module-label">Professional Development Module</p>
       <h1 class="module-title">AI-Assisted MCQ Development<br>for Nursing Education</h1>
-      <span class="module-participant" id="participant-badge"></span>
+      <div class="module-header-actions">
+        <span class="module-participant" id="participant-badge"></span>
+        <button class="action-btn secondary" id="btn-save-exit" type="button">Save and exit</button>
+      </div>
       <div class="overall-progress" id="overall-progress">
         <span id="overall-total">Sections: 0</span>
         <span id="overall-current">Current: —</span>
@@ -1327,6 +1344,25 @@ const now = () => new Date().toISOString();
 
 function setTrainingMode(isTraining) {
   document.body.classList.toggle('training-mode', !!isTraining);
+}
+
+function returnToGate() {
+  $('training').style.display = 'none';
+  $('loading').style.display = 'none';
+  $('completion').style.display = 'none';
+  $('gate').style.display = 'flex';
+  setTrainingMode(false);
+
+  const codeInput = $('code-input');
+  const gateError = $('gate-error');
+  if (gateError) gateError.textContent = '';
+  if (codeInput) {
+    codeInput.value = participantCode || '';
+    requestAnimationFrame(() => {
+      codeInput.focus({ preventScroll: true });
+      codeInput.select();
+    });
+  }
 }
 
 function makeSessionId(code) {
@@ -3068,6 +3104,39 @@ async function submitSession() {
   }
 }
 
+async function handleSaveAndExit() {
+  const btn = $('btn-save-exit');
+  const originalText = btn ? btn.textContent : 'Save and exit';
+
+  try {
+    markInteraction();
+    saveProgress();
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+    }
+
+    logEvent('save_exit_clicked', {
+      revealed_slots: revealedSlots,
+      completed_cards: completedSlots.size,
+      total_questions: totalQuestions,
+      correct_first: correctFirst
+    });
+
+    await syncLiveSessionUpdate('in_progress');
+    returnToGate();
+  } catch (err) {
+    console.warn('Save and exit failed', err);
+    alert('Unable to save your place right now. Please try again.');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
+
 function buildCardResponseValues() {
   const itemValues = [];
   const itemMap = {};
@@ -3192,6 +3261,11 @@ function sendLiveSessionUpdate(statusOverride = 'in_progress') {
   });
 }
 
+async function syncLiveSessionUpdate(statusOverride = 'in_progress') {
+  const payload = buildLiveSessionSnapshot(statusOverride);
+  return postToAppsScript(API_URL, payload);
+}
+
 function offerDownload(payload) {
   const existing = $('download-backup-wrap');
   if (existing) return;
@@ -3281,6 +3355,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const gateError = $('gate-error');
   const gateSubmitBtn = $('gate-submit-btn');
   const gateSubmitLabel = gateSubmitBtn?.querySelector('.gate-btn-label');
+  $('btn-save-exit')?.addEventListener('click', handleSaveAndExit);
 
   function setGateLoading(isLoading, text = 'Loading') {
     if (!gateSubmitBtn || !gateSubmitLabel) return;
