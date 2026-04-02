@@ -2878,7 +2878,10 @@ const PROMPT_META = [
       const events = loadJSON(KEYS.events, []);
       const llmResponse = ($("llmResponse")?.value || "").trim();
       const sessionNotes = ($("sessionNotes")?.value || "").trim();
-      const finalPrompt = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+      const finalPrompt =
+        getStage() === "finalize"
+          ? (localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt())
+          : getSafeStoredFinalPrompt();
       const promptId = stage === "finalize" ? "final_prompt" : (stage === "setup" ? "starter" : "");
       const modeParam = new URLSearchParams(window.location.search).get("mode");
 
@@ -3546,6 +3549,10 @@ const PROMPT_META = [
       return getPromptText("final_prompt");
     }
 
+    function getSafeStoredFinalPrompt() {
+      return localStorage.getItem(KEYS.finalPrompt) || "";
+    }
+
     // Preview text for prompt card panels. Uses natural-language fallbacks.
     function fillTemplate(template) {
       const ctx = getContext();
@@ -4168,7 +4175,12 @@ const PROMPT_META = [
       refreshFooterInfo();
       renderCopyCardPromptText();
       if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
-      if ($("finalCopyPreview")) $("finalCopyPreview").textContent = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+      if ($("finalCopyPreview")) {
+        $("finalCopyPreview").textContent =
+          stage === "finalize" && finalizeUnlocked
+            ? (localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt())
+            : getSafeStoredFinalPrompt();
+      }
       updateStarterCopyAvailability();
       updateProceedToPromptsAvailability();
     }
@@ -4773,7 +4785,11 @@ const PROMPT_META = [
       if (starterPreview) starterPreview.textContent = buildStarterPrompt();
       const finalPreview = $("finalCopyPreview");
       if (finalPreview) {
-        finalPreview.textContent = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+        if (getStage() === "finalize") {
+          finalPreview.textContent = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+        } else {
+          finalPreview.textContent = getSafeStoredFinalPrompt();
+        }
       }
     }
 
