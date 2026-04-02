@@ -1879,7 +1879,7 @@ function buildCardsForSection(rows) {
 // ─────────────────────────────────────────────
 // RENDER VIDEO BLOCK
 // ─────────────────────────────────────────────
-function renderVideoBlock(item, cardIndex, onComplete) {
+function renderVideoBlock(item, cardIndex, onComplete, onContinue = onComplete) {
   const sectionIndex = cardIndex;
   const block = document.createElement('div');
   block.className = 'section-block';
@@ -1940,10 +1940,7 @@ function renderVideoBlock(item, cardIndex, onComplete) {
       youtubeId: item.youtubeId,
       watch_duration_ms: watchMs
     });
-    doneBtn.disabled = true;
-    doneBtn.textContent = '✓ Watched';
-    doneBtn.style.background = '#2d7a4f';
-    onComplete();
+    onContinue();
   });
 
   return block;
@@ -1952,7 +1949,7 @@ function renderVideoBlock(item, cardIndex, onComplete) {
 // ─────────────────────────────────────────────
 // RENDER TEXT BLOCK  (header + body)
 // ─────────────────────────────────────────────
-function renderTextBlock(item, cardIndex, onComplete) {
+function renderTextBlock(item, cardIndex, onComplete, onContinue = onComplete) {
   const sectionIndex = cardIndex;
   const block = document.createElement('div');
   block.className = 'section-block';
@@ -1990,8 +1987,8 @@ function renderTextBlock(item, cardIndex, onComplete) {
 
   block.querySelector('.continue-btn').addEventListener('click', () => {
     logEvent('text_continued', { slot: item.slot, sectionIndex });
-    onComplete();
-  }, { once: true });
+    onContinue();
+  });
 
   return block;
 }
@@ -1999,7 +1996,7 @@ function renderTextBlock(item, cardIndex, onComplete) {
 // ─────────────────────────────────────────────
 // RENDER TEXT + IMAGE BLOCK  (header + body left, image right)
 // ─────────────────────────────────────────────
-function renderTextImageBlock(item, cardIndex, onComplete) {
+function renderTextImageBlock(item, cardIndex, onComplete, onContinue = onComplete) {
   const sectionIndex = cardIndex;
   const block = document.createElement('div');
   block.className = 'section-block';
@@ -2044,8 +2041,8 @@ function renderTextImageBlock(item, cardIndex, onComplete) {
 
   block.querySelector('.continue-btn').addEventListener('click', () => {
     logEvent('text_image_continued', { slot: item.slot, sectionIndex });
-    onComplete();
-  }, { once: true });
+    onContinue();
+  });
 
   return block;
 }
@@ -2053,7 +2050,7 @@ function renderTextImageBlock(item, cardIndex, onComplete) {
 // ─────────────────────────────────────────────
 // RENDER QUIZ BLOCK
 // ─────────────────────────────────────────────
-function renderQuizBlock(item, cardIndex, onComplete) {
+function renderQuizBlock(item, cardIndex, onComplete, onContinue = onComplete) {
   const sectionIndex = cardIndex;
   const block = document.createElement('div');
   block.className = 'section-block';
@@ -2238,6 +2235,12 @@ function renderQuizBlock(item, cardIndex, onComplete) {
     }
 
     fbNext.classList.add('show');
+    const nextTarget = qi < item.questions.length - 1
+      ? fbNext
+      : block.querySelector('.continue-row') || block.querySelector('.quiz-complete') || fbNext;
+    requestAnimationFrame(() => {
+      scrollToEl(nextTarget, 100);
+    });
 
     fbNext.addEventListener('click', () => {
       markInteraction();
@@ -2272,12 +2275,6 @@ function renderQuizBlock(item, cardIndex, onComplete) {
         sectionState.currentQi = item.questions.length - 1;
         saveProgress();
         scrollToEl(continueRow, 100);
-
-        block.querySelector('.continue-btn').addEventListener('click', () => {
-          markInteraction();
-          logEvent('continue_clicked', { slot: item.slot, sectionIndex });
-          onComplete();
-        }, { once: true });
       }
     }, { once: true });
   });
@@ -2320,6 +2317,9 @@ function renderQuizBlock(item, cardIndex, onComplete) {
       qBlock.classList.remove('answered');
       qBlock.classList.add('active');
       fbNext.classList.add('show');
+      requestAnimationFrame(() => {
+        scrollToEl(qBlock, 100);
+      });
     }
   });
 
@@ -2328,13 +2328,20 @@ function renderQuizBlock(item, cardIndex, onComplete) {
     block.querySelector('.continue-row').classList.add('show');
   }
 
+  const continueBtn = block.querySelector('.continue-btn');
+  continueBtn.addEventListener('click', () => {
+    markInteraction();
+    logEvent('continue_clicked', { slot: item.slot, sectionIndex });
+    onContinue();
+  });
+
   return block;
 }
 
 // ─────────────────────────────────────────────
 // RENDER CATEGORIZE BLOCK
 // ─────────────────────────────────────────────
-function renderCategorizeBlock(item, cardIndex, onComplete) {
+function renderCategorizeBlock(item, cardIndex, onComplete, onContinue = onComplete) {
   const sectionIndex = cardIndex;
   const block = document.createElement('div');
   block.className = 'section-block';
@@ -2618,11 +2625,8 @@ function renderCategorizeBlock(item, cardIndex, onComplete) {
   });
 
   continueBtn.addEventListener('click', () => {
-    if (sectionState.continued) return;
     markInteraction();
-    sectionState.continued = true;
-    saveProgress();
-    onComplete();
+    onContinue();
   });
 
   applySavedPlacements();
@@ -2646,7 +2650,7 @@ function renderCategorizeBlock(item, cardIndex, onComplete) {
 // ─────────────────────────────────────────────
 // RENDER QUESTION + IMAGE BLOCK  (question left, image right)
 // ─────────────────────────────────────────────
-function renderQuestionImageBlock(item, cardIndex, onComplete) {
+function renderQuestionImageBlock(item, cardIndex, onComplete, onContinue = onComplete) {
   const sectionIndex = cardIndex;
   const block = document.createElement('div');
   block.className = 'section-block';
@@ -2755,8 +2759,8 @@ function renderQuestionImageBlock(item, cardIndex, onComplete) {
     block.querySelector('.continue-btn').addEventListener('click', () => {
       markInteraction();
       logEvent('continue_clicked', { slot: item.slot, sectionIndex });
-      onComplete();
-    }, { once: true });
+      onContinue();
+    });
     scrollToEl(continueRow, 100);
   }
 
@@ -2896,9 +2900,20 @@ function renderTraining(structure, savedState = null) {
 
   // SECTION PROGRESSION TRACKING: progressionSectionIndex is the learner's true position.
   // Manual review can open completed sections without changing this index.
-  function collapseAllExcept(idx, updateProgressPointer = true) {
-    sectionState.forEach((st, i) => { st.expanded = i === idx; updateSectionUI(i); });
+  function setOnlyExpanded(idx, updateProgressPointer = true) {
+    sectionState.forEach((st, i) => {
+      st.expanded = i === idx;
+      updateSectionUI(i);
+    });
     if (updateProgressPointer) progressionSectionIndex = idx;
+    updateProgress();
+  }
+
+  function refreshExpandedSections(updateProgressPointer = false, progressIdx = null) {
+    sectionState.forEach((st, i) => updateSectionUI(i));
+    if (updateProgressPointer && Number.isInteger(progressIdx)) {
+      progressionSectionIndex = progressIdx;
+    }
     updateProgress();
   }
 
@@ -2935,8 +2950,8 @@ function renderTraining(structure, savedState = null) {
     accordion.querySelector('.section-toggle').addEventListener('click', () => {
       if (!sectionState[sectionIdx].unlocked) return;
       markInteraction();
-      const isCompletedSection = sectionState[sectionIdx].completedCards >= allSections[sectionIdx].cards.length;
-      collapseAllExcept(sectionIdx, !isCompletedSection);
+      sectionState[sectionIdx].expanded = !sectionState[sectionIdx].expanded;
+      refreshExpandedSections(false);
     });
 
     const content = accordion.querySelector('.section-content');
@@ -2944,26 +2959,33 @@ function renderTraining(structure, savedState = null) {
       const cardIndex = globalCardIndex++;
       cardLookup[cardIndex] = { sectionIdx, cardIdx: localCardIdx };
 
-      const onComplete = () => {
-        if (completedSlots.has(cardIndex)) return;
-        markCardCompleted(cardIndex);
-        completedSlots.add(cardIndex);
-        sectionState[sectionIdx].completedCards += 1;
+      const advanceFromCard = ({ markComplete = true } = {}) => {
+        if (markComplete && completedSlots.has(cardIndex)) return;
+
+        if (markComplete) {
+          markCardCompleted(cardIndex);
+          completedSlots.add(cardIndex);
+          sectionState[sectionIdx].completedCards += 1;
+        }
 
         const hasNextCard = localCardIdx + 1 < section.cards.length;
+
         if (hasNextCard) {
           revealCard(sectionIdx, localCardIdx + 1);
+          sectionState[sectionIdx].expanded = true;
+          updateSectionUI(sectionIdx);
           scrollToEl(sectionState[sectionIdx].cardEls[localCardIdx + 1], 80);
         } else {
-          // SECTION COMPLETION -> collapse current and expand next unlocked section.
           const nextSection = sectionIdx + 1;
           if (nextSection < allSections.length) {
             sectionState[nextSection].unlocked = true;
             revealCard(nextSection, 0);
-            collapseAllExcept(nextSection, true);
+            setOnlyExpanded(nextSection, true);
             scrollToEl(container.querySelector(`[data-section-idx="${nextSection}"]`), 80);
-          } else {
+          } else if (markComplete) {
             completionReached = true;
+            showCompletion();
+          } else if (completionReached) {
             showCompletion();
           }
         }
@@ -2975,13 +2997,26 @@ function renderTraining(structure, savedState = null) {
         sendLiveSessionUpdate('in_progress');
       };
 
+      const onComplete = () => {
+        advanceFromCard({ markComplete: true });
+      };
+
+      const onContinue = () => {
+        markInteraction();
+        if (completedSlots.has(cardIndex)) {
+          advanceFromCard({ markComplete: false });
+        } else {
+          advanceFromCard({ markComplete: true });
+        }
+      };
+
       let block;
-      if (item.type === 'video') block = renderVideoBlock(item, cardIndex, onComplete);
-      else if (item.type === 'text') block = renderTextBlock(item, cardIndex, onComplete);
-      else if (item.type === 'text_image') block = renderTextImageBlock(item, cardIndex, onComplete);
-      else if (item.type === 'question_image') block = renderQuestionImageBlock(item, cardIndex, onComplete);
-      else if (item.type === 'categorize') block = renderCategorizeBlock(item, cardIndex, onComplete);
-      else block = renderQuizBlock(item, cardIndex, onComplete);
+      if (item.type === 'video') block = renderVideoBlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'text') block = renderTextBlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'text_image') block = renderTextImageBlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'question_image') block = renderQuestionImageBlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'categorize') block = renderCategorizeBlock(item, cardIndex, onComplete, onContinue);
+      else block = renderQuizBlock(item, cardIndex, onComplete, onContinue);
       block.dataset.cardIndex = String(cardIndex);
 
       if (localCardIdx >= sectionState[sectionIdx].visibleCards) block.classList.remove('revealed');
@@ -3027,7 +3062,7 @@ function renderTraining(structure, savedState = null) {
   const firstIncomplete = sectionState.findIndex((st, idx) => st.completedCards < allSections[idx].cards.length && st.unlocked);
   const initialSection = firstIncomplete >= 0 ? firstIncomplete : 0;
   progressionSectionIndex = initialSection;
-  collapseAllExcept(initialSection, false);
+  setOnlyExpanded(initialSection, false);
 
   revealedSlots = Math.max(preRevealCount, completedSlots.size);
   if (completionReached) showCompletion();
