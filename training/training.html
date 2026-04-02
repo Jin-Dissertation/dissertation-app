@@ -94,7 +94,13 @@
       border-radius: 999px;
       z-index: 200;
       opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
       transition: opacity 0.3s;
+    }
+
+    body.training-mode #section-counter {
+      visibility: visible;
     }
 
     /* ── PAGE SHELL ── */
@@ -1151,7 +1157,7 @@
 
       #progress-bar { display: none; }
 
-      #section-counter {
+      body.training-mode #section-counter {
         top: auto;
         bottom: 12px;
         right: 12px;
@@ -1173,7 +1179,7 @@
         box-shadow: 0 5px 16px rgba(16,33,61,0.12);
       }
 
-      #section-counter::before {
+      body.training-mode #section-counter::before {
         content: '';
         position: absolute;
         inset: 4px;
@@ -1182,7 +1188,7 @@
         box-shadow: inset 0 0 0 1px rgba(200, 216, 240, 0.9);
       }
 
-      #section-counter span {
+      body.training-mode #section-counter span {
         position: relative;
         z-index: 1;
         line-height: 1;
@@ -3309,7 +3315,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setGateLoading(true, 'Loading');
     $('gate').style.display    = 'none';
     $('loading').style.display = 'flex';
-    setTrainingMode(true);
+    setTrainingMode(false);
 
     if (!resuming) logEvent('access_granted', { participantCode });
 
