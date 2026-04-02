@@ -2620,6 +2620,34 @@ const PROMPT_META = [
     let starterPromptCopied = false;
     let appBootLoading = true;
     let appBootReady = false;
+    const EDIT_LOG_DEBOUNCE_MS = 600;
+    const contextEditLogTimers = new Map();
+    let llmResponseEditTimer = null;
+    let sessionNotesEditTimer = null;
+
+    function debounceByKey(timerMap, key, fn, waitMs = EDIT_LOG_DEBOUNCE_MS) {
+      const existingTimer = timerMap.get(key);
+      if (existingTimer) {
+        window.clearTimeout(existingTimer);
+      }
+      const nextTimer = window.setTimeout(() => {
+        timerMap.delete(key);
+        fn();
+      }, waitMs);
+      timerMap.set(key, nextTimer);
+    }
+
+    function debounceSingle(getTimer, setTimer, fn, waitMs = EDIT_LOG_DEBOUNCE_MS) {
+      const existingTimer = getTimer();
+      if (existingTimer) {
+        window.clearTimeout(existingTimer);
+      }
+      const nextTimer = window.setTimeout(() => {
+        setTimer(null);
+        fn();
+      }, waitMs);
+      setTimer(nextTimer);
+    }
 
     // Optional audio feedback recorder state (kept centralized for easy end-session integration later).
     let currentAudioStream = null;
@@ -5145,6 +5173,10 @@ const PROMPT_META = [
         logEvent("done_making_questions_clicked");
         queueLiveSessionUpdate("in_progress");
         const fp = buildFinalPrompt();
+        console.info("AQG final prompt generated", {
+          llmProduct: localStorage.getItem(KEYS.llmProduct) || "",
+          finalPrompt: fp
+        });
         localStorage.setItem(KEYS.finalPrompt, fp);
         if ($("finalCopyPreview")) $("finalCopyPreview").textContent = fp;
         localStorage.setItem(KEYS.finalPromptCopied, "false");
@@ -5187,11 +5219,17 @@ const PROMPT_META = [
       updateProceedToPromptsAvailability();
 
       $("llmResponse").addEventListener("input", () => {
-        markInteraction();
-        logEvent("llm_response_edited");
-        queueLiveSessionUpdate("in_progress");
         updateFinalizeContentUI();
         updateEndSessionState();
+        debounceSingle(
+          () => llmResponseEditTimer,
+          (timerId) => { llmResponseEditTimer = timerId; },
+          () => {
+            markInteraction();
+            logEvent("llm_response_edited");
+            queueLiveSessionUpdate("in_progress");
+          }
+        );
       });
       $("llmResponse").addEventListener("change", () => {
         markInteraction();
@@ -5199,9 +5237,15 @@ const PROMPT_META = [
         updateEndSessionState();
       });
       $("sessionNotes")?.addEventListener("input", () => {
-        markInteraction();
-        logEvent("session_notes_edited");
-        queueLiveSessionUpdate("in_progress");
+        debounceSingle(
+          () => sessionNotesEditTimer,
+          (timerId) => { sessionNotesEditTimer = timerId; },
+          () => {
+            markInteraction();
+            logEvent("session_notes_edited");
+            queueLiveSessionUpdate("in_progress");
+          }
+        );
       });
 
 
@@ -5321,8 +5365,10 @@ const PROMPT_META = [
       };
       saveJSON(KEYS.context, ctx);
       markInteraction();
-      logEvent("context_edited", { field: target.id });
       queueLiveSessionUpdate("in_progress");
+      debounceByKey(contextEditLogTimers, target.id, () => {
+        logEvent("context_edited", { field: target.id });
+      });
 
       if (isRequired) {
         invalidateStarterPromptCopied();
