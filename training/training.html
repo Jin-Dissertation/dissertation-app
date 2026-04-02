@@ -829,6 +829,15 @@
       flex-shrink: 0;
     }
 
+    .page-footer a {
+      color: inherit;
+      text-decoration: underline;
+    }
+
+    .page-footer a:hover {
+      opacity: 0.85;
+    }
+
     /* ── ANIMATIONS ── */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(16px); }
@@ -1307,6 +1316,8 @@
   </div>
 
   <footer class="page-footer">
+    <a href="about.html">About / FAQ</a>
+    <span aria-hidden="true"> · </span>
     Last updated: <span id="last-updated"></span>
   </footer>
 </div>
@@ -3356,7 +3367,7 @@ async function handleSaveAndExit() {
     returnToGate();
   } catch (err) {
     console.warn('Save and exit failed', err);
-    alert('Unable to save your place right now. Please try again.');
+    alert('We could not confirm your progress was saved. Choosing "Save and exit" usually makes it more likely that your place will be saved, but it is not guaranteed. Please try again before closing this window.');
   } finally {
     if (btn) {
       btn.disabled = false;
