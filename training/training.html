@@ -1767,7 +1767,8 @@ function buildCardsForSection(rows) {
 // ─────────────────────────────────────────────
 // RENDER VIDEO BLOCK
 // ─────────────────────────────────────────────
-function renderVideoBlock(item, sectionIndex, onComplete) {
+function renderVideoBlock(item, cardIndex, onComplete) {
+  const sectionIndex = cardIndex;
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
@@ -1776,7 +1777,7 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
     ? `
         <iframe
           src="https://www.youtube.com/embed/${html(videoId)}?rel=0&modestbranding=1"
-          title="Training video ${sectionIndex + 1}"
+          title="Training video ${cardIndex + 1}"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen>
         </iframe>
@@ -1788,7 +1789,7 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
 
   block.innerHTML = `
     <div class="section-label">
-      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <span class="section-num">Card ${cardIndex + 1}</span>
       <div class="section-rule"></div>
       <span class="section-type-badge">Video</span>
     </div>
@@ -1839,7 +1840,8 @@ function renderVideoBlock(item, sectionIndex, onComplete) {
 // ─────────────────────────────────────────────
 // RENDER TEXT BLOCK  (header + body)
 // ─────────────────────────────────────────────
-function renderTextBlock(item, sectionIndex, onComplete) {
+function renderTextBlock(item, cardIndex, onComplete) {
+  const sectionIndex = cardIndex;
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
@@ -1848,7 +1850,7 @@ function renderTextBlock(item, sectionIndex, onComplete) {
 
   block.innerHTML = `
     <div class="section-label">
-      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <span class="section-num">Card ${cardIndex + 1}</span>
       <div class="section-rule"></div>
       <span class="section-type-badge">Reading</span>
     </div>
@@ -1885,7 +1887,8 @@ function renderTextBlock(item, sectionIndex, onComplete) {
 // ─────────────────────────────────────────────
 // RENDER TEXT + IMAGE BLOCK  (header + body left, image right)
 // ─────────────────────────────────────────────
-function renderTextImageBlock(item, sectionIndex, onComplete) {
+function renderTextImageBlock(item, cardIndex, onComplete) {
+  const sectionIndex = cardIndex;
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
@@ -1894,7 +1897,7 @@ function renderTextImageBlock(item, sectionIndex, onComplete) {
 
   block.innerHTML = `
     <div class="section-label">
-      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <span class="section-num">Card ${cardIndex + 1}</span>
       <div class="section-rule"></div>
       <span class="section-type-badge">Reading</span>
     </div>
@@ -1938,7 +1941,8 @@ function renderTextImageBlock(item, sectionIndex, onComplete) {
 // ─────────────────────────────────────────────
 // RENDER QUIZ BLOCK
 // ─────────────────────────────────────────────
-function renderQuizBlock(item, sectionIndex, onComplete) {
+function renderQuizBlock(item, cardIndex, onComplete) {
+  const sectionIndex = cardIndex;
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
@@ -2010,7 +2014,7 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
 
   block.innerHTML = `
     <div class="section-label">
-      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <span class="section-num">Card ${cardIndex + 1}</span>
       <div class="section-rule"></div>
       <span class="section-type-badge">Knowledge Check</span>
     </div>
@@ -2217,7 +2221,8 @@ function renderQuizBlock(item, sectionIndex, onComplete) {
 // ─────────────────────────────────────────────
 // RENDER CATEGORIZE BLOCK
 // ─────────────────────────────────────────────
-function renderCategorizeBlock(item, sectionIndex, onComplete) {
+function renderCategorizeBlock(item, cardIndex, onComplete) {
+  const sectionIndex = cardIndex;
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
@@ -2258,7 +2263,7 @@ function renderCategorizeBlock(item, sectionIndex, onComplete) {
 
   block.innerHTML = `
     <div class="section-label">
-      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <span class="section-num">Card ${cardIndex + 1}</span>
       <div class="section-rule"></div>
       <span class="section-type-badge">Knowledge Check</span>
     </div>
@@ -2528,7 +2533,8 @@ function renderCategorizeBlock(item, sectionIndex, onComplete) {
 // ─────────────────────────────────────────────
 // RENDER QUESTION + IMAGE BLOCK  (question left, image right)
 // ─────────────────────────────────────────────
-function renderQuestionImageBlock(item, sectionIndex, onComplete) {
+function renderQuestionImageBlock(item, cardIndex, onComplete) {
+  const sectionIndex = cardIndex;
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
@@ -2577,7 +2583,7 @@ function renderQuestionImageBlock(item, sectionIndex, onComplete) {
 
   block.innerHTML = `
     <div class="section-label">
-      <span class="section-num">Section ${sectionIndex + 1}</span>
+      <span class="section-num">Card ${cardIndex + 1}</span>
       <div class="section-rule"></div>
       <span class="section-type-badge">Knowledge Check</span>
     </div>
