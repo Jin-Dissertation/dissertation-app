@@ -643,8 +643,13 @@
       display: block;
     }
 
-    .feedback-next-btn {
+    .feedback-actions {
       margin-top: 14px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .feedback-next-btn {
       font-family: var(--sans);
       font-size: 0.8rem;
       font-weight: 600;
@@ -1158,6 +1163,7 @@
 
       /* Action buttons — full width */
       .continue-row { justify-content: stretch; }
+      .feedback-actions { justify-content: flex-end; }
       .continue-row .action-btn,
       .video-footer  .action-btn { width: 100%; justify-content: center; }
       .module-header-actions { align-items: stretch; }
@@ -2081,10 +2087,11 @@ function renderQuizBlock(item, cardIndex, onComplete) {
         <div class="feedback-box">
           <span class="feedback-label"></span>
           <span class="feedback-text"></span>
-          <br/>
-          <button class="feedback-next-btn">
-            ${qi < item.questions.length - 1 ? 'Next question →' : 'Continue →'}
-          </button>
+          <div class="feedback-actions">
+            <button class="feedback-next-btn">
+              ${qi < item.questions.length - 1 ? 'Next question →' : 'Continue →'}
+            </button>
+          </div>
         </div>
       </div>
     `;
