@@ -1336,6 +1336,10 @@
 const API_URL = 'https://script.google.com/macros/s/AKfycbwsRmerE4CnZIIQ7F65yBo123VPl0oXyEhtJHZPuWhc5FElSKaJj5HSc-PegJIv5-u52g/exec';
 const APP_VERSION = '2026-04-01-a';
 const CONTENT_VERSION = '2026-04-01-content-a';
+const STORAGE_KEY = `training_progress_${APP_VERSION}_${CONTENT_VERSION}`;
+const LEGACY_STORAGE_KEYS = ['training_progress_v1'];
+const REQUEST_TIMEOUT_MS = 15000;
+const LIVE_UPDATE_DEBOUNCE_MS = 4000;
 
 // ─────────────────────────────────────────────
 // STATE
@@ -1356,7 +1360,11 @@ let quizStates = {};
 let progressionSectionIndex = 0;
 let allSections = [];
 let interactionTimes = [];
+let activeMsBase = 0;
 let cardTimingState = {};
+let liveUpdateTimer = null;
+let completionLogged = false;
+let submitInFlight = false;
 
 // ─────────────────────────────────────────────
 // UTILITIES
@@ -1404,20 +1412,31 @@ function logEvent(type, data = {}) {
 }
 
 function markInteraction(ts = Date.now()) {
-  interactionTimes.push(ts);
+  const currentTs = Number(ts);
+  if (!Number.isFinite(currentTs)) return;
+
+  if (Array.isArray(interactionTimes) && interactionTimes.length > 0) {
+    const prev = Number(interactionTimes[interactionTimes.length - 1]);
+    if (Number.isFinite(prev) && currentTs > prev) {
+      activeMsBase += Math.min(currentTs - prev, 60000);
+    }
+  }
+
+  interactionTimes = [currentTs];
 }
 
-function computeActiveSeconds(times) {
-  if (!Array.isArray(times) || times.length < 2) return 0;
+function computeActiveSeconds(times = interactionTimes, baseMs = activeMsBase) {
+  let totalMs = Number.isFinite(Number(baseMs)) ? Number(baseMs) : 0;
 
-  let totalMs = 0;
-  for (let i = 1; i < times.length; i++) {
-    const prev = Number(times[i - 1]);
-    const curr = Number(times[i]);
-    if (!Number.isFinite(prev) || !Number.isFinite(curr) || curr <= prev) continue;
+  if (Array.isArray(times) && times.length >= 2) {
+    for (let i = 1; i < times.length; i++) {
+      const prev = Number(times[i - 1]);
+      const curr = Number(times[i]);
+      if (!Number.isFinite(prev) || !Number.isFinite(curr) || curr <= prev) continue;
 
-    const gap = curr - prev;
-    totalMs += Math.min(gap, 60000);
+      const gap = curr - prev;
+      totalMs += Math.min(gap, 60000);
+    }
   }
 
   return Math.round(totalMs / 1000);
@@ -1673,31 +1692,54 @@ function getPreferredImageUrl(item) {
   return (isMobile && mobileOverride) ? mobileOverride : desktopUrl;
 }
 
-async function postToAppsScript(url, payload) {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload),
-    redirect: 'follow'
-  });
+async function postToAppsScript(url, payload, options = {}) {
+  const retries = Number.isInteger(options.retries) ? options.retries : 1;
+  const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : REQUEST_TIMEOUT_MS;
+  let lastError = null;
 
-  const text = await response.text();
-  let data = null;
-  try {
-    data = JSON.parse(text);
-  } catch (_) {
-    throw new Error(`Invalid JSON response from server (HTTP ${response.status})`);
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload),
+        redirect: 'follow',
+        signal: controller.signal
+      });
+
+      const text = await response.text();
+      let data = null;
+      try {
+        data = JSON.parse(text);
+      } catch (_) {
+        throw new Error(`Invalid JSON response from server (HTTP ${response.status})`);
+      }
+
+      if (!response.ok) {
+        throw new Error(data?.error || `HTTP ${response.status}`);
+      }
+
+      if (!data || data.ok === false) {
+        throw new Error(data?.error || 'unknown_error');
+      }
+
+      return data;
+    } catch (err) {
+      lastError = err?.name === 'AbortError'
+        ? new Error(`Request timed out after ${Math.round(timeoutMs / 1000)} seconds.`)
+        : err;
+
+      if (attempt >= retries) break;
+      await new Promise(resolve => window.setTimeout(resolve, 400 * (attempt + 1)));
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
   }
 
-  if (!response.ok) {
-    throw new Error(data?.error || `HTTP ${response.status}`);
-  }
-
-  if (!data || data.ok === false) {
-    throw new Error(data?.error || 'unknown_error');
-  }
-
-  return data;
+  throw lastError || new Error('Request failed.');
 }
 
 async function loadServerSavedProgress(code) {
@@ -1769,8 +1811,6 @@ function shouldWarnBeforeUnload() {
 // ─────────────────────────────────────────────
 // PROGRESS PERSISTENCE
 // ─────────────────────────────────────────────
-const STORAGE_KEY = 'training_progress_v1';
-
 function saveProgress() {
   if (!participantCode) return;
   try {
@@ -1780,12 +1820,22 @@ function saveProgress() {
 }
 
 function loadSavedProgress() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); }
-  catch (_) { return null; }
+  const keysToTry = [STORAGE_KEY, ...LEGACY_STORAGE_KEYS];
+  for (const key of keysToTry) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      if (parsed) return parsed;
+    } catch (_) {}
+  }
+  return null;
 }
 
 function clearSavedProgress() {
-  try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+  [...LEGACY_STORAGE_KEYS, STORAGE_KEY].forEach(key => {
+    try { localStorage.removeItem(key); } catch (_) {}
+  });
 }
 
 function applySavedProgress(saved) {
@@ -1797,10 +1847,13 @@ function applySavedProgress(saved) {
   events = Array.isArray(saved.events) ? saved.events : [];
   completionReached = !!saved.completionReached;
   hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
+  completionLogged = !!saved.completionReached;
+  submitInFlight = false;
   quizStates = saved.quizStates && typeof saved.quizStates === 'object' ? saved.quizStates : {};
   interactionTimes = Array.isArray(saved.interactionTimes)
-    ? saved.interactionTimes.map(Number).filter(Number.isFinite)
+    ? saved.interactionTimes.map(Number).filter(Number.isFinite).slice(-1)
     : [];
+  activeMsBase = Number.isFinite(Number(saved.activeMsBase)) ? Number(saved.activeMsBase) : 0;
   cardTimingState = saved.cardTimingState && typeof saved.cardTimingState === 'object'
     ? saved.cardTimingState
     : {};
@@ -3077,7 +3130,7 @@ function renderTraining(structure, savedState = null) {
         if (sectionIdx + 1 < allSections.length) updateSectionUI(sectionIdx + 1);
         saveProgress();
         updateProgress();
-        sendLiveSessionUpdate('in_progress');
+        queueLiveSessionUpdate('in_progress');
       };
 
       const onComplete = () => {
@@ -3179,20 +3232,29 @@ function showCompletion() {
 
   const elapsed = sessionStart ? Date.now() - sessionStart : 0;
 
-  logEvent('training_completed', {
-    total_questions: totalQuestions,
-    correct_first:   correctFirst,
-    duration_ms:     elapsed,
-    active_seconds:  computeActiveSeconds(interactionTimes)
-  });
-  sendLiveSessionUpdate('completed');
+  if (!completionLogged) {
+    logEvent('training_completed', {
+      total_questions: totalQuestions,
+      correct_first:   correctFirst,
+      duration_ms:     elapsed,
+      active_seconds:  computeActiveSeconds(interactionTimes)
+    });
+    completionLogged = true;
+  }
 
-  if (!hasSuccessfulSubmission) {
+  cancelQueuedLiveSessionUpdate();
+  saveProgress();
+
+  if (!hasSuccessfulSubmission && !submitInFlight) {
     submitSession();
   }
 }
 
 async function submitSession() {
+  if (submitInFlight || hasSuccessfulSubmission) return;
+
+  submitInFlight = true;
+
   const btn    = $('btn-submit-final');
   const status = $('submit-status');
   if (btn) {
@@ -3205,7 +3267,6 @@ async function submitSession() {
   const activeSeconds = computeActiveSeconds(interactionTimes);
   const { itemValues, itemMap, itemMeta } = buildCardResponseValues();
   const { itemMsValues, itemMsMap } = buildCardMsValues();
-  sendLiveSessionUpdate('submitted');
   const payload = {
     action:           'submitSession',
     source:           'training',
@@ -3232,7 +3293,7 @@ async function submitSession() {
   };
 
   try {
-    const data = await postToAppsScript(API_URL, payload);
+    const data = await postToAppsScript(API_URL, payload, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
 
     if (data && data.ok) {
       hasSuccessfulSubmission = true;
@@ -3246,7 +3307,7 @@ async function submitSession() {
         btn.disabled = true;
       }
       if (status) status.textContent = 'Session data submitted successfully. You may now close this window.';
-      logEvent('session_submitted', { ok: true, fileName: data.fileName });
+      logEvent('session_submitted', { ok: true, duplicate: !!data.duplicate, fileName: data.fileName || '' });
     } else {
       throw new Error(data?.error || 'unknown_error');
     }
@@ -3255,8 +3316,11 @@ async function submitSession() {
       btn.disabled = false;
       btn.textContent = 'Retry submission';
     }
+    queueLiveSessionUpdate('in_progress', 250);
     logEvent('session_submit_failed', { error: String(err.message) });
     offerDownload(payload);
+  } finally {
+    submitInFlight = false;
   }
 }
 
@@ -3293,9 +3357,6 @@ async function handleSaveAndExit() {
   } catch (err) {
     console.warn('Save and exit failed', err);
     alert('Unable to save your place right now. Please try again.');
-    if (typeof setGateLoading === 'function') {
-      setGateLoading(false);
-    }
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -3382,7 +3443,26 @@ function buildProgressSnapshot() {
     totalQuestions,
     correctFirst,
     events,
-    interactionTimes,
+    interactionTimes: Array.isArray(interactionTimes) ? interactionTimes.slice(-1) : [],
+    activeMsBase,
+    completionReached,
+    hasSuccessfulSubmission,
+    quizStates,
+    cardTimingState
+  };
+}
+
+function buildLiveSessionProgressSnapshot() {
+  return {
+    participantCode,
+    sessionId,
+    sessionStart,
+    revealedSlots,
+    completedSlotIndices: [...completedSlots],
+    totalQuestions,
+    correctFirst,
+    interactionTimes: Array.isArray(interactionTimes) ? interactionTimes.slice(-1) : [],
+    activeMsBase,
     completionReached,
     hasSuccessfulSubmission,
     quizStates,
@@ -3405,7 +3485,7 @@ function buildLiveSessionSnapshot(statusOverride = 'in_progress') {
     status: statusOverride,
     app_version: APP_VERSION,
     content_version: CONTENT_VERSION,
-    progress_json: buildProgressSnapshot(),
+    progress_json: buildLiveSessionProgressSnapshot(),
     progress_saved_at: now(),
     item_values: itemValues,
     item_ms_values: itemMsValues,
@@ -3414,6 +3494,13 @@ function buildLiveSessionSnapshot(statusOverride = 'in_progress') {
     item_meta: itemMeta,
     item_count: itemValues.length
   };
+}
+
+function cancelQueuedLiveSessionUpdate() {
+  if (liveUpdateTimer) {
+    window.clearTimeout(liveUpdateTimer);
+    liveUpdateTimer = null;
+  }
 }
 
 function sendLiveSessionUpdate(statusOverride = 'in_progress') {
@@ -3428,9 +3515,24 @@ function sendLiveSessionUpdate(statusOverride = 'in_progress') {
   });
 }
 
+function queueLiveSessionUpdate(statusOverride = 'in_progress', delay = LIVE_UPDATE_DEBOUNCE_MS) {
+  cancelQueuedLiveSessionUpdate();
+
+  if (statusOverride !== 'in_progress' || delay <= 0) {
+    sendLiveSessionUpdate(statusOverride);
+    return;
+  }
+
+  liveUpdateTimer = window.setTimeout(() => {
+    liveUpdateTimer = null;
+    sendLiveSessionUpdate(statusOverride);
+  }, delay);
+}
+
 async function syncLiveSessionUpdate(statusOverride = 'in_progress') {
+  cancelQueuedLiveSessionUpdate();
   const payload = buildLiveSessionSnapshot(statusOverride);
-  return postToAppsScript(API_URL, payload);
+  return postToAppsScript(API_URL, payload, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
 }
 
 function offerDownload(payload) {
@@ -3558,9 +3660,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   gateForm.addEventListener('submit', async e => {
     e.preventDefault();
-    if (typeof setGateLoading === 'function' && !gateSubmitBtn?.disabled) {
-      setGateLoading(false);
-    }
     if (gateSubmitBtn?.disabled) return;
     gateError.textContent = '';
     setGateLoading(true, 'Checking');
@@ -3625,8 +3724,11 @@ document.addEventListener('DOMContentLoaded', () => {
       hasSuccessfulSubmission = false;
       setSaveExitEnabled(true);
       quizStates = {};
-      interactionTimes = [Date.now()];
+      interactionTimes = [];
+      activeMsBase = 0;
       cardTimingState = {};
+      completionLogged = false;
+      submitInFlight = false;
     }
 
     markInteraction();
@@ -3653,7 +3755,7 @@ document.addEventListener('DOMContentLoaded', () => {
       renderTraining(structure, resuming ? saved : null);
 
       logEvent('content_loaded', { sections: structure.length, cards: structure.reduce((n, sec) => n + sec.cards.length, 0), resumed: resuming });
-      sendLiveSessionUpdate('in_progress');
+      queueLiveSessionUpdate('in_progress', 0);
 
     } catch (err) {
       setGateLoading(false);
