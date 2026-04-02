@@ -749,6 +749,20 @@
       color: var(--cream);
     }
 
+    .action-btn.is-disabled,
+    .action-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .action-btn.secondary.is-disabled,
+    .action-btn.secondary:disabled {
+      background: transparent;
+      color: var(--muted);
+      border-color: var(--rule);
+    }
+
     /* ── CONTINUE ROW ── */
     .continue-row {
       margin-top: 20px;
@@ -1701,6 +1715,24 @@ function updateProgress() {
   $('overall-total').textContent = `Sections: ${allSections.length}`;
   $('overall-current').textContent = `Current: ${Math.min(progressionSectionIndex + 1, allSections.length)} / ${allSections.length}`;
   $('overall-completed').textContent = `Completed: ${completedSections}`;
+}
+
+function setSaveExitEnabled(isEnabled) {
+  const btn = $('btn-save-exit');
+  if (!btn) return;
+
+  btn.disabled = !isEnabled;
+  btn.setAttribute('aria-disabled', String(!isEnabled));
+  btn.classList.toggle('is-disabled', !isEnabled);
+
+  if (!isEnabled) {
+    btn.textContent = 'Save and exit';
+  }
+}
+
+function refreshSaveExitAvailability() {
+  const shouldEnable = !completionReached && !hasSuccessfulSubmission;
+  setSaveExitEnabled(shouldEnable);
 }
 
 
@@ -3060,6 +3092,7 @@ function renderTraining(structure, savedState = null) {
 
   saveProgress();
   updateProgress();
+  refreshSaveExitAvailability();
 }
 
 
@@ -3068,6 +3101,8 @@ function renderTraining(structure, savedState = null) {
 // ─────────────────────────────────────────────
 function showCompletion() {
   const completion = $('completion');
+  completionReached = true;
+  refreshSaveExitAvailability();
   completion.style.display = 'block';
   scrollToEl(completion, 60);
 
@@ -3130,6 +3165,7 @@ async function submitSession() {
 
     if (data && data.ok) {
       hasSuccessfulSubmission = true;
+      refreshSaveExitAvailability();
       trainingActive = false;
       completionReached = true;
       clearSavedProgress();
@@ -3154,6 +3190,11 @@ async function submitSession() {
 }
 
 async function handleSaveAndExit() {
+  if (completionReached || hasSuccessfulSubmission) {
+    refreshSaveExitAvailability();
+    return;
+  }
+
   const btn = $('btn-save-exit');
   const originalText = btn ? btn.textContent : 'Save and exit';
 
@@ -3511,6 +3552,7 @@ document.addEventListener('DOMContentLoaded', () => {
       sessionStart    = Date.now();
       completionReached = false;
       hasSuccessfulSubmission = false;
+      setSaveExitEnabled(true);
       quizStates = {};
       interactionTimes = [Date.now()];
       cardTimingState = {};
