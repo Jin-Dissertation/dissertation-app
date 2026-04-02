@@ -1376,6 +1376,7 @@ let cardTimingState = {};
 let liveUpdateTimer = null;
 let completionLogged = false;
 let submitInFlight = false;
+let sectionState = [];
 
 // ─────────────────────────────────────────────
 // UTILITIES
@@ -1513,6 +1514,42 @@ function formatDuration(ms) {
   if (h > 0) return `${h}h ${m % 60}m`;
   if (m > 0) return `${m}m ${s % 60}s`;
   return `${s}s`;
+}
+
+function getDeviceType() {
+  const width = Math.max(window.innerWidth || 0, document.documentElement?.clientWidth || 0, screen?.width || 0);
+  const ua = navigator.userAgent || '';
+  const touchCapable = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+  const isTablet =
+    /iPad|Tablet|PlayBook|Silk/i.test(ua) ||
+    (/Android/i.test(ua) && !/Mobile/i.test(ua)) ||
+    (touchCapable && width >= 768 && width <= 1100);
+
+  if (isTablet) return 'tablet';
+  if (width <= 767) return 'mobile';
+  return 'desktop';
+}
+
+function getOsLabel() {
+  const ua = navigator.userAgent || '';
+  const platform = navigator.platform || '';
+
+  if (/Android/i.test(ua)) return 'Android';
+  if (/iPhone|iPad|iPod/i.test(ua)) return 'iOS';
+  if (/Mac/i.test(platform) || /Mac OS X/i.test(ua)) return 'macOS';
+  if (/Win/i.test(platform) || /Windows/i.test(ua)) return 'Windows';
+  if (/Linux/i.test(platform) || /Linux/i.test(ua)) return 'Linux';
+  if (/CrOS/i.test(ua)) return 'ChromeOS';
+  return 'Unknown';
+}
+
+function getViewportWidth() {
+  return Math.max(window.innerWidth || 0, document.documentElement?.clientWidth || 0, screen?.width || 0);
+}
+
+function getCompactDeviceLabel() {
+  return `${getDeviceType()} ${getOsLabel()} ${getViewportWidth()}`.trim();
 }
 
 function isMobileLikeViewport() {
@@ -2978,7 +3015,7 @@ function renderTraining(structure, savedState = null) {
   const cardLookup = [];
 
   // DESKTOP BLOCKING: future sections remain locked/collapsed until progression unlocks them.
-  const sectionState = allSections.map((section, sectionIdx) => ({
+  sectionState = allSections.map((section, sectionIdx) => ({
     visibleCards: sectionIdx === 0 ? 1 : 0,
     completedCards: 0,
     expanded: sectionIdx === 0,
@@ -3247,6 +3284,8 @@ async function submitSession() {
     source:           'training',
     app_version:      APP_VERSION,
     content_version:  CONTENT_VERSION,
+    device_label:     getCompactDeviceLabel(),
+    device_card_number: getCurrentCardNumber(),
     participant_code: participantCode,
     session_id:       sessionId,
     session_start:    sessionStart ? new Date(sessionStart).toISOString() : null,
@@ -3410,6 +3449,35 @@ function buildCardMsValues() {
   return { itemMsValues, itemMsMap };
 }
 
+function getTotalCardCount() {
+  return allSections.reduce((count, sec) => count + (Array.isArray(sec?.cards) ? sec.cards.length : 0), 0);
+}
+
+function getCurrentCardNumber() {
+  const totalCards = getTotalCardCount();
+  if (!totalCards) return 0;
+
+  let bestCardIndex = -1;
+
+  sectionState.forEach(st => {
+    for (let localIdx = 0; localIdx < st.visibleCards; localIdx++) {
+      const el = st.cardEls?.[localIdx];
+      if (!el || !el.classList.contains('revealed')) continue;
+      const globalIdx = Number(el.dataset.cardIndex);
+      if (Number.isInteger(globalIdx) && !completedSlots.has(globalIdx)) {
+        if (bestCardIndex === -1 || globalIdx < bestCardIndex) {
+          bestCardIndex = globalIdx;
+        }
+      }
+    }
+  });
+
+  if (bestCardIndex >= 0) return bestCardIndex + 1;
+
+  const fallback = Math.min(Math.max(completedSlots.size + 1, 1), totalCards);
+  return completionReached ? totalCards : fallback;
+}
+
 function buildProgressSnapshot() {
   return {
     participantCode,
@@ -3462,6 +3530,8 @@ function buildLiveSessionSnapshot(statusOverride = 'in_progress') {
     status: statusOverride,
     app_version: APP_VERSION,
     content_version: CONTENT_VERSION,
+    device_label: getCompactDeviceLabel(),
+    device_card_number: getCurrentCardNumber(),
     progress_json: buildLiveSessionProgressSnapshot(),
     progress_saved_at: now(),
     item_values: itemValues,
