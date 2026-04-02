@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>About — AI-Assisted MCQ Development</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet" />
+  <style>
+    /* ── RESET & VARIABLES ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * { overflow-wrap: break-word; }
+
+    :root {
+      --navy:       #10213d;
+      --navy-mid:   #1a3560;
+      --cream:      #edf4ff;
+      --cream-dark: #dbe9ff;
+      --gold:       #2f6edc;
+      --gold-lt:    #4d87f0;
+      --green:      #166534;
+      --green-lt:   #dcfce7;
+      --muted:      #5f718f;
+      --rule:       #c8d8f0;
+      --white:      #ffffff;
+      --serif:      'Playfair Display', Georgia, serif;
+      --sans:       'Source Sans 3', 'Gill Sans', Optima, sans-serif;
+      --radius:     10px;
+      --shadow:     0 4px 10px rgba(16,33,61,0.05);
+    }
+
+    html { font-size: 17px; scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      font-weight: 300;
+      background: var(--cream);
+      color: var(--navy);
+      line-height: 1.7;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── PAGE SHELL ── */
+    #app {
+      max-width: 760px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 28px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    .module-header {
+      padding: 36px 0 28px;
+      border-bottom: 1px solid var(--rule);
+      margin-bottom: 0;
+    }
+
+    .module-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .module-title {
+      font-family: var(--serif);
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-weight: 700;
+      color: var(--navy);
+      margin-top: 6px;
+      line-height: 1.2;
+    }
+
+    /* ── LOADING ── */
+    #loading {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      padding: 60px 0;
+    }
+
+    .spinner {
+      width: 32px; height: 32px;
+      border: 2px solid var(--rule);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* ── ERROR ── */
+    #error-block {
+      display: none;
+      margin: 36px 0;
+      padding: 20px 24px;
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      color: #991b1b;
+    }
+
+    /* ── INTRO BLOCK ── */
+    #intro-block {
+      display: none;
+      margin: 32px 0 8px;
+      padding: 24px 28px;
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .intro-eyebrow {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
+
+    .intro-body {
+      font-size: 0.97rem;
+      color: var(--navy);
+      line-height: 1.75;
+    }
+
+    .intro-body p { margin-bottom: 0.75em; }
+    .intro-body p:last-child { margin-bottom: 0; }
+    .intro-body strong { font-weight: 600; }
+    .intro-body em { font-style: italic; }
+
+    /* ── FAQ SECTIONS ── */
+    #faq-container {
+      display: none;
+      margin-top: 28px;
+      margin-bottom: 48px;
+    }
+
+    .faq-section {
+      margin-bottom: 28px;
+    }
+
+    .faq-section-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .faq-section-title {
+      font-family: var(--sans);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .faq-section-rule {
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    /* ── FAQ ITEMS (accordion) ── */
+    .faq-item {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+
+    .faq-question {
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: transparent;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      cursor: pointer;
+      font-family: var(--serif);
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--navy);
+      line-height: 1.4;
+      transition: background 0.15s;
+      min-height: 44px;
+    }
+
+    .faq-question:hover {
+      background: var(--cream);
+    }
+
+    .faq-chevron {
+      flex: 0 0 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--cream-dark);
+      border: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: var(--muted);
+      transition: transform 0.25s ease, background 0.15s;
+    }
+
+    .faq-item.open .faq-chevron {
+      transform: rotate(180deg);
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--white);
+    }
+
+    .faq-answer {
+      display: none;
+      padding: 0 20px 18px;
+      border-top: 1px solid var(--rule);
+    }
+
+    .faq-item.open .faq-answer {
+      display: block;
+    }
+
+    /* ── CONTENT BODY (shared with training.html formatting) ── */
+    .content-body {
+      font-size: 0.95rem;
+      color: var(--navy);
+      line-height: 1.75;
+      padding-top: 14px;
+    }
+
+    .content-body p { margin-bottom: 0.75em; }
+    .content-body p:last-child { margin-bottom: 0; }
+    .content-body strong { font-weight: 600; }
+    .content-body em { font-style: italic; }
+    .content-body ul {
+      margin: 0.7em 0 0.7em 1.6em;
+      padding-left: 0.2em;
+      list-style-position: outside;
+    }
+    .content-body li { margin: 0.3em 0; }
+
+    /* ── FOOTER ── */
+    .page-footer {
+      padding: 20px 0;
+      font-size: 0.78rem;
+      color: var(--muted);
+      border-top: 1px solid var(--rule);
+      margin-top: auto;
+    }
+
+    /* ── CONTACT LINK ── */
+    a {
+      color: var(--gold);
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 800px) {
+      #app { padding: 0 16px; }
+      .module-header { padding: 28px 0 20px; }
+      #intro-block { padding: 18px 18px; }
+      .faq-question { font-size: 0.95rem; padding: 14px 16px; }
+      .faq-answer { padding: 0 16px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <header class="module-header">
+    <p class="module-label">Professional Development Module</p>
+    <h1 class="module-title">AI-Assisted MCQ Development<br>for Nursing Education</h1>
+  </header>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <p class="loading-text">Loading…</p>
+  </div>
+
+  <div id="error-block"></div>
+
+  <div id="intro-block">
+    <p class="intro-eyebrow">About This Page</p>
+    <div class="intro-body" id="intro-body"></div>
+  </div>
+
+  <div id="faq-container"></div>
+
+  <footer class="page-footer">
+    Questions? Contact <a href="mailto:tjin@crimson.ua.edu">tjin@crimson.ua.edu</a>
+  </footer>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────
+function html(v) {
+  return String(v || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Matches the inline + block markdown used in training.html
+function formatBodyText(raw) {
+  const normalized = String(raw || '').replace(/\\n/g, '\n').replace(/\r\n?/g, '\n').trim();
+  if (!normalized) return '';
+
+  const applyInline = text => text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  const blocks = normalized.split(/\n\s*\n/);
+  const parts = [];
+
+  blocks.forEach(block => {
+    const lines = block.split('\n').filter(l => l.trim());
+    let i = 0;
+    while (i < lines.length) {
+      const current = lines[i].trim();
+      if (current.startsWith('-- ')) {
+        const items = [];
+        while (i < lines.length && lines[i].trim().startsWith('-- ')) {
+          items.push(`<li>${applyInline(html(lines[i].trim().slice(3)))}</li>`);
+          i++;
+        }
+        parts.push(`<ul>${items.join('')}</ul>`);
+      } else {
+        const paraLines = [];
+        while (i < lines.length && !lines[i].trim().startsWith('-- ')) {
+          paraLines.push(applyInline(html(lines[i].trim())));
+          i++;
+        }
+        parts.push(`<p>${paraLines.join('<br />')}</p>`);
+      }
+    }
+  });
+
+  return parts.join('');
+}
+
+// ─────────────────────────────────────────────
+// CSV PARSER
+// Handles quoted fields (including embedded commas and escaped quotes).
+// ─────────────────────────────────────────────
+function parseCSV(text) {
+  const rows = [];
+  const normalized = text.replace(/\r\n?/g, '\n');
+  let i = 0;
+
+  while (i < normalized.length) {
+    const row = [];
+    while (true) {
+      if (normalized[i] === '"') {
+        // Quoted field
+        i++; // skip opening quote
+        let field = '';
+        while (i < normalized.length) {
+          if (normalized[i] === '"' && normalized[i + 1] === '"') {
+            field += '"';
+            i += 2;
+          } else if (normalized[i] === '"') {
+            i++; // skip closing quote
+            break;
+          } else {
+            field += normalized[i++];
+          }
+        }
+        row.push(field);
+      } else {
+        // Unquoted field
+        let field = '';
+        while (i < normalized.length && normalized[i] !== ',' && normalized[i] !== '\n') {
+          field += normalized[i++];
+        }
+        row.push(field.trim());
+      }
+
+      if (i >= normalized.length || normalized[i] === '\n') {
+        i++; // skip newline
+        break;
+      }
+      i++; // skip comma
+    }
+    if (row.some(f => f !== '')) rows.push(row);
+  }
+
+  return rows;
+}
+
+function csvToObjects(rows) {
+  if (rows.length < 2) return [];
+  const headers = rows[0].map(h => h.trim().toLowerCase());
+  return rows.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, idx) => { obj[h] = row[idx] !== undefined ? row[idx] : ''; });
+    return obj;
+  });
+}
+
+// ─────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────
+function render(items) {
+  const introItems = items.filter(r => r.type === 'intro');
+  const faqItems   = items.filter(r => r.type === 'faq');
+
+  // Intro block
+  if (introItems.length) {
+    const introBody = document.getElementById('intro-body');
+    introBody.innerHTML = introItems.map(r => formatBodyText(r.answer)).join('');
+    document.getElementById('intro-block').style.display = 'block';
+  }
+
+  // FAQ — group by section, preserving order of first appearance
+  if (faqItems.length) {
+    const container = document.getElementById('faq-container');
+    const sectionMap = new Map();
+
+    faqItems.forEach(row => {
+      const key = row.section || 'General';
+      if (!sectionMap.has(key)) sectionMap.set(key, []);
+      sectionMap.get(key).push(row);
+    });
+
+    sectionMap.forEach((rows, sectionTitle) => {
+      const sectionEl = document.createElement('div');
+      sectionEl.className = 'faq-section';
+
+      const labelEl = document.createElement('div');
+      labelEl.className = 'faq-section-label';
+      labelEl.innerHTML = `
+        <span class="faq-section-title">${html(sectionTitle)}</span>
+        <div class="faq-section-rule"></div>
+      `;
+      sectionEl.appendChild(labelEl);
+
+      rows.forEach(row => {
+        const item = document.createElement('div');
+        item.className = 'faq-item';
+
+        const btn = document.createElement('button');
+        btn.className = 'faq-question';
+        btn.type = 'button';
+        btn.setAttribute('aria-expanded', 'false');
+        btn.innerHTML = `
+          <span>${html(row.question)}</span>
+          <span class="faq-chevron" aria-hidden="true">▾</span>
+        `;
+
+        const answer = document.createElement('div');
+        answer.className = 'faq-answer';
+        answer.innerHTML = `<div class="content-body">${formatBodyText(row.answer)}</div>`;
+
+        btn.addEventListener('click', () => {
+          const isOpen = item.classList.contains('open');
+          item.classList.toggle('open', !isOpen);
+          btn.setAttribute('aria-expanded', String(!isOpen));
+        });
+
+        item.appendChild(btn);
+        item.appendChild(answer);
+        sectionEl.appendChild(item);
+      });
+
+      container.appendChild(sectionEl);
+    });
+
+    container.style.display = 'block';
+  }
+}
+
+// ─────────────────────────────────────────────
+// BOOT — fetch about.csv from the same folder
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  const loading   = document.getElementById('loading');
+  const errorBlock = document.getElementById('error-block');
+
+  try {
+    const res = await fetch('about.csv');
+    if (!res.ok) throw new Error(`Could not load about.csv (HTTP ${res.status})`);
+    const text = await res.text();
+    const rows = parseCSV(text);
+    const items = csvToObjects(rows);
+
+    loading.style.display = 'none';
+
+    if (!items.length) {
+      errorBlock.textContent = 'about.csv loaded but contained no rows. Check the file format.';
+      errorBlock.style.display = 'block';
+      return;
+    }
+
+    render(items);
+
+  } catch (err) {
+    loading.style.display = 'none';
+    errorBlock.innerHTML = `<strong>Could not load page content.</strong> ${html(err.message)}`;
+    errorBlock.style.display = 'block';
+  }
+});
+</script>
+
+</body>
+</html>
