@@ -1616,6 +1616,28 @@ async function postToAppsScript(url, payload) {
   return data;
 }
 
+async function loadServerSavedProgress(code) {
+  const data = await postToAppsScript(API_URL, {
+    action: 'getLatestLiveSession',
+    participant_code: code,
+    user_id: code
+  });
+
+  if (!data || data.ok !== true || !data.found || !data.progress) return null;
+
+  const progress = data.progress;
+  const session = data.session || {};
+
+  return {
+    ...progress,
+    participantCode: progress.participantCode || code,
+    sessionId: progress.sessionId || session.session_id || '',
+    sessionStart: progress.sessionStart || session.session_start || '',
+    _source: 'server',
+    _savedAt: session.progress_saved_at || session.last_activity_at || ''
+  };
+}
+
 function updateProgress() {
   const pct = totalSlots > 0 ? Math.round((completedSlots.size / totalSlots) * 100) : 0;
   $('progress-fill').style.width = pct + '%';
@@ -1652,6 +1674,33 @@ function loadSavedProgress() {
 
 function clearSavedProgress() {
   try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+}
+
+function applySavedProgress(saved) {
+  participantCode = saved.participantCode || saved.participant_code || participantCode;
+  sessionId = saved.sessionId || saved.session_id || sessionId;
+  sessionStart = saved.sessionStart || saved.session_start || sessionStart;
+  totalQuestions = saved.totalQuestions || 0;
+  correctFirst = saved.correctFirst || 0;
+  events = Array.isArray(saved.events) ? saved.events : [];
+  completionReached = !!saved.completionReached;
+  hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
+  quizStates = saved.quizStates && typeof saved.quizStates === 'object' ? saved.quizStates : {};
+  interactionTimes = Array.isArray(saved.interactionTimes)
+    ? saved.interactionTimes.map(Number).filter(Number.isFinite)
+    : [];
+  cardTimingState = saved.cardTimingState && typeof saved.cardTimingState === 'object'
+    ? saved.cardTimingState
+    : {};
+}
+
+function isResumableSavedState(saved) {
+  return !!(
+    saved &&
+    saved.participantCode &&
+    saved.revealedSlots > 1 &&
+    saved.hasSuccessfulSubmission !== true
+  );
 }
 
 function askResumeChoice() {
@@ -3285,25 +3334,35 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Check for saved progress with this code
-    const saved = loadSavedProgress();
+    let saved = null;
     let resuming = false;
-    if (saved && saved.participantCode === entered && saved.revealedSlots > 1) {
+
+    const localSaved = loadSavedProgress();
+    if (isResumableSavedState(localSaved) && localSaved.participantCode === entered) {
+      saved = localSaved;
+    } else {
+      try {
+        const serverSaved = await loadServerSavedProgress(entered);
+        if (isResumableSavedState(serverSaved) && serverSaved.participantCode === entered) {
+          saved = serverSaved;
+        }
+      } catch (err) {
+        console.warn('Server resume lookup failed', err);
+      }
+    }
+
+    if (saved) {
       const choice = await askResumeChoice();
       if (choice === 'continue') {
-        participantCode = saved.participantCode;
-        sessionId       = saved.sessionId;
-        sessionStart    = saved.sessionStart;
-        totalQuestions  = saved.totalQuestions || 0;
-        correctFirst    = saved.correctFirst || 0;
-        events          = saved.events || [];
-        completionReached = !!saved.completionReached;
-        hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
-        quizStates = saved.quizStates || {};
-        interactionTimes = Array.isArray(saved.interactionTimes) ? saved.interactionTimes.map(Number).filter(Number.isFinite) : [];
-        cardTimingState = saved.cardTimingState && typeof saved.cardTimingState === 'object' ? saved.cardTimingState : {};
-        resuming        = true;
+        applySavedProgress(saved);
+        logEvent('resume_selected', { source: saved._source || 'local' });
+        resuming = true;
+
+        if (saved._source === 'server') {
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch (_) {}
+        }
       } else {
+        logEvent('resume_declined', { source: saved._source || 'local' });
         clearSavedProgress();
       }
     }
