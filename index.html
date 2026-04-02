@@ -2555,15 +2555,15 @@ const PROMPT_META = [
     }
 
     async function loadRemoteConfig() {
-      const data = await postToAppsScript(AQG_API_URL, {
-        action: "loadRemoteConfig",
-        source: "aqg"
-      }, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
+      const res = await fetch(AQG_API_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error(`Config fetch failed: ${res.status}`);
+      const data = await res.json();
+      if (!data || !data.ok) throw new Error(data?.error || "Config response was not ok");
 
       remoteConfig = {
+        generatedAt: data.generated_at || "",
         llmOptions: data.llmOptions || {},
-        prompts: data.prompts || {},
-        generatedAt: data.generated_at || data.generatedAt || ""
+        prompts: data.prompts || {}
       };
     }
 
