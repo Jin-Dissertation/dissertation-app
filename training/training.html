@@ -295,32 +295,36 @@
       line-height: 1.2;
     }
 
+    .module-header-bar {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .module-header-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
     .module-participant {
       display: inline-block;
-      margin-top: 10px;
-      font-size: 0.75rem;
+      margin-top: 0;
+      font-size: 0.74rem;
       color: var(--muted);
       background: var(--cream-dark);
-      padding: 3px 10px;
+      padding: 4px 10px;
       border-radius: 999px;
       border: 1px solid var(--rule);
     }
 
-    .module-header-actions {
-      margin-top: 10px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .module-header-actions .action-btn {
-      min-width: 132px;
-    }
-
-
     .overall-progress {
-      margin-top: 16px;
+      margin-top: 0;
       display: inline-flex;
       gap: 14px;
       flex-wrap: wrap;
@@ -329,7 +333,14 @@
       background: var(--white);
       border: 1px solid var(--rule);
       border-radius: 999px;
-      padding: 5px 12px;
+      padding: 4px 10px;
+    }
+
+    .action-btn-quiet {
+      padding: 9px 16px;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      min-height: 40px;
     }
 
     .section-accordion {
@@ -1166,8 +1177,19 @@
       .feedback-actions { justify-content: flex-end; }
       .continue-row .action-btn,
       .video-footer  .action-btn { width: 100%; justify-content: center; }
-      .module-header-actions { align-items: stretch; }
-      .module-header-actions .action-btn { width: 100%; justify-content: center; }
+      .module-header-bar {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .module-header-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      #btn-save-exit { width: 100%; justify-content: center; }
 
       /* Completion stats */
       .completion-stats { flex-direction: column; gap: 14px; text-align: center; }
@@ -1260,14 +1282,20 @@
     <header class="module-header">
       <p class="module-label">Professional Development Module</p>
       <h1 class="module-title">AI-Assisted MCQ Development<br>for Nursing Education</h1>
-      <div class="module-header-actions">
-        <span class="module-participant" id="participant-badge"></span>
-        <button class="action-btn secondary" id="btn-save-exit" type="button">Save and exit</button>
-      </div>
-      <div class="overall-progress" id="overall-progress">
-        <span id="overall-total">Sections: 0</span>
-        <span id="overall-current">Current: —</span>
-        <span id="overall-completed">Completed: 0</span>
+
+      <div class="module-header-bar">
+        <div class="module-header-meta">
+          <span class="module-participant" id="participant-badge"></span>
+          <div class="overall-progress" id="overall-progress">
+            <span id="overall-total">Sections: 0</span>
+            <span id="overall-current">Current: —</span>
+            <span id="overall-completed">Completed: 0</span>
+          </div>
+        </div>
+
+        <button class="action-btn secondary action-btn-quiet" id="btn-save-exit" type="button">
+          Save and exit
+        </button>
       </div>
     </header>
     <div id="sections-container"></div>
