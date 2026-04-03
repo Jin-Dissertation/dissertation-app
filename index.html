@@ -808,6 +808,25 @@
       margin-top: 8px;
       min-width: 0;
     }
+    .stageNavRow {
+      display: flex;
+      justify-content: flex-start;
+      width: 100%;
+      min-width: 0;
+    }
+    .stageNavBtn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 12px 18px;
+      font-weight: 700;
+      font-size: 15px;
+      width: min(100%, 420px);
+      max-width: 100%;
+      box-sizing: border-box;
+      white-space: nowrap;
+    }
     .setupPromptBox {
       display: none;
       margin-top: 10px;
@@ -1063,8 +1082,7 @@
       min-width: 32px;
       box-sizing: border-box;
     }
-    .finalizeBackSlot .btn,
-    #btnBackToPrompts {
+    .finalizeBackSlot .btn:not(.stageNavBtn) {
       width: auto;
       max-width: max-content;
       white-space: nowrap;
@@ -1158,6 +1176,11 @@
         justify-content: center;
         white-space: normal;
         min-height: 44px;
+      }
+
+      .stageNavBtn {
+        width: 100%;
+        white-space: normal;
       }
     }
     .promptDetailsText {
@@ -2085,8 +2108,8 @@
               <div id="setupSamplePromptList" class="setupPromptList promptListCompact"></div>
             </div>
 
-            <div class="row bandActionRow" id="setupProceedRow" hidden>
-              <button class="btn primary" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
+            <div class="row bandActionRow stageNavRow" id="setupProceedRow" hidden>
+              <button class="btn primary stageNavBtn" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
             </div>
           </div>
         </div>
@@ -2142,8 +2165,8 @@
                   </div>
                 </div>
 
-                <div class="row bandActionRow">
-                  <button class="btn primary" id="btnReadyFinal">I'm done making questions</button>
+                <div class="row bandActionRow stageNavRow">
+                  <button class="btn primary stageNavBtn" id="btnReadyFinal">I'm done making questions</button>
                 </div>
               </div>
             </div>
@@ -2167,8 +2190,8 @@
           <div id="finalizeInner" style="display:none;">
             <div class="card">
 
-              <div style="margin-bottom:10px;">
-                <button class="btn" id="btnBackToPrompts">Go back to making questions</button>
+              <div class="stageNavRow" style="margin-bottom:10px;">
+                <button class="btn stageNavBtn" id="btnBackToPrompts">Go back to making questions</button>
               </div>
 
               <div id="trainingTipFinalizeIntro" class="trainingTip trainingTipSmall">
@@ -2340,7 +2363,7 @@
       <p class="muted" style="margin:0 0 12px;">Ending the session will clear this browser’s stored data.</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnEndCancel" type="button">Cancel</button>
-        <button class="btn danger" id="btnEndConfirm" type="button">End session</button>
+        <button class="btn" id="btnEndConfirm" type="button">End session</button>
       </div>
     </div>
   </div>
