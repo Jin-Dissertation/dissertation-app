@@ -764,7 +764,7 @@
       border-color: #d9d3f5;
       border-left-color: #8b7bd6;
     }
-    .promptListCompact { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:8px; min-width: 0; }
+    .promptListCompact { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:8px; min-width: 0; align-items: start; }
     .promptListSingle { display:block; min-width: 0; width: 100%; max-width: 100%; overflow-x: hidden; }
     .promptListSingle .promptCard { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
     .promptReviewBlock { min-width: 0; width: 100%; max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
@@ -1564,7 +1564,7 @@
       .groupCard { padding: 11px; }
       .promptSection { padding: 9px; }
       .promptSections { gap: 10px; }
-      .promptListCompact { gap: 6px; }
+      .promptListCompact { gap: 6px; align-items: start; }
       .promptHeader { gap: 6px; }
       .promptActions { gap: 5px; }
       .promptDesc { margin-top: 8px; }
@@ -1575,7 +1575,8 @@
         padding: 8px 9px;
         font-size: 14px;
       }
-      .btn { padding: 7px 10px; font-size: 14px; }
+      .btn { padding: 7px 10px; font-size: 15px; }
+      .stageActionBtn { font-size: 17px; }
       .modelGrid, .product-grid { gap: 10px; }
       .modelOption, .product-card {
         min-height: 68px;
@@ -2135,12 +2136,16 @@
                 <h4 class="setupPromptBoxTitle">Optional: Use sample questions</h4>
                 <p class="setupPromptBoxSub">If you have sample questions, you can use one of these prompts to guide the AI.</p>
               </div>
+              <div id="trainingTipSamplePrompts" class="trainingTip trainingTipSmall">
+                <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
+                <p>This section is only relevant if you already have existing questions you'd like to use as a starting point. If you have some, copy one of these prompts and paste it into your AI product — along with your sample questions — before proceeding. If you don't have samples, skip this section entirely and click the blue Proceed button below.</p>
+              </div>
               <div id="setupSamplePromptList" class="setupPromptList promptListCompact"></div>
             </div>
 
             <div class="row bandActionRow stageNavRow" id="setupProceedRow" hidden>
               <div class="stageActionWrap">
-                <button class="btn primary stageActionBtn" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
+                <button class="btn primary stageActionBtn" id="btnGoPrompts" disabled>Proceed to 2) Making questions <span aria-hidden="true">↓</span></button>
               </div>
             </div>
           </div>
@@ -2170,7 +2175,7 @@
                 <div class="promptTopRowActions">
                   <button class="btn" id="btnExpandAllPrompts" type="button">Expand all</button>
                   <button class="btn" id="btnCollapseAllPrompts" type="button">Collapse all</button>
-                  <button class="btn" id="btnEditContext" type="button">Go back and edit context</button>
+                  <button class="btn" id="btnEditContext" type="button"><span aria-hidden="true">↑</span> Go back and edit context</button>
                 </div>
               </div>
 
@@ -2199,7 +2204,7 @@
 
                 <div class="row bandActionRow stageNavRow">
                   <div class="stageActionWrap">
-                    <button class="btn primary stageActionBtn" id="btnReadyFinal">I'm done making questions</button>
+                    <button class="btn primary stageActionBtn" id="btnReadyFinal">I'm done making questions <span aria-hidden="true">↓</span></button>
                   </div>
                 </div>
               </div>
@@ -2226,7 +2231,7 @@
 
               <div class="stageNavRow" style="margin-bottom:10px;">
                 <div class="stageActionWrap">
-                  <button class="btn stageActionBtn" id="btnBackToPrompts">Go back to making questions</button>
+                  <button class="btn stageActionBtn" id="btnBackToPrompts"><span aria-hidden="true">↑</span> Go back to making questions</button>
                 </div>
               </div>
 
@@ -3248,7 +3253,7 @@ const PROMPT_META = [
 
 
     function configureTrainingTipsUI() {
-      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "trainingTipMismatch", "makingQuestionsTrainingTip", "trainingTipFinalizeIntro", "finalCopiedTrainingTip", "trainingTipFinalizeFeedback", "trainingTipEndSession"];
+      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "trainingTipMismatch", "makingQuestionsTrainingTip", "trainingTipFinalizeIntro", "finalCopiedTrainingTip", "trainingTipFinalizeFeedback", "trainingTipEndSession", "trainingTipSamplePrompts"];
       tipIds.forEach((id) => {
         const el = $(id);
         if (!el) return;
