@@ -4353,6 +4353,7 @@ const PROMPT_META = [
         updateAudioRecorderUI();
         toast("Audio submitted ✅");
         await sleep(1700);
+        return { ok: true };
       } catch (err) {
         console.error("Audio upload failed", err);
         setAudioUploadButtonState("error", "Upload failed");
@@ -4362,6 +4363,7 @@ const PROMPT_META = [
           resetAudioUploadButton();
           updateAudioRecorderUI();
         }
+        return { ok: false };
       } finally {
         audioUploadInProgress = false;
         updateAudioRecorderUI();
@@ -5744,7 +5746,7 @@ const PROMPT_META = [
         logEvent("end_session_cancelled");
         closeModal("modalEnd");
       });
-      $("btnEndConfirm").addEventListener("click", () => {
+      $("btnEndConfirm").addEventListener("click", async () => {
         markInteraction();
         logEvent("end_session_confirmed");
         const endMsg = $("endMsg");
@@ -5760,11 +5762,27 @@ const PROMPT_META = [
         }
         if (cancelBtn) cancelBtn.disabled = true;
 
-        const audioFlush = (audioBlob && !audioSubmitted && !audioUploadInProgress)
-          ? submitAudioRecording()
-          : Promise.resolve();
+        // If there's an unsubmitted recording, try to upload it first.
+        // If that fails, abort the end session so the participant knows
+        // their feedback wasn't captured.
+        if (audioBlob && !audioSubmitted && !audioUploadInProgress) {
+          const audioResult = await submitAudioRecording();
+          if (!audioResult?.ok) {
+            if (endMsg) {
+              endMsg.textContent = "Your audio recording couldn't be submitted — the session has not been ended. You can try again by clicking \"End session\" once more, or you can delete the recording and leave written feedback instead. Either way, skipping feedback is completely fine too. We're sorry for the trouble!";
+              endMsg.style.display = "block";
+            }
+            if (confirmBtn) {
+              confirmBtn.disabled = false;
+              confirmBtn.textContent = "End session";
+            }
+            if (cancelBtn) cancelBtn.disabled = false;
+            return;
+          }
+        }
 
-        audioFlush.then(() => submitSession()).then((result) => {
+        try {
+          const result = await submitSession();
           if (result?.ok) {
             queueLiveSessionUpdate("completed", 0);
             clearSessionData();
@@ -5782,13 +5800,13 @@ const PROMPT_META = [
             endMsg.style.display = "block";
           }
           toast("Submission failed. Data is still saved in this browser.", { duration: 3500 });
-        }).finally(() => {
+        } finally {
           if (confirmBtn) {
             confirmBtn.disabled = false;
             confirmBtn.textContent = "End session";
           }
           if (cancelBtn) cancelBtn.disabled = false;
-        });
+        }
       });
 
       // Always show footer status immediately (even before access is verified)
