@@ -750,9 +750,18 @@
       border-left-color: #7da1d9;
     }
     .promptSection.section-refine {
-      background: #f2faf7;
-      border-color: #c2ddd2;
-      border-left-color: #6ea989;
+      background: #eef8fb;
+      border-color: #c7dce6;
+      border-left-color: #6ea7bf;
+    }
+    .promptSection.section-refine .promptCard {
+      background: #fafdff;
+      border-color: #c7dce6;
+    }
+    .promptSection.section-refine .promptCard:hover {
+      background: #f2f9fc;
+      border-color: #9fc0cf;
+      box-shadow: 0 2px 8px rgba(62, 112, 137, 0.08);
     }
     .promptSection.section-audit {
       background: #fff8ef;
@@ -1036,35 +1045,31 @@
     #starterCopyCard.is-disabled .promptChevronBtn {
       cursor: not-allowed;
     }
-    #starterCopyCard {
-      background: #f3f8ff;
-      border-color: #c7d8f2;
-    }
-    #starterCopyCard:hover {
-      background: #edf5ff;
-      border-color: #aebfe0;
-    }
-    #starterCopyCard.is-active {
-      background: #e3efff;
-      border-color: #7fa7e6;
-    }
-    #starterCopyCard .copyCardTitle {
-      color: #25364f;
-    }
+    #starterCopyCard,
     #finalCopyCard {
-      background: #f7f3ff;
-      border-color: #d7ccef;
+      background: #f2faf7;
+      border-color: #c2ddd2;
     }
+    #starterCopyCard:hover,
     #finalCopyCard:hover {
-      background: #f1eaff;
-      border-color: #b9a7e3;
+      background: #edf7f2;
+      border-color: #9fc7b1;
+      box-shadow: 0 2px 8px rgba(59, 112, 86, 0.08);
     }
+    #starterCopyCard.is-active,
     #finalCopyCard.is-active {
-      background: #e9ddff;
-      border-color: #9b84d8;
+      background: #e5f4ec;
+      border-color: #6ea989;
     }
+    #starterCopyCard .copyCardTitle,
     #finalCopyCard .copyCardTitle {
-      color: #3a2f57;
+      color: #183a2d;
+    }
+    #starterCopyCard .promptDesc,
+    #starterCopyCard .copyCardPreview,
+    #finalCopyCard .promptDesc,
+    #finalCopyCard .copyCardPreview {
+      color: #3f5e53;
     }
     .copyCardWrap,
     .copyPromptRow {
