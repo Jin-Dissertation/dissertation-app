@@ -2009,7 +2009,7 @@
           <div class="card">
             <div class="subBand" style="margin-top:0;">
               <h4 class="subBandTitle">A. Select product and mode</h4>
-              <div class="row">
+              <div class="row" id="productGridWrap">
                 <div style="flex:1; min-width: 240px;">
                   <input type="hidden" id="modelUsed" />
                   <div class="modelGrid product-grid" id="modelGrid">
@@ -2143,7 +2143,7 @@
               <div id="setupSamplePromptList" class="setupPromptList promptListCompact"></div>
             </div>
 
-            <div class="row bandActionRow stageNavRow" id="setupProceedRow" hidden>
+            <div class="row bandActionRow stageNavRow" id="setupProceedRow" hidden style="display:none;">
               <div class="stageActionWrap">
                 <button class="btn primary stageActionBtn" id="btnGoPrompts" disabled>Proceed to 2) Making questions <span aria-hidden="true">↓</span></button>
               </div>
@@ -2869,7 +2869,13 @@ const PROMPT_META = [
       const canProceed = isStarterSetupValid() && !!starterPromptCopied;
       const showProceedRow = !!starterPromptCopied;
       if (row) {
-        row.hidden = !showProceedRow;
+        if (showProceedRow) {
+          row.hidden = false;
+          row.style.display = "";
+        } else {
+          row.hidden = true;
+          row.style.display = "none";
+        }
       }
       btn.disabled = !canProceed;
       btn.classList.toggle("primary", canProceed);
@@ -3441,6 +3447,7 @@ const PROMPT_META = [
     function updateSetupSubbandVisibility() {
       const contextSubband = $("contextSubband");
       const contextFields = $("contextFields");
+      const productGridWrap = $("productGridWrap");
       const editor = $("productVersionEditor");
       const summary = $("productVersionSummary");
       const summaryText = $("productVersionSummaryText");
@@ -3452,10 +3459,25 @@ const PROMPT_META = [
       const productSelected = !!(localStorage.getItem(KEYS.llmProduct) || "");
       if (confirmBtn) confirmBtn.disabled = !canConfirm;
       if (summaryText) summaryText.textContent = getProductVersionSummaryText();
-      if (editor) {
-        editor.classList.toggle("hidden", !productSelected || showConfirmed);
+      if (productGridWrap) {
+        if (showConfirmed) {
+          productGridWrap.hidden = true;
+          productGridWrap.style.display = "none";
+        } else {
+          productGridWrap.hidden = false;
+          productGridWrap.style.display = "";
+        }
       }
-      if (summary) summary.style.display = showConfirmed ? "block" : "none";
+      if (editor) {
+        const showEditor = productSelected && !showConfirmed;
+        editor.classList.toggle("hidden", !showEditor);
+        editor.hidden = !showEditor;
+        editor.style.display = showEditor ? "" : "none";
+      }
+      if (summary) {
+        summary.hidden = !showConfirmed;
+        summary.style.display = showConfirmed ? "block" : "none";
+      }
       if (contextSubband) contextSubband.classList.toggle("hidden", !showConfirmed);
       // contextFields visibility is controlled by its parent contextSubband —
       // toggling hidden on both caused layout issues on first-load confirm flow.
@@ -5533,6 +5555,7 @@ const PROMPT_META = [
           localStorage.setItem(KEYS.stage, "setup");
         }
         starterPromptCopied = localStorage.getItem(KEYS.starterCopied) === "true";
+        updateProceedToPromptsAvailability();
         applyStageUI();
       }
     }
