@@ -1434,6 +1434,62 @@
       font-variant-numeric: tabular-nums;
       letter-spacing: 0.02em;
     }
+    .audioMeterRow {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .audioMeterLabelWrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+      min-width: 92px;
+    }
+    .audioMeterDot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #9fb3cf;
+      box-shadow: 0 0 0 0 rgba(47,110,220,0.18);
+      transition: background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    }
+    .audioMeterRow.is-recording .audioMeterDot {
+      background: #2f6edc;
+      box-shadow: 0 0 0 4px rgba(47,110,220,0.12);
+    }
+    .audioMeterRow.is-paused .audioMeterDot {
+      background: #8fa2bf;
+      box-shadow: none;
+      opacity: 0.75;
+    }
+    .audioMeterLabel {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.2;
+    }
+    .audioMeterTrack {
+      position: relative;
+      flex: 1 1 auto;
+      height: 10px;
+      border-radius: 999px;
+      background: #edf3fb;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .audioMeterFill {
+      height: 100%;
+      width: 6%;
+      min-width: 6px;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #9fc1ff 0%, #5c8fe8 100%);
+      transition: width 90ms linear, opacity 0.15s ease;
+      opacity: 0.9;
+    }
+    .audioMeterRow.is-paused .audioMeterFill {
+      opacity: 0.45;
+    }
 
     details summary {
       list-style: none;
@@ -2332,6 +2388,15 @@
                         <span class="audioElapsedLabel">Recording time</span>
                         <span class="audioElapsedValue" id="audioElapsedValue">00:00</span>
                       </div>
+                      <div class="audioMeterRow" id="audioMeterRow" aria-hidden="true">
+                        <div class="audioMeterLabelWrap">
+                          <span class="audioMeterDot" id="audioMeterDot"></span>
+                          <span class="audioMeterLabel" id="audioMeterLabel">Mic level</span>
+                        </div>
+                        <div class="audioMeterTrack" id="audioMeterTrack">
+                          <div class="audioMeterFill" id="audioMeterFill"></div>
+                        </div>
+                      </div>
 
                       <div class="audioPlaybackRow" id="audioPlaybackRow">
                         <audio id="audioFeedbackPlayer" controls preload="metadata"></audio>
@@ -2822,6 +2887,15 @@ const PROMPT_META = [
     let audioElapsedMs = 0;
     let audioElapsedLastStartedAt = null;
     let audioElapsedTickHandle = null;
+    let audioContext = null;
+    let audioAnalyser = null;
+    let audioSourceNode = null;
+    let audioMeterFrame = null;
+    let audioMeterLevel = 0;
+    let audioMeterDataArray = null;
+
+    const AUDIO_METER_IDLE_FLOOR = 0.06;
+    const AUDIO_METER_MAX_SCALE = 3.2;
 
     function hideToast() {
       const t = $("toast");
@@ -3865,12 +3939,99 @@ const PROMPT_META = [
       }
     }
 
+    function updateAudioMeterFill(level = AUDIO_METER_IDLE_FLOOR) {
+      const fill = $("audioMeterFill");
+      if (!fill) return;
+      const clampedLevel = Math.max(AUDIO_METER_IDLE_FLOOR, Math.min(1, Number(level) || 0));
+      fill.style.width = `${Math.round(clampedLevel * 100)}%`;
+    }
+
+    function stopAudioMeterLoop() {
+      if (audioMeterFrame) {
+        cancelAnimationFrame(audioMeterFrame);
+        audioMeterFrame = null;
+      }
+    }
+
+    function startAudioMeterLoop() {
+      if (!audioAnalyser || !audioMeterDataArray) return;
+      stopAudioMeterLoop();
+
+      const tick = () => {
+        if (!audioAnalyser || !audioMeterDataArray || mediaRecorder?.state !== "recording") {
+          audioMeterFrame = null;
+          return;
+        }
+        audioAnalyser.getByteTimeDomainData(audioMeterDataArray);
+        let sumSquares = 0;
+        for (let i = 0; i < audioMeterDataArray.length; i += 1) {
+          const sample = (audioMeterDataArray[i] - 128) / 128;
+          sumSquares += sample * sample;
+        }
+        const rms = Math.sqrt(sumSquares / audioMeterDataArray.length);
+        const normalized = Math.min(1, rms * AUDIO_METER_MAX_SCALE);
+        audioMeterLevel = (audioMeterLevel * 0.82) + (normalized * 0.18);
+        updateAudioMeterFill(audioMeterLevel);
+        audioMeterFrame = requestAnimationFrame(tick);
+      };
+
+      audioMeterFrame = requestAnimationFrame(tick);
+    }
+
+    async function setupAudioMeter(stream) {
+      try {
+        if (!stream) return;
+        if (!audioContext) {
+          const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextCtor) return;
+          audioContext = new AudioContextCtor();
+        }
+
+        if (audioContext.state === "suspended") {
+          await audioContext.resume();
+        }
+
+        if (audioSourceNode) {
+          audioSourceNode.disconnect();
+          audioSourceNode = null;
+        }
+
+        audioSourceNode = audioContext.createMediaStreamSource(stream);
+        audioAnalyser = audioContext.createAnalyser();
+        audioAnalyser.fftSize = 256;
+        audioAnalyser.smoothingTimeConstant = 0.8;
+        audioSourceNode.connect(audioAnalyser);
+        audioMeterDataArray = new Uint8Array(audioAnalyser.fftSize);
+        audioMeterLevel = AUDIO_METER_IDLE_FLOOR;
+        updateAudioMeterFill(audioMeterLevel);
+        startAudioMeterLoop();
+      } catch (err) {
+        console.warn("Audio meter setup failed", err);
+      }
+    }
+
+    function teardownAudioMeter() {
+      stopAudioMeterLoop();
+      if (audioSourceNode) {
+        audioSourceNode.disconnect();
+      }
+      if (audioAnalyser) {
+        audioAnalyser.disconnect();
+      }
+      audioSourceNode = null;
+      audioAnalyser = null;
+      audioMeterDataArray = null;
+      audioMeterLevel = 0;
+      updateAudioMeterFill(AUDIO_METER_IDLE_FLOOR);
+    }
+
     // Keep recorder UI updates in one place for maintainability.
     function updateAudioRecorderUI() {
       const recorderState = mediaRecorder?.state || "inactive";
       const hasRecording = !!audioBlob;
       const controlsRow = $("audioPrimaryControls");
       const playbackRow = $("audioPlaybackRow");
+      const meterRow = $("audioMeterRow");
       const startBtn = $("btnAudioStart");
       const stateBtn = $("btnAudioState");
       const pauseResumeBtn = $("btnAudioPauseResume");
@@ -3895,6 +4056,11 @@ const PROMPT_META = [
       }
 
       if (stopBtn) stopBtn.style.display = showActive ? "inline-flex" : "none";
+      if (meterRow) {
+        meterRow.style.display = showActive ? "flex" : "none";
+        meterRow.classList.toggle("is-recording", recorderState === "recording");
+        meterRow.classList.toggle("is-paused", recorderState === "paused");
+      }
       if (playbackRow) playbackRow.style.display = showStopped ? "flex" : "none";
       if (submitBtn) {
         if (audioUploadInProgress) {
@@ -3915,6 +4081,7 @@ const PROMPT_META = [
         mediaRecorder.stop();
       }
       mediaRecorder = null;
+      teardownAudioMeter();
       stopAudioFeedbackStream();
       releaseAudioFeedbackUrl();
       audioChunks = [];
@@ -3946,6 +4113,7 @@ const PROMPT_META = [
       try {
         clearAudioRecorderState();
         currentAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        await setupAudioMeter(currentAudioStream);
         audioChunks = [];
         mediaRecorder = new MediaRecorder(currentAudioStream);
 
@@ -3976,6 +4144,7 @@ const PROMPT_META = [
         renderAudioElapsed();
         startAudioElapsedTicker();
         mediaRecorder.start();
+        startAudioMeterLoop();
         updateAudioRecorderUI();
       } catch (err) {
         console.error("Audio recording start failed", err);
@@ -3990,6 +4159,7 @@ const PROMPT_META = [
 
       if (mediaRecorder.state === "recording") {
         mediaRecorder.pause();
+        stopAudioMeterLoop();
         if (audioElapsedLastStartedAt) {
           audioElapsedMs += Date.now() - audioElapsedLastStartedAt;
           audioElapsedLastStartedAt = null;
@@ -3997,6 +4167,7 @@ const PROMPT_META = [
         stopAudioElapsedTicker();
       } else if (mediaRecorder.state === "paused") {
         mediaRecorder.resume();
+        startAudioMeterLoop();
         audioElapsedLastStartedAt = Date.now();
         startAudioElapsedTicker();
       }
@@ -4012,6 +4183,7 @@ const PROMPT_META = [
         audioElapsedLastStartedAt = null;
       }
       stopAudioElapsedTicker();
+      stopAudioMeterLoop();
       renderAudioElapsed();
       mediaRecorder.stop();
     }
