@@ -1066,6 +1066,32 @@
       min-width: 32px;
       box-sizing: border-box;
     }
+    .finalizeTopRow {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .finalizeCopySlot {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    .finalizeCopyWrap,
+    .finalizeCopySlot .copyCardWrap {
+      width: 100%;
+      margin-top: 0;
+    }
+    .finalizeBackSlot {
+      flex: 0 0 auto;
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-start;
+    }
+    .finalizeBackSlot .promptTopRowActions {
+      justify-content: flex-end;
+    }
     @media (max-width: 820px) {
       .btn {
         display: inline-flex;
@@ -1130,6 +1156,29 @@
         justify-content: center;
         white-space: normal;
         min-height: 44px;
+      }
+      .finalizeTopRow {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+      }
+      .finalizeBackSlot,
+      .finalizeCopySlot {
+        width: 100%;
+      }
+      .finalizeBackSlot {
+        order: 1;
+      }
+      .finalizeCopySlot {
+        order: 2;
+      }
+      .finalizeBackSlot .promptTopRowActions {
+        width: 100%;
+      }
+      #btnBackToPrompts,
+      #finalCopyCard {
+        width: 100%;
+        max-width: 100%;
       }
 
     }
@@ -2177,30 +2226,33 @@
           <div id="finalizeInner" style="display:none;">
             <div class="card">
 
-              <div class="promptTopRow">
-                <div class="promptTopRowActions">
-                  <button class="btn" id="btnBackToPrompts" type="button"><span aria-hidden="true">↑</span> Go back to making questions</button>
+              <div class="finalizeTopRow">
+                <div class="finalizeCopySlot">
+                  <div class="copyCardWrap finalizeCopyWrap">
+                    <div class="copyCard" id="finalCopyCard" role="button" tabindex="0" aria-label="Copy final prompt">
+                      <div class="copyCardHeader">
+                        <div class="copyCardTitle" id="finalCopyTitle">Copy final prompt</div>
+                        <button type="button" class="promptChevronBtn" id="finalCopyChevron" aria-expanded="false" aria-controls="finalCopyDetails" aria-label="Show details for final prompt">
+                          <span class="promptChevronIcon" aria-hidden="true">›</span>
+                        </button>
+                      </div>
+                      <div class="copyCardDetails" id="finalCopyDetails">
+                        <p class="promptDesc" id="finalCopyDescription">Paste this into your AI product to generate your final question set.</p>
+                        <pre class="promptDetailsText copyCardPreview" id="finalCopyPreview"></pre>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="finalizeBackSlot">
+                  <div class="promptTopRowActions">
+                    <button class="btn" id="btnBackToPrompts" type="button"><span aria-hidden="true">↑</span> Go back to making questions</button>
+                  </div>
                 </div>
               </div>
 
               <div id="trainingTipFinalizeIntro" class="trainingTip trainingTipSmall">
                 <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
                 <p>Copy the final prompt into your AI product by clicking the button below. It will ask the AI to compile all accepted questions into a clean list.</p>
-              </div>
-
-              <div class="copyCardWrap" style="margin-top:10px;">
-                  <div class="copyCard" id="finalCopyCard" role="button" tabindex="0" aria-label="Copy final prompt">
-                    <div class="copyCardHeader">
-                      <div class="copyCardTitle" id="finalCopyTitle">Copy final prompt</div>
-                      <button type="button" class="promptChevronBtn" id="finalCopyChevron" aria-expanded="false" aria-controls="finalCopyDetails" aria-label="Show details for final prompt">
-                        <span class="promptChevronIcon" aria-hidden="true">›</span>
-                      </button>
-                    </div>
-                    <div class="copyCardDetails" id="finalCopyDetails">
-                      <p class="promptDesc" id="finalCopyDescription">Paste this into your AI product to generate your final question set.</p>
-                      <pre class="promptDetailsText copyCardPreview" id="finalCopyPreview"></pre>
-                    </div>
-                  </div>
               </div>
 
               <div id="finalCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
