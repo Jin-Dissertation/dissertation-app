@@ -816,19 +816,22 @@
       margin-top: 10px;
       min-width: 0;
     }
-    .stageNavBtn {
+    .stageActionWrap {
+      width: min(100%, 560px);
+      max-width: 100%;
+    }
+    .stageActionBtn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: min(100%, 420px);
-      max-width: 100%;
+      width: 100%;
       min-height: 52px;
-      padding: 12px 20px;
+      padding: 0 18px;
       box-sizing: border-box;
-      font-size: 16px;
-      line-height: 1.25;
+      font-size: 17px;
+      line-height: 1.2;
       font-weight: 700;
-      letter-spacing: 0.01em;
+      text-align: center;
       white-space: nowrap;
     }
     .setupPromptBox {
@@ -1086,7 +1089,7 @@
       min-width: 32px;
       box-sizing: border-box;
     }
-    .finalizeBackSlot .btn:not(.stageNavBtn) {
+    .finalizeBackSlot .btn {
       width: auto;
       max-width: max-content;
       white-space: nowrap;
@@ -1165,7 +1168,6 @@
       }
 
       .finalizeBackSlot .btn,
-      #btnBackToPrompts,
       #finalCopyCard,
       .finalizeCopySlot .copyCard {
         width: 100%;
@@ -1173,8 +1175,7 @@
       }
 
       #btnEditContext,
-      .finalizeBackSlot .btn,
-      #btnBackToPrompts {
+      .finalizeBackSlot .btn {
         width: 100%;
         text-align: center;
         justify-content: center;
@@ -1184,8 +1185,13 @@
 
     }
     @media (max-width: 680px) {
-      .stageNavBtn {
+      .stageActionWrap {
         width: 100%;
+      }
+      .stageActionBtn {
+        width: 100%;
+        font-size: 16px;
+        white-space: normal;
       }
     }
     .promptDetailsText {
@@ -2122,7 +2128,9 @@
             </div>
 
             <div class="row bandActionRow stageNavRow" id="setupProceedRow" hidden>
-              <button class="btn primary stageNavBtn" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
+              <div class="stageActionWrap">
+                <button class="btn primary stageActionBtn" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
+              </div>
             </div>
           </div>
         </div>
@@ -2179,7 +2187,9 @@
                 </div>
 
                 <div class="row bandActionRow stageNavRow">
-                  <button class="btn primary stageNavBtn" id="btnReadyFinal">I'm done making questions</button>
+                  <div class="stageActionWrap">
+                    <button class="btn primary stageActionBtn" id="btnReadyFinal">I'm done making questions</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2204,7 +2214,9 @@
             <div class="card">
 
               <div class="stageNavRow" style="margin-bottom:10px;">
-                <button class="btn stageNavBtn" id="btnBackToPrompts">Go back to making questions</button>
+                <div class="stageActionWrap">
+                  <button class="btn stageActionBtn" id="btnBackToPrompts">Go back to making questions</button>
+                </div>
               </div>
 
               <div id="trainingTipFinalizeIntro" class="trainingTip trainingTipSmall">
