@@ -837,9 +837,6 @@
       line-height: 1.35;
     }
     .setupPromptList {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 8px;
       min-width: 0;
     }
     .setupPromptBox .promptCard {
@@ -2075,19 +2072,21 @@
               <p style="margin-top:8px;" class="desktop-only">The <strong>Clipboard</strong> panel on the right shows what you last copied. Use the icons at the top of the panel to switch between a preview of the current copy and a history of everything you've copied this session.</p>
               <p style="margin-top:8px;" class="mobile-only">Each prompt you copy stays on your clipboard until the next one replaces it. You can always re-copy a button if you need it again.</p>
             </div>
+
+            <p class="muted small" id="setupMsg" style="margin:10px 0 0; display:none;"></p>
+              </div>
+            </div>
+
             <div id="setupSamplePromptBox" class="setupPromptBox" hidden>
               <div class="setupPromptBoxHeader">
                 <h4 class="setupPromptBoxTitle">Optional: Use sample questions</h4>
                 <p class="setupPromptBoxSub">If you have sample questions, you can use one of these prompts to guide the AI.</p>
               </div>
-              <div id="setupSamplePromptList" class="setupPromptList"></div>
+              <div id="setupSamplePromptList" class="setupPromptList promptListCompact"></div>
             </div>
 
-            <p class="muted small" id="setupMsg" style="margin:10px 0 0; display:none;"></p>
-            <div class="row bandActionRow">
+            <div class="row bandActionRow" id="setupProceedRow" hidden>
               <button class="btn primary" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
-            </div>
-              </div>
             </div>
           </div>
         </div>
@@ -2800,9 +2799,14 @@ const PROMPT_META = [
 
     function updateProceedToPromptsAvailability() {
       const btn = $("btnGoPrompts");
+      const row = $("setupProceedRow");
       if (!btn) return;
 
       const canProceed = isStarterSetupValid() && !!starterPromptCopied;
+      const showProceedRow = !!starterPromptCopied;
+      if (row) {
+        row.hidden = !showProceedRow;
+      }
       btn.disabled = !canProceed;
       btn.classList.toggle("primary", canProceed);
     }
