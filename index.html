@@ -763,6 +763,10 @@
       border-color: #9fc0cf;
       box-shadow: 0 2px 8px rgba(62, 112, 137, 0.08);
     }
+    .promptSection.section-refine .promptCard.is-active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
     .promptSection.section-audit {
       background: #fff8ef;
       border-color: #e5d3b6;
@@ -1411,12 +1415,38 @@
       color: #912018;
     }
     .audioControlRow .audioStateStatus {
-      cursor: default;
-      pointer-events: none;
-      opacity: 0.9;
-      border-color: var(--border);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
       color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 999px;
       background: #eef2f7;
+      border: 1px solid var(--border);
+      line-height: 1.4;
+      user-select: none;
+    }
+    .audioControlRow .audioStateStatus::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #9ca3af;
+      flex-shrink: 0;
+    }
+    .audioControlRow .audioStateStatus[data-state="recording"]::before {
+      background: #dc2626;
+      animation: audioRecordingPulse 1.2s ease-in-out infinite;
+    }
+    .audioControlRow .audioStateStatus[data-state="paused"]::before {
+      background: var(--warn);
+    }
+    @keyframes audioRecordingPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
     }
     .audioPlaybackRow audio {
       max-width: 100%;
@@ -2352,7 +2382,7 @@
                     <div class="audioFeedbackSection" id="audioRecorderPanel" style="margin-top:8px;">
                       <div class="audioControlRow" id="audioPrimaryControls">
                         <button class="btn" id="btnAudioStart" type="button">Start recording</button>
-                        <button class="btn audioStateStatus" id="btnAudioState" type="button" disabled>Recording</button>
+                        <span class="audioStateStatus" id="btnAudioState" aria-live="polite"></span>
                         <button class="btn" id="btnAudioPauseResume" type="button">Pause</button>
                         <button class="btn" id="btnAudioStop" type="button">Stop</button>
                       </div>
@@ -2468,7 +2498,7 @@
   <div class="modalBackdrop" id="modalEnd">
     <div class="modalCard">
       <h3 style="margin:0 0 8px;">End session</h3>
-      <p class="muted" style="margin:0 0 12px;">Ending the session will clear this browser’s stored data.</p>
+      <p class="muted" style="margin:0 0 12px;">Ending the session will submit your data and clear this browser's stored data. If you recorded audio feedback without submitting it, it will be submitted automatically.</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnEndCancel" type="button">Cancel</button>
         <button class="btn finishSessionBtn" id="btnEndConfirm" type="button">End session</button>
@@ -3306,7 +3336,6 @@ const PROMPT_META = [
       if (elapsed >= TIMER_TRAINING_NOTICE_15_MIN_MS && localStorage.getItem(KEYS.trainingTenMinuteNoticeShown) !== "true") {
         localStorage.setItem(KEYS.trainingTenMinuteNoticeShown, "true");
         showTimerNotice("By this point, you have probably spent enough time practicing to understand how the app works. If you’d like to keep working on your questions, that’s perfectly fine, but feel free to finish the activity now, even if you don't have all 5 questions fully refined.");
-        console.log("10-minute training notice shown");
       }
 
       restoreTimerButtonState();
@@ -4068,7 +4097,9 @@ const PROMPT_META = [
 
       if (stateBtn) {
         stateBtn.style.display = showActive ? "inline-flex" : "none";
-        stateBtn.textContent = recorderState === "paused" ? "Paused" : "Recording";
+        const stateLabel = recorderState === "paused" ? "Paused" : "Recording";
+        stateBtn.textContent = stateLabel;
+        stateBtn.dataset.state = recorderState === "paused" ? "paused" : "recording";
       }
 
       if (pauseResumeBtn) {
@@ -4279,13 +4310,6 @@ const PROMPT_META = [
         setAudioUploadButtonState("uploading", "Encoding audio…");
         const audioBase64 = await blobToBase64(audioBlob);
         setAudioUploadButtonState("uploading", "Uploading… 0%");
-
-        console.log("Submitting audio...");
-        console.log("audioBlob exists:", !!audioBlob);
-        console.log("audioBlob size:", audioBlob ? audioBlob.size : null);
-        console.log("audioBlob type:", audioBlob ? audioBlob.type : null);
-        console.log("filename:", filename);
-        console.log("base64 length:", audioBase64 ? audioBase64.length : null);
 
         const body = new URLSearchParams({
           action: "uploadAudio",
@@ -5458,19 +5482,15 @@ const PROMPT_META = [
 
       if (confirmProductVersionBtn) {
         confirmProductVersionBtn.addEventListener("click", () => {
-          console.log("Confirm product/version clicked");
           if (!isSetupVersionConfirmedForContext()) {
-            console.log("Confirm product/version blocked: setup version requirements not met");
             return;
           }
           setProductVersionConfirmedState(true);
           markInteraction();
           logEvent("product_version_confirm_clicked");
           queueLiveSessionUpdate("in_progress");
-          console.log("Confirm product/version autosave call completed");
           updateSetupSubbandVisibility();
           applyStageUI();
-          console.log("Confirm product/version completed");
         });
       }
 
@@ -5712,7 +5732,6 @@ const PROMPT_META = [
       });
 
       $("btnEndSession").addEventListener("click", () => {
-        console.log("End Session clicked. canEndSession =", canEndSession());
         if (!canEndSession()) {
           toast("Please paste the AI-generated response into the final response box before ending the session.");
           updateEndSessionState();
@@ -5726,7 +5745,6 @@ const PROMPT_META = [
         closeModal("modalEnd");
       });
       $("btnEndConfirm").addEventListener("click", () => {
-        console.log("End session confirm clicked");
         markInteraction();
         logEvent("end_session_confirmed");
         const endMsg = $("endMsg");
@@ -5742,7 +5760,11 @@ const PROMPT_META = [
         }
         if (cancelBtn) cancelBtn.disabled = true;
 
-        submitSession().then((result) => {
+        const audioFlush = (audioBlob && !audioSubmitted && !audioUploadInProgress)
+          ? submitAudioRecording()
+          : Promise.resolve();
+
+        audioFlush.then(() => submitSession()).then((result) => {
           if (result?.ok) {
             queueLiveSessionUpdate("completed", 0);
             clearSessionData();
