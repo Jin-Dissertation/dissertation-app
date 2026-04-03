@@ -2897,7 +2897,6 @@ const PROMPT_META = [
 
     function buildLiveSessionSnapshot(statusOverride = "in_progress") {
       const accessCode = localStorage.getItem(KEYS.accessCode) || "";
-      const participantCode = localStorage.getItem(KEYS.participantId) || accessCode;
       const sessionId = localStorage.getItem(KEYS.sessionId) || "";
       const sessionStart = localStorage.getItem(KEYS.sessionStartTime) || "";
       const stage = getStage();
@@ -2905,43 +2904,29 @@ const PROMPT_META = [
       const events = loadJSON(KEYS.events, []);
       const llmResponse = ($("llmResponse")?.value || "").trim();
       const sessionNotes = ($("sessionNotes")?.value || "").trim();
-      const finalPrompt =
-        getStage() === "finalize"
-          ? (localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt())
-          : getSafeStoredFinalPrompt();
-      const promptId = stage === "finalize" ? "final_prompt" : (stage === "setup" ? "starter" : "");
       const modeParam = new URLSearchParams(window.location.search).get("mode");
 
       return {
         action: "updateLiveSession",
-        source: "aqg",
         user_id: accessCode,
-        participant_code: participantCode,
         session_id: sessionId,
         session_start: sessionStart ? new Date(sessionStart).toISOString() : null,
         last_activity_at: nowIso(),
         status: statusOverride,
         app_version: getAppVersion(),
         mode: modeParam || "standard",
-        config_generated_at: remoteConfig.generatedAt || "",
-        current_stage: stage,
-        current_prompt_id: promptId,
         llm_product: localStorage.getItem(KEYS.llmProduct) || "",
         model_used: localStorage.getItem(KEYS.modelUsed) || "",
         llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
         llm_mismatch_description: localStorage.getItem(KEYS.llmMismatchDescription) || "",
-        product_version_confirmed: localStorage.getItem(KEYS.productVersionConfirmed) === "true",
         desired_questions: ctx.questionCount || "",
         course_context: ctx.course || "",
         question_context: ctx.area || "",
         extra_instructions: ($("ctxNotes")?.value || "").trim(),
-        starter_copied: localStorage.getItem(KEYS.starterCopied) === "true",
-        finalize_visited: localStorage.getItem(KEYS.finalizeVisited) === "true",
-        final_prompt_copied: localStorage.getItem(KEYS.finalPromptCopied) === "true",
-        submit_clicked: localStorage.getItem(KEYS.submitClicked) === "true",
-        llm_response_present: !!llmResponse,
-        session_notes_present: !!sessionNotes,
-        ...getAudioMetadata(),
+        llm_response: llmResponse,
+        session_notes: sessionNotes,
+        audio_file_url: uploadedAudioInfo?.audioFileUrl || "",
+        audio_duration: uploadedAudioInfo?.audioDuration || "",
         active_seconds: computeActiveSeconds(interactionTimes),
         event_count: events.length,
         device_label: getCompactDeviceLabel(),
@@ -2953,9 +2938,6 @@ const PROMPT_META = [
           interactionTimes: Array.isArray(interactionTimes) ? interactionTimes.slice(-1) : [],
           activeMsBase
         },
-        final_prompt: finalPrompt,
-        llm_response: llmResponse,
-        session_notes: sessionNotes,
         events
       };
     }
@@ -4608,51 +4590,35 @@ const PROMPT_META = [
     // Submit / JSON
     // -----------------------------
     function buildSessionRecord() {
-      const timerState = getCurrentTimerState();
       const ctx = getContext();
       const events = loadJSON(KEYS.events, []);
       const llmResponse = ($("llmResponse")?.value || "").trim();
       const sessionNotes = ($("sessionNotes")?.value || "").trim();
       const accessCode = localStorage.getItem(KEYS.accessCode) || "";
-      const participantCode = localStorage.getItem(KEYS.participantId) || accessCode;
       const sessionStartRaw = localStorage.getItem(KEYS.sessionStartTime) || "";
-      const elapsed = sessionStartRaw ? Math.max(0, Date.now() - new Date(sessionStartRaw).getTime()) : timerState.elapsedMs;
 
       return {
-        source: "aqg",
+        action: "submitSession",
         user_id: accessCode,
-        participant_code: participantCode,
         session_id: localStorage.getItem(KEYS.sessionId) || "",
         session_start: sessionStartRaw ? new Date(sessionStartRaw).toISOString() : null,
-        session_end: nowIso(),
+        last_activity_at: nowIso(),
         status: "submitted",
         app_version: getAppVersion(),
         mode: new URLSearchParams(window.location.search).get("mode") || "standard",
-        config_generated_at: remoteConfig.generatedAt || "",
-        model_used: localStorage.getItem(KEYS.modelUsed) || "",
         llm_product: localStorage.getItem(KEYS.llmProduct) || "",
+        model_used: localStorage.getItem(KEYS.modelUsed) || "",
         llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
         llm_mismatch_description: ($("llmMismatchDescription")?.value || localStorage.getItem(KEYS.llmMismatchDescription) || "").trim(),
-        current_stage: getStage(),
-        current_prompt_id: getStage() === "finalize" ? "final_prompt" : (getStage() === "setup" ? "starter" : ""),
-        product_version_confirmed: localStorage.getItem(KEYS.productVersionConfirmed) === "true",
         desired_questions: ctx.questionCount || "",
         course_context: ctx.course || "",
         question_context: ctx.area || "",
         extra_instructions: ($("ctxNotes")?.value || "").trim(),
-        starter_copied: localStorage.getItem(KEYS.starterCopied) === "true",
-        finalize_visited: localStorage.getItem(KEYS.finalizeVisited) === "true",
-        final_prompt_copied: localStorage.getItem(KEYS.finalPromptCopied) === "true",
-        submit_clicked: true,
-        llm_response_present: !!llmResponse,
-        session_notes_present: !!sessionNotes,
-        ...getAudioMetadata(),
-        final_prompt: localStorage.getItem(KEYS.finalPrompt) || "",
         llm_response: llmResponse,
         session_notes: sessionNotes,
+        audio_file_url: uploadedAudioInfo?.audioFileUrl || "",
+        audio_duration: uploadedAudioInfo?.audioDuration || "",
         active_seconds: computeActiveSeconds(interactionTimes),
-        duration_ms: elapsed,
-        duration_formatted: formatElapsed(elapsed),
         event_count: events.length,
         device_label: getCompactDeviceLabel(),
         progress_json: {
@@ -4700,10 +4666,7 @@ const PROMPT_META = [
       submitInFlight = true;
       localStorage.setItem(KEYS.submitClicked, "true");
       markInteraction();
-      const payload = {
-        action: "submitSession",
-        ...buildSessionRecord()
-      };
+      const payload = buildSessionRecord();
 
       try {
         const data = await postToAppsScript(AQG_API_URL, payload, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
@@ -4745,8 +4708,8 @@ const PROMPT_META = [
     }
 
     function buildSessionFilename(record, { revised = false } = {}) {
-      const participant = (record?.participant_code || "participant").trim() || "participant";
-      const datePart = formatDateYYYYMMDD(record?.session_end || nowIso());
+      const participant = (record?.user_id || "participant").trim() || "participant";
+      const datePart = formatDateYYYYMMDD(record?.last_activity_at || record?.session_start || nowIso());
       const shortSession = getShortSessionSuffix(record?.session_id);
       const revisedSuffix = revised ? "_REVISED" : "";
       return `${participant}_${datePart}_${shortSession}${revisedSuffix}.json`.replace(/[^\w.-]/g, "_");
