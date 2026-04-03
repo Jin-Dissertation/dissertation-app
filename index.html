@@ -3335,7 +3335,7 @@ const PROMPT_META = [
 
       if (elapsed >= TIMER_TRAINING_NOTICE_15_MIN_MS && localStorage.getItem(KEYS.trainingTenMinuteNoticeShown) !== "true") {
         localStorage.setItem(KEYS.trainingTenMinuteNoticeShown, "true");
-        showTimerNotice("By this point, you have probably spent enough time practicing to understand how the app works. If you’d like to keep working on your questions, that’s perfectly fine, but feel free to finish the activity now, even if you don't have all 5 questions fully refined.");
+        showTimerNotice("By now you've likely had enough time to get a feel for the app. Feel free to wrap up and return to the training module whenever you're ready — you don't need to use every prompt or have a completed question set.");
       }
 
       restoreTimerButtonState();
@@ -4160,7 +4160,7 @@ const PROMPT_META = [
 
     async function startAudioRecording() {
       if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
-        toast("Audio recording is not supported in this browser.");
+        toast("Audio recording isn't supported in this browser. Please try Chrome or Firefox, or leave written feedback instead.");
         return;
       }
       try {
@@ -4201,7 +4201,7 @@ const PROMPT_META = [
         updateAudioRecorderUI();
       } catch (err) {
         console.error("Audio recording start failed", err);
-        toast("Microphone permission or recording start failed.");
+        toast("Couldn't access your microphone. Please check that your browser has permission to use it, then try again.");
         clearAudioRecorderState();
         updateAudioRecorderUI();
       }
@@ -4488,7 +4488,7 @@ const PROMPT_META = [
       if (copied) {
         toast("Copied ✅");
       } else {
-        toast("Clipboard blocked — please copy manually");
+        toast("Auto-copy didn't work — please copy the text manually. See Help / FAQ if this keeps happening.");
       }
 
       return copied;
@@ -5007,7 +5007,7 @@ const PROMPT_META = [
 
       const code = normalizeCode($("accessCodeInput").value);
       if (!code) {
-        setLockedState(true, "Please enter your access code.");
+        setLockedState(true, "Please enter your participant code.");
         return false;
       }
 
@@ -5022,7 +5022,7 @@ const PROMPT_META = [
       try {
         validationResult = await validateAccessCodeWithBackend(code);
       } catch (err) {
-        setLockedState(true, "Could not verify access code right now. Please try again.");
+        setLockedState(true, "Participant code not recognized. Please try again.");
         logEvent("access_verification_error", { code_entered: code, error: String(err && err.message ? err.message : err) });
         if (verifyBtn) {
           verifyBtn.dataset.verifying = "false";
@@ -5052,7 +5052,7 @@ const PROMPT_META = [
 
       const isValidCode = response.ok && data && data.ok === true && data.valid === true;
       if (!isValidCode) {
-        setLockedState(true, "Access code not recognized. Please contact the study team.");
+        setLockedState(true, "Participant code not recognized. Please contact the researcher at tjin@crimson.ua.edu if you think something is wrong.");
         logEvent("access_denied", { code_entered: code });
         if (verifyBtn) {
           verifyBtn.dataset.verifying = "false";
@@ -5158,12 +5158,12 @@ const PROMPT_META = [
       const wrap = document.createElement("div");
       wrap.id = "submissionFallbackWrap";
       wrap.style.cssText = "margin-top:10px;padding:10px 12px;background:#fef9ec;border:1px solid #c8a84b;border-radius:8px;font-size:0.88rem;";
-      wrap.innerHTML = "<strong>Submission failed.</strong> Download your session JSON and share it with the study team. Browser data has been kept.";
+      wrap.innerHTML = "<strong>Submission failed.</strong> Please use the download button below to save a backup of your session, then send it to the researcher at tjin@crimson.ua.edu so your data isn't lost.";
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "btn";
       btn.style.marginTop = "8px";
-      btn.textContent = "Download session JSON";
+      btn.textContent = "Download session backup";
       btn.addEventListener("click", () => {
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
@@ -5311,7 +5311,7 @@ const PROMPT_META = [
         setAccessLoadingState(false, "");
         const msg = $("accessMsg");
         if (msg) {
-          msg.textContent = "The app is still loading or could not reach the configuration service. Please wait a moment and try again.";
+          msg.textContent = "The app is still getting ready. Please wait a moment and try again.";
           msg.style.display = "block";
         }
       }
@@ -5600,7 +5600,7 @@ const PROMPT_META = [
           }
           updateProceedToPromptsAvailability();
           renderSetupSamplePromptBox();
-          $("setupMsg").textContent = "Starter prompt copied. Paste it into your AI product, and it will generate a plan for your question set. Review it and provide any necessary guidance before proceeding to 2) Making questions.";
+          $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI tool to get started. The AI will respond with a question set plan. Review it, reply if you'd like to adjust anything, then come back and click Continue when you're ready.";
           $("setupMsg").style.display = "block";
         }
 
