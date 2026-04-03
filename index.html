@@ -5022,7 +5022,7 @@ const PROMPT_META = [
       try {
         validationResult = await validateAccessCodeWithBackend(code);
       } catch (err) {
-        setLockedState(true, "Participant code not recognized. Please try again.");
+        setLockedState(true, "Couldn't verify your code right now — please check your connection and try again.");
         logEvent("access_verification_error", { code_entered: code, error: String(err && err.message ? err.message : err) });
         if (verifyBtn) {
           verifyBtn.dataset.verifying = "false";
@@ -5796,7 +5796,7 @@ const PROMPT_META = [
             return;
           }
           if (endMsg) {
-            endMsg.textContent = "Submission failed. Please download your session JSON below and retry when possible.";
+            endMsg.textContent = "Submission failed. Please use the download button below to save a backup of your session, then send it to the researcher so your data isn't lost.";
             endMsg.style.display = "block";
           }
           toast("Submission failed. Data is still saved in this browser.", { duration: 3500 });
