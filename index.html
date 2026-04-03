@@ -808,32 +808,6 @@
       margin-top: 8px;
       min-width: 0;
     }
-    .stageNavRow {
-      display: flex;
-      justify-content: flex-start;
-      align-items: center;
-      width: 100%;
-      margin-top: 10px;
-      min-width: 0;
-    }
-    .stageActionWrap {
-      width: min(100%, 560px);
-      max-width: 100%;
-    }
-    .stageActionBtn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      min-height: 52px;
-      padding: 0 18px;
-      box-sizing: border-box;
-      font-size: 17px;
-      line-height: 1.2;
-      font-weight: 700;
-      text-align: center;
-      white-space: nowrap;
-    }
     .setupPromptBox {
       display: none;
       margin-top: 10px;
@@ -1089,7 +1063,8 @@
       min-width: 32px;
       box-sizing: border-box;
     }
-    .finalizeBackSlot .btn {
+    .finalizeBackSlot .btn,
+    #btnBackToPrompts {
       width: auto;
       max-width: max-content;
       white-space: nowrap;
@@ -1168,6 +1143,7 @@
       }
 
       .finalizeBackSlot .btn,
+      #btnBackToPrompts,
       #finalCopyCard,
       .finalizeCopySlot .copyCard {
         width: 100%;
@@ -1175,23 +1151,13 @@
       }
 
       #btnEditContext,
-      .finalizeBackSlot .btn {
+      .finalizeBackSlot .btn,
+      #btnBackToPrompts {
         width: 100%;
         text-align: center;
         justify-content: center;
         white-space: normal;
         min-height: 44px;
-      }
-
-    }
-    @media (max-width: 680px) {
-      .stageActionWrap {
-        width: 100%;
-      }
-      .stageActionBtn {
-        width: 100%;
-        font-size: 16px;
-        white-space: normal;
       }
     }
     .promptDetailsText {
@@ -1226,18 +1192,10 @@
       border-radius: 10px;
     }
       .finalActionBtn.btn.warn { font-weight: 600; }
-    .btn.finishSessionBtn {
-      background: #eef4ff;
-      border-color: #c8d8f0;
-      color: #10213d;
-      font-weight: 700;
-    }
-    .btn.finishSessionBtn:hover:not(:disabled) {
-      background: #e3edff;
-      border-color: #b7cae8;
-      box-shadow: 0 2px 6px rgba(16,33,61,0.08);
-    }
     #btnEndSession{
+      background:#d9534f;
+      color:white;
+      border:none;
       opacity: 0.96;
       font-weight: 600;
     }
@@ -1246,10 +1204,10 @@
       filter: grayscale(20%);
       cursor: not-allowed;
     }
-    #btnEndSession.finalActionBtn.finishSessionBtn:hover {
+    #btnEndSession.finalActionBtn:hover {
       opacity: 1;
     }
-    #btnEndSession.finalActionBtn.finishSessionBtn.pseudo-disabled:hover {
+    #btnEndSession.finalActionBtn.pseudo-disabled:hover {
       opacity: 0.45;
     }
 
@@ -2127,10 +2085,8 @@
               <div id="setupSamplePromptList" class="setupPromptList promptListCompact"></div>
             </div>
 
-            <div class="row bandActionRow stageNavRow" id="setupProceedRow" hidden>
-              <div class="stageActionWrap">
-                <button class="btn primary stageActionBtn" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
-              </div>
+            <div class="row bandActionRow" id="setupProceedRow" hidden>
+              <button class="btn primary" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
             </div>
           </div>
         </div>
@@ -2186,10 +2142,8 @@
                   </div>
                 </div>
 
-                <div class="row bandActionRow stageNavRow">
-                  <div class="stageActionWrap">
-                    <button class="btn primary stageActionBtn" id="btnReadyFinal">I'm done making questions</button>
-                  </div>
+                <div class="row bandActionRow">
+                  <button class="btn primary" id="btnReadyFinal">I'm done making questions</button>
                 </div>
               </div>
             </div>
@@ -2213,10 +2167,8 @@
           <div id="finalizeInner" style="display:none;">
             <div class="card">
 
-              <div class="stageNavRow" style="margin-bottom:10px;">
-                <div class="stageActionWrap">
-                  <button class="btn stageActionBtn" id="btnBackToPrompts">Go back to making questions</button>
-                </div>
+              <div style="margin-bottom:10px;">
+                <button class="btn" id="btnBackToPrompts">Go back to making questions</button>
               </div>
 
               <div id="trainingTipFinalizeIntro" class="trainingTip trainingTipSmall">
@@ -2305,7 +2257,7 @@
                 <p>Make sure you've pasted the AI's final response into the box above before ending. Once you end the session, your work is submitted and the app resets.</p>
               </div>
               <div class="finalActionRow" id="endSessionRow" style="display:none;">
-                <button id="btnEndSession" class="btn finalActionBtn finishSessionBtn" type="button">
+                <button id="btnEndSession" class="btn danger primary finalActionBtn" type="button">
                   End session
                 </button>
               </div>
@@ -2388,7 +2340,7 @@
       <p class="muted" style="margin:0 0 12px;">Ending the session will clear this browser’s stored data.</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnEndCancel" type="button">Cancel</button>
-        <button class="btn finishSessionBtn" id="btnEndConfirm" type="button">End session</button>
+        <button class="btn danger" id="btnEndConfirm" type="button">End session</button>
       </div>
     </div>
   </div>
