@@ -70,7 +70,7 @@
       border-radius: 10px;
       background: #f8fbff;
     }
-    .accessIntro p { margin: 0; }
+    .accessIntro p { margin: 0; color: #3d5370; }
     .accessIntro p + p { margin-top: 8px; }
     .accessAction {
       margin-top: 16px;
@@ -146,6 +146,7 @@
       justify-content: center;
       text-align: center;
       line-height: 1.2;
+      min-height: 44px;
       box-sizing: border-box;
       font-family: inherit;
       font-size: inherit;
@@ -808,6 +809,32 @@
       margin-top: 8px;
       min-width: 0;
     }
+    .stageNavRow {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      width: 100%;
+      margin-top: 10px;
+      min-width: 0;
+    }
+    .stageActionWrap {
+      width: min(100%, 560px);
+      max-width: 100%;
+    }
+    .stageActionBtn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 52px;
+      padding: 0 18px;
+      box-sizing: border-box;
+      font-size: 17px;
+      line-height: 1.2;
+      font-weight: 700;
+      text-align: center;
+      white-space: nowrap;
+    }
     .setupPromptBox {
       display: none;
       margin-top: 10px;
@@ -1063,8 +1090,7 @@
       min-width: 32px;
       box-sizing: border-box;
     }
-    .finalizeBackSlot .btn,
-    #btnBackToPrompts {
+    .finalizeBackSlot .btn {
       width: auto;
       max-width: max-content;
       white-space: nowrap;
@@ -1143,7 +1169,6 @@
       }
 
       .finalizeBackSlot .btn,
-      #btnBackToPrompts,
       #finalCopyCard,
       .finalizeCopySlot .copyCard {
         width: 100%;
@@ -1151,13 +1176,23 @@
       }
 
       #btnEditContext,
-      .finalizeBackSlot .btn,
-      #btnBackToPrompts {
+      .finalizeBackSlot .btn {
         width: 100%;
         text-align: center;
         justify-content: center;
         white-space: normal;
         min-height: 44px;
+      }
+
+    }
+    @media (max-width: 680px) {
+      .stageActionWrap {
+        width: 100%;
+      }
+      .stageActionBtn {
+        width: 100%;
+        font-size: 16px;
+        white-space: normal;
       }
     }
     .promptDetailsText {
@@ -1192,10 +1227,28 @@
       border-radius: 10px;
     }
       .finalActionBtn.btn.warn { font-weight: 600; }
+    /* Proceed button ready-state pulse */
+    @keyframes proceedReadyPulse {
+      0%   { box-shadow: 0 0 0 0 rgba(47,110,220,0.45); }
+      65%  { box-shadow: 0 0 0 10px rgba(47,110,220,0); }
+      100% { box-shadow: 0 0 0 0 rgba(47,110,220,0); }
+    }
+    #btnGoPrompts.is-ready {
+      animation: proceedReadyPulse 1.6s ease 4;
+    }
+
+    .btn.finishSessionBtn {
+      background: #1a7a58;
+      border-color: #1a7a58;
+      color: #ffffff;
+      font-weight: 700;
+    }
+    .btn.finishSessionBtn:hover:not(:disabled) {
+      background: #146346;
+      border-color: #146346;
+      box-shadow: 0 2px 8px rgba(26,122,88,0.28);
+    }
     #btnEndSession{
-      background:#d9534f;
-      color:white;
-      border:none;
       opacity: 0.96;
       font-weight: 600;
     }
@@ -1204,10 +1257,10 @@
       filter: grayscale(20%);
       cursor: not-allowed;
     }
-    #btnEndSession.finalActionBtn:hover {
+    #btnEndSession.finalActionBtn.finishSessionBtn:hover {
       opacity: 1;
     }
-    #btnEndSession.finalActionBtn.pseudo-disabled:hover {
+    #btnEndSession.finalActionBtn.finishSessionBtn.pseudo-disabled:hover {
       opacity: 0.45;
     }
 
@@ -1912,9 +1965,9 @@
         </div>
 
         <div class="accessAction">
-          <p class="accessActionTitle">Enter your participant code to begin this session</p>
+          <p class="accessActionTitle" id="accessCodeLabel">Enter your participant code to begin this session</p>
           <form class="accessRow" id="accessForm">
-            <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" />
+            <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" aria-labelledby="accessCodeLabel" aria-describedby="accessMsg" />
             <button class="btn primary accessBtn" id="btnVerifyAccess" type="submit">Continue</button>
           </form>
           <div class="modeToggleRow">
@@ -1947,7 +2000,7 @@
         <summary id="sumSetup">
           <div class="summaryLeft">
             <strong>1) Set up</strong>
-            <span class="tag" id="tagSetup">In progress</span>
+            <span class="tag" id="tagSetup" aria-label="Setup status: In progress">In progress</span>
           </div>
 
         </summary>
@@ -2085,8 +2138,10 @@
               <div id="setupSamplePromptList" class="setupPromptList promptListCompact"></div>
             </div>
 
-            <div class="row bandActionRow" id="setupProceedRow" hidden>
-              <button class="btn primary" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
+            <div class="row bandActionRow stageNavRow" id="setupProceedRow" hidden>
+              <div class="stageActionWrap">
+                <button class="btn primary stageActionBtn" id="btnGoPrompts" disabled>Proceed to 2) Making questions</button>
+              </div>
             </div>
           </div>
         </div>
@@ -2096,7 +2151,7 @@
         <summary id="sumPrompts">
           <div class="summaryLeft">
             <strong>2) Making questions</strong>
-            <span class="tag lock" id="tagPrompts">Locked</span>
+            <span class="tag lock" id="tagPrompts" aria-label="Making questions status: Locked">Locked</span>
           </div>
 
         </summary>
@@ -2142,8 +2197,10 @@
                   </div>
                 </div>
 
-                <div class="row bandActionRow">
-                  <button class="btn primary" id="btnReadyFinal">I'm done making questions</button>
+                <div class="row bandActionRow stageNavRow">
+                  <div class="stageActionWrap">
+                    <button class="btn primary stageActionBtn" id="btnReadyFinal">I'm done making questions</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2155,7 +2212,7 @@
         <summary id="sumFinalize">
           <div class="summaryLeft">
             <strong>3) Finalize</strong>
-            <span class="tag lock" id="tagFinalize">Locked</span>
+            <span class="tag lock" id="tagFinalize" aria-label="Finalize status: Locked">Locked</span>
           </div>
 
         </summary>
@@ -2167,8 +2224,10 @@
           <div id="finalizeInner" style="display:none;">
             <div class="card">
 
-              <div style="margin-bottom:10px;">
-                <button class="btn" id="btnBackToPrompts">Go back to making questions</button>
+              <div class="stageNavRow" style="margin-bottom:10px;">
+                <div class="stageActionWrap">
+                  <button class="btn stageActionBtn" id="btnBackToPrompts">Go back to making questions</button>
+                </div>
               </div>
 
               <div id="trainingTipFinalizeIntro" class="trainingTip trainingTipSmall">
@@ -2257,7 +2316,7 @@
                 <p>Make sure you've pasted the AI's final response into the box above before ending. Once you end the session, your work is submitted and the app resets.</p>
               </div>
               <div class="finalActionRow" id="endSessionRow" style="display:none;">
-                <button id="btnEndSession" class="btn danger primary finalActionBtn" type="button">
+                <button id="btnEndSession" class="btn finalActionBtn finishSessionBtn" type="button">
                   End session
                 </button>
               </div>
@@ -2340,13 +2399,13 @@
       <p class="muted" style="margin:0 0 12px;">Ending the session will clear this browser’s stored data.</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnEndCancel" type="button">Cancel</button>
-        <button class="btn danger" id="btnEndConfirm" type="button">End session</button>
+        <button class="btn finishSessionBtn" id="btnEndConfirm" type="button">End session</button>
       </div>
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
-  <div class="timerNotice" id="timerNotice" style="display:none;">
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+  <div class="timerNotice" id="timerNotice" style="display:none;" role="alert" aria-live="assertive">
     <div class="timerNoticeMessage" id="timerNoticeMessage"></div>
     <button class="timerNoticeClose" id="timerNoticeClose" type="button" aria-label="Dismiss notification">×</button>
   </div>
@@ -2809,12 +2868,22 @@ const PROMPT_META = [
       }
       btn.disabled = !canProceed;
       btn.classList.toggle("primary", canProceed);
+
+      // Fire pulse animation once when the button first becomes actionable this session
+      if (canProceed && !btn.dataset.pulseShown) {
+        btn.dataset.pulseShown = "1";
+        btn.classList.add("is-ready");
+        // Remove after animation completes (4 pulses × 1.6 s = 6.4 s, +200 ms margin)
+        setTimeout(() => btn.classList.remove("is-ready"), 6600);
+      }
     }
 
     function invalidateStarterPromptCopied() {
       starterPromptCopied = false;
       localStorage.setItem(KEYS.starterCopied, "false");
       localStorage.removeItem(KEYS.starterCopiedSetupSignature);
+      const proceedBtn = $("btnGoPrompts");
+      if (proceedBtn) delete proceedBtn.dataset.pulseShown;
       updateProceedToPromptsAvailability();
       updateSetupSamplePromptVisibility();
       const copiedTip = $("starterCopiedTrainingTip");
@@ -4196,20 +4265,24 @@ const PROMPT_META = [
       if (isSetupComplete()) {
         $("tagSetup").textContent = "Complete";
         $("tagSetup").className = "tag ok";
+        $("tagSetup").setAttribute("aria-label", "Setup status: Complete");
       } else {
         $("tagSetup").textContent = "In progress";
         $("tagSetup").className = "tag";
+        $("tagSetup").setAttribute("aria-label", "Setup status: In progress");
       }
 
       // Prompts lock/unlock
       if (promptsUnlocked) {
         $("tagPrompts").textContent = "Open";
         $("tagPrompts").className = "tag ok";
+        $("tagPrompts").setAttribute("aria-label", "Making questions status: Open");
         $("lockPrompts").style.display = "none";
         $("promptsInner").style.display = "block";
       } else {
         $("tagPrompts").textContent = "Locked";
         $("tagPrompts").className = "tag lock";
+        $("tagPrompts").setAttribute("aria-label", "Making questions status: Locked");
         $("lockPrompts").style.display = "block";
         $("promptsInner").style.display = "none";
       }
@@ -4218,11 +4291,13 @@ const PROMPT_META = [
       if (finalizeUnlocked) {
         $("tagFinalize").textContent = "Open";
         $("tagFinalize").className = "tag ok";
+        $("tagFinalize").setAttribute("aria-label", "Finalize status: Open");
         $("lockFinalize").style.display = "none";
         $("finalizeInner").style.display = "block";
       } else {
         $("tagFinalize").textContent = "Locked";
         $("tagFinalize").className = "tag lock";
+        $("tagFinalize").setAttribute("aria-label", "Finalize status: Locked");
         $("lockFinalize").style.display = "block";
         $("finalizeInner").style.display = "none";
       }
