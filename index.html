@@ -1441,59 +1441,26 @@
     }
     .audioMeterRow {
       display: none;
-      align-items: center;
-      gap: 10px;
       margin-top: 8px;
+      width: min(100%, 420px);
+      max-width: 420px;
     }
-    .audioMeterLabelWrap {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      flex: 0 0 auto;
-      min-width: 92px;
-    }
-    .audioMeterDot {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background: #9fb3cf;
-      box-shadow: 0 0 0 0 rgba(47,110,220,0.18);
-      transition: background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
-    }
-    .audioMeterRow.is-recording .audioMeterDot {
-      background: #2f6edc;
-      box-shadow: 0 0 0 4px rgba(47,110,220,0.12);
-    }
-    .audioMeterRow.is-paused .audioMeterDot {
-      background: #8fa2bf;
-      box-shadow: none;
-      opacity: 0.75;
-    }
-    .audioMeterLabel {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.2;
-    }
-    .audioMeterTrack {
-      position: relative;
-      flex: 1 1 auto;
-      height: 10px;
+    .audioMeterHistory {
+      display: block;
+      width: 100%;
+      height: 28px;
       border-radius: 999px;
       background: #edf3fb;
       border: 1px solid var(--border);
-      overflow: hidden;
     }
-    .audioMeterFill {
-      height: 100%;
-      width: 6%;
-      min-width: 6px;
-      border-radius: inherit;
-      background: linear-gradient(90deg, #9fc1ff 0%, #5c8fe8 100%);
-      transition: width 90ms linear, opacity 0.15s ease;
-      opacity: 0.9;
+    .audioMeterRow.is-paused .audioMeterHistory {
+      opacity: 0.55;
     }
-    .audioMeterRow.is-paused .audioMeterFill {
-      opacity: 0.45;
+    @media (max-width: 680px) {
+      .audioMeterRow {
+        width: 100%;
+        max-width: none;
+      }
     }
 
     details summary {
@@ -2393,14 +2360,14 @@
                         <span class="audioElapsedLabel">Recording time</span>
                         <span class="audioElapsedValue" id="audioElapsedValue">00:00</span>
                       </div>
-                      <div class="audioMeterRow" id="audioMeterRow" aria-hidden="true">
-                        <div class="audioMeterLabelWrap">
-                          <span class="audioMeterDot" id="audioMeterDot"></span>
-                          <span class="audioMeterLabel" id="audioMeterLabel">Mic level</span>
-                        </div>
-                        <div class="audioMeterTrack" id="audioMeterTrack">
-                          <div class="audioMeterFill" id="audioMeterFill"></div>
-                        </div>
+                      <div class="audioMeterRow" id="audioMeterRow">
+                        <canvas
+                          class="audioMeterHistory"
+                          id="audioMeterHistory"
+                          width="420"
+                          height="28"
+                          aria-label="Live microphone level"
+                        ></canvas>
                       </div>
 
                       <div class="audioPlaybackRow" id="audioPlaybackRow">
@@ -2898,6 +2865,10 @@ const PROMPT_META = [
     let audioMeterFrame = null;
     let audioMeterLevel = 0;
     let audioMeterDataArray = null;
+    let audioMeterCanvas = null;
+    let audioMeterCtx = null;
+    let audioMeterHistoryValues = [];
+    let audioMeterLastLevel = 0;
 
     const AUDIO_METER_IDLE_FLOOR = 0.06;
     const AUDIO_METER_MAX_SCALE = 3.2;
@@ -3944,11 +3915,42 @@ const PROMPT_META = [
       }
     }
 
-    function updateAudioMeterFill(level = AUDIO_METER_IDLE_FLOOR) {
-      const fill = $("audioMeterFill");
-      if (!fill) return;
-      const clampedLevel = Math.max(AUDIO_METER_IDLE_FLOOR, Math.min(1, Number(level) || 0));
-      fill.style.width = `${Math.round(clampedLevel * 100)}%`;
+    function clearAudioMeterCanvas() {
+      if (!audioMeterCanvas || !audioMeterCtx) return;
+      audioMeterCtx.clearRect(0, 0, audioMeterCanvas.width, audioMeterCanvas.height);
+    }
+
+    function drawAudioMeterHistory() {
+      if (!audioMeterCanvas || !audioMeterCtx) return;
+      const width = audioMeterCanvas.width;
+      const height = audioMeterCanvas.height;
+      const baseline = height / 2;
+
+      audioMeterCtx.clearRect(0, 0, width, height);
+      audioMeterCtx.strokeStyle = "#5c8fe8";
+      audioMeterCtx.lineWidth = 1;
+      audioMeterCtx.lineCap = "round";
+
+      for (let i = 0; i < audioMeterHistoryValues.length; i += 1) {
+        const level = Math.max(0, Math.min(1, Number(audioMeterHistoryValues[i]) || 0));
+        const halfHeight = Math.max(1, Math.round(level * ((height - 6) / 2)));
+        const x = i + 0.5;
+        audioMeterCtx.beginPath();
+        audioMeterCtx.moveTo(x, baseline - halfHeight);
+        audioMeterCtx.lineTo(x, baseline + halfHeight);
+        audioMeterCtx.stroke();
+      }
+    }
+
+    function pushAudioMeterHistory(level) {
+      if (!audioMeterCanvas || !audioMeterCtx) return;
+      const clampedLevel = Math.max(0, Math.min(1, Number(level) || 0));
+      const maxSamples = Math.max(1, Math.floor(audioMeterCanvas.width));
+      audioMeterHistoryValues.push(clampedLevel);
+      if (audioMeterHistoryValues.length > maxSamples) {
+        audioMeterHistoryValues.splice(0, audioMeterHistoryValues.length - maxSamples);
+      }
+      drawAudioMeterHistory();
     }
 
     function stopAudioMeterLoop() {
@@ -3976,7 +3978,8 @@ const PROMPT_META = [
         const rms = Math.sqrt(sumSquares / audioMeterDataArray.length);
         const normalized = Math.min(1, rms * AUDIO_METER_MAX_SCALE);
         audioMeterLevel = (audioMeterLevel * 0.82) + (normalized * 0.18);
-        updateAudioMeterFill(audioMeterLevel);
+        audioMeterLastLevel = audioMeterLevel;
+        pushAudioMeterHistory(audioMeterLastLevel);
         audioMeterFrame = requestAnimationFrame(tick);
       };
 
@@ -4007,8 +4010,17 @@ const PROMPT_META = [
         audioAnalyser.smoothingTimeConstant = 0.8;
         audioSourceNode.connect(audioAnalyser);
         audioMeterDataArray = new Uint8Array(audioAnalyser.fftSize);
+        audioMeterCanvas = $("audioMeterHistory");
+        audioMeterCtx = audioMeterCanvas?.getContext("2d") || null;
+        if (audioMeterCanvas && audioMeterCtx) {
+          const renderedWidth = Math.max(1, Math.round(audioMeterCanvas.getBoundingClientRect().width || audioMeterCanvas.width || 420));
+          audioMeterCanvas.width = renderedWidth;
+          audioMeterCanvas.height = 28;
+        }
+        audioMeterHistoryValues = [];
         audioMeterLevel = AUDIO_METER_IDLE_FLOOR;
-        updateAudioMeterFill(audioMeterLevel);
+        audioMeterLastLevel = audioMeterLevel;
+        pushAudioMeterHistory(audioMeterLastLevel);
         startAudioMeterLoop();
       } catch (err) {
         console.warn("Audio meter setup failed", err);
@@ -4026,8 +4038,12 @@ const PROMPT_META = [
       audioSourceNode = null;
       audioAnalyser = null;
       audioMeterDataArray = null;
+      audioMeterHistoryValues = [];
+      audioMeterLastLevel = 0;
+      clearAudioMeterCanvas();
+      audioMeterCanvas = null;
+      audioMeterCtx = null;
       audioMeterLevel = 0;
-      updateAudioMeterFill(AUDIO_METER_IDLE_FLOOR);
     }
 
     // Keep recorder UI updates in one place for maintainability.
@@ -4063,6 +4079,7 @@ const PROMPT_META = [
       if (stopBtn) stopBtn.style.display = showActive ? "inline-flex" : "none";
       if (meterRow) {
         meterRow.style.display = showActive ? "flex" : "none";
+        meterRow.setAttribute("aria-hidden", showActive ? "false" : "true");
         meterRow.classList.toggle("is-recording", recorderState === "recording");
         meterRow.classList.toggle("is-paused", recorderState === "paused");
       }
