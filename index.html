@@ -162,6 +162,18 @@
     .btn.primary:hover:not(:disabled) { background: #2560c2; box-shadow: 0 2px 8px rgba(47,110,220,0.25); }
     .btn.warn { border-color: var(--warn); color: #9a5800; background: #fff7e8; }
     .btn.danger { border-color:#dc2626; color:#991b1b; background:#fef2f2; }
+    .btn.neutralAction {
+      border-color: #9fb0c8;
+      color: #2f415d;
+      background: #eaf0f8;
+      font-weight: 600;
+    }
+    .btn.neutralAction:hover:not(:disabled) {
+      background: #dde7f4;
+      border-color: #8da1bc;
+      color: #23344f;
+      box-shadow: 0 2px 8px rgba(70, 93, 126, 0.2);
+    }
     .pill { font-size: 12px; padding: 6px 10px; border:1px solid var(--border); border-radius: 999px; color: var(--muted); }
     .muted { color: var(--muted); }
     .small { font-size: 12px; }
@@ -838,6 +850,24 @@
     }
     .setupPromptList {
       min-width: 0;
+    }
+    .setupSamplePromptList {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .setupSamplePromptCard {
+      min-height: 98px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .setupSamplePromptCard .promptHeader {
+      flex: 1 1 auto;
+      align-items: flex-start;
+    }
+    .setupSamplePromptCard .promptActions {
+      align-self: flex-start;
     }
     .setupPromptBox .promptCard {
       background: #fbf8ff;
@@ -1599,6 +1629,7 @@
       .twoCol,
       .promptGroups,
       .promptListCompact,
+      .setupSamplePromptList,
       .modelGrid,
       .product-grid {
         grid-template-columns: minmax(0, 1fr);
@@ -2082,7 +2113,7 @@
                 <h4 class="setupPromptBoxTitle">Optional: Use sample questions</h4>
                 <p class="setupPromptBoxSub">If you have sample questions, you can use one of these prompts to guide the AI.</p>
               </div>
-              <div id="setupSamplePromptList" class="setupPromptList promptListCompact"></div>
+              <div id="setupSamplePromptList" class="setupPromptList promptListCompact setupSamplePromptList"></div>
             </div>
 
             <div class="row bandActionRow" id="setupProceedRow" hidden>
@@ -2340,7 +2371,7 @@
       <p class="muted" style="margin:0 0 12px;">Ending the session will clear this browser’s stored data.</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnEndCancel" type="button">Cancel</button>
-        <button class="btn danger" id="btnEndConfirm" type="button">End session</button>
+        <button class="btn neutralAction" id="btnEndConfirm" type="button">End session</button>
       </div>
     </div>
   </div>
@@ -4458,7 +4489,9 @@ const PROMPT_META = [
       setupSamplePromptCount = availableIds.length;
 
       availableIds.forEach((promptId) => {
-        listEl.appendChild(buildPromptCard(promptId));
+        const card = buildPromptCard(promptId);
+        card.classList.add("setupSamplePromptCard");
+        listEl.appendChild(card);
       });
 
       const togglePromptDetails = (chevron) => {
