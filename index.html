@@ -1041,30 +1041,6 @@
       display: block;
       width: 100%;
     }
-    .finalizeTopRow {
-      display: grid;
-      grid-template-columns: minmax(260px, 340px) 1fr;
-      grid-template-areas: "copy back";
-      align-items: start;
-      column-gap: 12px;
-      row-gap: 10px;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    .finalizeCopySlot {
-      grid-area: copy;
-      min-width: 0;
-      width: 100%;
-    }
-    .finalizeBackSlot {
-      grid-area: back;
-      display: flex;
-      justify-content: flex-end;
-      align-items: flex-start;
-      justify-self: end;
-      align-self: start;
-      min-width: 0;
-    }
     #finalCopyCard .copyCardDetails,
     #finalCopyCard .promptDetailsText,
     #finalCopyCard .copyCardPreview {
@@ -1089,12 +1065,6 @@
       height: 32px;
       min-width: 32px;
       box-sizing: border-box;
-    }
-    .finalizeBackSlot .btn {
-      width: auto;
-      max-width: max-content;
-      white-space: nowrap;
-      flex: 0 0 auto;
     }
     @media (max-width: 820px) {
       .btn {
@@ -1131,7 +1101,8 @@
         align-items: stretch;
       }
 
-      #btnEditContext {
+      #btnEditContext,
+      #btnBackToPrompts {
         grid-area: back;
         width: 100%;
       }
@@ -1146,37 +1117,14 @@
         width: 100%;
       }
 
-      .finalizeTopRow {
-        display: grid;
-        grid-template-columns: 1fr;
-        grid-template-areas:
-          "back"
-          "copy";
-        gap: 10px;
-        align-items: stretch;
-      }
-
-      .finalizeBackSlot {
-        grid-area: back;
-        display: block;
-        justify-self: stretch;
-        width: 100%;
-      }
-
-      .finalizeCopySlot {
-        grid-area: copy;
-        width: 100%;
-      }
-
-      .finalizeBackSlot .btn,
       #finalCopyCard,
-      .finalizeCopySlot .copyCard {
+      .copyCardWrap .copyCard {
         width: 100%;
         max-width: 100%;
       }
 
       #btnEditContext,
-      .finalizeBackSlot .btn {
+      #btnBackToPrompts {
         width: 100%;
         text-align: center;
         justify-content: center;
@@ -2229,9 +2177,9 @@
           <div id="finalizeInner" style="display:none;">
             <div class="card">
 
-              <div class="stageNavRow" style="margin-bottom:10px;">
-                <div class="stageActionWrap">
-                  <button class="btn stageActionBtn" id="btnBackToPrompts"><span aria-hidden="true">↑</span> Go back to making questions</button>
+              <div class="promptTopRow">
+                <div class="promptTopRowActions">
+                  <button class="btn" id="btnBackToPrompts" type="button"><span aria-hidden="true">↑</span> Go back to making questions</button>
                 </div>
               </div>
 
