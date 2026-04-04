@@ -3810,17 +3810,15 @@ const PROMPT_META = [
 
     // Produces the actual text copied to clipboard. Uses strict fallbacks.
     function buildStarterPrompt() {
-      const ctx = getContext();
-      const notesLine = (ctx.notes || "").trim()
-        ? `Additional instructions/parameters: ${ctx.notes.trim()}`
-        : `Additional instructions/parameters: (none)`;
-      const template = getPromptText("starter");
-      return template
-        .replaceAll("{{COURSE}}", ctx.course || "(not provided)")
-        .replaceAll("{{AREA}}", ctx.area || "(not provided)")
-        .replaceAll("{{QUESTION_COUNT}}", ctx.questionCount || "10")
-        .replaceAll("{{NOTES_LINE}}", notesLine);
-    }
+  const ctx = getContext();
+  const notesLine = (ctx.notes || "").trim() || "(none)";
+  const template = getPromptText("starter");
+  return template
+    .replaceAll("{{COURSE}}", ctx.course || "(not provided)")
+    .replaceAll("{{AREA}}", ctx.area || "(not provided)")
+    .replaceAll("{{QUESTION_COUNT}}", ctx.questionCount || "10")
+    .replaceAll("{{NOTES_LINE}}", notesLine);
+}
 
     function buildFinalPrompt() {
       return getPromptText("final_prompt");
