@@ -5483,31 +5483,31 @@ const PROMPT_META = [
     }
 
     async function fetchLatestSubmittedSettings() {
-      const participantId = (localStorage.getItem(KEYS.participantId) || "").trim();
-      const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
-      const userId = participantId || accessCode;
+  const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
+  const participantId = (localStorage.getItem(KEYS.participantId) || "").trim();
+  const userId = accessCode || participantId;
 
-      if (!userId) {
-        return { ok: false, found: false, error: "No participant identifier found." };
-      }
+  if (!userId) {
+    return { ok: false, found: false, error: "No participant identifier found." };
+  }
 
-      try {
-        const response = await fetch(AQG_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "getLatestSubmittedSettings",
-            user_id: userId
-          }),
-          redirect: "follow"
-        });
+  try {
+    const response = await fetch(AQG_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "getLatestSubmittedSettings",
+        user_id: userId
+      }),
+      redirect: "follow"
+    });
 
-        const text = await response.text();
-        return JSON.parse(text);
-      } catch (err) {
-        return { ok: false, found: false, error: String(err?.message || err || "unknown_error") };
-      }
-    }
+    const text = await response.text();
+    return JSON.parse(text);
+  } catch (err) {
+    return { ok: false, found: false, error: String(err?.message || err || "unknown_error") };
+  }
+}
 
     // -----------------------------
     // Init
