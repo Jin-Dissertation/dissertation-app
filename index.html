@@ -6065,15 +6065,9 @@ const PROMPT_META = [
         try {
           const result = await submitSession();
           if (result?.ok) {
-            queueLiveSessionUpdate("completed", 0);
-            clearSessionData();
-            sessionStorage.setItem("dissertation.ended", "true");
             closeModal("modalEnd");
-            if (!isTrainingMode) {
-              location.reload();
-              return;
-            }
-            window.location.href = "training-complete.html";
+            resetCurrentSessionKeepLogin();
+            toast("Session submitted. A new session is ready.", { duration: 2200 });
             return;
           }
           if (endMsg) {
