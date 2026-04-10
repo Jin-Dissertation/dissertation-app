@@ -3797,6 +3797,100 @@ const PROMPT_META = [
       lastCopiedAt = null;
     }
 
+    function resetCurrentSessionKeepLogin() {
+      const accessVerified = localStorage.getItem(KEYS.accessVerified) || "";
+      const accessCode = localStorage.getItem(KEYS.accessCode) || "";
+      const participantId = localStorage.getItem(KEYS.participantId) || "";
+      const clientKey = localStorage.getItem(KEYS.clientKey) || "";
+
+      clearSessionData();
+
+      if (accessVerified) localStorage.setItem(KEYS.accessVerified, accessVerified);
+      if (accessCode) localStorage.setItem(KEYS.accessCode, accessCode);
+      if (participantId) localStorage.setItem(KEYS.participantId, participantId);
+      if (clientKey) localStorage.setItem(KEYS.clientKey, clientKey);
+
+      const newSessionStart = nowIso();
+      const newSessionId = makeSessionId(accessCode || "participant");
+
+      localStorage.setItem(KEYS.sessionStartTime, newSessionStart);
+      localStorage.setItem(KEYS.sessionId, newSessionId);
+      localStorage.setItem(KEYS.stage, "setup");
+      localStorage.setItem(KEYS.starterCopied, "false");
+      localStorage.setItem(KEYS.finalPromptCopied, "false");
+      localStorage.setItem(KEYS.finalizeVisited, "false");
+      localStorage.setItem(KEYS.productVersionConfirmed, "false");
+      localStorage.setItem(KEYS.submitClicked, "false");
+
+      saveJSON(KEYS.context, {
+        course: "",
+        area: "",
+        notes: "",
+        questionCount: "10"
+      });
+      saveJSON(KEYS.events, []);
+
+      starterPromptCopied = false;
+      llmMismatchAlertAttempted = false;
+      activeMsBase = 0;
+      interactionTimes = [Date.now()];
+
+      localStorage.setItem(KEYS.timerStartedAt, String(Date.now()));
+      localStorage.setItem(KEYS.timerElapsedBeforePause, "0");
+      localStorage.setItem(KEYS.timerPaused, "false");
+      localStorage.removeItem(KEYS.timerWarned35);
+      localStorage.removeItem(KEYS.timerWarned40);
+      localStorage.removeItem(KEYS.trainingTenMinuteNoticeShown);
+
+      if ($("modelUsed")) $("modelUsed").value = "";
+      if ($("ctxCourse")) $("ctxCourse").value = "";
+      if ($("ctxArea")) $("ctxArea").value = "";
+      if ($("ctxNotes")) $("ctxNotes").value = "";
+      if ($("ctxQuestionCount")) $("ctxQuestionCount").value = "10";
+      if ($("llmResponse")) $("llmResponse").value = "";
+      if ($("sessionNotes")) $("sessionNotes").value = "";
+
+      clearAudioRecorderState();
+      updateAudioRecorderUI();
+
+      if ($("setupMsg")) {
+        $("setupMsg").textContent = "";
+        $("setupMsg").style.display = "none";
+      }
+      if ($("finalizeMsg")) {
+        $("finalizeMsg").textContent = "";
+        $("finalizeMsg").style.display = "none";
+      }
+      if ($("endMsg")) {
+        $("endMsg").textContent = "";
+        $("endMsg").style.display = "none";
+      }
+
+      renderLlmConfirmPanel("");
+      updateSetupSubbandVisibility();
+      refreshCopyCardPreviews();
+      renderPromptList();
+      renderSetupSamplePromptBox();
+      renderMostRecentCopied();
+      updateStarterCopyAvailability();
+      updateProceedToPromptsAvailability();
+      updateFinalizeContentUI();
+      updateEndSessionState();
+      refreshFooterInfo();
+
+      if ($("bandSetup")) $("bandSetup").open = true;
+      if ($("bandPrompts")) $("bandPrompts").open = false;
+      if ($("bandFinalize")) $("bandFinalize").open = false;
+
+      applyStageUI();
+
+      logEvent("session_reset_started_new_session", {
+        sessionId: newSessionId,
+        previousSessionCleared: true
+      });
+      queueLiveSessionUpdate("in_progress", 0);
+    }
+
     // -----------------------------
     // Footer status
     // -----------------------------
@@ -5731,9 +5825,8 @@ const PROMPT_META = [
       });
       $("btnResetConfirm").addEventListener("click", () => {
         try { logEvent("reset_confirmed"); } catch (err) { console.warn("Reset log failed", err); }
-        clearSessionData();
+        resetCurrentSessionKeepLogin();
         closeModal("modalReset");
-        location.reload();
       });
 
       $("btnEndSession").addEventListener("click", () => {
