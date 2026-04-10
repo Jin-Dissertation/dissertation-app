@@ -387,6 +387,13 @@
     @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
     .centerCard { max-width:420px; margin: 0 auto; }
     .appHeaderBar { display:flex; justify-content:flex-start; align-items:center; margin-bottom:10px; padding:6px 2px; }
+
+    .appHeaderActions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
     .timerCard {
       margin-top: 10px;
       padding: 8px 10px;
@@ -2071,7 +2078,10 @@
     <!-- Main app -->
     <div id="appShell" style="display:none;">
       <div class="appHeaderBar">
-        <button class="btn ghost" id="btnResetSession" type="button">Reset session</button>
+        <div class="appHeaderActions">
+          <button id="btnResetSession" class="btn" type="button">Reset session</button>
+          <button id="btnLogout" class="btn" type="button">Log out</button>
+        </div>
       </div>
       <!-- Mobile-only compact timer (training mode) -->
       <div class="mobileTimerBar" id="mobileTimerBar">
@@ -2500,6 +2510,19 @@
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnResetCancel" type="button">Cancel</button>
         <button class="btn danger" id="btnResetConfirm" type="button">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBackdrop" id="modalLogout" aria-hidden="true">
+    <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="modalLogoutTitle">
+      <h3 id="modalLogoutTitle" style="margin:0 0 8px;">Log out?</h3>
+      <p class="muted" style="margin:0 0 12px;">
+        This will fully log you out and return you to the access-code screen. Any unsaved work in this browser will be cleared.
+      </p>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn" id="btnLogoutCancel" type="button">Cancel</button>
+        <button class="btn danger" id="btnLogoutConfirm" type="button">Log out</button>
       </div>
     </div>
   </div>
@@ -5913,6 +5936,23 @@ const PROMPT_META = [
         try { logEvent("reset_confirmed"); } catch (err) { console.warn("Reset log failed", err); }
         resetCurrentSessionKeepLogin();
         closeModal("modalReset");
+      });
+
+      $("btnLogout").addEventListener("click", () => {
+        try { logEvent("logout_opened"); } catch (err) { console.warn("Logout log failed", err); }
+        openModal("modalLogout");
+      });
+
+      $("btnLogoutCancel").addEventListener("click", () => {
+        try { logEvent("logout_cancelled"); } catch (err) { console.warn("Logout log failed", err); }
+        closeModal("modalLogout");
+      });
+
+      $("btnLogoutConfirm").addEventListener("click", () => {
+        try { logEvent("logout_confirmed"); } catch (err) { console.warn("Logout log failed", err); }
+        clearSessionData();
+        closeModal("modalLogout");
+        location.reload();
       });
 
       $("btnEndSession").addEventListener("click", () => {
