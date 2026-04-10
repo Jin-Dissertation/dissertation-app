@@ -5863,9 +5863,6 @@ const PROMPT_META = [
         const notes = ($("ctxNotes").value || "").trim();
         const questionCount = ($("ctxQuestionCount").value || "10").trim() || "10";
 
-        $("setupMsg").textContent = "";
-        $("setupMsg").style.display = "none";
-
         if (!model || !isStarterSetupValid()) {
           $("setupMsg").textContent = "Please select a model and fill in course + content area before continuing.";
           $("setupMsg").style.display = "block";
