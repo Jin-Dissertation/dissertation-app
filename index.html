@@ -6066,6 +6066,14 @@ const PROMPT_META = [
           const result = await submitSession();
           if (result?.ok) {
             closeModal("modalEnd");
+
+            if (isTrainingMode) {
+              sessionStorage.setItem("dissertation.ended", "true");
+              resetCurrentSessionKeepLogin();
+              window.location.href = "training-complete.html";
+              return;
+            }
+
             resetCurrentSessionKeepLogin();
             toast("Session submitted. A new session is ready.", { duration: 2200 });
             return;
