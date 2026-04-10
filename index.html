@@ -2671,6 +2671,7 @@ const PROMPT_META = [
   }
 ];
     const SETUP_SAMPLE_PROMPT_IDS = ["sample_copy_style", "sample_new_version", "sample_supplement", "sample_practice"];
+    const LAST_PREVIOUS_SETTINGS_KEY = "dissertation.lastPreviousSettings";
 
     // -----------------------------
     // Storage keys
@@ -5509,6 +5510,41 @@ const PROMPT_META = [
   }
 }
 
+
+    function saveCurrentSettingsAsPrevious() {
+      const ctx = getContext();
+      const payload = {
+        course_context: String(ctx.course || "").trim(),
+        question_context: String(ctx.area || "").trim(),
+        extra_instructions: String(ctx.notes || "").trim(),
+        desired_questions: String(ctx.questionCount || "10").trim() || "10",
+        saved_at: nowIso(),
+        source: "starter_copy"
+      };
+
+      const hasUsefulContent =
+        payload.course_context ||
+        payload.question_context ||
+        payload.extra_instructions ||
+        payload.desired_questions;
+
+      if (!hasUsefulContent) return;
+
+      localStorage.setItem(LAST_PREVIOUS_SETTINGS_KEY, JSON.stringify(payload));
+    }
+
+    function getLocalPreviousSettings() {
+      try {
+        const raw = localStorage.getItem(LAST_PREVIOUS_SETTINGS_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return null;
+        return parsed;
+      } catch (err) {
+        return null;
+      }
+    }
+
     // -----------------------------
     // Init
     // -----------------------------
@@ -5563,6 +5599,32 @@ const PROMPT_META = [
           btnLoadPreviousSettings.textContent = "Loading...";
 
           try {
+            const localSettings = getLocalPreviousSettings();
+            if (localSettings) {
+              const course = String(localSettings.course_context || "").trim();
+              const area = String(localSettings.question_context || "").trim();
+              const questionCount = String(localSettings.desired_questions ?? "").trim() || "10";
+              const notes = String(localSettings.extra_instructions || "").trim();
+
+              if ($("ctxCourse")) $("ctxCourse").value = course;
+              if ($("ctxArea")) $("ctxArea").value = area;
+              if ($("ctxQuestionCount")) $("ctxQuestionCount").value = questionCount;
+              if ($("ctxNotes")) $("ctxNotes").value = notes;
+
+              setContext({ course, area, notes, questionCount });
+              invalidateStarterPromptCopied();
+              updateStarterCopyAvailability();
+              updateProceedToPromptsAvailability();
+              refreshCopyCardPreviews();
+              applyStageUI();
+              queueLiveSessionUpdate("in_progress");
+              logEvent("previous_settings_loaded", { source: "local_starter_copy" });
+
+              loadPreviousSettingsMsg.textContent = "Previous settings loaded. You can use them as-is or edit them before continuing.";
+              loadPreviousSettingsMsg.style.display = "block";
+              return;
+            }
+
             const data = await fetchLatestSubmittedSettings();
 
             if (!data || data.ok !== true) {
@@ -5799,6 +5861,7 @@ const PROMPT_META = [
           queueLiveSessionUpdate("in_progress");
           starterPromptCopied = true;
           localStorage.setItem(KEYS.starterCopied, "true");
+          saveCurrentSettingsAsPrevious();
           const copiedTip = $("starterCopiedTrainingTip");
           if (isTrainingMode && copiedTip) {
             copiedTip.hidden = false;
