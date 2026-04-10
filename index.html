@@ -2153,6 +2153,10 @@
 
             <div id="contextSubband" class="subBand hidden" style="margin-top:10px;">
               <h4 class="subBandTitle">B. Question context</h4>
+              <div class="row" style="margin:10px 0 0;">
+                <button class="btn" id="btnLoadPreviousSettings" type="button">Load previous settings</button>
+              </div>
+              <p id="loadPreviousSettingsMsg" class="muted small" style="display:none; margin:8px 0 0;"></p>
               <div id="trainingTipQuestionContext" class="training-tip">
                 <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
                 <p>The first two fields are required to tell the AI what kind of questions to create. This doesn't have to be detailed; it's just a short, specific description to point the AI in the right direction.</p>
@@ -5455,6 +5459,33 @@ const PROMPT_META = [
       return verified;
     }
 
+    async function fetchLatestSubmittedSettings() {
+      const participantId = (localStorage.getItem(KEYS.participantId) || "").trim();
+      const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
+      const userId = participantId || accessCode;
+
+      if (!userId) {
+        return { ok: false, found: false, error: "No participant identifier found." };
+      }
+
+      try {
+        const response = await fetch(AQG_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "getLatestSubmittedSettings",
+            user_id: userId
+          }),
+          redirect: "follow"
+        });
+
+        const text = await response.text();
+        return JSON.parse(text);
+      } catch (err) {
+        return { ok: false, found: false, error: String(err?.message || err || "unknown_error") };
+      }
+    }
+
     // -----------------------------
     // Init
     // -----------------------------
@@ -5496,6 +5527,61 @@ const PROMPT_META = [
       }
       renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "");
       updateSetupSubbandVisibility();
+
+      const btnLoadPreviousSettings = $("btnLoadPreviousSettings");
+      const loadPreviousSettingsMsg = $("loadPreviousSettingsMsg");
+      if (btnLoadPreviousSettings && loadPreviousSettingsMsg) {
+        btnLoadPreviousSettings.addEventListener("click", async () => {
+          markInteraction();
+          loadPreviousSettingsMsg.style.display = "none";
+          loadPreviousSettingsMsg.textContent = "";
+
+          btnLoadPreviousSettings.disabled = true;
+          btnLoadPreviousSettings.textContent = "Loading...";
+
+          try {
+            const data = await fetchLatestSubmittedSettings();
+
+            if (!data || data.ok !== true) {
+              loadPreviousSettingsMsg.textContent = "Could not load previous settings right now.";
+              loadPreviousSettingsMsg.style.display = "block";
+              return;
+            }
+
+            if (data.found !== true) {
+              loadPreviousSettingsMsg.textContent = "No previous submitted settings were found for this participant.";
+              loadPreviousSettingsMsg.style.display = "block";
+              return;
+            }
+
+            const settings = data.settings || data.latestSettings || data.submittedSettings || {};
+            const course = (settings.course_context || "").trim();
+            const area = (settings.question_context || "").trim();
+            const questionCount = String(settings.desired_questions ?? "").trim() || "10";
+            const notes = (settings.extra_instructions || "").trim();
+
+            if ($("ctxCourse")) $("ctxCourse").value = course;
+            if ($("ctxArea")) $("ctxArea").value = area;
+            if ($("ctxQuestionCount")) $("ctxQuestionCount").value = questionCount;
+            if ($("ctxNotes")) $("ctxNotes").value = notes;
+
+            setContext({ course, area, notes, questionCount });
+            invalidateStarterPromptCopied();
+            updateStarterCopyAvailability();
+            updateProceedToPromptsAvailability();
+            refreshCopyCardPreviews();
+            applyStageUI();
+            queueLiveSessionUpdate("in_progress");
+            logEvent("previous_settings_loaded", { source: "latest_submitted_settings" });
+
+            loadPreviousSettingsMsg.textContent = "Previous settings loaded. You can use them as-is or edit them before continuing.";
+            loadPreviousSettingsMsg.style.display = "block";
+          } finally {
+            btnLoadPreviousSettings.disabled = false;
+            btnLoadPreviousSettings.textContent = "Load previous settings";
+          }
+        });
+      }
 
       const llmExpectedChoiceEl = $("llmExpectedChoice");
       const llmMismatchDescriptionEl = $("llmMismatchDescription");
