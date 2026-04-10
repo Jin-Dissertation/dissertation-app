@@ -3774,14 +3774,14 @@ const PROMPT_META = [
 
 
     function canEndSession() {
-      return !!(($("llmResponse")?.value || "").trim());
+      return true;
     }
 
     function updateEndSessionState() {
       const btn = $("btnEndSession");
       if (!btn) return;
       btn.disabled = false;
-      btn.classList.toggle("pseudo-disabled", !canEndSession());
+      btn.classList.remove("pseudo-disabled");
     }
 
     function clearSessionData() {
@@ -5731,11 +5731,6 @@ const PROMPT_META = [
       });
 
       $("btnEndSession").addEventListener("click", () => {
-        if (!canEndSession()) {
-          toast("Please paste the AI-generated response into the final response box before ending the session.");
-          updateEndSessionState();
-          return;
-        }
         logEvent("end_session_opened");
         openModal("modalEnd");
       });
