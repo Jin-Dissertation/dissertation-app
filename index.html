@@ -2348,14 +2348,20 @@
                 <p style="margin-top:8px;">This response won't be graded or evaluated on its own — it's just so I can review what the AI produced during your session and use it as a reference point for our interview conversation.</p>
               </div>
 
-              <p class="muted small finalizeNotice" id="finalizeCopyNotice"></p>
-
               <div id="finalizeLockedArea" class="finalizeLockedContent" style="margin-top:8px; display:none;">
-
-                <div style="margin-top:12px;">
-
-                  <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
-                </div>
+                <details class="feedbackCollapsible" id="finalModelOutputSection">
+                  <summary class="feedbackSummary">
+                    <div class="feedbackSummaryLeft">
+                      <span class="feedbackSummaryLabel">Optional model output</span>
+                      <span class="feedbackSummaryHint">— paste the AI response here if you want</span>
+                    </div>
+                    <span class="feedbackSummaryChevron" aria-hidden="true">›</span>
+                  </summary>
+                  <div class="feedbackInner">
+                    <div class="muted small finalizeNotice" id="finalizeCopyNotice"></div>
+                    <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
+                  </div>
+                </details>
 
                 <details class="feedbackCollapsible" id="finalFeedbackSection">
                   <summary class="feedbackSummary">
