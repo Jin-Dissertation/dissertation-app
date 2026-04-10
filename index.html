@@ -2984,7 +2984,53 @@ const PROMPT_META = [
     function getStarterSetupSignature() {
       const course = ($("ctxCourse")?.value || "").trim();
       const area = ($("ctxArea")?.value || "").trim();
-      return `${course}||${area}`;
+      const questionCount = ($("ctxQuestionCount")?.value || "10").trim() || "10";
+      const notes = ($("ctxNotes")?.value || "").trim();
+      const llmProduct = (localStorage.getItem(KEYS.llmProduct) || "").trim();
+      const llmExpectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
+      const llmMismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
+      const productVersionConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true" ? "true" : "false";
+
+      return JSON.stringify({
+        llmProduct,
+        llmExpectedChoice,
+        llmMismatchDescription,
+        productVersionConfirmed,
+        course,
+        area,
+        questionCount,
+        notes
+      });
+    }
+
+    function hasCurrentStarterPromptCopy() {
+      return (
+        localStorage.getItem(KEYS.starterCopied) === "true" &&
+        localStorage.getItem(KEYS.starterCopiedSetupSignature) === getStarterSetupSignature()
+      );
+    }
+
+    function syncStarterPromptCopiedState() {
+      starterPromptCopied = hasCurrentStarterPromptCopy();
+      return starterPromptCopied;
+    }
+
+    function invalidateStarterIfSignatureChanged() {
+      const hadStarterCopy = localStorage.getItem(KEYS.starterCopied) === "true";
+      if (!hadStarterCopy) {
+        updateStarterCopyAvailability();
+        updateProceedToPromptsAvailability();
+        return;
+      }
+
+      if (localStorage.getItem(KEYS.starterCopiedSetupSignature) !== getStarterSetupSignature()) {
+        invalidateStarterPromptCopied();
+      } else {
+        syncStarterPromptCopiedState();
+        updateProceedToPromptsAvailability();
+      }
+
+      updateStarterCopyAvailability();
     }
 
     function isStarterSetupValid() {
@@ -3000,7 +3046,7 @@ const PROMPT_META = [
       const starterCard = $("starterCopyCard");
       if (!starterCard) return;
 
-      const canCopy = isStarterSetupValid();
+      const canCopy = isSetupComplete();
       starterCard.classList.toggle("is-disabled", !canCopy);
       starterCard.setAttribute("aria-disabled", String(!canCopy));
     }
@@ -3010,8 +3056,12 @@ const PROMPT_META = [
       const row = $("setupProceedRow");
       if (!btn) return;
 
-      const canProceed = isStarterSetupValid() && !!starterPromptCopied;
-      const showProceedRow = !!starterPromptCopied;
+      syncStarterPromptCopiedState();
+
+      const setupComplete = isSetupComplete();
+      const canProceed = setupComplete && hasCurrentStarterPromptCopy();
+      const showProceedRow = setupComplete;
+
       if (row) {
         if (showProceedRow) {
           row.hidden = false;
@@ -3024,11 +3074,9 @@ const PROMPT_META = [
       btn.disabled = !canProceed;
       btn.classList.toggle("primary", canProceed);
 
-      // Fire pulse animation once when the button first becomes actionable this session
       if (canProceed && !btn.dataset.pulseShown) {
         btn.dataset.pulseShown = "1";
         btn.classList.add("is-ready");
-        // Remove after animation completes (4 pulses × 1.6 s = 6.4 s, +200 ms margin)
         setTimeout(() => btn.classList.remove("is-ready"), 6600);
       }
     }
@@ -5398,6 +5446,7 @@ const PROMPT_META = [
         setProductVersionConfirmedState(false);
         queueLiveSessionUpdate("in_progress");
       }
+      invalidateStarterIfSignatureChanged();
       renderLlmConfirmPanel(llmProduct);
       renderPromptList();
       renderSetupSamplePromptBox();
@@ -5578,7 +5627,6 @@ const PROMPT_META = [
         btn.addEventListener("click", (e) => {
           e.preventDefault();
           selectModel(btn.dataset.model || "", { logSelection: true });
-          invalidateStarterPromptCopied();
           applyStageUI();
         });
       });
@@ -5613,9 +5661,7 @@ const PROMPT_META = [
               if ($("ctxNotes")) $("ctxNotes").value = notes;
 
               setContext({ course, area, notes, questionCount });
-              invalidateStarterPromptCopied();
-              updateStarterCopyAvailability();
-              updateProceedToPromptsAvailability();
+              invalidateStarterIfSignatureChanged();
               refreshCopyCardPreviews();
               applyStageUI();
               queueLiveSessionUpdate("in_progress");
@@ -5652,9 +5698,7 @@ const PROMPT_META = [
             if ($("ctxNotes")) $("ctxNotes").value = notes;
 
             setContext({ course, area, notes, questionCount });
-            invalidateStarterPromptCopied();
-            updateStarterCopyAvailability();
-            updateProceedToPromptsAvailability();
+            invalidateStarterIfSignatureChanged();
             refreshCopyCardPreviews();
             applyStageUI();
             queueLiveSessionUpdate("in_progress");
@@ -5685,6 +5729,7 @@ const PROMPT_META = [
           logEvent("llm_expected_choice_selected", { llmProduct, expectedChoice });
           markInteraction();
           setProductVersionConfirmedState(false);
+          invalidateStarterIfSignatureChanged();
           queueLiveSessionUpdate("in_progress");
 
           if (expectedChoice === "different") {
@@ -5706,6 +5751,7 @@ const PROMPT_META = [
           markInteraction();
           localStorage.setItem(KEYS.llmMismatchDescription, mismatchDescription);
           setProductVersionConfirmedState(false);
+          invalidateStarterIfSignatureChanged();
           updateSetupSubbandVisibility();
           queueLiveSessionUpdate("in_progress");
 
@@ -5757,6 +5803,7 @@ const PROMPT_META = [
             return;
           }
           setProductVersionConfirmedState(true);
+          invalidateStarterIfSignatureChanged();
           markInteraction();
           logEvent("product_version_confirm_clicked");
           queueLiveSessionUpdate("in_progress");
@@ -5767,6 +5814,7 @@ const PROMPT_META = [
 
       const reopenProductVersion = () => {
         setProductVersionConfirmedState(false);
+        invalidateStarterIfSignatureChanged();
         logEvent("product_version_reopened");
         queueLiveSessionUpdate("in_progress");
         updateSetupSubbandVisibility();
@@ -5862,6 +5910,7 @@ const PROMPT_META = [
           queueLiveSessionUpdate("in_progress");
           starterPromptCopied = true;
           localStorage.setItem(KEYS.starterCopied, "true");
+          localStorage.setItem(KEYS.starterCopiedSetupSignature, getStarterSetupSignature());
           saveCurrentSettingsAsPrevious();
           const copiedTip = $("starterCopiedTrainingTip");
           if (isTrainingMode && copiedTip) {
@@ -5887,8 +5936,8 @@ const PROMPT_META = [
           showExistingErrorToast("Please complete the required setup fields before copying the starter prompt.");
           return;
         }
-        if (!starterPromptCopied) {
-          showExistingErrorToast("Please copy the starter prompt before proceeding to Making questions.");
+        if (!hasCurrentStarterPromptCopy()) {
+          showExistingErrorToast("Please copy or re-copy the starter prompt before proceeding to Making questions.");
           return;
         }
         if (!isSetupComplete()) {
@@ -6101,7 +6150,8 @@ const PROMPT_META = [
         if (!localStorage.getItem(KEYS.stage)) {
           localStorage.setItem(KEYS.stage, "setup");
         }
-        starterPromptCopied = localStorage.getItem(KEYS.starterCopied) === "true";
+        syncStarterPromptCopiedState();
+        updateStarterCopyAvailability();
         updateProceedToPromptsAvailability();
         applyStageUI();
       }
@@ -6141,11 +6191,15 @@ const PROMPT_META = [
         logEvent("context_edited", { field: target.id });
       });
 
-      if (isRequired) {
+      const hadStarterCopy = localStorage.getItem(KEYS.starterCopied) === "true";
+      const starterStillMatches = localStorage.getItem(KEYS.starterCopiedSetupSignature) === getStarterSetupSignature();
+
+      if (hadStarterCopy && !starterStillMatches) {
         invalidateStarterPromptCopied();
-        updateStarterCopyAvailability();
-        updateProceedToPromptsAvailability();
       }
+
+      updateStarterCopyAvailability();
+      updateProceedToPromptsAvailability();
       applyStageUI();
       const preview = document.getElementById("starterCopyPreview");
       if (preview) preview.textContent = buildStarterPrompt();
