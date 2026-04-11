@@ -2759,6 +2759,11 @@ const PROMPT_META = [
     function getPromptText(promptId) {
       const prompt = getPromptDefinition(promptId);
       if (prompt?.prompt_body) return prompt.prompt_body;
+
+      if (!appBootReady) {
+        return "";
+      }
+
       const llmKey = getSelectedLlmKey();
       const msg = `Missing required prompt "${promptId}" for "${llmKey}". Please refresh and contact the study team if this continues.`;
       console.error("AQG prompt missing", {
