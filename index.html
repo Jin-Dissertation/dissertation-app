@@ -3990,7 +3990,7 @@ const PROMPT_META = [
       lastCopiedAt = null;
     }
 
-    async function resetCurrentSessionKeepLogin() {
+    async function resetCurrentSessionKeepLogin(options = {}) {
       const accessVerified = localStorage.getItem(KEYS.accessVerified) || "";
       const accessCode = localStorage.getItem(KEYS.accessCode) || "";
       const participantId = localStorage.getItem(KEYS.participantId) || "";
@@ -3998,6 +3998,7 @@ const PROMPT_META = [
       const closedSessionId = localStorage.getItem(KEYS.sessionId) || "";
       const closedContextId = localStorage.getItem(KEYS.contextId) || "";
       const closeTimestamp = new Date().toISOString();
+      const suppressResetCloseEvent = options?.suppressResetCloseEvent === true;
 
       clearSessionData();
 
@@ -4085,22 +4086,24 @@ const PROMPT_META = [
         previousSessionCleared: true
       });
 
-      appendServerEvent(
-        "session_closed",
-        "btnResetConfirm",
-        "Session closed by reset.",
-        {
-          SessionCloseType: "reset",
-          SessionCloseAt: closeTimestamp,
-          session_id: closedSessionId || "",
-          context_id: closedContextId || ""
-        },
-        {
-          accessCode,
-          sessionId: closedSessionId,
-          contextId: closedContextId
-        }
-      );
+      if (!suppressResetCloseEvent) {
+        appendServerEvent(
+          "session_closed",
+          "btnResetConfirm",
+          "Session closed by reset.",
+          {
+            SessionCloseType: "reset",
+            SessionCloseAt: closeTimestamp,
+            session_id: closedSessionId || "",
+            context_id: closedContextId || ""
+          },
+          {
+            accessCode,
+            sessionId: closedSessionId,
+            contextId: closedContextId
+          }
+        );
+      }
       queueLiveSessionUpdate("in_progress", 0);
     }
 
@@ -6426,13 +6429,13 @@ const PROMPT_META = [
 
             if (isTrainingMode) {
               sessionStorage.setItem("dissertation.ended", "true");
-              await resetCurrentSessionKeepLogin();
+              await resetCurrentSessionKeepLogin({ suppressResetCloseEvent: true });
               closeModal("modalEnd");
               window.location.href = "training-complete.html";
               return;
             }
 
-            await resetCurrentSessionKeepLogin();
+            await resetCurrentSessionKeepLogin({ suppressResetCloseEvent: true });
             closeModal("modalEnd");
             toast("Session submitted. A new session is ready.", { duration: 2200 });
             return;
