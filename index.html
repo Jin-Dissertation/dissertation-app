@@ -4773,7 +4773,7 @@ const PROMPT_META = [
     // -----------------------------
     // Copy helper
     // -----------------------------
-    async function copyToClipboard(text, label) {
+    async function copyToClipboard(text, label, meta = {}) {
       let copied = false;
 
       try {
@@ -4801,7 +4801,14 @@ const PROMPT_META = [
       lastCopiedText = text;
       lastCopiedLabel = label;
       lastCopiedAt = new Date();
-      copyHistory.unshift({ text, label, timestamp: new Date() });
+      window._lastCopiedMeta = { ...(meta || {}) };
+
+      copyHistory.unshift({
+        text,
+        label,
+        timestamp: new Date(),
+        meta: { ...(meta || {}) }
+      });
       if (copyHistory.length > 50) copyHistory.length = 50;  // cap at 50 entries
       renderMostRecentCopied();
       renderCopyHistory();
@@ -4813,6 +4820,85 @@ const PROMPT_META = [
       }
 
       return copied;
+    }
+
+    function logSidebarRecopy(meta = {}, source = "sidebar_history") {
+      const kind = String(meta?.kind || "").trim();
+      const promptId = String(meta?.promptId || "").trim();
+      const promptTitle = String(meta?.promptTitle || meta?.label || "").trim();
+
+      markInteraction();
+
+      if (kind === "sample_prompt" && promptId) {
+        logEvent("prompt_copied", {
+          promptId,
+          source
+        });
+        appendServerEvent(
+          "sample_prompt_copied",
+          promptId,
+          `Copied sample prompt: ${promptTitle}`,
+          {
+            prompt_id: promptId,
+            prompt_title: promptTitle,
+            source
+          }
+        );
+        queueLiveSessionUpdate("in_progress");
+        return;
+      }
+
+      if (kind === "main_prompt" && promptId) {
+        logEvent("prompt_copied", {
+          promptId,
+          source
+        });
+        appendServerEvent(
+          "prompt_copied",
+          promptId,
+          `Copied prompt: ${promptTitle}`,
+          {
+            prompt_id: promptId,
+            prompt_title: promptTitle,
+            source
+          }
+        );
+        queueLiveSessionUpdate("in_progress");
+        return;
+      }
+
+      if (kind === "starter_prompt") {
+        logEvent("starter_prompt_recopied_from_sidebar", { source });
+        appendServerEvent(
+          "starter_prompt_recopied_from_sidebar",
+          "starterCopyCard",
+          "Starter prompt re-copied from sidebar.",
+          { source }
+        );
+        queueLiveSessionUpdate("in_progress");
+        return;
+      }
+
+      if (kind === "final_prompt") {
+        logEvent("final_prompt_recopied_from_sidebar", { source });
+        appendServerEvent(
+          "final_prompt_recopied_from_sidebar",
+          "finalCopyCard",
+          "Final prompt re-copied from sidebar.",
+          { source }
+        );
+        queueLiveSessionUpdate("in_progress");
+        return;
+      }
+
+      logEvent("sidebar_recopied_untyped", { source, label: promptTitle });
+      appendServerEvent(
+        "sidebar_recopied_untyped",
+        "",
+        `Re-copied from sidebar: ${promptTitle || "Copied text"}`,
+        { source, label: promptTitle }
+      );
+      queueLiveSessionUpdate("in_progress");
     }
 
     // -----------------------------
@@ -5156,7 +5242,11 @@ const PROMPT_META = [
 
         const promptTitle = getPromptTitle(id, id);
         const promptText = fillTemplate(getPromptText(id));
-        const ok = await copyToClipboard(promptText, promptTitle);
+        const ok = await copyToClipboard(promptText, promptTitle, {
+          kind: "sample_prompt",
+          promptId: id,
+          promptTitle
+        });
 
         if (ok) {
           markInteraction();
@@ -5279,7 +5369,11 @@ const PROMPT_META = [
 
         const promptTitle = getPromptTitle(id, prompt.title || id);
         const promptText = fillTemplate(getPromptText(id));
-        const ok = await copyToClipboard(promptText, promptTitle);
+        const ok = await copyToClipboard(promptText, promptTitle, {
+          kind: "main_prompt",
+          promptId: id,
+          promptTitle
+        });
 
         if (ok) {
           markInteraction();
@@ -6093,7 +6187,12 @@ const PROMPT_META = [
           }
           $("setupMsg").textContent = "Copying starter prompt…";
           $("setupMsg").style.display = "block";
-          const ok = await copyToClipboard(buildStarterPrompt(), getPromptTitle("starter", "Starter prompt"));
+          const starterPromptTitle = getPromptTitle("starter", "Starter prompt");
+          const ok = await copyToClipboard(buildStarterPrompt(), starterPromptTitle, {
+            kind: "starter_prompt",
+            promptId: "starter",
+            promptTitle: starterPromptTitle
+          });
           if (ok) {
             $("setupMsg").textContent = "Saving starter prompt…";
             $("setupMsg").style.display = "block";
@@ -6228,7 +6327,12 @@ const PROMPT_META = [
         const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
         const finalCard = $("finalCopyCard");
         showCopyCardActiveState(finalCard);
-        const ok = await copyToClipboard(fp, getPromptTitle("final_prompt", "Final prompt"));
+        const finalPromptTitle = getPromptTitle("final_prompt", "Final prompt");
+        const ok = await copyToClipboard(fp, finalPromptTitle, {
+          kind: "final_prompt",
+          promptId: "final_prompt",
+          promptTitle: finalPromptTitle
+        });
         finalCard?.blur();
         if (!ok) return;
         localStorage.setItem(KEYS.finalPromptCopied, "true");
@@ -6554,6 +6658,7 @@ const PROMPT_META = [
         const el = document.getElementById("recentCopiedText");
         if (el && !el.classList.contains("is-empty") && lastCopiedText.trim()) {
           try { await navigator.clipboard.writeText(lastCopiedText); } catch (_) {}
+          logSidebarRecopy(window._lastCopiedMeta || {}, "sidebar_preview");
           toast("Copied ✅");
           el.style.background = "var(--accent-soft)";
           el.style.borderColor = "var(--accent)";
@@ -6575,7 +6680,9 @@ const PROMPT_META = [
           lastCopiedText = entry.text;
           lastCopiedLabel = entry.label;
           lastCopiedAt = new Date();
+          window._lastCopiedMeta = { ...(entry.meta || {}) };
           renderMostRecentCopied();
+          logSidebarRecopy(entry.meta || {}, "sidebar_history");
           toast("Copied ✅");
           // Brief highlight
           historyItem.style.background = "var(--accent-soft)";
