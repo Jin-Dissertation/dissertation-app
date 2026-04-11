@@ -2870,10 +2870,18 @@ const PROMPT_META = [
       return `Course: ${course}. Content: ${area}. Questions: ${questionCount}. Additional instructions: ${notes}`;
     }
 
-    function appendServerEvent(eventType, buttonId = "", detailText = "", detailJson = {}) {
-      const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
-      const sessionId = (localStorage.getItem(KEYS.sessionId) || "").trim();
-      const contextId = (localStorage.getItem(KEYS.contextId) || "").trim();
+    function appendServerEvent(eventType, buttonId = "", detailText = "", detailJson = {}, overrides = {}) {
+      const accessCode = String(
+        overrides.accessCode ?? localStorage.getItem(KEYS.accessCode) ?? ""
+      ).trim();
+
+      const sessionId = String(
+        overrides.sessionId ?? localStorage.getItem(KEYS.sessionId) ?? ""
+      ).trim();
+
+      const contextId = String(
+        overrides.contextId ?? localStorage.getItem(KEYS.contextId) ?? ""
+      ).trim();
 
       if (!accessCode || !sessionId || !eventType) return;
 
@@ -3987,6 +3995,9 @@ const PROMPT_META = [
       const accessCode = localStorage.getItem(KEYS.accessCode) || "";
       const participantId = localStorage.getItem(KEYS.participantId) || "";
       const clientKey = localStorage.getItem(KEYS.clientKey) || "";
+      const closedSessionId = localStorage.getItem(KEYS.sessionId) || "";
+      const closedContextId = localStorage.getItem(KEYS.contextId) || "";
+      const closeTimestamp = new Date().toISOString();
 
       clearSessionData();
 
@@ -4080,8 +4091,14 @@ const PROMPT_META = [
         "Session closed by reset.",
         {
           SessionCloseType: "reset",
-          SessionCloseAt: new Date().toISOString(),
-          session_id: localStorage.getItem(KEYS.sessionId) || ""
+          SessionCloseAt: closeTimestamp,
+          session_id: closedSessionId || "",
+          context_id: closedContextId || ""
+        },
+        {
+          accessCode,
+          sessionId: closedSessionId,
+          contextId: closedContextId
         }
       );
       queueLiveSessionUpdate("in_progress", 0);
@@ -6375,16 +6392,22 @@ const PROMPT_META = [
         try {
           const result = await submitSession();
           if (result?.ok) {
+            const submissionRecord = buildSessionRecord();
+            const submittedResponseText = (submissionRecord.llm_response || "").trim();
+            const submittedNotesText = (submissionRecord.session_notes || "").trim();
+            const submittedAudioUrl = (submissionRecord.audio_file_url || "").trim();
+            const closeTimestamp = new Date().toISOString();
+
             appendServerEvent(
               "session_closed",
               "btnEndConfirm",
               "Session closed by end session.",
               {
                 SessionCloseType: "end_session",
-                SessionCloseAt: new Date().toISOString(),
-                llm_response_present: !!(($("llmResponse")?.value || "").trim()),
-                session_notes_present: !!(($("sessionNotes")?.value || "").trim()),
-                audio_present: !!uploadedAudioInfo
+                SessionCloseAt: closeTimestamp,
+                llm_response_present: !!submittedResponseText,
+                session_notes_present: !!submittedNotesText,
+                audio_present: !!submittedAudioUrl
               }
             );
 
@@ -6392,7 +6415,11 @@ const PROMPT_META = [
               "session_submitted",
               "btnEndConfirm",
               "Session submitted.",
-              {}
+              {
+                submitted_session_id: submissionRecord.session_id || "",
+                submitted_context_id: submissionRecord.context_id || "",
+                submitted_audio_url: submittedAudioUrl || ""
+              }
             );
 
             if (confirmBtn) confirmBtn.textContent = "Finishing…";
