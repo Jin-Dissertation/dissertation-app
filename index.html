@@ -2683,6 +2683,7 @@ const PROMPT_META = [
       participantId: "dissertation.participantId",
       clientKey: "dissertation.clientKey",
       sessionId: "dissertation.sessionId",
+      contextId: "dissertation.contextId",
       sessionStartTime: "dissertation.sessionStartTime",
       modelUsed: "dissertation.modelUsed",
       context: "dissertation.context",
@@ -2811,6 +2812,89 @@ const PROMPT_META = [
       }
 
       throw lastError || new Error("Request failed.");
+    }
+
+
+
+    async function postAqgAction(action, payload = {}) {
+      return postToAppsScript(
+        AQG_API_URL,
+        { action, ...payload },
+        { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS }
+      );
+    }
+
+    async function requestNewSessionId() {
+      const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
+      if (!accessCode) throw new Error("No access code found.");
+
+      const data = await postAqgAction("createSessionId", {
+        user_id: accessCode
+      });
+
+      if (!data?.ok || !data.session_id) {
+        throw new Error("Could not create session ID.");
+      }
+
+      localStorage.setItem(KEYS.sessionId, data.session_id);
+      localStorage.removeItem(KEYS.contextId);
+      return data.session_id;
+    }
+
+    async function requestNewContextId() {
+      const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
+      const sessionId = (localStorage.getItem(KEYS.sessionId) || "").trim();
+
+      if (!accessCode || !sessionId) {
+        throw new Error("Missing access code or session ID.");
+      }
+
+      const data = await postAqgAction("createContextId", {
+        user_id: accessCode,
+        session_id: sessionId
+      });
+
+      if (!data?.ok || !data.context_id) {
+        throw new Error("Could not create context ID.");
+      }
+
+      localStorage.setItem(KEYS.contextId, data.context_id);
+      return data.context_id;
+    }
+
+    function buildContextDetailText(ctx = getContext()) {
+      const course = (ctx.course || "").trim() || "[blank]";
+      const area = (ctx.area || "").trim() || "[blank]";
+      const questionCount = String(ctx.questionCount || "10").trim() || "10";
+      const notes = (ctx.notes || "").trim() || "[blank]";
+      return `Course: ${course}. Content: ${area}. Questions: ${questionCount}. Additional instructions: ${notes}`;
+    }
+
+    function appendServerEvent(eventType, buttonId = "", detailText = "", detailJson = {}) {
+      const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
+      const sessionId = (localStorage.getItem(KEYS.sessionId) || "").trim();
+      const contextId = (localStorage.getItem(KEYS.contextId) || "").trim();
+
+      if (!accessCode || !sessionId || !eventType) return;
+
+      fetch(AQG_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "appendEvent",
+          user_id: accessCode,
+          session_id: sessionId,
+          context_id: contextId,
+          event_type: eventType,
+          button_id: buttonId,
+          detail_text: detailText,
+          detail_json: detailJson,
+          timestamp: new Date().toISOString()
+        }),
+        keepalive: true
+      }).catch((err) => {
+        console.warn("appendEvent failed", err);
+      });
     }
 
     async function loadRemoteConfig() {
@@ -3874,7 +3958,7 @@ const PROMPT_META = [
       lastCopiedAt = null;
     }
 
-    function resetCurrentSessionKeepLogin() {
+    async function resetCurrentSessionKeepLogin() {
       const accessVerified = localStorage.getItem(KEYS.accessVerified) || "";
       const accessCode = localStorage.getItem(KEYS.accessCode) || "";
       const participantId = localStorage.getItem(KEYS.participantId) || "";
@@ -3888,10 +3972,10 @@ const PROMPT_META = [
       if (clientKey) localStorage.setItem(KEYS.clientKey, clientKey);
 
       const newSessionStart = nowIso();
-      const newSessionId = makeSessionId(accessCode || "participant");
 
       localStorage.setItem(KEYS.sessionStartTime, newSessionStart);
-      localStorage.setItem(KEYS.sessionId, newSessionId);
+      await requestNewSessionId();
+      localStorage.removeItem(KEYS.contextId);
       localStorage.setItem(KEYS.stage, "setup");
       localStorage.setItem(KEYS.starterCopied, "false");
       localStorage.setItem(KEYS.finalPromptCopied, "false");
@@ -3962,9 +4046,20 @@ const PROMPT_META = [
       applyStageUI();
 
       logEvent("session_reset_started_new_session", {
-        sessionId: newSessionId,
+        sessionId: localStorage.getItem(KEYS.sessionId),
         previousSessionCleared: true
       });
+
+      appendServerEvent(
+        "session_closed",
+        "btnResetConfirm",
+        "Session closed by reset.",
+        {
+          SessionCloseType: "reset",
+          SessionCloseAt: new Date().toISOString(),
+          session_id: localStorage.getItem(KEYS.sessionId) || ""
+        }
+      );
       queueLiveSessionUpdate("in_progress", 0);
     }
 
@@ -4522,6 +4617,17 @@ const PROMPT_META = [
         audioSubmitted = true;
         markInteraction();
         logEvent("audio_uploaded", { source: "submit_audio_button" });
+        appendServerEvent(
+          "audio_uploaded",
+          "btnAudioSubmit",
+          uploadedAudioInfo?.audioFileUrl || "",
+          {
+            audio_url: uploadedAudioInfo?.audioFileUrl || "",
+            audio_duration: uploadedAudioInfo?.audioDuration || "",
+            audio_filename: uploadedAudioInfo?.audioFilename || "",
+            audio_file_id: uploadedAudioInfo?.audioFileId || ""
+          }
+        );
         queueLiveSessionUpdate("in_progress");
         setAudioUploadButtonState("success", "Uploaded");
         updateAudioRecorderUI();
@@ -5014,6 +5120,15 @@ const PROMPT_META = [
         if (ok) {
           markInteraction();
           logEvent("prompt_copied", { promptId: id });
+          appendServerEvent(
+            "sample_prompt_copied",
+            id,
+            `Copied sample prompt: ${promptTitle}`,
+            {
+              prompt_id: id,
+              prompt_title: promptTitle
+            }
+          );
           queueLiveSessionUpdate("in_progress");
           card.classList.add("is-active");
           if (card._activeTimer) clearTimeout(card._activeTimer);
@@ -5128,6 +5243,15 @@ const PROMPT_META = [
         if (ok) {
           markInteraction();
           logEvent("prompt_copied", { promptId: id });
+          appendServerEvent(
+            "prompt_copied",
+            id,
+            `Copied prompt: ${promptTitle}`,
+            {
+              prompt_id: id,
+              prompt_title: promptTitle
+            }
+          );
           queueLiveSessionUpdate("in_progress");
 
           card.classList.add("is-active");
@@ -5247,7 +5371,7 @@ const PROMPT_META = [
 
       // Create a session id at sign-in (so it exists for starter prompt + logs)
       if (!localStorage.getItem(KEYS.sessionId)) {
-        localStorage.setItem(KEYS.sessionId, makeSessionId(code));
+        await requestNewSessionId();
       }
 
       // Initialize stage
@@ -5267,6 +5391,12 @@ const PROMPT_META = [
       markInteraction();
       logEvent("access_verified", { accessCode: code });
       queueLiveSessionUpdate("in_progress", 0);
+      appendServerEvent(
+        "session_started",
+        "btnVerifyAccess",
+        "Participant code verified.",
+        { participantId: data.participantId || "" }
+      );
       toast("Access verified ✅");
 
       applyStageUI();
@@ -5807,6 +5937,20 @@ const PROMPT_META = [
           markInteraction();
           logEvent("product_version_confirm_clicked");
           queueLiveSessionUpdate("in_progress");
+          const confirmedProduct = localStorage.getItem(KEYS.llmProduct) || "";
+          const confirmedModel = localStorage.getItem(KEYS.llmExpectedChoice) || "";
+          const mismatchText = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
+
+          appendServerEvent(
+            "product_mode_confirmed",
+            "btnConfirmProductVersion",
+            `Product: ${formatLlmProductLabel(confirmedProduct)}. Model: ${confirmedModel || "[blank]"}.`,
+            {
+              LLM_Product: confirmedProduct,
+              LLM_Model: confirmedModel,
+              LLM_Description: mismatchText
+            }
+          );
           updateSetupSubbandVisibility();
           applyStageUI();
         });
@@ -5891,7 +6035,7 @@ const PROMPT_META = [
           localStorage.setItem(KEYS.sessionStartTime, nowIso());
         }
         if (!localStorage.getItem(KEYS.sessionId)) {
-          localStorage.setItem(KEYS.sessionId, makeSessionId(code));
+          await requestNewSessionId();
         }
 
         // Log + copy only
@@ -5902,6 +6046,20 @@ const PROMPT_META = [
         const ok = await copyToClipboard(buildStarterPrompt(), getPromptTitle("starter", "Starter prompt"));
         starterCard?.blur();
         if (ok) {
+          await requestNewContextId();
+
+          appendServerEvent(
+            "starter_prompt_copied",
+            "starterCopyCard",
+            buildContextDetailText(getContext()),
+            {
+              context: getContext(),
+              LLM_Product: localStorage.getItem(KEYS.llmProduct) || "",
+              LLM_Model: localStorage.getItem(KEYS.llmExpectedChoice) || "",
+              LLM_Description: localStorage.getItem(KEYS.llmMismatchDescription) || ""
+            }
+          );
+
           markInteraction();
           logEvent("starter_copied", {});
           queueLiveSessionUpdate("in_progress");
@@ -5943,6 +6101,12 @@ const PROMPT_META = [
         }
         $("bandSetup").open = false;
         setStage("prompts");
+        appendServerEvent(
+          "proceeded_to_prompts",
+          "btnGoPrompts",
+          "Proceeded to Making questions.",
+          {}
+        );
       });
 
       // Prompts controls
@@ -5951,6 +6115,12 @@ const PROMPT_META = [
         logEvent("edit_context_clicked");
         queueLiveSessionUpdate("in_progress");
         setStage("setup");
+        appendServerEvent(
+          "returned_to_setup",
+          "btnEditContext",
+          "Returned to setup.",
+          {}
+        );
       });
 
       $("btnReadyFinal").addEventListener("click", () => {
@@ -5967,6 +6137,12 @@ const PROMPT_META = [
         localStorage.setItem(KEYS.finalPromptCopied, "false");
         logEvent("final_prompt_ready", {});
         setStage("finalize");
+        appendServerEvent(
+          "done_making_questions",
+          "btnReadyFinal",
+          "Clicked I'm done making questions.",
+          {}
+        );
       });
 
       // Finalize controls
@@ -5989,6 +6165,12 @@ const PROMPT_META = [
         localStorage.setItem(KEYS.finalPromptCopied, "true");
         markInteraction();
         logEvent("final_prompt_copied", {});
+        appendServerEvent(
+          "final_prompt_copied",
+          "finalCopyCard",
+          "Copied final prompt.",
+          {}
+        );
         queueLiveSessionUpdate("in_progress");
         const finalCopiedTip = $("finalCopiedTrainingTip");
         if (isTrainingMode && finalCopiedTip) {
@@ -6012,6 +6194,12 @@ const PROMPT_META = [
           () => {
             markInteraction();
             logEvent("llm_response_edited");
+            appendServerEvent(
+              "llm_response_edited",
+              "llmResponse",
+              "Model output edited.",
+              { char_count: ($("llmResponse")?.value || "").length }
+            );
             queueLiveSessionUpdate("in_progress");
           }
         );
@@ -6028,6 +6216,12 @@ const PROMPT_META = [
           () => {
             markInteraction();
             logEvent("session_notes_edited");
+            appendServerEvent(
+              "session_notes_edited",
+              "sessionNotes",
+              "Session notes edited.",
+              { char_count: ($("sessionNotes")?.value || "").length }
+            );
             queueLiveSessionUpdate("in_progress");
           }
         );
@@ -6042,9 +6236,9 @@ const PROMPT_META = [
         try { logEvent("reset_cancelled"); } catch (err) { console.warn("Reset log failed", err); }
         closeModal("modalReset");
       });
-      $("btnResetConfirm").addEventListener("click", () => {
+      $("btnResetConfirm").addEventListener("click", async () => {
         try { logEvent("reset_confirmed"); } catch (err) { console.warn("Reset log failed", err); }
-        resetCurrentSessionKeepLogin();
+        await resetCurrentSessionKeepLogin();
         closeModal("modalReset");
       });
 
@@ -6113,14 +6307,34 @@ const PROMPT_META = [
           if (result?.ok) {
             closeModal("modalEnd");
 
+            appendServerEvent(
+              "session_closed",
+              "btnEndConfirm",
+              "Session closed by end session.",
+              {
+                SessionCloseType: "end_session",
+                SessionCloseAt: new Date().toISOString(),
+                llm_response_present: !!(($("llmResponse")?.value || "").trim()),
+                session_notes_present: !!(($("sessionNotes")?.value || "").trim()),
+                audio_present: !!uploadedAudioInfo
+              }
+            );
+
+            appendServerEvent(
+              "session_submitted",
+              "btnEndConfirm",
+              "Session submitted.",
+              {}
+            );
+
             if (isTrainingMode) {
               sessionStorage.setItem("dissertation.ended", "true");
-              resetCurrentSessionKeepLogin();
+              await resetCurrentSessionKeepLogin();
               window.location.href = "training-complete.html";
               return;
             }
 
-            resetCurrentSessionKeepLogin();
+            await resetCurrentSessionKeepLogin();
             toast("Session submitted. A new session is ready.", { duration: 2200 });
             return;
           }
