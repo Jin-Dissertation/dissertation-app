@@ -6087,7 +6087,7 @@ const PROMPT_META = [
               const rawQuestionCount = String(session.desired_questions ?? "").trim();
               const questionCount = rawQuestionCount || "10";
               const notes = String(session.extra_instructions || "").trim();
-              const hasUsefulContext = !!(course || area || notes || rawQuestionCount);
+              const hasUsefulContext = !!(course || area || notes || (rawQuestionCount && rawQuestionCount !== "10"));
 
               if (hasUsefulContext) {
                 applyContextSettingsToFields({ course, area, questionCount, notes });
