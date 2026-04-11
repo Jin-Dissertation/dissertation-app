@@ -5753,12 +5753,27 @@ const PROMPT_META = [
       configureTrainingTipsUI();
       configureTimerModeUI();
       setupTrainingModeToggle();
-      setAccessLoadingState(true, "Loading, please wait…");
+      try {
+        await loadRemoteConfig();
+        appBootLoading = false;
+        appBootReady = true;
+      } catch (err) {
+        console.error("Remote config failed to load", err);
+        appBootLoading = false;
+        appBootReady = false;
+      }
+    }
+
+    async function ensureRemoteConfigReadyForLogin() {
+      if (appBootReady) return true;
+
+      setAccessLoadingState(true, "Loading prompts…");
       try {
         await loadRemoteConfig();
         appBootLoading = false;
         appBootReady = true;
         setAccessLoadingState(false, "");
+        return true;
       } catch (err) {
         console.error("Remote config failed to load", err);
         appBootLoading = false;
@@ -5766,9 +5781,10 @@ const PROMPT_META = [
         setAccessLoadingState(false, "");
         const msg = $("accessMsg");
         if (msg) {
-          msg.textContent = "The app is still getting ready. Please wait a moment and try again.";
+          msg.textContent = "The app is still getting ready. Please try again in a moment.";
           msg.style.display = "block";
         }
+        return false;
       }
     }
 
@@ -5791,16 +5807,9 @@ const PROMPT_META = [
         }
       });
       $("accessForm").addEventListener("submit", async (e) => {
-        if (!appBootReady) {
-          e.preventDefault();
-          const msg = $("accessMsg");
-          if (msg) {
-            msg.textContent = "Loading, please wait a moment before continuing.";
-            msg.style.display = "block";
-          }
-          return;
-        }
         e.preventDefault();
+        const ready = await ensureRemoteConfigReadyForLogin();
+        if (!ready) return;
         await verifyAccessCode();
       });
       if ($("timerNoticeClose")) {
@@ -6015,7 +6024,7 @@ const PROMPT_META = [
     // Init
     // -----------------------------
     async function init() {
-      await initBootAndConfig();
+      initBootAndConfig();
       const alreadyVerified = initAccessGate();
 
 
