@@ -5833,6 +5833,7 @@ const PROMPT_META = [
     function saveCurrentSettingsAsPrevious() {
       const ctx = getContext();
       const payload = {
+        user_id: String(localStorage.getItem(KEYS.accessCode) || "").trim(),
         course_context: String(ctx.course || "").trim(),
         question_context: String(ctx.area || "").trim(),
         extra_instructions: String(ctx.notes || "").trim(),
@@ -5856,8 +5857,24 @@ const PROMPT_META = [
       try {
         const raw = localStorage.getItem(LAST_PREVIOUS_SETTINGS_KEY);
         if (!raw) return null;
+
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== "object") return null;
+
+        const currentUserId = String(localStorage.getItem(KEYS.accessCode) || "").trim();
+        const savedUserId = String(parsed.user_id || "").trim();
+
+        // Older cached entries may not have a participant attached.
+        // Treat them as unusable so they do not leak across participants.
+        if (!savedUserId) {
+          return null;
+        }
+
+        // If the cached settings belong to a different participant, ignore them.
+        if (currentUserId && savedUserId && currentUserId !== savedUserId) {
+          return null;
+        }
+
         return parsed;
       } catch (err) {
         return null;
