@@ -3376,16 +3376,40 @@ const PROMPT_META = [
       }
     }
 
-    function sendLiveSessionUpdate(statusOverride = "in_progress") {
+    async function sendLiveSessionUpdate(statusOverride = "in_progress") {
       const payload = buildLiveSessionSnapshot(statusOverride);
-      fetch(AQG_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload),
-        keepalive: true
-      }).catch((err) => {
-        console.warn("Live session update failed", err);
-      });
+
+      try {
+        const response = await fetch(AQG_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload),
+          keepalive: true
+        });
+
+        const text = await response.text();
+        let data = null;
+
+        try {
+          data = JSON.parse(text);
+        } catch (err) {
+          console.warn("Live session update returned non-JSON response", text);
+          return;
+        }
+
+        if (!response.ok || data?.ok === false) {
+          console.warn("Live session update failed", {
+            status: response.status,
+            payload,
+            response: data
+          });
+          return;
+        }
+
+        console.log("Live session update ok", data);
+      } catch (err) {
+        console.warn("Live session update network error", err, payload);
+      }
     }
 
     function queueLiveSessionUpdate(statusOverride = "in_progress", delay = LIVE_UPDATE_DEBOUNCE_MS) {
