@@ -4009,6 +4009,7 @@ const PROMPT_META = [
       const closeTimestamp = new Date().toISOString();
       const suppressResetCloseEvent = options?.suppressResetCloseEvent === true;
 
+      saveCurrentSettingsAsPrevious();
       clearSessionData();
 
       if (accessVerified) localStorage.setItem(KEYS.accessVerified, accessVerified);
