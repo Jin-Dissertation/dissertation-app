@@ -6045,32 +6045,44 @@ const PROMPT_META = [
           return;
         }
 
-        // Save model + context
-        localStorage.setItem(KEYS.modelUsed, model);
-        setContext({ course, area, notes, questionCount });
+        let starterCard = null;
+        try {
+          // Save model + context
+          localStorage.setItem(KEYS.modelUsed, model);
+          setContext({ course, area, notes, questionCount });
 
-        // Ensure access/session exist (in case someone bypassed sign-in state)
-        const code = localStorage.getItem(KEYS.accessCode);
-        if (!code) {
-          alert("No access code found. Please refresh and sign in again.");
-          return;
-        }
-        if (!localStorage.getItem(KEYS.sessionStartTime)) {
-          localStorage.setItem(KEYS.sessionStartTime, nowIso());
-        }
-        if (!localStorage.getItem(KEYS.sessionId)) {
-          await requestNewSessionId();
-        }
+          // Ensure access/session exist (in case someone bypassed sign-in state)
+          const code = localStorage.getItem(KEYS.accessCode);
+          if (!code) {
+            alert("No access code found. Please refresh and sign in again.");
+            return;
+          }
+          if (!localStorage.getItem(KEYS.sessionStartTime)) {
+            localStorage.setItem(KEYS.sessionStartTime, nowIso());
+          }
+          if (!localStorage.getItem(KEYS.sessionId)) {
+            await requestNewSessionId();
+          }
 
-        // Log + copy only
-        logEvent("starter_prepared", { accessCode: code, sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
-        refreshCopyCardPreviews();
-        const starterCard = $("starterCopyCard");
-        showCopyCardActiveState(starterCard);
-        const ok = await copyToClipboard(buildStarterPrompt(), getPromptTitle("starter", "Starter prompt"));
-        starterCard?.blur();
-        if (ok) {
-          await requestNewContextId();
+          // Log + copy only
+          logEvent("starter_prepared", { accessCode: code, sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
+          refreshCopyCardPreviews();
+          starterCard = $("starterCopyCard");
+          showCopyCardActiveState(starterCard);
+          if (starterCard) {
+            starterCard.classList.add("is-disabled");
+            starterCard.setAttribute("aria-disabled", "true");
+          }
+          $("setupMsg").textContent = "Copying starter prompt…";
+          $("setupMsg").style.display = "block";
+          const ok = await copyToClipboard(buildStarterPrompt(), getPromptTitle("starter", "Starter prompt"));
+          if (ok) {
+            $("setupMsg").textContent = "Saving starter prompt…";
+            $("setupMsg").style.display = "block";
+          }
+          starterCard?.blur();
+          if (ok) {
+            await requestNewContextId();
 
           appendServerEvent(
             "starter_prompt_copied",
@@ -6100,9 +6112,16 @@ const PROMPT_META = [
           updateSetupSamplePromptVisibility();
           $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI tool to get started. It will respond with a question set plan — review it and reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI examples to work from. Once you're ready, ask the AI for your first question, then click Continue.";
           $("setupMsg").style.display = "block";
-        }
+          }
 
-        setStage("setup");
+          setStage("setup");
+        } finally {
+          if (starterCard) {
+            starterCard.classList.remove("is-disabled");
+            starterCard.removeAttribute("aria-disabled");
+            updateStarterCopyAvailability();
+          }
+        }
       };
 
       // Register copy handler for document-level delegation (defined at module scope).
@@ -6262,8 +6281,26 @@ const PROMPT_META = [
       });
       $("btnResetConfirm").addEventListener("click", async () => {
         try { logEvent("reset_confirmed"); } catch (err) { console.warn("Reset log failed", err); }
-        await resetCurrentSessionKeepLogin();
-        closeModal("modalReset");
+
+        const confirmBtn = $("btnResetConfirm");
+        const cancelBtn = $("btnResetCancel");
+
+        if (confirmBtn) {
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = "Resetting…";
+        }
+        if (cancelBtn) cancelBtn.disabled = true;
+
+        try {
+          await resetCurrentSessionKeepLogin();
+          closeModal("modalReset");
+        } finally {
+          if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = "Reset";
+          }
+          if (cancelBtn) cancelBtn.disabled = false;
+        }
       });
 
       $("btnLogout").addEventListener("click", () => {
@@ -6329,8 +6366,6 @@ const PROMPT_META = [
         try {
           const result = await submitSession();
           if (result?.ok) {
-            closeModal("modalEnd");
-
             appendServerEvent(
               "session_closed",
               "btnEndConfirm",
@@ -6351,14 +6386,18 @@ const PROMPT_META = [
               {}
             );
 
+            if (confirmBtn) confirmBtn.textContent = "Finishing…";
+
             if (isTrainingMode) {
               sessionStorage.setItem("dissertation.ended", "true");
               await resetCurrentSessionKeepLogin();
+              closeModal("modalEnd");
               window.location.href = "training-complete.html";
               return;
             }
 
             await resetCurrentSessionKeepLogin();
+            closeModal("modalEnd");
             toast("Session submitted. A new session is ready.", { duration: 2200 });
             return;
           }
