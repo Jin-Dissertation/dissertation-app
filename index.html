@@ -5893,7 +5893,7 @@ const PROMPT_META = [
       const starterCopied = toBooleanString(progress.starterCopied);
       const finalPromptCopied = toBooleanString(progress.finalPromptCopied);
       const finalizeVisited = toBooleanString(progress.finalizeVisited);
-      const explicitStage = String(progress.currentStage || "").trim();
+      const explicitStage = String(progress.currentStage || progress.stage || "").trim();
       const inferredStage = finalizeVisited || finalPromptCopied
         ? "finalize"
         : (starterCopied ? "prompts" : "setup");
