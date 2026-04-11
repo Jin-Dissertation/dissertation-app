@@ -6082,36 +6082,44 @@ const PROMPT_META = [
           }
           starterCard?.blur();
           if (ok) {
-            await requestNewContextId();
+            markInteraction();
+            logEvent("starter_copied", {});
+            queueLiveSessionUpdate("in_progress");
+            starterPromptCopied = true;
+            localStorage.setItem(KEYS.starterCopied, "true");
+            localStorage.setItem(KEYS.starterCopiedSetupSignature, getStarterSetupSignature());
+            saveCurrentSettingsAsPrevious();
 
-          appendServerEvent(
-            "starter_prompt_copied",
-            "starterCopyCard",
-            buildContextDetailText(getContext()),
-            {
-              context: getContext(),
-              LLM_Product: localStorage.getItem(KEYS.llmProduct) || "",
-              LLM_Model: localStorage.getItem(KEYS.llmExpectedChoice) || "",
-              LLM_Description: localStorage.getItem(KEYS.llmMismatchDescription) || ""
+            const copiedTip = $("starterCopiedTrainingTip");
+            if (isTrainingMode && copiedTip) {
+              copiedTip.hidden = false;
+              copiedTip.style.display = "block";
             }
-          );
 
-          markInteraction();
-          logEvent("starter_copied", {});
-          queueLiveSessionUpdate("in_progress");
-          starterPromptCopied = true;
-          localStorage.setItem(KEYS.starterCopied, "true");
-          localStorage.setItem(KEYS.starterCopiedSetupSignature, getStarterSetupSignature());
-          saveCurrentSettingsAsPrevious();
-          const copiedTip = $("starterCopiedTrainingTip");
-          if (isTrainingMode && copiedTip) {
-            copiedTip.hidden = false;
-            copiedTip.style.display = "block";
-          }
-          updateProceedToPromptsAvailability();
-          updateSetupSamplePromptVisibility();
-          $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI tool to get started. It will respond with a question set plan — review it and reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI examples to work from. Once you're ready, ask the AI for your first question, then click Continue.";
-          $("setupMsg").style.display = "block";
+            updateProceedToPromptsAvailability();
+            updateSetupSamplePromptVisibility();
+            $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI tool to get started. It will respond with a question set plan — review it and reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI examples to work from. Once you're ready, ask the AI for your first question, then click Continue.";
+            $("setupMsg").style.display = "block";
+
+            requestNewContextId()
+              .then(() => {
+                appendServerEvent(
+                  "starter_prompt_copied",
+                  "starterCopyCard",
+                  buildContextDetailText(getContext()),
+                  {
+                    context: getContext(),
+                    LLM_Product: localStorage.getItem(KEYS.llmProduct) || "",
+                    LLM_Model: localStorage.getItem(KEYS.llmExpectedChoice) || "",
+                    LLM_Description: localStorage.getItem(KEYS.llmMismatchDescription) || ""
+                  }
+                );
+              })
+              .catch((err) => {
+                console.warn("requestNewContextId failed", err);
+                $("setupMsg").textContent = "Starter prompt copied, but the session log was delayed. Please try copying it again if this keeps happening.";
+                $("setupMsg").style.display = "block";
+              });
           }
 
           setStage("setup");
