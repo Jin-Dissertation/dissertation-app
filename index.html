@@ -2882,6 +2882,9 @@ const PROMPT_META = [
       const contextId = String(
         overrides.contextId ?? localStorage.getItem(KEYS.contextId) ?? ""
       ).trim();
+      const deviceLabel = String(
+        overrides.deviceLabel ?? getCompactDeviceLabel()
+      ).trim();
 
       if (!accessCode || !sessionId || !eventType) return;
 
@@ -2893,6 +2896,7 @@ const PROMPT_META = [
           user_id: accessCode,
           session_id: sessionId,
           context_id: contextId,
+          device_label: deviceLabel,
           event_type: eventType,
           button_id: buttonId,
           detail_text: detailText,
