@@ -5502,19 +5502,26 @@ const PROMPT_META = [
       localStorage.setItem(KEYS.accessCode, code);
       localStorage.setItem(KEYS.participantId, data.participantId || "");
 
-      // Start timestamp is the first step at sign-in (your request)
-      if (!localStorage.getItem(KEYS.sessionStartTime)) {
-        localStorage.setItem(KEYS.sessionStartTime, nowIso());
-      }
+      const latestLiveSession = await fetchLatestLiveSession();
+      const restored = latestLiveSession?.ok === true && latestLiveSession?.found === true
+        ? await restoreLiveSessionFromServer(latestLiveSession)
+        : false;
 
-      // Create a session id at sign-in (so it exists for starter prompt + logs)
-      if (!localStorage.getItem(KEYS.sessionId)) {
-        await requestNewSessionId();
-      }
+      if (!restored) {
+        // Start timestamp is the first step at sign-in (your request)
+        if (!localStorage.getItem(KEYS.sessionStartTime)) {
+          localStorage.setItem(KEYS.sessionStartTime, nowIso());
+        }
 
-      // Initialize stage
-      if (!localStorage.getItem(KEYS.stage)) {
-        localStorage.setItem(KEYS.stage, "setup");
+        // Create a session id at sign-in (so it exists for starter prompt + logs)
+        if (!localStorage.getItem(KEYS.sessionId)) {
+          await requestNewSessionId();
+        }
+
+        // Initialize stage
+        if (!localStorage.getItem(KEYS.stage)) {
+          localStorage.setItem(KEYS.stage, "setup");
+        }
       }
 
       // Initialize events container if missing
@@ -5829,6 +5836,125 @@ const PROMPT_META = [
   }
 }
 
+    async function fetchLatestLiveSession() {
+  const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
+  const participantId = (localStorage.getItem(KEYS.participantId) || "").trim();
+  const userId = accessCode || participantId;
+
+  if (!userId) {
+    return { ok: false, found: false, error: "No participant identifier found." };
+  }
+
+  try {
+    const response = await fetch(AQG_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "getLatestLiveSession",
+        user_id: userId
+      }),
+      redirect: "follow"
+    });
+
+    const text = await response.text();
+    return JSON.parse(text);
+  } catch (err) {
+    return { ok: false, found: false, error: String(err?.message || err || "unknown_error") };
+  }
+}
+
+    function applyContextSettingsToFields({ course, area, questionCount, notes }) {
+      if ($("ctxCourse")) $("ctxCourse").value = course;
+      if ($("ctxArea")) $("ctxArea").value = area;
+      if ($("ctxQuestionCount")) $("ctxQuestionCount").value = questionCount;
+      if ($("ctxNotes")) $("ctxNotes").value = notes;
+      setContext({ course, area, notes, questionCount });
+      invalidateStarterIfSignatureChanged();
+      refreshCopyCardPreviews();
+      applyStageUI();
+    }
+
+    function coerceStageForRestore(value) {
+      return ["setup", "prompts", "finalize"].includes(value) ? value : "setup";
+    }
+
+    async function restoreLiveSessionFromServer(data) {
+      const session = data?.session;
+      if (!session || typeof session !== "object") return false;
+
+      const restoredSessionId = String(session.session_id || "").trim();
+      if (!restoredSessionId) return false;
+
+      const progress = data?.progress && typeof data.progress === "object" ? data.progress : {};
+      const toBooleanString = (value) => {
+        if (value === true || String(value).trim().toLowerCase() === "true") return true;
+        return false;
+      };
+      const starterCopied = toBooleanString(progress.starterCopied);
+      const finalPromptCopied = toBooleanString(progress.finalPromptCopied);
+      const finalizeVisited = toBooleanString(progress.finalizeVisited);
+      const explicitStage = String(progress.currentStage || "").trim();
+      const inferredStage = finalizeVisited || finalPromptCopied
+        ? "finalize"
+        : (starterCopied ? "prompts" : "setup");
+      const restoredStage = explicitStage
+        ? coerceStageForRestore(explicitStage)
+        : coerceStageForRestore(inferredStage);
+
+      const restoredProduct = normalizeLlmProduct(session.llm_product || "");
+      const restoredModelUsed = String(session.model_used || "").trim();
+      const restoredExpectedChoice = String(session.llm_model || "").trim();
+      const restoredMismatchDescription = String(session.llm_description || "").trim();
+      const restoredContextId = String(session.context_id || "").trim();
+      const restoredSessionStart = String(session.session_start || "").trim();
+      const restoredCourse = String(session.course_context || "").trim();
+      const restoredArea = String(session.question_context || "").trim();
+      const restoredQuestionCount = String(session.desired_questions ?? "").trim() || "10";
+      const restoredNotes = String(session.extra_instructions || "").trim();
+      const restoredLlmResponse = String(session.final_response || "").trim();
+      const restoredSessionNotes = String(session.feedback_text || "").trim();
+      const restoredEvents = Array.isArray(data?.events) ? data.events : [];
+
+      localStorage.setItem(KEYS.sessionId, restoredSessionId);
+      localStorage.setItem(KEYS.contextId, restoredContextId);
+      localStorage.setItem(KEYS.sessionStartTime, restoredSessionStart || nowIso());
+      localStorage.setItem(KEYS.stage, restoredStage);
+      localStorage.setItem(KEYS.llmProduct, restoredProduct);
+      localStorage.setItem(KEYS.modelUsed, restoredModelUsed);
+      localStorage.setItem(KEYS.llmExpectedChoice, restoredExpectedChoice);
+      localStorage.setItem(KEYS.llmMismatchDescription, restoredMismatchDescription);
+      localStorage.setItem(KEYS.productVersionConfirmed, restoredProduct && restoredExpectedChoice ? "true" : "false");
+      localStorage.setItem(KEYS.starterCopied, starterCopied ? "true" : "false");
+      localStorage.setItem(KEYS.finalPromptCopied, finalPromptCopied ? "true" : "false");
+      localStorage.setItem(KEYS.finalizeVisited, finalizeVisited ? "true" : "false");
+      saveJSON(KEYS.events, restoredEvents);
+
+      if ($("llmResponse")) $("llmResponse").value = restoredLlmResponse;
+      if ($("sessionNotes")) $("sessionNotes").value = restoredSessionNotes;
+
+      applyContextSettingsToFields({
+        course: restoredCourse,
+        area: restoredArea,
+        questionCount: restoredQuestionCount,
+        notes: restoredNotes
+      });
+
+      if (restoredProduct) {
+        selectModel(restoredProduct, { logSelection: false });
+        renderLlmConfirmPanel(restoredProduct);
+      }
+      renderPromptList();
+      renderSetupSamplePromptBox();
+      refreshCopyCardPreviews();
+      applyStageUI();
+      updateSetupSubbandVisibility();
+
+      queueLiveSessionUpdate("in_progress");
+      logEvent("live_session_restored", { source: "backend_live_session", sessionId: restoredSessionId });
+      toast("Your in-progress session was restored.");
+      return true;
+    }
+
 
     function saveCurrentSettingsAsPrevious() {
       const ctx = getContext();
@@ -5934,6 +6060,44 @@ const PROMPT_META = [
           btnLoadPreviousSettings.textContent = "Loading...";
 
           try {
+            const liveData = await fetchLatestLiveSession();
+            if (liveData?.ok === true && liveData?.found === true) {
+              const session = liveData.session || {};
+              const course = String(session.course_context || "").trim();
+              const area = String(session.question_context || "").trim();
+              const rawQuestionCount = String(session.desired_questions ?? "").trim();
+              const questionCount = rawQuestionCount || "10";
+              const notes = String(session.extra_instructions || "").trim();
+              const hasUsefulContext = !!(course || area || notes || rawQuestionCount);
+
+              if (hasUsefulContext) {
+                applyContextSettingsToFields({ course, area, questionCount, notes });
+                queueLiveSessionUpdate("in_progress");
+                logEvent("previous_settings_loaded", { source: "latest_live_session" });
+
+                loadPreviousSettingsMsg.textContent = "Previous settings loaded from your most recent in-progress session.";
+                loadPreviousSettingsMsg.style.display = "block";
+                return;
+              }
+            }
+
+            const data = await fetchLatestSubmittedSettings();
+            if (data && data.ok === true && data.found === true) {
+              const settings = data.settings || data.latestSettings || data.submittedSettings || {};
+              const course = (settings.course_context || "").trim();
+              const area = (settings.question_context || "").trim();
+              const questionCount = String(settings.desired_questions ?? "").trim() || "10";
+              const notes = (settings.extra_instructions || "").trim();
+
+              applyContextSettingsToFields({ course, area, questionCount, notes });
+              queueLiveSessionUpdate("in_progress");
+              logEvent("previous_settings_loaded", { source: "latest_submitted_settings" });
+
+              loadPreviousSettingsMsg.textContent = "Previous settings loaded. You can use them as-is or edit them before continuing.";
+              loadPreviousSettingsMsg.style.display = "block";
+              return;
+            }
+
             const localSettings = getLocalPreviousSettings();
             if (localSettings) {
               const course = String(localSettings.course_context || "").trim();
@@ -5941,56 +6105,21 @@ const PROMPT_META = [
               const questionCount = String(localSettings.desired_questions ?? "").trim() || "10";
               const notes = String(localSettings.extra_instructions || "").trim();
 
-              if ($("ctxCourse")) $("ctxCourse").value = course;
-              if ($("ctxArea")) $("ctxArea").value = area;
-              if ($("ctxQuestionCount")) $("ctxQuestionCount").value = questionCount;
-              if ($("ctxNotes")) $("ctxNotes").value = notes;
-
-              setContext({ course, area, notes, questionCount });
-              invalidateStarterIfSignatureChanged();
-              refreshCopyCardPreviews();
-              applyStageUI();
+              applyContextSettingsToFields({ course, area, questionCount, notes });
               queueLiveSessionUpdate("in_progress");
-              logEvent("previous_settings_loaded", { source: "local_starter_copy" });
+              logEvent("previous_settings_loaded", { source: "local_starter_copy_fallback" });
 
-              loadPreviousSettingsMsg.textContent = "Previous settings loaded. You can use them as-is or edit them before continuing.";
+              loadPreviousSettingsMsg.textContent = "Previous settings loaded from this browser's saved fallback data.";
               loadPreviousSettingsMsg.style.display = "block";
               return;
             }
 
-            const data = await fetchLatestSubmittedSettings();
-
-            if (!data || data.ok !== true) {
-              loadPreviousSettingsMsg.textContent = "Could not load previous settings right now.";
-              loadPreviousSettingsMsg.style.display = "block";
-              return;
-            }
-
-            if (data.found !== true) {
-              loadPreviousSettingsMsg.textContent = "No previous submitted settings were found for this participant.";
-              loadPreviousSettingsMsg.style.display = "block";
-              return;
-            }
-
-            const settings = data.settings || data.latestSettings || data.submittedSettings || {};
-            const course = (settings.course_context || "").trim();
-            const area = (settings.question_context || "").trim();
-            const questionCount = String(settings.desired_questions ?? "").trim() || "10";
-            const notes = (settings.extra_instructions || "").trim();
-
-            if ($("ctxCourse")) $("ctxCourse").value = course;
-            if ($("ctxArea")) $("ctxArea").value = area;
-            if ($("ctxQuestionCount")) $("ctxQuestionCount").value = questionCount;
-            if ($("ctxNotes")) $("ctxNotes").value = notes;
-
-            setContext({ course, area, notes, questionCount });
-            invalidateStarterIfSignatureChanged();
-            refreshCopyCardPreviews();
-            applyStageUI();
-            queueLiveSessionUpdate("in_progress");
-            logEvent("previous_settings_loaded", { source: "latest_submitted_settings" });
-
-            loadPreviousSettingsMsg.textContent = "Previous settings loaded. You can use them as-is or edit them before continuing.";
+            const hadLiveLookupError = !!(liveData && liveData.ok !== true && liveData.error);
+            const hadSubmittedLookupError = !!(data && data.ok !== true && data.error);
+            loadPreviousSettingsMsg.textContent =
+              hadLiveLookupError || hadSubmittedLookupError
+                ? "Could not load previous settings from the server, and no browser fallback was found."
+                : "No previous settings were found in your latest in-progress session, submitted settings, or browser fallback.";
             loadPreviousSettingsMsg.style.display = "block";
           } finally {
             btnLoadPreviousSettings.disabled = false;
