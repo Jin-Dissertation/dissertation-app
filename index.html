@@ -4118,13 +4118,12 @@ const PROMPT_META = [
     // Footer status
     // -----------------------------
     function refreshFooterInfo() {
-      const code = localStorage.getItem(KEYS.accessCode) || "—";
       const startIso = localStorage.getItem(KEYS.sessionStartTime);
       const started = startIso ? new Date(startIso).toLocaleString() : "—";
       const last = document.lastModified || "—";
       const footer = $("buildInfo");
       if (!footer) return;
-      footer.innerHTML = `Participant: ${code} • <span id="lastUpdated">Last updated: ${last}</span>`;
+      footer.innerHTML = `Study session • <span id="lastUpdated">Last updated: ${last}</span>`;
     }
 
     // -----------------------------
@@ -4633,6 +4632,7 @@ const PROMPT_META = [
 
         const body = new URLSearchParams({
           action: "uploadAudio",
+          accessCode,
           filename,
           mimeType: audioBlob.type || `audio/${ext}`,
           audioBase64
