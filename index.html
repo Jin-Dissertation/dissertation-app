@@ -2680,7 +2680,6 @@ const PROMPT_META = [
     const KEYS = {
       accessVerified: "dissertation.accessVerified",
       accessCode: "dissertation.accessCode",
-      participantId: "dissertation.participantId",
       clientKey: "dissertation.clientKey",
       sessionId: "dissertation.sessionId",
       contextId: "dissertation.contextId",
@@ -4002,7 +4001,6 @@ const PROMPT_META = [
     async function resetCurrentSessionKeepLogin(options = {}) {
       const accessVerified = localStorage.getItem(KEYS.accessVerified) || "";
       const accessCode = localStorage.getItem(KEYS.accessCode) || "";
-      const participantId = localStorage.getItem(KEYS.participantId) || "";
       const clientKey = localStorage.getItem(KEYS.clientKey) || "";
       const closedSessionId = localStorage.getItem(KEYS.sessionId) || "";
       const closedContextId = localStorage.getItem(KEYS.contextId) || "";
@@ -4014,7 +4012,6 @@ const PROMPT_META = [
 
       if (accessVerified) localStorage.setItem(KEYS.accessVerified, accessVerified);
       if (accessCode) localStorage.setItem(KEYS.accessCode, accessCode);
-      if (participantId) localStorage.setItem(KEYS.participantId, participantId);
       if (clientKey) localStorage.setItem(KEYS.clientKey, clientKey);
 
       const newSessionStart = nowIso();
@@ -5510,7 +5507,6 @@ const PROMPT_META = [
 
       localStorage.setItem(KEYS.accessVerified, "true");
       localStorage.setItem(KEYS.accessCode, code);
-      localStorage.setItem(KEYS.participantId, data.participantId || "");
 
       const latestLiveSession = await fetchLatestLiveSession();
       const restored = latestLiveSession?.ok === true && latestLiveSession?.found === true
@@ -5549,8 +5545,7 @@ const PROMPT_META = [
       appendServerEvent(
         "session_started",
         "btnVerifyAccess",
-        "Participant code verified.",
-        { participantId: data.participantId || "" }
+        "Participant code verified."
       );
       toast("Access verified ✅");
 
@@ -5830,11 +5825,10 @@ const PROMPT_META = [
 
     async function fetchLatestSubmittedSettings() {
   const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
-  const participantId = (localStorage.getItem(KEYS.participantId) || "").trim();
-  const userId = accessCode || participantId;
+  const userId = accessCode;
 
   if (!userId) {
-    return { ok: false, found: false, error: "No participant identifier found." };
+    return { ok: false, found: false, error: "No access code found." };
   }
 
   try {
@@ -5857,11 +5851,10 @@ const PROMPT_META = [
 
     async function fetchLatestLiveSession() {
   const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
-  const participantId = (localStorage.getItem(KEYS.participantId) || "").trim();
-  const userId = accessCode || participantId;
+  const userId = accessCode;
 
   if (!userId) {
-    return { ok: false, found: false, error: "No participant identifier found." };
+    return { ok: false, found: false, error: "No access code found." };
   }
 
   try {
