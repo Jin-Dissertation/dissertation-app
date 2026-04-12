@@ -495,6 +495,9 @@
       gap: 16px;
       align-items: start;
     }
+    .layoutGrid.is-feedback-mode {
+      grid-template-columns: minmax(0, 1fr) 300px;
+    }
     .main { min-width: 0; }
     .sidebar {
       width: 240px;
@@ -504,6 +507,9 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+    }
+    .sidebar.is-feedback-mode {
+      width: 300px;
     }
     .stickySidebar.recentCard {
       display: flex;
@@ -620,7 +626,16 @@
 
     /* Sidebar view panels */
     .sidebarView { display: none; }
-    .sidebarView.is-visible { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; margin-top: 10px; }
+    .sidebarView.is-visible { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; margin-top: 10px; animation: sidebarModeIn 0.2s ease-out; }
+    @keyframes sidebarModeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .stickySidebar.recentCard.feedback-emphasis {
+      border-color: rgba(47,110,220,0.55);
+      box-shadow: 0 0 0 3px rgba(47,110,220,0.12), 0 6px 14px rgba(16,33,61,0.08);
+      transition: box-shadow 0.18s ease, border-color 0.18s ease;
+    }
 
     /* Sidebar collapsed state — collapses horizontally to a narrow icon strip */
     .sidebar {
@@ -721,12 +736,18 @@
       .layoutGrid {
         grid-template-columns: minmax(0, 1fr) 240px;
       }
+      .layoutGrid.is-feedback-mode {
+        grid-template-columns: minmax(0, 1fr) 300px;
+      }
       .layoutGrid.is-sidebar-collapsed {
         grid-template-columns: minmax(0, 1fr) 40px;
       }
       .sidebar {
         width: 240px;
         top: 18px;
+      }
+      .sidebar.is-feedback-mode {
+        width: 300px;
       }
       .sidebar.is-sidebar-collapsed {
         width: 40px;
@@ -1403,20 +1424,24 @@
       min-width: 112px;
       justify-content: center;
     }
-    #btnAudioSubmit {
+    #btnAudioSubmit,
+    #sidebarBtnAudioSubmit {
       min-width: 148px;
       position: relative;
     }
-    #btnAudioSubmit.audioSubmitUploading {
+    #btnAudioSubmit.audioSubmitUploading,
+    #sidebarBtnAudioSubmit.audioSubmitUploading {
       opacity: 0.85;
       cursor: progress;
     }
-    #btnAudioSubmit.audioSubmitSuccess {
+    #btnAudioSubmit.audioSubmitSuccess,
+    #sidebarBtnAudioSubmit.audioSubmitSuccess {
       border-color: #1f7a4d;
       background: #e8f8ef;
       color: #185c3b;
     }
-    #btnAudioSubmit.audioSubmitError {
+    #btnAudioSubmit.audioSubmitError,
+    #sidebarBtnAudioSubmit.audioSubmitError {
       border-color: #b42318;
       background: #fef3f2;
       color: #912018;
@@ -1498,6 +1523,78 @@
         width: 100%;
         max-width: none;
       }
+    }
+
+
+    .sidebarFeedbackTop {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+    .sidebarBackLink {
+      border: 0;
+      background: transparent;
+      color: var(--accent);
+      font-size: 12px;
+      padding: 0;
+      cursor: pointer;
+    }
+    .sidebarFeedbackTitle {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .sidebarFeedbackHelp {
+      margin: 2px 0 8px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .sidebarFeedbackSavedNote {
+      margin: 6px 0 8px;
+      color: #2b5fab;
+      font-size: 12px;
+    }
+    #sidebarSessionNotes {
+      min-height: 88px;
+      font-size: 13px;
+    }
+    .sidebarAudioRecorder {
+      margin-top: 8px;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .sidebarAudioPrimary {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .sidebarAudioStateRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .sidebarAudioActionRow {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .sidebarAudioPlaybackRow {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .sidebarAudioPlaybackRow audio,
+    .sidebarAudioPlaybackRow .btn,
+    .sidebarAudioPrimary .btn {
+      width: 100%;
+      min-width: 0;
     }
 
     details summary {
@@ -2450,13 +2547,16 @@
         <aside class="sidebar">
           <div class="card stickySidebar recentCard" id="sidebarClipboard">
             <div class="sidebarHeader">
-              <h3>Clipboard</h3>
+              <h3 id="sidebarTitle">Clipboard</h3>
               <div class="sidebarControls">
                 <button class="sidebarModeBtn is-active" id="sidebarBtnPreview" type="button" title="Show latest copy" aria-label="Preview mode">
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="2" width="12" height="12" rx="2"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg>
                 </button>
                 <button class="sidebarModeBtn" id="sidebarBtnHistory" type="button" title="Show copy history" aria-label="History mode">
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="3" y1="4" x2="13" y2="4"/><line x1="3" y1="8" x2="13" y2="8"/><line x1="3" y1="12" x2="13" y2="12"/></svg>
+                </button>
+                <button class="sidebarModeBtn" id="sidebarBtnFeedback" type="button" title="Feedback mode" aria-label="Feedback mode">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3.5h10v6.5H8.2L5.2 12.8V10H3z"/></svg>
                 </button>
                 <button class="sidebarModeBtn" id="sidebarBtnCollapse" type="button" title="Collapse sidebar" aria-label="Collapse">
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="8" x2="13" y2="8"/></svg>
@@ -2468,6 +2568,38 @@
             </div>
             <div id="sidebarHistoryView" class="sidebarView">
               <div id="copyHistoryList" class="copyHistoryList"></div>
+            </div>
+            <div id="sidebarFeedbackView" class="sidebarView">
+              <div class="sidebarFeedbackTop">
+                <button id="sidebarFeedbackBackToClipboard" class="sidebarBackLink" type="button">Back to clipboard</button>
+              </div>
+              <p class="sidebarFeedbackTitle">Optional feedback</p>
+              <p class="sidebarFeedbackHelp">You can continue editing feedback here or in Finalize.</p>
+              <p id="sidebarFeedbackSavedNote" class="sidebarFeedbackSavedNote hidden">Saved to this session.</p>
+              <textarea id="sidebarSessionNotes" placeholder="Share any optional feedback..."></textarea>
+              <div class="sidebarAudioRecorder" id="sidebarAudioRecorderPanel">
+                <div class="sidebarAudioPrimary" id="sidebarAudioPrimaryControls">
+                  <button class="btn" id="sidebarBtnAudioStart" type="button">Start recording</button>
+                  <div class="sidebarAudioStateRow" id="sidebarAudioStateRow" style="display:none;">
+                    <span class="audioStateStatus" id="sidebarBtnAudioState" aria-live="polite"></span>
+                    <div class="audioElapsedRow" id="sidebarAudioElapsedRow" aria-live="polite" style="display:flex; margin-top:0;">
+                      <span class="audioElapsedValue" id="sidebarAudioElapsedValue">00:00</span>
+                    </div>
+                  </div>
+                  <div class="sidebarAudioActionRow" id="sidebarAudioActionRow" style="display:none;">
+                    <button class="btn" id="sidebarBtnAudioPauseResume" type="button">Pause</button>
+                    <button class="btn warn" id="sidebarBtnAudioStop" type="button">Stop</button>
+                  </div>
+                  <div class="audioMeterRow" id="sidebarAudioMeterRow">
+                    <canvas class="audioMeterHistory" id="sidebarAudioMeterHistory" height="28" aria-hidden="true"></canvas>
+                  </div>
+                </div>
+                <div class="sidebarAudioPlaybackRow" id="sidebarAudioPlaybackRow">
+                  <audio id="sidebarAudioFeedbackPlayer" controls preload="metadata"></audio>
+                  <button class="btn" id="sidebarBtnAudioSubmit" type="button">Submit audio</button>
+                  <button class="btn danger" id="sidebarBtnAudioDelete" type="button">Delete recording</button>
+                </div>
+              </div>
             </div>
           </div>
           <div class="card timerCard" id="sessionTimerCard" style="border-color: #dce5f0; background: #fafcff;">
@@ -2968,7 +3100,7 @@ const PROMPT_META = [
     let lastCopiedLabel = "";
     let lastCopiedAt = null;
     let copyHistory = [];  // Array of { text, label, timestamp }
-    let sidebarMode = "preview";  // "preview" | "history" | "collapsed"
+    let sidebarMode = "preview";  // "preview" | "history" | "feedback" | "collapsed"
     let sessionTimerIntervalId = null;
     let liveUpdateTimer = null;
     let interactionTimes = [];
@@ -3029,10 +3161,10 @@ const PROMPT_META = [
     let audioMeterFrame = null;
     let audioMeterLevel = 0;
     let audioMeterDataArray = null;
-    let audioMeterCanvas = null;
-    let audioMeterCtx = null;
+    let audioMeterCanvases = [];
     let audioMeterHistoryValues = [];
     let audioMeterLastLevel = 0;
+    let isSyncingSessionNotes = false;
 
     const AUDIO_METER_IDLE_FLOOR = 0.06;
     const AUDIO_METER_MAX_SCALE = 3.2;
@@ -4053,6 +4185,8 @@ const PROMPT_META = [
       if ($("ctxQuestionCount")) $("ctxQuestionCount").value = "10";
       if ($("llmResponse")) $("llmResponse").value = "";
       if ($("sessionNotes")) $("sessionNotes").value = "";
+      if ($("sidebarSessionNotes")) $("sidebarSessionNotes").value = "";
+      $("sidebarFeedbackSavedNote")?.classList.add("hidden");
 
       clearAudioRecorderState();
       updateAudioRecorderUI();
@@ -4170,21 +4304,61 @@ const PROMPT_META = [
       if (el) el.textContent = message;
     }
 
-    function setAudioUploadButtonState(state = "default", text = "Submit audio") {
-      const btn = $("btnAudioSubmit");
-      if (!btn) return;
-      btn.classList.remove("audioSubmitUploading", "audioSubmitSuccess", "audioSubmitError");
-      btn.removeAttribute("aria-busy");
-      btn.textContent = text;
+    function getAudioRecorderViews() {
+      return [
+        {
+          name: "finalize",
+          controlsRow: $("audioPrimaryControls"),
+          playbackRow: $("audioPlaybackRow"),
+          meterRow: $("audioMeterRow"),
+          startBtn: $("btnAudioStart"),
+          stateBtn: $("btnAudioState"),
+          pauseResumeBtn: $("btnAudioPauseResume"),
+          stopBtn: $("btnAudioStop"),
+          submitBtn: $("btnAudioSubmit"),
+          deleteBtn: $("btnAudioDelete"),
+          player: $("audioFeedbackPlayer"),
+          elapsedRow: $("audioElapsedRow"),
+          elapsedValue: $("audioElapsedValue"),
+          compact: false
+        },
+        {
+          name: "sidebar",
+          controlsRow: $("sidebarAudioPrimaryControls"),
+          playbackRow: $("sidebarAudioPlaybackRow"),
+          meterRow: $("sidebarAudioMeterRow"),
+          startBtn: $("sidebarBtnAudioStart"),
+          stateBtn: $("sidebarBtnAudioState"),
+          pauseResumeBtn: $("sidebarBtnAudioPauseResume"),
+          stopBtn: $("sidebarBtnAudioStop"),
+          submitBtn: $("sidebarBtnAudioSubmit"),
+          deleteBtn: $("sidebarBtnAudioDelete"),
+          player: $("sidebarAudioFeedbackPlayer"),
+          elapsedRow: $("sidebarAudioElapsedRow"),
+          elapsedValue: $("sidebarAudioElapsedValue"),
+          stateRow: $("sidebarAudioStateRow"),
+          actionRow: $("sidebarAudioActionRow"),
+          compact: true
+        }
+      ];
+    }
 
-      if (state === "uploading") {
-        btn.classList.add("audioSubmitUploading");
-        btn.setAttribute("aria-busy", "true");
-      } else if (state === "success") {
-        btn.classList.add("audioSubmitSuccess");
-      } else if (state === "error") {
-        btn.classList.add("audioSubmitError");
-      }
+    function setAudioUploadButtonState(state = "default", text = "Submit audio") {
+      const buttons = [$("btnAudioSubmit"), $("sidebarBtnAudioSubmit")].filter(Boolean);
+      buttons.forEach((btn) => {
+        btn.classList.remove("audioSubmitUploading", "audioSubmitSuccess", "audioSubmitError");
+        btn.removeAttribute("aria-busy");
+        btn.textContent = text;
+
+        if (state === "uploading") {
+          btn.classList.add("audioSubmitUploading");
+          btn.setAttribute("aria-busy", "true");
+        } else if (state === "success") {
+          btn.classList.add("audioSubmitSuccess");
+        } else if (state === "error") {
+          btn.classList.add("audioSubmitError");
+        }
+      });
     }
 
     function resetAudioUploadButton() {
@@ -4237,16 +4411,16 @@ const PROMPT_META = [
     }
 
     function renderAudioElapsed() {
-      const row = $("audioElapsedRow");
-      const value = $("audioElapsedValue");
-      if (!row || !value) return;
-
       const recorderState = mediaRecorder?.state || "inactive";
       const hasRecording = !!audioBlob;
       const shouldShow = recorderState === "recording" || recorderState === "paused" || hasRecording;
+      const elapsedText = formatAudioElapsed(getCurrentAudioElapsedMs());
 
-      row.style.display = shouldShow ? "flex" : "none";
-      value.textContent = formatAudioElapsed(getCurrentAudioElapsedMs());
+      getAudioRecorderViews().forEach((view) => {
+        if (!view.elapsedRow || !view.elapsedValue) return;
+        view.elapsedRow.style.display = shouldShow ? "flex" : "none";
+        view.elapsedValue.textContent = elapsedText;
+      });
     }
 
     function startAudioElapsedTicker() {
@@ -4263,37 +4437,48 @@ const PROMPT_META = [
       }
     }
 
+    function getAudioMeterCanvasViews() {
+      return [$("audioMeterHistory"), $("sidebarAudioMeterHistory")]
+        .filter(Boolean)
+        .map((canvas) => ({ canvas, ctx: canvas.getContext("2d") }));
+    }
+
     function clearAudioMeterCanvas() {
-      if (!audioMeterCanvas || !audioMeterCtx) return;
-      audioMeterCtx.clearRect(0, 0, audioMeterCanvas.width, audioMeterCanvas.height);
+      audioMeterCanvases.forEach(({ canvas, ctx }) => {
+        if (!canvas || !ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      });
     }
 
     function drawAudioMeterHistory() {
-      if (!audioMeterCanvas || !audioMeterCtx) return;
-      const width = audioMeterCanvas.width;
-      const height = audioMeterCanvas.height;
-      const baseline = height / 2;
+      audioMeterCanvases.forEach(({ canvas, ctx }) => {
+        if (!canvas || !ctx) return;
+        const width = canvas.width;
+        const height = canvas.height;
+        const baseline = height / 2;
 
-      audioMeterCtx.clearRect(0, 0, width, height);
-      audioMeterCtx.strokeStyle = "#5c8fe8";
-      audioMeterCtx.lineWidth = 1;
-      audioMeterCtx.lineCap = "round";
+        ctx.clearRect(0, 0, width, height);
+        ctx.strokeStyle = "#5c8fe8";
+        ctx.lineWidth = 1;
+        ctx.lineCap = "round";
 
-      for (let i = 0; i < audioMeterHistoryValues.length; i += 1) {
-        const level = Math.max(0, Math.min(1, Number(audioMeterHistoryValues[i]) || 0));
-        const halfHeight = Math.max(1, Math.round(level * ((height - 6) / 2)));
-        const x = i + 0.5;
-        audioMeterCtx.beginPath();
-        audioMeterCtx.moveTo(x, baseline - halfHeight);
-        audioMeterCtx.lineTo(x, baseline + halfHeight);
-        audioMeterCtx.stroke();
-      }
+        const start = Math.max(0, audioMeterHistoryValues.length - width);
+        for (let i = start; i < audioMeterHistoryValues.length; i += 1) {
+          const level = Math.max(0, Math.min(1, Number(audioMeterHistoryValues[i]) || 0));
+          const halfHeight = Math.max(1, Math.round(level * ((height - 6) / 2)));
+          const x = (i - start) + 0.5;
+          ctx.beginPath();
+          ctx.moveTo(x, baseline - halfHeight);
+          ctx.lineTo(x, baseline + halfHeight);
+          ctx.stroke();
+        }
+      });
     }
 
     function pushAudioMeterHistory(level) {
-      if (!audioMeterCanvas || !audioMeterCtx) return;
+      if (!audioMeterCanvases.length) return;
       const clampedLevel = Math.max(0, Math.min(1, Number(level) || 0));
-      const maxSamples = Math.max(1, Math.floor(audioMeterCanvas.width));
+      const maxSamples = Math.max(1, ...audioMeterCanvases.map(({ canvas }) => Math.floor(canvas.width || 1)));
       audioMeterHistoryValues.push(clampedLevel);
       if (audioMeterHistoryValues.length > maxSamples) {
         audioMeterHistoryValues.splice(0, audioMeterHistoryValues.length - maxSamples);
@@ -4358,13 +4543,14 @@ const PROMPT_META = [
         audioAnalyser.smoothingTimeConstant = 0.8;
         audioSourceNode.connect(audioAnalyser);
         audioMeterDataArray = new Uint8Array(audioAnalyser.fftSize);
-        audioMeterCanvas = $("audioMeterHistory");
-        audioMeterCtx = audioMeterCanvas?.getContext("2d") || null;
-        if (audioMeterCanvas && audioMeterCtx) {
-          const renderedWidth = Math.max(1, Math.round(audioMeterCanvas.getBoundingClientRect().width || audioMeterCanvas.width || 420));
-          audioMeterCanvas.width = renderedWidth;
-          audioMeterCanvas.height = 28;
-        }
+
+        audioMeterCanvases = getAudioMeterCanvasViews().filter((view) => view.ctx);
+        audioMeterCanvases.forEach(({ canvas }) => {
+          const renderedWidth = Math.max(1, Math.round(canvas.getBoundingClientRect().width || canvas.width || 420));
+          canvas.width = renderedWidth;
+          canvas.height = 28;
+        });
+
         audioMeterHistoryValues = [];
         audioMeterLevel = AUDIO_METER_IDLE_FLOOR;
         audioMeterLastLevel = audioMeterLevel;
@@ -4389,8 +4575,7 @@ const PROMPT_META = [
       audioMeterHistoryValues = [];
       audioMeterLastLevel = 0;
       clearAudioMeterCanvas();
-      audioMeterCanvas = null;
-      audioMeterCtx = null;
+      audioMeterCanvases = [];
       audioMeterLevel = 0;
     }
 
@@ -4398,52 +4583,57 @@ const PROMPT_META = [
     function updateAudioRecorderUI() {
       const recorderState = mediaRecorder?.state || "inactive";
       const hasRecording = !!audioBlob;
-      const controlsRow = $("audioPrimaryControls");
-      const playbackRow = $("audioPlaybackRow");
-      const meterRow = $("audioMeterRow");
-      const startBtn = $("btnAudioStart");
-      const stateBtn = $("btnAudioState");
-      const pauseResumeBtn = $("btnAudioPauseResume");
-      const stopBtn = $("btnAudioStop");
-      const submitBtn = $("btnAudioSubmit");
-
       const showInitial = recorderState === "inactive" && !hasRecording;
       const showActive = recorderState === "recording" || recorderState === "paused";
       const showStopped = recorderState === "inactive" && hasRecording;
 
-      if (controlsRow) controlsRow.style.display = (showInitial || showActive) ? "flex" : "none";
-      if (startBtn) startBtn.style.display = showInitial ? "inline-flex" : "none";
-
-      if (stateBtn) {
-        stateBtn.style.display = showActive ? "inline-flex" : "none";
-        const stateLabel = recorderState === "paused" ? "Paused" : "Recording";
-        stateBtn.textContent = stateLabel;
-        stateBtn.dataset.state = recorderState === "paused" ? "paused" : "recording";
-      }
-
-      if (pauseResumeBtn) {
-        pauseResumeBtn.style.display = showActive ? "inline-flex" : "none";
-        pauseResumeBtn.textContent = recorderState === "paused" ? "Resume" : "Pause";
-      }
-
-      if (stopBtn) stopBtn.style.display = showActive ? "inline-flex" : "none";
-      if (meterRow) {
-        meterRow.style.display = showActive ? "flex" : "none";
-        meterRow.setAttribute("aria-hidden", showActive ? "false" : "true");
-        meterRow.classList.toggle("is-recording", recorderState === "recording");
-        meterRow.classList.toggle("is-paused", recorderState === "paused");
-      }
-      if (playbackRow) playbackRow.style.display = showStopped ? "flex" : "none";
-      if (submitBtn) {
-        if (audioUploadInProgress) {
-          submitBtn.disabled = true;
-        } else if (audioSubmitted) {
-          setAudioUploadButtonState("success", "Uploaded");
-          submitBtn.disabled = true;
+      getAudioRecorderViews().forEach((view) => {
+        if (!view.controlsRow) return;
+        if (view.compact) {
+          view.controlsRow.style.display = (showInitial || showActive) ? "flex" : "none";
         } else {
-          resetAudioUploadButton();
-          submitBtn.disabled = !hasRecording;
+          view.controlsRow.style.display = (showInitial || showActive) ? "flex" : "none";
         }
+
+        if (view.startBtn) view.startBtn.style.display = showInitial ? "inline-flex" : "none";
+
+        if (view.stateBtn) {
+          view.stateBtn.style.display = showActive ? "inline-flex" : "none";
+          const stateLabel = recorderState === "paused" ? "Paused" : "Recording";
+          view.stateBtn.textContent = stateLabel;
+          view.stateBtn.dataset.state = recorderState === "paused" ? "paused" : "recording";
+        }
+
+        if (view.pauseResumeBtn) {
+          view.pauseResumeBtn.style.display = showActive ? "inline-flex" : "none";
+          view.pauseResumeBtn.textContent = recorderState === "paused" ? "Resume" : "Pause";
+        }
+
+        if (view.stopBtn) view.stopBtn.style.display = showActive ? "inline-flex" : "none";
+        if (view.meterRow) {
+          view.meterRow.style.display = showActive ? "flex" : "none";
+          view.meterRow.setAttribute("aria-hidden", showActive ? "false" : "true");
+          view.meterRow.classList.toggle("is-recording", recorderState === "recording");
+          view.meterRow.classList.toggle("is-paused", recorderState === "paused");
+        }
+        if (view.playbackRow) view.playbackRow.style.display = showStopped ? "flex" : "none";
+        if (view.submitBtn) {
+          if (audioUploadInProgress) {
+            view.submitBtn.disabled = true;
+          } else if (audioSubmitted) {
+            view.submitBtn.disabled = true;
+          } else {
+            view.submitBtn.disabled = !hasRecording;
+          }
+        }
+        if (view.deleteBtn) view.deleteBtn.disabled = !hasRecording || audioUploadInProgress;
+        if (view.stateRow) view.stateRow.style.display = showActive ? "flex" : "none";
+        if (view.actionRow) view.actionRow.style.display = showActive ? "grid" : "none";
+      });
+      if (audioSubmitted) {
+        setAudioUploadButtonState("success", "Uploaded");
+      } else if (!audioUploadInProgress) {
+        resetAudioUploadButton();
       }
       renderAudioElapsed();
     }
@@ -4468,12 +4658,12 @@ const PROMPT_META = [
       if (!keepSubmitted) audioSubmitted = false;
       resetAudioUploadButton();
 
-      const player = $("audioFeedbackPlayer");
-      if (player) {
-        player.pause();
-        player.removeAttribute("src");
-        player.load();
-      }
+      getAudioRecorderViews().forEach((view) => {
+        if (!view.player) return;
+        view.player.pause();
+        view.player.removeAttribute("src");
+        view.player.load();
+      });
       renderAudioElapsed();
     }
 
@@ -4498,11 +4688,11 @@ const PROMPT_META = [
           audioDuration = audioStartedAt ? Math.max(0, Date.now() - audioStartedAt) : 0;
           releaseAudioFeedbackUrl();
           audioUrl = URL.createObjectURL(audioBlob);
-          const player = $("audioFeedbackPlayer");
-          if (player) {
-            player.src = audioUrl;
-            player.load();
-          }
+          getAudioRecorderViews().forEach((view) => {
+            if (!view.player) return;
+            view.player.src = audioUrl;
+            view.player.load();
+          });
           stopAudioFeedbackStream();
           renderAudioElapsed();
           updateAudioRecorderUI();
@@ -4621,8 +4811,9 @@ const PROMPT_META = [
 
       try {
         audioUploadInProgress = true;
-        const submitBtn = $("btnAudioSubmit");
-        if (submitBtn) submitBtn.disabled = true;
+        getAudioRecorderViews().forEach((view) => {
+          if (view.submitBtn) view.submitBtn.disabled = true;
+        });
         setAudioUploadButtonState("uploading", "Preparing audio…");
         await sleep(120);
 
@@ -4705,13 +4896,27 @@ const PROMPT_META = [
       if (!$("btnAudioStart")) return;
       updateAudioRecorderUI();
 
-      $("btnAudioStart").addEventListener("click", () => { startAudioRecording(); });
-      $("btnAudioPauseResume").addEventListener("click", togglePauseResumeAudioRecording);
-      $("btnAudioStop").addEventListener("click", stopAudioRecording);
-      $("btnAudioSubmit").addEventListener("click", () => { submitAudioRecording(); });
-      $("btnAudioDelete").addEventListener("click", () => {
-        clearAudioRecorderState();
-        updateAudioRecorderUI();
+      $("btnAudioStart")?.addEventListener("click", () => {
+        if (window.matchMedia("(min-width: 900px)").matches) {
+          setSidebarMode("feedback", { entryPoint: "audio" });
+        }
+        startAudioRecording();
+      });
+      $("sidebarBtnAudioStart")?.addEventListener("click", () => { startAudioRecording(); });
+      ["btnAudioPauseResume", "sidebarBtnAudioPauseResume"].forEach((id) => {
+        $(id)?.addEventListener("click", togglePauseResumeAudioRecording);
+      });
+      ["btnAudioStop", "sidebarBtnAudioStop"].forEach((id) => {
+        $(id)?.addEventListener("click", stopAudioRecording);
+      });
+      ["btnAudioSubmit", "sidebarBtnAudioSubmit"].forEach((id) => {
+        $(id)?.addEventListener("click", () => { submitAudioRecording(); });
+      });
+      ["btnAudioDelete", "sidebarBtnAudioDelete"].forEach((id) => {
+        $(id)?.addEventListener("click", () => {
+          clearAudioRecorderState();
+          updateAudioRecorderUI();
+        });
       });
     }
 
@@ -5084,40 +5289,83 @@ const PROMPT_META = [
       });
     }
 
-    function setSidebarMode(mode) {
+    function emphasizeSidebarFeedback() {
+      const card = $("sidebarClipboard");
+      if (!card) return;
+      card.classList.add("feedback-emphasis");
+      if (card._feedbackEmphasisTimer) clearTimeout(card._feedbackEmphasisTimer);
+      card._feedbackEmphasisTimer = setTimeout(() => {
+        card.classList.remove("feedback-emphasis");
+      }, 1000);
+    }
+
+    function focusSidebarFeedbackEntry(entryPoint = "text") {
+      if (entryPoint === "audio") {
+        $("sidebarBtnAudioStart")?.focus();
+      } else {
+        $("sidebarSessionNotes")?.focus();
+      }
+    }
+
+    function setSidebarMode(mode, options = {}) {
+      const entryPoint = options.entryPoint || "text";
+      if (mode === "feedback" && sidebarMode === "collapsed") {
+        mode = "feedback";
+      }
       sidebarMode = mode;
       const card = $("sidebarClipboard");
       const sidebar = document.querySelector(".sidebar");
       const grid = $("layoutGrid");
+      const title = $("sidebarTitle");
       const previewView = $("sidebarPreviewView");
       const historyView = $("sidebarHistoryView");
+      const feedbackView = $("sidebarFeedbackView");
       const btnPreview = $("sidebarBtnPreview");
       const btnHistory = $("sidebarBtnHistory");
+      const btnFeedback = $("sidebarBtnFeedback");
       const btnCollapse = $("sidebarBtnCollapse");
       if (!card) return;
 
-      // Reset
       card.classList.remove("is-collapsed");
-      if (sidebar) sidebar.classList.remove("is-sidebar-collapsed");
-      if (grid) grid.classList.remove("is-sidebar-collapsed");
+      if (sidebar) {
+        sidebar.classList.remove("is-sidebar-collapsed");
+        sidebar.classList.remove("is-feedback-mode");
+      }
+      if (grid) {
+        grid.classList.remove("is-sidebar-collapsed");
+        grid.classList.remove("is-feedback-mode");
+      }
       if (previewView) previewView.classList.remove("is-visible");
       if (historyView) historyView.classList.remove("is-visible");
+      if (feedbackView) feedbackView.classList.remove("is-visible");
       if (btnPreview) btnPreview.classList.remove("is-active");
       if (btnHistory) btnHistory.classList.remove("is-active");
+      if (btnFeedback) btnFeedback.classList.remove("is-active");
       if (btnCollapse) btnCollapse.classList.remove("is-active");
 
       if (mode === "preview") {
         if (previewView) previewView.classList.add("is-visible");
         if (btnPreview) btnPreview.classList.add("is-active");
+        if (title) title.textContent = "Clipboard";
       } else if (mode === "history") {
         if (historyView) historyView.classList.add("is-visible");
         if (btnHistory) btnHistory.classList.add("is-active");
+        if (title) title.textContent = "History";
         renderCopyHistory();
+      } else if (mode === "feedback") {
+        if (feedbackView) feedbackView.classList.add("is-visible");
+        if (btnFeedback) btnFeedback.classList.add("is-active");
+        if (sidebar) sidebar.classList.add("is-feedback-mode");
+        if (grid) grid.classList.add("is-feedback-mode");
+        if (title) title.textContent = "Feedback";
+        emphasizeSidebarFeedback();
+        focusSidebarFeedbackEntry(entryPoint);
       } else if (mode === "collapsed") {
         card.classList.add("is-collapsed");
         if (sidebar) sidebar.classList.add("is-sidebar-collapsed");
         if (grid) grid.classList.add("is-sidebar-collapsed");
         if (btnCollapse) btnCollapse.classList.add("is-active");
+        if (title) title.textContent = "Clipboard";
       }
     }
 
@@ -5943,6 +6191,8 @@ const PROMPT_META = [
 
       if ($("llmResponse")) $("llmResponse").value = restoredLlmResponse;
       if ($("sessionNotes")) $("sessionNotes").value = restoredSessionNotes;
+      if ($("sidebarSessionNotes")) $("sidebarSessionNotes").value = restoredSessionNotes;
+      $("sidebarFeedbackSavedNote")?.classList.toggle("hidden", !restoredSessionNotes);
 
       applyContextSettingsToFields({
         course: restoredCourse,
@@ -6543,7 +6793,23 @@ const PROMPT_META = [
         queueLiveSessionUpdate("in_progress");
         updateEndSessionState();
       });
-      $("sessionNotes")?.addEventListener("input", () => {
+      const sessionNotesInput = $("sessionNotes");
+      const sidebarSessionNotesInput = $("sidebarSessionNotes");
+      if (sessionNotesInput && sidebarSessionNotesInput) {
+        sidebarSessionNotesInput.value = sessionNotesInput.value || "";
+        $("sidebarFeedbackSavedNote")?.classList.toggle("hidden", !(sessionNotesInput.value || "").trim());
+      }
+
+      sessionNotesInput?.addEventListener("input", () => {
+        if (sidebarSessionNotesInput && sidebarSessionNotesInput.value !== sessionNotesInput.value) {
+          isSyncingSessionNotes = true;
+          sidebarSessionNotesInput.value = sessionNotesInput.value;
+          isSyncingSessionNotes = false;
+        }
+        const savedNote = $("sidebarFeedbackSavedNote");
+        if (savedNote) {
+          savedNote.classList.toggle("hidden", !(sessionNotesInput.value || "").trim());
+        }
         debounceSingle(
           () => sessionNotesEditTimer,
           (timerId) => { sessionNotesEditTimer = timerId; },
@@ -6559,6 +6825,14 @@ const PROMPT_META = [
             queueLiveSessionUpdate("in_progress");
           }
         );
+      });
+
+      sidebarSessionNotesInput?.addEventListener("input", () => {
+        if (isSyncingSessionNotes) return;
+        if (sessionNotesInput && sessionNotesInput.value !== sidebarSessionNotesInput.value) {
+          sessionNotesInput.value = sidebarSessionNotesInput.value;
+          sessionNotesInput.dispatchEvent(new Event("input", { bubbles: true }));
+        }
       });
 
 
@@ -6808,9 +7082,17 @@ const PROMPT_META = [
           setSidebarMode(sidebarMode === "preview" ? "collapsed" : "preview");
         } else if (modeBtn.id === "sidebarBtnHistory") {
           setSidebarMode(sidebarMode === "history" ? "collapsed" : "history");
+        } else if (modeBtn.id === "sidebarBtnFeedback") {
+          setSidebarMode(sidebarMode === "feedback" ? "collapsed" : "feedback", { entryPoint: "text" });
         } else if (modeBtn.id === "sidebarBtnCollapse") {
           setSidebarMode(sidebarMode === "collapsed" ? "preview" : "collapsed");
         }
+        return;
+      }
+
+      if (e.target.id === "sidebarFeedbackBackToClipboard" || e.target.closest("#sidebarFeedbackBackToClipboard")) {
+        e.preventDefault();
+        setSidebarMode("preview");
         return;
       }
 
