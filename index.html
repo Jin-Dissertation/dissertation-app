@@ -1526,28 +1526,13 @@
     }
 
 
-    .sidebarFeedbackTop {
+    .sidebarTextFeedbackBlock {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      gap: 8px;
-    }
-    .sidebarBackLink {
-      border: 0;
-      background: transparent;
-      color: var(--accent);
-      font-size: 12px;
-      padding: 0;
-      cursor: pointer;
-    }
-    .sidebarFeedbackTitle {
-      margin: 0;
-      font-size: 13px;
-      font-weight: 700;
+      flex-direction: column;
+      gap: 6px;
     }
     .sidebarFeedbackHelp {
-      margin: 2px 0 8px;
+      margin: 0;
       font-size: 12px;
       color: var(--muted);
       line-height: 1.35;
@@ -1561,9 +1546,13 @@
       min-height: 88px;
       font-size: 13px;
     }
+    #sidebarSubmitTextFeedback {
+      width: 100%;
+      margin: 0;
+    }
     .sidebarInlineStatus {
       min-height: 16px;
-      margin-top: 4px;
+      margin-top: 2px;
       font-size: 12px;
       color: #2f6f44;
     }
@@ -1571,9 +1560,9 @@
       color: #ab2f45;
     }
     .sidebarAudioRecorder {
-      margin-top: 8px;
+      margin-top: 16px;
       border-top: 1px solid var(--border);
-      padding-top: 8px;
+      padding-top: 12px;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -2579,15 +2568,13 @@
               <div id="copyHistoryList" class="copyHistoryList"></div>
             </div>
             <div id="sidebarFeedbackView" class="sidebarView">
-              <div class="sidebarFeedbackTop">
-                <button id="sidebarFeedbackBackToClipboard" class="sidebarBackLink" type="button">Back to clipboard</button>
+              <div class="sidebarTextFeedbackBlock">
+                <p class="sidebarFeedbackHelp">Please provide any feedback about the app or your experience here, either in text or as an audio recording.</p>
+                <p id="sidebarFeedbackSavedNote" class="sidebarFeedbackSavedNote hidden">Saved to this session.</p>
+                <textarea id="sidebarSessionNotes" placeholder="Quick feedback entry..."></textarea>
+                <button class="btn" id="sidebarSubmitTextFeedback" type="button">Submit text feedback</button>
+                <div id="sidebarTextFeedbackStatus" class="sidebarInlineStatus" aria-live="polite"></div>
               </div>
-              <p class="sidebarFeedbackTitle">Optional feedback</p>
-              <p class="sidebarFeedbackHelp">Quick-submit feedback here. All entries append into Finalize notes.</p>
-              <p id="sidebarFeedbackSavedNote" class="sidebarFeedbackSavedNote hidden">Saved to this session.</p>
-              <textarea id="sidebarSessionNotes" placeholder="Quick feedback entry..."></textarea>
-              <button class="btn" id="sidebarSubmitTextFeedback" type="button">Submit text feedback</button>
-              <div id="sidebarTextFeedbackStatus" class="sidebarInlineStatus" aria-live="polite"></div>
               <div class="sidebarAudioRecorder" id="sidebarAudioRecorderPanel">
                 <div class="sidebarAudioPrimary" id="sidebarAudioPrimaryControls">
                   <button class="btn" id="sidebarBtnAudioStart" type="button">Start recording</button>
@@ -7166,12 +7153,6 @@ const PROMPT_META = [
         } else if (modeBtn.id === "sidebarBtnCollapse") {
           setSidebarMode(sidebarMode === "collapsed" ? "preview" : "collapsed");
         }
-        return;
-      }
-
-      if (e.target.id === "sidebarFeedbackBackToClipboard" || e.target.closest("#sidebarFeedbackBackToClipboard")) {
-        e.preventDefault();
-        setSidebarMode("preview");
         return;
       }
 
