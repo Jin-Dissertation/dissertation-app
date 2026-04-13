@@ -394,6 +394,119 @@
       gap: 8px;
       flex-wrap: wrap;
     }
+    #btnMobileFeedback {
+      display: none;
+      min-height: 0;
+      padding: 6px 10px;
+      font-size: 13px;
+      border-radius: 8px;
+      background: transparent;
+      color: #3d5370;
+      border-color: #cddcf1;
+    }
+    .modalBackdrop.mobileSheetBackdrop {
+      align-items: flex-end;
+      justify-content: stretch;
+      padding: 0;
+    }
+    .mobileFeedbackSheet {
+      width: 100%;
+      max-height: min(88vh, 760px);
+      overflow: auto;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-bottom: 0;
+      border-radius: 18px 18px 0 0;
+      box-shadow: 0 -10px 24px rgba(16, 33, 61, 0.18);
+      padding: 10px 12px 14px;
+      box-sizing: border-box;
+    }
+    .mobileSheetHandle {
+      width: 42px;
+      height: 4px;
+      border-radius: 999px;
+      background: #c7d5eb;
+      margin: 0 auto 8px;
+    }
+    .mobileSheetHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .mobileSheetHeader h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+    .mobileSheetClose {
+      min-height: 0;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .mobileFeedbackHelper {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--muted);
+    }
+    #mobileFeedbackStatus {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: #476282;
+      min-height: 16px;
+    }
+    .mobileFeedbackSection {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #mobileSessionNotes {
+      min-height: 80px;
+      font-size: 14px;
+    }
+    .mobileFeedbackDivider {
+      height: 1px;
+      background: var(--border);
+      margin: 10px 0;
+    }
+    .mobileAudioRecorder {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mobileAudioPrimary {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mobileAudioStateRow {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .mobileAudioActionRow {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .mobileAudioPlaybackRow {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mobileAudioPlaybackRow audio,
+    .mobileAudioPlaybackRow .btn,
+    .mobileAudioPrimary .btn {
+      width: 100%;
+      min-width: 0;
+    }
     .timerCard {
       margin-top: 10px;
       padding: 8px 10px;
@@ -1425,23 +1538,27 @@
       justify-content: center;
     }
     #btnAudioSubmit,
-    #sidebarBtnAudioSubmit {
+    #sidebarBtnAudioSubmit,
+    #btnMobileAudioSubmit {
       min-width: 148px;
       position: relative;
     }
     #btnAudioSubmit.audioSubmitUploading,
-    #sidebarBtnAudioSubmit.audioSubmitUploading {
+    #sidebarBtnAudioSubmit.audioSubmitUploading,
+    #btnMobileAudioSubmit.audioSubmitUploading {
       opacity: 0.85;
       cursor: progress;
     }
     #btnAudioSubmit.audioSubmitSuccess,
-    #sidebarBtnAudioSubmit.audioSubmitSuccess {
+    #sidebarBtnAudioSubmit.audioSubmitSuccess,
+    #btnMobileAudioSubmit.audioSubmitSuccess {
       border-color: #1f7a4d;
       background: #e8f8ef;
       color: #185c3b;
     }
     #btnAudioSubmit.audioSubmitError,
-    #sidebarBtnAudioSubmit.audioSubmitError {
+    #sidebarBtnAudioSubmit.audioSubmitError,
+    #btnMobileAudioSubmit.audioSubmitError {
       border-color: #b42318;
       background: #fef3f2;
       color: #912018;
@@ -1810,6 +1927,13 @@
       .appHeaderBar {
         padding: 4px 0;
         margin-bottom: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+      #btnMobileFeedback {
+        display: inline-flex;
       }
       .row {
         width: 100%;
@@ -2180,6 +2304,7 @@
           <button id="btnResetSession" class="btn" type="button">Reset session</button>
           <button id="btnLogout" class="btn" type="button">Log out</button>
         </div>
+        <button id="btnMobileFeedback" class="btn" type="button">Feedback</button>
       </div>
       <!-- Mobile-only compact timer (training mode) -->
       <div class="mobileTimerBar" id="mobileTimerBar">
@@ -2667,6 +2792,49 @@
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnEndCancel" type="button">Cancel</button>
         <button class="btn finishSessionBtn" id="btnEndConfirm" type="button">End session</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBackdrop mobileSheetBackdrop" id="modalMobileFeedback" aria-hidden="true">
+    <div class="mobileFeedbackSheet" id="mobileFeedbackSheet" role="dialog" aria-modal="true" aria-labelledby="mobileFeedbackTitle">
+      <div class="mobileSheetHandle" aria-hidden="true"></div>
+      <div class="mobileSheetHeader">
+        <h3 id="mobileFeedbackTitle">Feedback</h3>
+        <button class="mobileSheetClose" id="btnMobileFeedbackClose" type="button" aria-label="Close feedback panel">Close</button>
+      </div>
+      <p class="mobileFeedbackHelper">Please provide any feedback about the app or your experience here, either in text or as an audio recording.</p>
+      <p id="mobileFeedbackStatus" aria-live="polite"></p>
+
+      <div class="mobileFeedbackSection">
+        <textarea id="mobileSessionNotes" placeholder="Quick feedback entry..."></textarea>
+        <button class="btn" id="btnMobileSubmitTextFeedback" type="button">Submit text feedback</button>
+      </div>
+
+      <div class="mobileFeedbackDivider" aria-hidden="true"></div>
+
+      <div class="mobileAudioRecorder" id="mobileAudioRecorderPanel">
+        <div class="mobileAudioPrimary" id="mobileAudioPrimaryControls">
+          <button class="btn" id="btnMobileAudioStart" type="button">Start recording</button>
+          <div class="mobileAudioStateRow" id="mobileAudioStateRow" style="display:none;">
+            <span class="audioStateStatus" id="btnMobileAudioState" aria-live="polite"></span>
+            <div class="audioElapsedRow" id="mobileAudioElapsedRow" aria-live="polite" style="display:flex; margin-top:0;">
+              <span class="audioElapsedValue" id="mobileAudioElapsedValue">00:00</span>
+            </div>
+          </div>
+          <div class="mobileAudioActionRow" id="mobileAudioActionRow" style="display:none;">
+            <button class="btn" id="btnMobileAudioPauseResume" type="button">Pause</button>
+            <button class="btn warn" id="btnMobileAudioStop" type="button">Stop</button>
+          </div>
+          <div class="audioMeterRow" id="mobileAudioMeterRow">
+            <canvas class="audioMeterHistory" id="mobileAudioMeterHistory" height="28" aria-hidden="true"></canvas>
+          </div>
+        </div>
+        <div class="mobileAudioPlaybackRow" id="mobileAudioPlaybackRow">
+          <audio id="mobileAudioFeedbackPlayer" controls preload="metadata"></audio>
+          <button class="btn" id="btnMobileAudioSubmit" type="button">Submit audio</button>
+          <button class="btn danger" id="btnMobileAudioDelete" type="button">Delete recording</button>
+        </div>
       </div>
     </div>
   </div>
@@ -4187,7 +4355,8 @@ const PROMPT_META = [
       if ($("llmResponse")) $("llmResponse").value = "";
       if ($("sessionNotes")) $("sessionNotes").value = "";
       if ($("sidebarSessionNotes")) $("sidebarSessionNotes").value = "";
-      setSidebarFeedbackSavedState("");
+      if ($("mobileSessionNotes")) $("mobileSessionNotes").value = "";
+      setPersistentFeedbackStatus("");
       showSidebarStatusMessage("sidebarAudioFeedbackStatus", "", { clearAfterMs: 0 });
 
       clearAudioRecorderState();
@@ -4341,12 +4510,30 @@ const PROMPT_META = [
           stateRow: $("sidebarAudioStateRow"),
           actionRow: $("sidebarAudioActionRow"),
           compact: true
+        },
+        {
+          name: "mobile",
+          controlsRow: $("mobileAudioPrimaryControls"),
+          playbackRow: $("mobileAudioPlaybackRow"),
+          meterRow: $("mobileAudioMeterRow"),
+          startBtn: $("btnMobileAudioStart"),
+          stateBtn: $("btnMobileAudioState"),
+          pauseResumeBtn: $("btnMobileAudioPauseResume"),
+          stopBtn: $("btnMobileAudioStop"),
+          submitBtn: $("btnMobileAudioSubmit"),
+          deleteBtn: $("btnMobileAudioDelete"),
+          player: $("mobileAudioFeedbackPlayer"),
+          elapsedRow: $("mobileAudioElapsedRow"),
+          elapsedValue: $("mobileAudioElapsedValue"),
+          stateRow: $("mobileAudioStateRow"),
+          actionRow: $("mobileAudioActionRow"),
+          compact: true
         }
       ];
     }
 
     function setAudioUploadButtonState(state = "default", text = "Submit audio") {
-      const buttons = [$("btnAudioSubmit"), $("sidebarBtnAudioSubmit")].filter(Boolean);
+      const buttons = [$("btnAudioSubmit"), $("sidebarBtnAudioSubmit"), $("btnMobileAudioSubmit")].filter(Boolean);
       buttons.forEach((btn) => {
         btn.classList.remove("audioSubmitUploading", "audioSubmitSuccess", "audioSubmitError");
         btn.removeAttribute("aria-busy");
@@ -4402,12 +4589,20 @@ const PROMPT_META = [
       }
     }
 
-    function setSidebarFeedbackSavedState(message = "") {
-      const savedNote = $("sidebarFeedbackSavedNote");
-      if (!savedNote) return;
+    function setPersistentFeedbackStatus(message = "", source = "") {
       const nextMessage = String(message || "").trim();
-      savedNote.textContent = nextMessage || "Text feedback saved.";
-      savedNote.classList.toggle("hidden", !nextMessage);
+      const sidebarSavedNote = $("sidebarFeedbackSavedNote");
+      const mobileSavedNote = $("mobileFeedbackStatus");
+      if (sidebarSavedNote) {
+        sidebarSavedNote.textContent = nextMessage || "Text feedback saved.";
+        sidebarSavedNote.classList.toggle("hidden", !nextMessage);
+      }
+      if (mobileSavedNote) {
+        mobileSavedNote.textContent = nextMessage;
+      }
+      if (source === "sidebar" && mobileSavedNote && !nextMessage) {
+        mobileSavedNote.textContent = "";
+      }
     }
 
     // Release object URL whenever a recording is replaced.
@@ -4479,7 +4674,7 @@ const PROMPT_META = [
     }
 
     function getAudioMeterCanvasViews() {
-      return [$("audioMeterHistory"), $("sidebarAudioMeterHistory")]
+      return [$("audioMeterHistory"), $("sidebarAudioMeterHistory"), $("mobileAudioMeterHistory")]
         .filter(Boolean)
         .map((canvas) => ({ canvas, ctx: canvas.getContext("2d") }));
     }
@@ -4708,8 +4903,10 @@ const PROMPT_META = [
       renderAudioElapsed();
     }
 
-    function submitSidebarTextFeedback() {
-      const quickEntryInput = $("sidebarSessionNotes");
+    function submitQuickTextFeedback(source = "sidebar") {
+      const quickEntryInput = source === "mobile"
+        ? $("mobileSessionNotes")
+        : $("sidebarSessionNotes");
       const sessionNotesInput = $("sessionNotes");
       if (!quickEntryInput || !sessionNotesInput) return;
 
@@ -4731,7 +4928,7 @@ const PROMPT_META = [
       sessionNotesInput.dispatchEvent(new Event("input", { bubbles: true }));
 
       quickEntryInput.value = "";
-      setSidebarFeedbackSavedState("Text feedback saved.");
+      setPersistentFeedbackStatus("Text feedback saved.", source);
       quickEntryInput.focus();
     }
 
@@ -4942,7 +5139,7 @@ const PROMPT_META = [
         setAudioUploadButtonState("success", "Uploaded");
         updateAudioRecorderUI();
         toast("Audio submitted ✅");
-        setSidebarFeedbackSavedState("Audio feedback saved.");
+        setPersistentFeedbackStatus("Audio feedback saved.");
         await sleep(1000);
         clearAudioRecorderState();
         updateAudioRecorderUI();
@@ -4976,16 +5173,17 @@ const PROMPT_META = [
         startAudioRecording();
       });
       $("sidebarBtnAudioStart")?.addEventListener("click", () => { startAudioRecording(); });
-      ["btnAudioPauseResume", "sidebarBtnAudioPauseResume"].forEach((id) => {
+      $("btnMobileAudioStart")?.addEventListener("click", () => { startAudioRecording(); });
+      ["btnAudioPauseResume", "sidebarBtnAudioPauseResume", "btnMobileAudioPauseResume"].forEach((id) => {
         $(id)?.addEventListener("click", togglePauseResumeAudioRecording);
       });
-      ["btnAudioStop", "sidebarBtnAudioStop"].forEach((id) => {
+      ["btnAudioStop", "sidebarBtnAudioStop", "btnMobileAudioStop"].forEach((id) => {
         $(id)?.addEventListener("click", stopAudioRecording);
       });
-      ["btnAudioSubmit", "sidebarBtnAudioSubmit"].forEach((id) => {
+      ["btnAudioSubmit", "sidebarBtnAudioSubmit", "btnMobileAudioSubmit"].forEach((id) => {
         $(id)?.addEventListener("click", () => { submitAudioRecording(); });
       });
-      ["btnAudioDelete", "sidebarBtnAudioDelete"].forEach((id) => {
+      ["btnAudioDelete", "sidebarBtnAudioDelete", "btnMobileAudioDelete"].forEach((id) => {
         $(id)?.addEventListener("click", () => {
           clearAudioRecorderState();
           updateAudioRecorderUI();
@@ -6030,6 +6228,13 @@ const PROMPT_META = [
     const MODEL_LABEL_BY_PRODUCT = { chatgpt: "ChatGPT", gemini: "Gemini", copilot: "Copilot" };
     const openModal = (id) => { const m = $(id); if (m) m.style.display = "flex"; };
     const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
+    const openMobileFeedbackSheet = () => {
+      openModal("modalMobileFeedback");
+      window.setTimeout(() => {
+        $("mobileSessionNotes")?.focus();
+      }, 0);
+    };
+    const closeMobileFeedbackSheet = () => closeModal("modalMobileFeedback");
 
     function selectModel(model, { logSelection = true } = {}) {
       const llmProduct = normalizeLlmProduct(model) || "chatgpt";
@@ -6265,7 +6470,8 @@ const PROMPT_META = [
       if ($("llmResponse")) $("llmResponse").value = restoredLlmResponse;
       if ($("sessionNotes")) $("sessionNotes").value = restoredSessionNotes;
       if ($("sidebarSessionNotes")) $("sidebarSessionNotes").value = "";
-      setSidebarFeedbackSavedState(restoredSessionNotes ? "Text feedback saved." : "");
+      if ($("mobileSessionNotes")) $("mobileSessionNotes").value = "";
+      setPersistentFeedbackStatus(restoredSessionNotes ? "Text feedback saved." : "");
 
       applyContextSettingsToFields({
         course: restoredCourse,
@@ -6868,7 +7074,8 @@ const PROMPT_META = [
       });
       const sessionNotesInput = $("sessionNotes");
       const sidebarSessionNotesInput = $("sidebarSessionNotes");
-      setSidebarFeedbackSavedState((sessionNotesInput?.value || "").trim() ? "Text feedback saved." : "");
+      const mobileSessionNotesInput = $("mobileSessionNotes");
+      setPersistentFeedbackStatus((sessionNotesInput?.value || "").trim() ? "Text feedback saved." : "");
 
       sessionNotesInput?.addEventListener("input", () => {
         debounceSingle(
@@ -6888,12 +7095,24 @@ const PROMPT_META = [
         );
       });
 
-      $("sidebarSubmitTextFeedback")?.addEventListener("click", submitSidebarTextFeedback);
+      $("sidebarSubmitTextFeedback")?.addEventListener("click", () => submitQuickTextFeedback("sidebar"));
       sidebarSessionNotesInput?.addEventListener("keydown", (event) => {
         const isQuickSubmit = (event.ctrlKey || event.metaKey) && event.key === "Enter";
         if (!isQuickSubmit) return;
         event.preventDefault();
-        submitSidebarTextFeedback();
+        submitQuickTextFeedback("sidebar");
+      });
+      $("btnMobileSubmitTextFeedback")?.addEventListener("click", () => submitQuickTextFeedback("mobile"));
+      mobileSessionNotesInput?.addEventListener("keydown", (event) => {
+        const isQuickSubmit = (event.ctrlKey || event.metaKey) && event.key === "Enter";
+        if (!isQuickSubmit) return;
+        event.preventDefault();
+        submitQuickTextFeedback("mobile");
+      });
+      $("btnMobileFeedback")?.addEventListener("click", () => { openMobileFeedbackSheet(); });
+      $("btnMobileFeedbackClose")?.addEventListener("click", () => { closeMobileFeedbackSheet(); });
+      $("modalMobileFeedback")?.addEventListener("click", (event) => {
+        if (event.target === $("modalMobileFeedback")) closeMobileFeedbackSheet();
       });
 
 
