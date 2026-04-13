@@ -4903,37 +4903,32 @@ const PROMPT_META = [
       renderAudioElapsed();
     }
 
-    function submitQuickTextFeedback(source = "sidebar") {
-      const quickEntryInput = source === "mobile"
+    async function submitQuickTextFeedback(source = "sidebar") {
+      const sourceInput = source === "mobile"
         ? $("mobileSessionNotes")
         : $("sidebarSessionNotes");
-      const sessionNotesInput = $("sessionNotes");
-      if (!quickEntryInput || !sessionNotesInput) return;
 
-      const nextEntry = (quickEntryInput.value || "").trim();
+      if (!sourceInput) return;
+
+      const nextEntry = (sourceInput.value || "").trim();
       if (!nextEntry) return;
 
-      const timestamp = new Date().toLocaleString([], {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "numeric",
-        minute: "2-digit"
-      });
-      const formattedEntry = `[Submitted ${timestamp}] ${nextEntry}`;
-      const existingNotes = (sessionNotesInput.value || "").trim();
-      sessionNotesInput.value = existingNotes
-        ? `${existingNotes}\n\n${formattedEntry}`
-        : formattedEntry;
-      sessionNotesInput.dispatchEvent(new Event("input", { bubbles: true }));
+      try {
+        const result = await sendFeedbackAlert({
+          textFeedback: nextEntry
+        });
 
-      quickEntryInput.value = "";
-      setPersistentFeedbackStatus("Text feedback saved.", source);
+        if (!result || result.ok === false) {
+          throw new Error(result?.error || "Failed to send feedback alert.");
+        }
 
-      sendFeedbackAlert({ textFeedback: nextEntry }).catch((err) => {
-        console.warn("Feedback alert failed", err);
-      });
-      quickEntryInput.focus();
+        sourceInput.value = "";
+        setPersistentFeedbackStatus("Text feedback saved.", source);
+        sourceInput.focus();
+      } catch (err) {
+        console.warn("Quick text feedback failed", err);
+        setPersistentFeedbackStatus("Text feedback failed to send. Please try again.", source, true);
+      }
     }
 
     async function startAudioRecording() {
