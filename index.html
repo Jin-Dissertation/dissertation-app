@@ -1529,7 +1529,7 @@
     .sidebarTextFeedbackBlock {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 5px;
     }
     .sidebarFeedbackHelp {
       margin: 0;
@@ -1538,8 +1538,8 @@
       line-height: 1.35;
     }
     .sidebarFeedbackSavedNote {
-      margin: 6px 0 8px;
-      color: #2b5fab;
+      margin: 0 0 2px;
+      color: #476282;
       font-size: 12px;
     }
     #sidebarSessionNotes {
@@ -1548,21 +1548,24 @@
     }
     #sidebarSubmitTextFeedback {
       width: 100%;
-      margin: 0;
+      margin: 0 0 2px;
     }
     .sidebarInlineStatus {
-      min-height: 16px;
-      margin-top: 2px;
+      display: none;
       font-size: 12px;
       color: #2f6f44;
+    }
+    .sidebarInlineStatus.is-visible {
+      display: block;
+      margin-top: 2px;
     }
     .sidebarInlineStatus.is-error {
       color: #ab2f45;
     }
     .sidebarAudioRecorder {
-      margin-top: 16px;
+      margin-top: 8px;
       border-top: 1px solid var(--border);
-      padding-top: 12px;
+      padding-top: 10px;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -2570,10 +2573,9 @@
             <div id="sidebarFeedbackView" class="sidebarView">
               <div class="sidebarTextFeedbackBlock">
                 <p class="sidebarFeedbackHelp">Please provide any feedback about the app or your experience here, either in text or as an audio recording.</p>
-                <p id="sidebarFeedbackSavedNote" class="sidebarFeedbackSavedNote hidden">Saved to this session.</p>
+                <p id="sidebarFeedbackSavedNote" class="sidebarFeedbackSavedNote hidden">Feedback saved to this session.</p>
                 <textarea id="sidebarSessionNotes" placeholder="Quick feedback entry..."></textarea>
                 <button class="btn" id="sidebarSubmitTextFeedback" type="button">Submit text feedback</button>
-                <div id="sidebarTextFeedbackStatus" class="sidebarInlineStatus" aria-live="polite"></div>
               </div>
               <div class="sidebarAudioRecorder" id="sidebarAudioRecorderPanel">
                 <div class="sidebarAudioPrimary" id="sidebarAudioPrimaryControls">
@@ -3163,7 +3165,6 @@ const PROMPT_META = [
     let audioMeterCanvases = [];
     let audioMeterHistoryValues = [];
     let audioMeterLastLevel = 0;
-    let sidebarTextFeedbackStatusTimer = null;
     let sidebarAudioFeedbackStatusTimer = null;
 
     const AUDIO_METER_IDLE_FLOOR = 0.06;
@@ -4186,8 +4187,7 @@ const PROMPT_META = [
       if ($("llmResponse")) $("llmResponse").value = "";
       if ($("sessionNotes")) $("sessionNotes").value = "";
       if ($("sidebarSessionNotes")) $("sidebarSessionNotes").value = "";
-      $("sidebarFeedbackSavedNote")?.classList.add("hidden");
-      showSidebarStatusMessage("sidebarTextFeedbackStatus", "", { clearAfterMs: 0 });
+      setSidebarFeedbackSavedState("");
       showSidebarStatusMessage("sidebarAudioFeedbackStatus", "", { clearAfterMs: 0 });
 
       clearAudioRecorderState();
@@ -4379,29 +4379,35 @@ const PROMPT_META = [
       if (!statusEl) return;
       const timerName = elementId === "sidebarAudioFeedbackStatus"
         ? "sidebarAudioFeedbackStatusTimer"
-        : "sidebarTextFeedbackStatusTimer";
+        : null;
       const activeTimer = timerName === "sidebarAudioFeedbackStatusTimer"
         ? sidebarAudioFeedbackStatusTimer
-        : sidebarTextFeedbackStatusTimer;
+        : null;
       if (activeTimer) window.clearTimeout(activeTimer);
       statusEl.textContent = message || "";
       statusEl.classList.toggle("is-error", !!isError);
+      statusEl.classList.toggle("is-visible", !!message);
       if (message && clearAfterMs > 0) {
         const nextTimer = window.setTimeout(() => {
           statusEl.textContent = "";
           statusEl.classList.remove("is-error");
+          statusEl.classList.remove("is-visible");
           if (timerName === "sidebarAudioFeedbackStatusTimer") {
             sidebarAudioFeedbackStatusTimer = null;
-          } else {
-            sidebarTextFeedbackStatusTimer = null;
           }
         }, clearAfterMs);
         if (timerName === "sidebarAudioFeedbackStatusTimer") {
           sidebarAudioFeedbackStatusTimer = nextTimer;
-        } else {
-          sidebarTextFeedbackStatusTimer = nextTimer;
         }
       }
+    }
+
+    function setSidebarFeedbackSavedState(message = "") {
+      const savedNote = $("sidebarFeedbackSavedNote");
+      if (!savedNote) return;
+      const nextMessage = String(message || "").trim();
+      savedNote.textContent = nextMessage || "Feedback saved to this session.";
+      savedNote.classList.toggle("hidden", !nextMessage);
     }
 
     // Release object URL whenever a recording is replaced.
@@ -4725,7 +4731,7 @@ const PROMPT_META = [
       sessionNotesInput.dispatchEvent(new Event("input", { bubbles: true }));
 
       quickEntryInput.value = "";
-      showSidebarStatusMessage("sidebarTextFeedbackStatus", "Feedback submitted.");
+      setSidebarFeedbackSavedState("Feedback saved to this session.");
       quickEntryInput.focus();
     }
 
@@ -4936,11 +4942,11 @@ const PROMPT_META = [
         setAudioUploadButtonState("success", "Uploaded");
         updateAudioRecorderUI();
         toast("Audio submitted ✅");
-        showSidebarStatusMessage("sidebarAudioFeedbackStatus", "Audio feedback submitted.", { clearAfterMs: 0 });
+        setSidebarFeedbackSavedState("Audio feedback saved to this session.");
         await sleep(1000);
         clearAudioRecorderState();
         updateAudioRecorderUI();
-        showSidebarStatusMessage("sidebarAudioFeedbackStatus", "Audio feedback submitted.", { clearAfterMs: 2000 });
+        showSidebarStatusMessage("sidebarAudioFeedbackStatus", "", { clearAfterMs: 0 });
         return { ok: true };
       } catch (err) {
         console.error("Audio upload failed", err);
@@ -6259,7 +6265,7 @@ const PROMPT_META = [
       if ($("llmResponse")) $("llmResponse").value = restoredLlmResponse;
       if ($("sessionNotes")) $("sessionNotes").value = restoredSessionNotes;
       if ($("sidebarSessionNotes")) $("sidebarSessionNotes").value = "";
-      $("sidebarFeedbackSavedNote")?.classList.toggle("hidden", !restoredSessionNotes);
+      setSidebarFeedbackSavedState(restoredSessionNotes ? "Feedback saved to this session." : "");
 
       applyContextSettingsToFields({
         course: restoredCourse,
@@ -6862,13 +6868,9 @@ const PROMPT_META = [
       });
       const sessionNotesInput = $("sessionNotes");
       const sidebarSessionNotesInput = $("sidebarSessionNotes");
-      $("sidebarFeedbackSavedNote")?.classList.toggle("hidden", !(sessionNotesInput?.value || "").trim());
+      setSidebarFeedbackSavedState((sessionNotesInput?.value || "").trim() ? "Feedback saved to this session." : "");
 
       sessionNotesInput?.addEventListener("input", () => {
-        const savedNote = $("sidebarFeedbackSavedNote");
-        if (savedNote) {
-          savedNote.classList.toggle("hidden", !(sessionNotesInput.value || "").trim());
-        }
         debounceSingle(
           () => sessionNotesEditTimer,
           (timerId) => { sessionNotesEditTimer = timerId; },
@@ -6892,13 +6894,6 @@ const PROMPT_META = [
         if (!isQuickSubmit) return;
         event.preventDefault();
         submitSidebarTextFeedback();
-      });
-      sidebarSessionNotesInput?.addEventListener("input", () => {
-        const statusEl = $("sidebarTextFeedbackStatus");
-        if (statusEl?.textContent) {
-          statusEl.textContent = "";
-          statusEl.classList.remove("is-error");
-        }
       });
 
 
