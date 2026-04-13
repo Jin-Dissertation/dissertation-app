@@ -6401,13 +6401,15 @@ const PROMPT_META = [
   }
 }
 
-    function applyContextSettingsToFields({ course, area, questionCount, notes }) {
+    function applyContextSettingsToFields({ course, area, questionCount, notes }, options = {}) {
       if ($("ctxCourse")) $("ctxCourse").value = course;
       if ($("ctxArea")) $("ctxArea").value = area;
       if ($("ctxQuestionCount")) $("ctxQuestionCount").value = questionCount;
       if ($("ctxNotes")) $("ctxNotes").value = notes;
       setContext({ course, area, notes, questionCount });
-      invalidateStarterIfSignatureChanged();
+      if (options.skipStarterInvalidation !== true) {
+        invalidateStarterIfSignatureChanged();
+      }
       refreshCopyCardPreviews();
       applyStageUI();
     }
@@ -6478,7 +6480,7 @@ const PROMPT_META = [
         area: restoredArea,
         questionCount: restoredQuestionCount,
         notes: restoredNotes
-      });
+      }, { skipStarterInvalidation: true });
 
       if (restoredProduct) {
         selectModel(restoredProduct, { logSelection: false });
