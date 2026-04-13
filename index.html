@@ -2573,7 +2573,7 @@
             <div id="sidebarFeedbackView" class="sidebarView">
               <div class="sidebarTextFeedbackBlock">
                 <p class="sidebarFeedbackHelp">Please provide any feedback about the app or your experience here, either in text or as an audio recording.</p>
-                <p id="sidebarFeedbackSavedNote" class="sidebarFeedbackSavedNote hidden">Feedback saved to this session.</p>
+                <p id="sidebarFeedbackSavedNote" class="sidebarFeedbackSavedNote hidden">Text feedback saved.</p>
                 <textarea id="sidebarSessionNotes" placeholder="Quick feedback entry..."></textarea>
                 <button class="btn" id="sidebarSubmitTextFeedback" type="button">Submit text feedback</button>
               </div>
@@ -4406,7 +4406,7 @@ const PROMPT_META = [
       const savedNote = $("sidebarFeedbackSavedNote");
       if (!savedNote) return;
       const nextMessage = String(message || "").trim();
-      savedNote.textContent = nextMessage || "Feedback saved to this session.";
+      savedNote.textContent = nextMessage || "Text feedback saved.";
       savedNote.classList.toggle("hidden", !nextMessage);
     }
 
@@ -4731,7 +4731,7 @@ const PROMPT_META = [
       sessionNotesInput.dispatchEvent(new Event("input", { bubbles: true }));
 
       quickEntryInput.value = "";
-      setSidebarFeedbackSavedState("Feedback saved to this session.");
+      setSidebarFeedbackSavedState("Text feedback saved.");
       quickEntryInput.focus();
     }
 
@@ -4942,7 +4942,7 @@ const PROMPT_META = [
         setAudioUploadButtonState("success", "Uploaded");
         updateAudioRecorderUI();
         toast("Audio submitted ✅");
-        setSidebarFeedbackSavedState("Audio feedback saved to this session.");
+        setSidebarFeedbackSavedState("Audio feedback saved.");
         await sleep(1000);
         clearAudioRecorderState();
         updateAudioRecorderUI();
@@ -6265,7 +6265,7 @@ const PROMPT_META = [
       if ($("llmResponse")) $("llmResponse").value = restoredLlmResponse;
       if ($("sessionNotes")) $("sessionNotes").value = restoredSessionNotes;
       if ($("sidebarSessionNotes")) $("sidebarSessionNotes").value = "";
-      setSidebarFeedbackSavedState(restoredSessionNotes ? "Feedback saved to this session." : "");
+      setSidebarFeedbackSavedState(restoredSessionNotes ? "Text feedback saved." : "");
 
       applyContextSettingsToFields({
         course: restoredCourse,
@@ -6868,7 +6868,7 @@ const PROMPT_META = [
       });
       const sessionNotesInput = $("sessionNotes");
       const sidebarSessionNotesInput = $("sidebarSessionNotes");
-      setSidebarFeedbackSavedState((sessionNotesInput?.value || "").trim() ? "Feedback saved to this session." : "");
+      setSidebarFeedbackSavedState((sessionNotesInput?.value || "").trim() ? "Text feedback saved." : "");
 
       sessionNotesInput?.addEventListener("input", () => {
         debounceSingle(
