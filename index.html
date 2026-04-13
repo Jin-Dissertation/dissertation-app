@@ -6484,6 +6484,14 @@ const PROMPT_META = [
         selectModel(restoredProduct, { logSelection: false });
         renderLlmConfirmPanel(restoredProduct);
       }
+      starterPromptCopied = starterCopied;
+      if (starterCopied) {
+        localStorage.setItem(KEYS.starterCopied, "true");
+        localStorage.setItem(KEYS.starterCopiedSetupSignature, getStarterSetupSignature());
+      } else {
+        localStorage.setItem(KEYS.starterCopied, "false");
+        localStorage.removeItem(KEYS.starterCopiedSetupSignature);
+      }
       renderPromptList();
       renderSetupSamplePromptBox();
       refreshCopyCardPreviews();
