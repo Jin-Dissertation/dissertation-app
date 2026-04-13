@@ -6419,6 +6419,15 @@ const PROMPT_META = [
     }
 
     async function restoreLiveSessionFromServer(data) {
+      if (!appBootReady) {
+        try {
+          await loadRemoteConfig();
+          appBootLoading = false;
+          appBootReady = true;
+        } catch (err) {
+          console.warn("Remote config was not ready during live-session restore", err);
+        }
+      }
       const session = data?.session;
       if (!session || typeof session !== "object") return false;
 
