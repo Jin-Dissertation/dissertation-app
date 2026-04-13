@@ -421,13 +421,6 @@
       padding: 10px 12px 14px;
       box-sizing: border-box;
     }
-    .mobileSheetHandle {
-      width: 42px;
-      height: 4px;
-      border-radius: 999px;
-      background: #c7d5eb;
-      margin: 0 auto 8px;
-    }
     .mobileSheetHeader {
       display: flex;
       align-items: center;
@@ -440,13 +433,22 @@
       font-size: 16px;
     }
     .mobileSheetClose {
-      min-height: 0;
-      padding: 4px 10px;
-      border-radius: 8px;
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--muted);
+      min-height: 40px;
+      padding: 0 14px;
+      border-radius: 10px;
+      background: #eef4ff;
+      border: 1px solid #9fb8e3;
+      color: #1f4ca4;
       cursor: pointer;
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(16,33,61,0.06);
+    }
+    .mobileSheetClose:hover {
+      background: #e3edff;
+      border-color: #7fa0d8;
+    }
+    .mobileSheetClose:active {
+      background: #d8e7ff;
     }
     .mobileFeedbackHelper {
       margin: 0;
@@ -2798,10 +2800,9 @@
 
   <div class="modalBackdrop mobileSheetBackdrop" id="modalMobileFeedback" aria-hidden="true">
     <div class="mobileFeedbackSheet" id="mobileFeedbackSheet" role="dialog" aria-modal="true" aria-labelledby="mobileFeedbackTitle">
-      <div class="mobileSheetHandle" aria-hidden="true"></div>
       <div class="mobileSheetHeader">
         <h3 id="mobileFeedbackTitle">Feedback</h3>
-        <button class="mobileSheetClose" id="btnMobileFeedbackClose" type="button" aria-label="Close feedback panel">Close</button>
+        <button class="mobileSheetClose" id="btnMobileFeedbackClose" type="button" aria-label="Close feedback panel">Done</button>
       </div>
       <p class="mobileFeedbackHelper">Please provide any feedback about the app or your experience here, either in text or as an audio recording.</p>
       <p id="mobileFeedbackStatus" aria-live="polite"></p>
