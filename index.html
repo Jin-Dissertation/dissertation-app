@@ -4908,10 +4908,20 @@ const PROMPT_META = [
         ? $("mobileSessionNotes")
         : $("sidebarSessionNotes");
 
-      if (!sourceInput) return;
+      const submitBtn = source === "mobile"
+        ? $("btnMobileSubmitTextFeedback")
+        : $("sidebarSubmitTextFeedback");
+
+      if (!sourceInput || !submitBtn) return;
+      if (submitBtn.disabled) return;
 
       const nextEntry = (sourceInput.value || "").trim();
       if (!nextEntry) return;
+
+      const originalLabel = submitBtn.dataset.originalLabel || submitBtn.textContent || "Submit text feedback";
+      submitBtn.dataset.originalLabel = originalLabel;
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting...";
 
       try {
         const result = await sendFeedbackAlert({
@@ -4928,6 +4938,9 @@ const PROMPT_META = [
       } catch (err) {
         console.warn("Quick text feedback failed", err);
         setPersistentFeedbackStatus("Text feedback failed to send. Please try again.", source, true);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = submitBtn.dataset.originalLabel || "Submit text feedback";
       }
     }
 
