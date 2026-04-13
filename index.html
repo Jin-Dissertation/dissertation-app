@@ -1561,6 +1561,15 @@
       min-height: 88px;
       font-size: 13px;
     }
+    .sidebarInlineStatus {
+      min-height: 16px;
+      margin-top: 4px;
+      font-size: 12px;
+      color: #2f6f44;
+    }
+    .sidebarInlineStatus.is-error {
+      color: #ab2f45;
+    }
     .sidebarAudioRecorder {
       margin-top: 8px;
       border-top: 1px solid var(--border);
@@ -2574,9 +2583,11 @@
                 <button id="sidebarFeedbackBackToClipboard" class="sidebarBackLink" type="button">Back to clipboard</button>
               </div>
               <p class="sidebarFeedbackTitle">Optional feedback</p>
-              <p class="sidebarFeedbackHelp">You can continue editing feedback here or in Finalize.</p>
+              <p class="sidebarFeedbackHelp">Quick-submit feedback here. All entries append into Finalize notes.</p>
               <p id="sidebarFeedbackSavedNote" class="sidebarFeedbackSavedNote hidden">Saved to this session.</p>
-              <textarea id="sidebarSessionNotes" placeholder="Share any optional feedback..."></textarea>
+              <textarea id="sidebarSessionNotes" placeholder="Quick feedback entry..."></textarea>
+              <button class="btn" id="sidebarSubmitTextFeedback" type="button">Submit text feedback</button>
+              <div id="sidebarTextFeedbackStatus" class="sidebarInlineStatus" aria-live="polite"></div>
               <div class="sidebarAudioRecorder" id="sidebarAudioRecorderPanel">
                 <div class="sidebarAudioPrimary" id="sidebarAudioPrimaryControls">
                   <button class="btn" id="sidebarBtnAudioStart" type="button">Start recording</button>
@@ -2599,6 +2610,7 @@
                   <button class="btn" id="sidebarBtnAudioSubmit" type="button">Submit audio</button>
                   <button class="btn danger" id="sidebarBtnAudioDelete" type="button">Delete recording</button>
                 </div>
+                <div id="sidebarAudioFeedbackStatus" class="sidebarInlineStatus" aria-live="polite"></div>
               </div>
             </div>
           </div>
@@ -3164,7 +3176,8 @@ const PROMPT_META = [
     let audioMeterCanvases = [];
     let audioMeterHistoryValues = [];
     let audioMeterLastLevel = 0;
-    let isSyncingSessionNotes = false;
+    let sidebarTextFeedbackStatusTimer = null;
+    let sidebarAudioFeedbackStatusTimer = null;
 
     const AUDIO_METER_IDLE_FLOOR = 0.06;
     const AUDIO_METER_MAX_SCALE = 3.2;
@@ -4187,6 +4200,8 @@ const PROMPT_META = [
       if ($("sessionNotes")) $("sessionNotes").value = "";
       if ($("sidebarSessionNotes")) $("sidebarSessionNotes").value = "";
       $("sidebarFeedbackSavedNote")?.classList.add("hidden");
+      showSidebarStatusMessage("sidebarTextFeedbackStatus", "", { clearAfterMs: 0 });
+      showSidebarStatusMessage("sidebarAudioFeedbackStatus", "", { clearAfterMs: 0 });
 
       clearAudioRecorderState();
       updateAudioRecorderUI();
@@ -4367,6 +4382,39 @@ const PROMPT_META = [
 
     function sleep(ms) {
       return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    function showSidebarStatusMessage(elementId, message, {
+      isError = false,
+      clearAfterMs = 2400
+    } = {}) {
+      const statusEl = $(elementId);
+      if (!statusEl) return;
+      const timerName = elementId === "sidebarAudioFeedbackStatus"
+        ? "sidebarAudioFeedbackStatusTimer"
+        : "sidebarTextFeedbackStatusTimer";
+      const activeTimer = timerName === "sidebarAudioFeedbackStatusTimer"
+        ? sidebarAudioFeedbackStatusTimer
+        : sidebarTextFeedbackStatusTimer;
+      if (activeTimer) window.clearTimeout(activeTimer);
+      statusEl.textContent = message || "";
+      statusEl.classList.toggle("is-error", !!isError);
+      if (message && clearAfterMs > 0) {
+        const nextTimer = window.setTimeout(() => {
+          statusEl.textContent = "";
+          statusEl.classList.remove("is-error");
+          if (timerName === "sidebarAudioFeedbackStatusTimer") {
+            sidebarAudioFeedbackStatusTimer = null;
+          } else {
+            sidebarTextFeedbackStatusTimer = null;
+          }
+        }, clearAfterMs);
+        if (timerName === "sidebarAudioFeedbackStatusTimer") {
+          sidebarAudioFeedbackStatusTimer = nextTimer;
+        } else {
+          sidebarTextFeedbackStatusTimer = nextTimer;
+        }
+      }
     }
 
     // Release object URL whenever a recording is replaced.
@@ -4667,6 +4715,33 @@ const PROMPT_META = [
       renderAudioElapsed();
     }
 
+    function submitSidebarTextFeedback() {
+      const quickEntryInput = $("sidebarSessionNotes");
+      const sessionNotesInput = $("sessionNotes");
+      if (!quickEntryInput || !sessionNotesInput) return;
+
+      const nextEntry = (quickEntryInput.value || "").trim();
+      if (!nextEntry) return;
+
+      const timestamp = new Date().toLocaleString([], {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "numeric",
+        minute: "2-digit"
+      });
+      const formattedEntry = `[Submitted ${timestamp}] ${nextEntry}`;
+      const existingNotes = (sessionNotesInput.value || "").trim();
+      sessionNotesInput.value = existingNotes
+        ? `${existingNotes}\n\n${formattedEntry}`
+        : formattedEntry;
+      sessionNotesInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+      quickEntryInput.value = "";
+      showSidebarStatusMessage("sidebarTextFeedbackStatus", "Feedback submitted.");
+      quickEntryInput.focus();
+    }
+
     async function startAudioRecording() {
       if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
         toast("Audio recording isn't supported in this browser. Please try Chrome or Firefox, or leave written feedback instead.");
@@ -4874,12 +4949,17 @@ const PROMPT_META = [
         setAudioUploadButtonState("success", "Uploaded");
         updateAudioRecorderUI();
         toast("Audio submitted ✅");
-        await sleep(1700);
+        showSidebarStatusMessage("sidebarAudioFeedbackStatus", "Audio feedback submitted.", { clearAfterMs: 0 });
+        await sleep(1000);
+        clearAudioRecorderState();
+        updateAudioRecorderUI();
+        showSidebarStatusMessage("sidebarAudioFeedbackStatus", "Audio feedback submitted.", { clearAfterMs: 2000 });
         return { ok: true };
       } catch (err) {
         console.error("Audio upload failed", err);
         setAudioUploadButtonState("error", "Upload failed");
         toast("Audio upload failed. Please try again.");
+        showSidebarStatusMessage("sidebarAudioFeedbackStatus", "Audio upload failed. Please try again.", { isError: true });
         await sleep(2000);
         if (!audioSubmitted) {
           resetAudioUploadButton();
@@ -5031,7 +5111,7 @@ const PROMPT_META = [
       if (copied) {
         toast("Copied ✅");
       } else {
-        toast("Auto-copy didn't work — please copy the text manually. See Help / FAQ if this keeps happening.");
+        toast("Couldn’t copy automatically. Please copy the text manually. See Help / FAQ if this keeps happening.");
       }
 
       return copied;
@@ -6191,7 +6271,7 @@ const PROMPT_META = [
 
       if ($("llmResponse")) $("llmResponse").value = restoredLlmResponse;
       if ($("sessionNotes")) $("sessionNotes").value = restoredSessionNotes;
-      if ($("sidebarSessionNotes")) $("sidebarSessionNotes").value = restoredSessionNotes;
+      if ($("sidebarSessionNotes")) $("sidebarSessionNotes").value = "";
       $("sidebarFeedbackSavedNote")?.classList.toggle("hidden", !restoredSessionNotes);
 
       applyContextSettingsToFields({
@@ -6795,17 +6875,9 @@ const PROMPT_META = [
       });
       const sessionNotesInput = $("sessionNotes");
       const sidebarSessionNotesInput = $("sidebarSessionNotes");
-      if (sessionNotesInput && sidebarSessionNotesInput) {
-        sidebarSessionNotesInput.value = sessionNotesInput.value || "";
-        $("sidebarFeedbackSavedNote")?.classList.toggle("hidden", !(sessionNotesInput.value || "").trim());
-      }
+      $("sidebarFeedbackSavedNote")?.classList.toggle("hidden", !(sessionNotesInput?.value || "").trim());
 
       sessionNotesInput?.addEventListener("input", () => {
-        if (sidebarSessionNotesInput && sidebarSessionNotesInput.value !== sessionNotesInput.value) {
-          isSyncingSessionNotes = true;
-          sidebarSessionNotesInput.value = sessionNotesInput.value;
-          isSyncingSessionNotes = false;
-        }
         const savedNote = $("sidebarFeedbackSavedNote");
         if (savedNote) {
           savedNote.classList.toggle("hidden", !(sessionNotesInput.value || "").trim());
@@ -6827,11 +6899,18 @@ const PROMPT_META = [
         );
       });
 
+      $("sidebarSubmitTextFeedback")?.addEventListener("click", submitSidebarTextFeedback);
+      sidebarSessionNotesInput?.addEventListener("keydown", (event) => {
+        const isQuickSubmit = (event.ctrlKey || event.metaKey) && event.key === "Enter";
+        if (!isQuickSubmit) return;
+        event.preventDefault();
+        submitSidebarTextFeedback();
+      });
       sidebarSessionNotesInput?.addEventListener("input", () => {
-        if (isSyncingSessionNotes) return;
-        if (sessionNotesInput && sessionNotesInput.value !== sidebarSessionNotesInput.value) {
-          sessionNotesInput.value = sidebarSessionNotesInput.value;
-          sessionNotesInput.dispatchEvent(new Event("input", { bubbles: true }));
+        const statusEl = $("sidebarTextFeedbackStatus");
+        if (statusEl?.textContent) {
+          statusEl.textContent = "";
+          statusEl.classList.remove("is-error");
         }
       });
 
