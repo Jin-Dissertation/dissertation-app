@@ -4929,6 +4929,10 @@ const PROMPT_META = [
 
       quickEntryInput.value = "";
       setPersistentFeedbackStatus("Text feedback saved.", source);
+
+      sendFeedbackAlert({ textFeedback: nextEntry }).catch((err) => {
+        console.warn("Feedback alert failed", err);
+      });
       quickEntryInput.focus();
     }
 
@@ -5120,6 +5124,10 @@ const PROMPT_META = [
           audioMimeType: audioBlob.type || `audio/${ext}`,
           audioDuration: audioDuration
         };
+
+        await sendFeedbackAlert({
+          audioFeedback: uploadedAudioInfo?.audioFileUrl || ""
+        });
 
         audioSubmitted = true;
         markInteraction();
@@ -6401,6 +6409,35 @@ const PROMPT_META = [
     return JSON.parse(text);
   } catch (err) {
     return { ok: false, found: false, error: String(err?.message || err || "unknown_error") };
+  }
+}
+
+async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {}) {
+  const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
+  const sessionId = (localStorage.getItem(KEYS.sessionId) || "").trim();
+
+  if (!accessCode) {
+    return { ok: false, error: "No access code found." };
+  }
+
+  try {
+    const response = await fetch(AQG_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "sendFeedbackAlert",
+        user_id: accessCode,
+        session_id: sessionId,
+        text_feedback: textFeedback,
+        audio_file_url: audioFeedback
+      }),
+      redirect: "follow"
+    });
+
+    const text = await response.text();
+    return JSON.parse(text);
+  } catch (err) {
+    return { ok: false, error: String(err?.message || err || "unknown_error") };
   }
 }
 
