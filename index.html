@@ -5731,7 +5731,10 @@ const PROMPT_META = [
     function updateSetupSamplePromptVisibility() {
       const box = $("setupSamplePromptBox");
       if (!box) return;
-      const shouldShow = !!starterPromptCopied && setupSamplePromptCount > 0;
+
+      const hasStarterCopy = syncStarterPromptCopiedState();
+      const shouldShow = hasStarterCopy && setupSamplePromptCount > 0;
+
       box.hidden = !shouldShow;
       box.classList.toggle("is-visible", shouldShow);
     }
