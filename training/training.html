@@ -1922,25 +1922,15 @@ function shouldWarnBeforeUnload() {
 
 // ─────────────────────────────────────────────
 // PROGRESS PERSISTENCE
+// Server is now the only source of resumable progress.
+// These helpers only clear any legacy browser-saved copies.
 // ─────────────────────────────────────────────
 function saveProgress() {
-  if (!participantCode) return;
-  try {
-    const snapshot = buildProgressSnapshot();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-  } catch (_) {}
+  clearSavedProgress();
 }
 
 function loadSavedProgress() {
-  const keysToTry = [STORAGE_KEY, ...LEGACY_STORAGE_KEYS];
-  for (const key of keysToTry) {
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) continue;
-      const parsed = JSON.parse(raw);
-      if (parsed) return parsed;
-    } catch (_) {}
-  }
+  clearSavedProgress();
   return null;
 }
 
@@ -3881,36 +3871,25 @@ document.addEventListener('DOMContentLoaded', () => {
     let saved = null;
     let resuming = false;
 
-    const localSaved = loadSavedProgress();
-    if (isResumableSavedState(localSaved) && localSaved.participantCode === entered) {
-      saved = localSaved;
-    } else {
-      try {
-        const serverSaved = await loadServerSavedProgress(entered);
-        if (isResumableSavedState(serverSaved) && serverSaved.participantCode === entered) {
-          saved = serverSaved;
-        }
-      } catch (err) {
-        console.warn('Server resume lookup failed', err);
+    clearSavedProgress();
+
+    try {
+      const serverSaved = await loadServerSavedProgress(entered);
+      if (isResumableSavedState(serverSaved) && serverSaved.participantCode === entered) {
+        saved = serverSaved;
       }
+    } catch (err) {
+      console.warn('Server resume lookup failed', err);
     }
 
     if (saved) {
       const choice = await askResumeChoice();
       if (choice === 'continue') {
         applySavedProgress(saved);
-        logEvent('resume_selected', { source: saved._source || 'local' });
-        appendTrainingEvent('resume_selected', {
-          detail_text: 'Resumed saved training session',
-          detail_json: { source: saved._source || 'local' }
-        });
+        logEvent('resume_selected', { source: 'server' });
         resuming = true;
-
-        if (saved._source === 'server') {
-          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch (_) {}
-        }
       } else {
-        logEvent('resume_declined', { source: saved._source || 'local' });
+        logEvent('resume_declined', { source: 'server' });
         clearSavedProgress();
       }
     }
