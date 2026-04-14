@@ -1351,6 +1351,7 @@ const STORAGE_KEY = `training_progress_${APP_VERSION}_${CONTENT_VERSION}`;
 const LEGACY_STORAGE_KEYS = ['training_progress_v1'];
 const REQUEST_TIMEOUT_MS = 15000;
 const LIVE_UPDATE_DEBOUNCE_MS = 4000;
+const CLIENT_KEY_STORAGE_KEY = 'training_client_key_v1';
 
 // ─────────────────────────────────────────────
 // STATE
@@ -1377,12 +1378,32 @@ let liveUpdateTimer = null;
 let completionLogged = false;
 let submitInFlight = false;
 let sectionState = [];
+let trainingSessionSeq = 0;
+window.trainingSessionSeq = trainingSessionSeq;
 
 // ─────────────────────────────────────────────
 // UTILITIES
 // ─────────────────────────────────────────────
 const $  = id => document.getElementById(id);
 const now = () => new Date().toISOString();
+
+function getOrCreateClientKey() {
+  try {
+    let key = localStorage.getItem(CLIENT_KEY_STORAGE_KEY);
+    if (key) return key;
+
+    if (window.crypto?.randomUUID) {
+      key = window.crypto.randomUUID();
+    } else {
+      key = 'ck_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+
+    localStorage.setItem(CLIENT_KEY_STORAGE_KEY, key);
+    return key;
+  } catch (_) {
+    return 'ck_fallback_' + Math.random().toString(36).slice(2);
+  }
+}
 
 function setTrainingMode(isTraining) {
   document.body.classList.toggle('training-mode', !!isTraining);
@@ -1413,14 +1434,57 @@ function returnToGate() {
   }
 }
 
-function makeSessionId(code) {
-  const rand  = Math.random().toString(36).slice(2,6).toUpperCase();
-  const stamp = new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
-  return `${code}-${stamp}-${rand}`;
+async function createSessionIdFromBackend(code) {
+  const data = await postToAppsScript(API_URL, {
+    action: 'createSessionId',
+    participant_code: code,
+    user_id: code
+  });
+
+  if (!data?.ok || !data?.session_id) {
+    throw new Error(data?.error || 'Could not create a session ID.');
+  }
+
+  return {
+    sessionId: String(data.session_id),
+    sessionSeq: Number(data.session_seq || 0)
+  };
 }
 
 function logEvent(type, data = {}) {
   events.push({ t: now(), type, participant: participantCode, session: sessionId, app_version: APP_VERSION, ...data });
+}
+
+function appendTrainingEvent(eventType, data = {}, options = {}) {
+  if (!participantCode || !sessionId || !eventType) return Promise.resolve(null);
+
+  const payload = {
+    action: 'appendEvent',
+    participant_code: participantCode,
+    user_id: participantCode,
+    session_id: sessionId,
+    session_seq: window.trainingSessionSeq || '',
+    event_type: eventType,
+    timestamp: now(),
+    device_label: getCompactDeviceLabel(),
+    current_card_number: getCurrentCardNumber ? getCurrentCardNumber() : '',
+    ...data
+  };
+
+  if (options.awaitResponse) {
+    return postToAppsScript(API_URL, payload, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
+  }
+
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+    keepalive: true
+  }).catch(err => {
+    console.warn('appendEvent failed', err, payload);
+  });
+
+  return Promise.resolve(null);
 }
 
 function markInteraction(ts = Date.now()) {
@@ -1890,6 +1954,8 @@ function applySavedProgress(saved) {
   participantCode = saved.participantCode || saved.participant_code || participantCode;
   sessionId = saved.sessionId || saved.session_id || sessionId;
   sessionStart = saved.sessionStart || saved.session_start || sessionStart;
+  trainingSessionSeq = Number(saved.sessionSeq || saved.session_seq || trainingSessionSeq || 0);
+  window.trainingSessionSeq = trainingSessionSeq;
   totalQuestions = saved.totalQuestions || 0;
   correctFirst = saved.correctFirst || 0;
   events = Array.isArray(saved.events) ? saved.events : [];
@@ -3119,6 +3185,16 @@ function renderTraining(structure, savedState = null) {
 
         if (hasNextCard) {
           revealCard(sectionIdx, localCardIdx + 1);
+          appendTrainingEvent('card_entered', {
+            section_index: sectionIdx + 1,
+            card_index: cardIndex + 2,
+            detail_text: `Entered card ${cardIndex + 2}`,
+            detail_json: {
+              from_card: cardIndex + 1,
+              to_card: cardIndex + 2,
+              section_index: sectionIdx + 1
+            }
+          });
           sectionState[sectionIdx].expanded = true;
           updateSectionUI(sectionIdx);
           scrollToEl(sectionState[sectionIdx].cardEls[localCardIdx + 1], 80);
@@ -3127,6 +3203,17 @@ function renderTraining(structure, savedState = null) {
           if (nextSection < allSections.length) {
             sectionState[nextSection].unlocked = true;
             revealCard(nextSection, 0);
+            appendTrainingEvent('section_entered', {
+              section_index: nextSection + 1,
+              card_index: cardIndex + 2,
+              detail_text: `Entered section ${nextSection + 1}, card ${cardIndex + 2}`,
+              detail_json: {
+                from_section: sectionIdx + 1,
+                to_section: nextSection + 1,
+                from_card: cardIndex + 1,
+                to_card: cardIndex + 2
+              }
+            });
             setOnlyExpanded(nextSection, true);
             scrollToEl(container.querySelector(`[data-section-idx="${nextSection}"]`), 80);
           } else if (markComplete) {
@@ -3251,6 +3338,15 @@ function showCompletion() {
       duration_ms:     elapsed,
       active_seconds:  computeActiveSeconds(interactionTimes)
     });
+    appendTrainingEvent('training_completed', {
+      detail_text: 'Training module completed',
+      detail_json: {
+        total_questions: totalQuestions,
+        correct_first: correctFirst,
+        duration_ms: elapsed,
+        active_seconds: computeActiveSeconds(interactionTimes)
+      }
+    });
     completionLogged = true;
   }
 
@@ -3288,6 +3384,7 @@ async function submitSession() {
     device_card_number: getCurrentCardNumber(),
     participant_code: participantCode,
     session_id:       sessionId,
+    session_seq:     trainingSessionSeq,
     session_start:    sessionStart ? new Date(sessionStart).toISOString() : null,
     session_end:      now(),
     duration_ms:      elapsed,
@@ -3322,6 +3419,10 @@ async function submitSession() {
       }
       if (status) status.textContent = 'Session data submitted successfully. You may now close this window.';
       logEvent('session_submitted', { ok: true, duplicate: !!data.duplicate, fileName: data.fileName || '' });
+      appendTrainingEvent('session_submitted', {
+        detail_text: 'Training session submitted',
+        detail_json: { duplicate: !!data.duplicate }
+      });
     } else {
       throw new Error(data?.error || 'unknown_error');
     }
@@ -3362,6 +3463,16 @@ async function handleSaveAndExit() {
       total_questions: totalQuestions,
       correct_first: correctFirst
     });
+
+    await appendTrainingEvent('save_exit_clicked', {
+      detail_text: 'Save and exit clicked',
+      detail_json: {
+        revealed_slots: revealedSlots,
+        completed_cards: completedSlots.size,
+        total_questions: totalQuestions,
+        correct_first: correctFirst
+      }
+    }, { awaitResponse: true });
 
     await syncLiveSessionUpdate('in_progress');
     $('loading').style.display = 'none';
@@ -3493,7 +3604,8 @@ function buildProgressSnapshot() {
     completionReached,
     hasSuccessfulSubmission,
     quizStates,
-    cardTimingState
+    cardTimingState,
+    sessionSeq: trainingSessionSeq
   };
 }
 
@@ -3511,7 +3623,8 @@ function buildLiveSessionProgressSnapshot() {
     completionReached,
     hasSuccessfulSubmission,
     quizStates,
-    cardTimingState
+    cardTimingState,
+    sessionSeq: trainingSessionSeq
   };
 }
 
@@ -3525,6 +3638,7 @@ function buildLiveSessionSnapshot(statusOverride = 'in_progress') {
     user_id: participantCode,
     participant_code: participantCode,
     session_id: sessionId,
+    session_seq: trainingSessionSeq,
     session_start: sessionStart ? new Date(sessionStart).toISOString() : null,
     last_activity_at: now(),
     status: statusOverride,
@@ -3550,16 +3664,38 @@ function cancelQueuedLiveSessionUpdate() {
   }
 }
 
-function sendLiveSessionUpdate(statusOverride = 'in_progress') {
+async function sendLiveSessionUpdate(statusOverride = 'in_progress') {
   const payload = buildLiveSessionSnapshot(statusOverride);
-  fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload),
-    keepalive: true
-  }).catch(err => {
-    console.warn('Live session update failed', err);
-  });
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+      keepalive: true
+    });
+
+    const text = await response.text();
+    let data = null;
+
+    try {
+      data = JSON.parse(text);
+    } catch (_) {
+      console.warn('Live session update returned non-JSON response', text);
+      return;
+    }
+
+    if (!response.ok || data?.ok === false) {
+      console.warn('Live session update failed', {
+        status: response.status,
+        payload,
+        response: data
+      });
+      return;
+    }
+  } catch (err) {
+    console.warn('Live session update network error', err, payload);
+  }
 }
 
 function queueLiveSessionUpdate(statusOverride = 'in_progress', delay = LIVE_UPDATE_DEBOUNCE_MS) {
@@ -3714,7 +3850,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let validateData = null;
     try {
-      validateData = await postToAppsScript(API_URL, { action: 'validateCode', code: entered });
+      validateData = await postToAppsScript(API_URL, {
+        action: 'validateCode',
+        code: entered,
+        client_key: getOrCreateClientKey()
+      });
     } catch (err) {
       setGateLoading(false);
       focusCodeInput();
@@ -3726,7 +3866,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!validateData.valid) {
       setGateLoading(false);
       focusCodeInput();
-      gateError.textContent = 'Access code not recognized. Please check your code and try again.';
+
+      if (validateData.locked) {
+        const seconds = Number(validateData.retryAfterSeconds || 0);
+        gateError.textContent = seconds > 0
+          ? `Too many failed attempts. Please wait about ${seconds} seconds and try again.`
+          : 'Too many failed attempts. Please wait and try again.';
+      } else {
+        gateError.textContent = 'Access code not recognized. Please check your code and try again.';
+      }
       return;
     }
 
@@ -3752,6 +3900,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (choice === 'continue') {
         applySavedProgress(saved);
         logEvent('resume_selected', { source: saved._source || 'local' });
+        appendTrainingEvent('resume_selected', {
+          detail_text: 'Resumed saved training session',
+          detail_json: { source: saved._source || 'local' }
+        });
         resuming = true;
 
         if (saved._source === 'server') {
@@ -3765,8 +3917,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!resuming) {
       participantCode = entered;
-      sessionId       = makeSessionId(entered);
-      sessionStart    = Date.now();
+      const createdSession = await createSessionIdFromBackend(entered);
+      sessionId = createdSession.sessionId;
+      trainingSessionSeq = createdSession.sessionSeq || 0;
+      window.trainingSessionSeq = trainingSessionSeq;
+      sessionStart = Date.now();
       completionReached = false;
       hasSuccessfulSubmission = false;
       setSaveExitEnabled(true);
@@ -3785,7 +3940,13 @@ document.addEventListener('DOMContentLoaded', () => {
     $('loading').style.display = 'flex';
     setTrainingMode(false);
 
-    if (!resuming) logEvent('access_granted', { participantCode });
+    if (!resuming) {
+      logEvent('access_granted', { participantCode, sessionId, sessionSeq: trainingSessionSeq });
+      appendTrainingEvent('access_granted', {
+        detail_text: 'Training access granted',
+        detail_json: { resumed: false }
+      });
+    }
 
     try {
       const data = await postToAppsScript(API_URL, { action: 'loadTraining' });
