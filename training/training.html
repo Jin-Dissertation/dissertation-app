@@ -1101,6 +1101,101 @@
       justify-content: flex-end;
     }
 
+    /* ── FEEDBACK MODAL / MOBILE DRAWER ── */
+    #feedback-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9600;
+      background: rgba(16, 33, 61, 0.55);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .feedback-modal-card {
+      width: min(100%, 560px);
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 36px rgba(16, 33, 61, 0.2);
+      padding: 22px 22px 18px;
+    }
+
+    .feedback-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .feedback-modal-header h2 {
+      font-family: var(--serif);
+      font-size: 1.3rem;
+      line-height: 1.2;
+      color: var(--navy);
+    }
+
+    #feedback-modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.6rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 4px 6px;
+      min-height: auto;
+    }
+
+    .feedback-modal-sub {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .feedback-textarea {
+      width: 100%;
+      min-height: 140px;
+      resize: vertical;
+      padding: 12px 14px;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--white);
+      color: var(--navy);
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      line-height: 1.55;
+      outline: none;
+    }
+
+    .feedback-textarea:focus {
+      border-color: var(--gold);
+    }
+
+    .feedback-status {
+      min-height: 1.25em;
+      margin-top: 10px;
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+
+    .feedback-status.is-error {
+      color: var(--red);
+    }
+
+    .feedback-status.is-success {
+      color: var(--green);
+    }
+
+    .feedback-modal-actions {
+      margin-top: 14px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     /* ── IMAGE LIGHTBOX ── */
     #img-lightbox {
       display: none;
@@ -1201,6 +1296,35 @@
 
       #btn-save-exit { width: 100%; justify-content: center; }
 
+      #feedback-modal {
+        align-items: flex-end;
+        padding: 0;
+      }
+
+      .feedback-modal-card {
+        width: 100%;
+        max-width: none;
+        border-radius: 18px 18px 0 0;
+        padding: 18px 16px 16px;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+        box-shadow: 0 -10px 30px rgba(16, 33, 61, 0.18);
+      }
+
+      .feedback-textarea {
+        min-height: 120px;
+      }
+
+      .feedback-modal-actions {
+        flex-direction: column-reverse;
+      }
+
+      .feedback-modal-actions .action-btn {
+        width: 100%;
+        justify-content: center;
+      }
+
       /* Lightbox close — bigger tap target */
       #img-lightbox-close { font-size: 2.4rem; top: 8px; right: 10px; padding: 8px 14px; }
 
@@ -1292,7 +1416,9 @@
 
       <div class="module-header-bar">
         <div class="module-header-meta">
-          <span class="module-participant" id="participant-badge"></span>
+          <button class="action-btn secondary action-btn-quiet" id="btn-report-issue" type="button">
+            Report issue
+          </button>
           <div class="overall-progress" id="overall-progress">
             <span id="overall-total">Sections: 0</span>
             <span id="overall-current">Current: —</span>
@@ -1330,6 +1456,34 @@
     <div class="resume-modal-actions">
       <button class="action-btn" id="resume-continue-btn" type="button">Continue where I left off</button>
       <button class="action-btn secondary" id="resume-startover-btn" type="button">Start over</button>
+    </div>
+  </div>
+</div>
+
+<!-- FEEDBACK MODAL / MOBILE DRAWER -->
+<div id="feedback-modal" role="dialog" aria-modal="true" aria-labelledby="feedback-modal-title">
+  <div class="feedback-modal-card">
+    <div class="feedback-modal-header">
+      <h2 id="feedback-modal-title">Report an issue</h2>
+      <button id="feedback-modal-close" type="button" aria-label="Close">×</button>
+    </div>
+
+    <p class="feedback-modal-sub">
+      Something broken or confusing? Send a quick note. Your session and card information will be included automatically.
+    </p>
+
+    <textarea
+      id="feedback-textarea"
+      class="feedback-textarea"
+      placeholder="What happened?"
+      maxlength="2000"
+      aria-label="Feedback message"></textarea>
+
+    <p id="feedback-status" class="feedback-status" aria-live="polite"></p>
+
+    <div class="feedback-modal-actions">
+      <button class="action-btn secondary" id="feedback-cancel-btn" type="button">Cancel</button>
+      <button class="action-btn" id="feedback-submit-btn" type="button">Send feedback</button>
     </div>
   </div>
 </div>
@@ -3632,6 +3786,26 @@ function getCurrentCardNumber() {
   return completionReached ? totalCards : fallback;
 }
 
+function getCurrentSectionNumber() {
+  const currentCard = getCurrentCardNumber();
+  if (!currentCard) return 0;
+
+  let runningTotal = 0;
+  for (let i = 0; i < allSections.length; i++) {
+    const count = Array.isArray(allSections[i]?.cards) ? allSections[i].cards.length : 0;
+    runningTotal += count;
+    if (currentCard <= runningTotal) return i + 1;
+  }
+
+  return 0;
+}
+
+function getCurrentSectionTitle() {
+  const sectionNumber = getCurrentSectionNumber();
+  if (!sectionNumber) return '';
+  return String(allSections[sectionNumber - 1]?.title || '');
+}
+
 function buildProgressSnapshot() {
   return {
     participantCode,
@@ -3772,6 +3946,108 @@ function syncMilestoneProgress(reason, extra = {}) {
   });
 }
 
+function openFeedbackModal() {
+  const modal = $('feedback-modal');
+  const textarea = $('feedback-textarea');
+  const status = $('feedback-status');
+
+  if (!modal || !textarea) return;
+
+  if (status) {
+    status.textContent = '';
+    status.className = 'feedback-status';
+  }
+
+  textarea.value = '';
+  modal.style.display = 'flex';
+  requestAnimationFrame(() => textarea.focus());
+}
+
+function closeFeedbackModal() {
+  const modal = $('feedback-modal');
+  const textarea = $('feedback-textarea');
+  const status = $('feedback-status');
+  const submitBtn = $('feedback-submit-btn');
+
+  if (!modal) return;
+  modal.style.display = 'none';
+
+  if (textarea) textarea.value = '';
+  if (status) {
+    status.textContent = '';
+    status.className = 'feedback-status';
+  }
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send feedback';
+  }
+}
+
+async function submitTrainingFeedback() {
+  const textarea = $('feedback-textarea');
+  const status = $('feedback-status');
+  const submitBtn = $('feedback-submit-btn');
+
+  if (!textarea || !submitBtn || submitBtn.disabled) return;
+
+  const text = String(textarea.value || '').trim();
+  if (!text) {
+    if (status) {
+      status.textContent = 'Please enter a short note first.';
+      status.className = 'feedback-status is-error';
+    }
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Sending…';
+
+  try {
+    const result = await postToAppsScript(API_URL, {
+      action: 'sendFeedbackAlert',
+      participant_code: participantCode,
+      user_id: participantCode,
+      session_id: sessionId,
+      session_seq: trainingSessionSeq,
+      current_card_number: getCurrentCardNumber(),
+      section_index: getCurrentSectionNumber(),
+      section_title: getCurrentSectionTitle(),
+      device_label: getCompactDeviceLabel(),
+      feedback_source: isMobileLikeViewport() ? 'mobile_drawer' : 'desktop_modal',
+      text_feedback: text
+    });
+
+    if (!result || result.ok === false) {
+      throw new Error(result?.error || 'Failed to send feedback.');
+    }
+
+    logEvent('feedback_sent', {
+      current_card_number: getCurrentCardNumber(),
+      section_index: getCurrentSectionNumber(),
+      text_length: text.length
+    });
+
+    if (status) {
+      status.textContent = 'Thanks — your note was sent.';
+      status.className = 'feedback-status is-success';
+    }
+
+    textarea.value = '';
+
+    window.setTimeout(() => {
+      closeFeedbackModal();
+    }, 900);
+  } catch (err) {
+    console.warn('Training feedback failed', err);
+    if (status) {
+      status.textContent = 'Could not send feedback. Please try again.';
+      status.className = 'feedback-status is-error';
+    }
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send feedback';
+  }
+}
+
 function offerDownload(payload) {
   const existing = $('download-backup-wrap');
   if (existing) return;
@@ -3866,7 +4142,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const gateError = $('gate-error');
   const gateSubmitBtn = $('gate-submit-btn');
   const gateSubmitLabel = gateSubmitBtn?.querySelector('.gate-btn-label');
+  const reportIssueBtn = $('btn-report-issue');
+  const feedbackModal = $('feedback-modal');
+  const feedbackCloseBtn = $('feedback-modal-close');
+  const feedbackCancelBtn = $('feedback-cancel-btn');
+  const feedbackSubmitBtn = $('feedback-submit-btn');
   $('btn-save-exit')?.addEventListener('click', handleSaveAndExit);
+
+  reportIssueBtn?.addEventListener('click', openFeedbackModal);
+  feedbackCloseBtn?.addEventListener('click', closeFeedbackModal);
+  feedbackCancelBtn?.addEventListener('click', closeFeedbackModal);
+  feedbackSubmitBtn?.addEventListener('click', submitTrainingFeedback);
+
+  feedbackModal?.addEventListener('click', e => {
+    if (e.target === feedbackModal) closeFeedbackModal();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && feedbackModal?.style.display === 'flex') {
+      closeFeedbackModal();
+    }
+  });
 
   setGateLoading = function setGateLoadingState(isLoading, text = 'Loading') {
     if (!gateSubmitBtn || !gateSubmitLabel) return;
@@ -4011,7 +4307,6 @@ document.addEventListener('DOMContentLoaded', () => {
       $('loading').style.display    = 'none';
       $('training').style.display   = 'block';
       setTrainingMode(true);
-      $('participant-badge').textContent = `Participant: ${participantCode}`;
 
       renderTraining(structure, resuming ? saved : null);
 
