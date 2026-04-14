@@ -1351,6 +1351,7 @@ const STORAGE_KEY = `training_progress_${APP_VERSION}_${CONTENT_VERSION}`;
 const LEGACY_STORAGE_KEYS = ['training_progress_v1'];
 const REQUEST_TIMEOUT_MS = 15000;
 const LIVE_UPDATE_DEBOUNCE_MS = 4000;
+const EVENT_BUFFER_LIMIT = 120;
 const CLIENT_KEY_STORAGE_KEY = 'training_client_key_v1';
 
 // ─────────────────────────────────────────────
@@ -1451,8 +1452,39 @@ async function createSessionIdFromBackend(code) {
   };
 }
 
+function shouldPersistEvent(type) {
+  const t = String(type || '').trim();
+  if (!t) return false;
+
+  // Drop passive visibility events to keep the payload small.
+  if (/_visible$/i.test(t)) return false;
+
+  return true;
+}
+
+function getSubmissionEvents() {
+  return Array.isArray(events) ? events.slice(-EVENT_BUFFER_LIMIT) : [];
+}
+
 function logEvent(type, data = {}) {
-  events.push({ t: now(), type, participant: participantCode, session: sessionId, app_version: APP_VERSION, ...data });
+  const entry = {
+    t: now(),
+    type,
+    participant: participantCode,
+    session: sessionId,
+    app_version: APP_VERSION,
+    ...data
+  };
+
+  if (!shouldPersistEvent(type)) return entry;
+
+  events.push(entry);
+
+  if (events.length > EVENT_BUFFER_LIMIT) {
+    events = events.slice(-EVENT_BUFFER_LIMIT);
+  }
+
+  return entry;
 }
 
 function appendTrainingEvent(eventType, data = {}, options = {}) {
@@ -3171,6 +3203,10 @@ function renderTraining(structure, savedState = null) {
           sectionState[sectionIdx].completedCards += 1;
         }
 
+        let didAdvanceToNextCard = false;
+        let didAdvanceToNextSection = false;
+        let nextGlobalCardNumber = null;
+
         const hasNextCard = localCardIdx + 1 < section.cards.length;
 
         if (hasNextCard) {
@@ -3185,6 +3221,8 @@ function renderTraining(structure, savedState = null) {
               section_index: sectionIdx + 1
             }
           });
+          didAdvanceToNextCard = true;
+          nextGlobalCardNumber = cardIndex + 2;
           sectionState[sectionIdx].expanded = true;
           updateSectionUI(sectionIdx);
           scrollToEl(sectionState[sectionIdx].cardEls[localCardIdx + 1], 80);
@@ -3204,6 +3242,8 @@ function renderTraining(structure, savedState = null) {
                 to_card: cardIndex + 2
               }
             });
+            didAdvanceToNextSection = true;
+            nextGlobalCardNumber = cardIndex + 2;
             setOnlyExpanded(nextSection, true);
             scrollToEl(container.querySelector(`[data-section-idx="${nextSection}"]`), 80);
           } else if (markComplete) {
@@ -3218,7 +3258,20 @@ function renderTraining(structure, savedState = null) {
         if (sectionIdx + 1 < allSections.length) updateSectionUI(sectionIdx + 1);
         saveProgress();
         updateProgress();
-        queueLiveSessionUpdate('in_progress');
+
+        if (didAdvanceToNextCard) {
+          syncMilestoneProgress('card_entered', {
+            section_index: sectionIdx + 1,
+            card_index: nextGlobalCardNumber
+          });
+        } else if (didAdvanceToNextSection) {
+          syncMilestoneProgress('section_entered', {
+            section_index: sectionIdx + 2,
+            card_index: nextGlobalCardNumber
+          });
+        } else if (!completionReached) {
+          queueLiveSessionUpdate('in_progress');
+        }
       };
 
       const onComplete = () => {
@@ -3390,7 +3443,7 @@ async function submitSession() {
     item_count:       itemValues.length,
     progress_json:    buildProgressSnapshot(),
     progress_saved_at: now(),
-    events
+    events: getSubmissionEvents()
   };
 
   try {
@@ -3588,7 +3641,6 @@ function buildProgressSnapshot() {
     completedSlotIndices: [...completedSlots],
     totalQuestions,
     correctFirst,
-    events,
     interactionTimes: Array.isArray(interactionTimes) ? interactionTimes.slice(-1) : [],
     activeMsBase,
     completionReached,
@@ -3706,6 +3758,18 @@ async function syncLiveSessionUpdate(statusOverride = 'in_progress') {
   cancelQueuedLiveSessionUpdate();
   const payload = buildLiveSessionSnapshot(statusOverride);
   return postToAppsScript(API_URL, payload, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
+}
+
+function syncMilestoneProgress(reason, extra = {}) {
+  cancelQueuedLiveSessionUpdate();
+
+  syncLiveSessionUpdate('in_progress').catch(err => {
+    console.warn('Milestone sync failed', err, { reason, ...extra });
+
+    // Fall back to a fast queued retry so we still have a good chance
+    // of capturing the latest milestone.
+    queueLiveSessionUpdate('in_progress', 250);
+  });
 }
 
 function offerDownload(payload) {
@@ -3896,10 +3960,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!resuming) {
       participantCode = entered;
-      const createdSession = await createSessionIdFromBackend(entered);
-      sessionId = createdSession.sessionId;
-      trainingSessionSeq = createdSession.sessionSeq || 0;
-      window.trainingSessionSeq = trainingSessionSeq;
+
+      try {
+        const createdSession = await createSessionIdFromBackend(entered);
+        sessionId = createdSession.sessionId;
+        trainingSessionSeq = createdSession.sessionSeq || 0;
+        window.trainingSessionSeq = trainingSessionSeq;
+      } catch (err) {
+        setGateLoading(false);
+        focusCodeInput();
+        gateError.textContent = `We could not start a new training session: ${err.message}. Please refresh the page and try again.`;
+        logEvent('session_create_failed', { error: String(err.message) });
+        return;
+      }
+
       sessionStart = Date.now();
       completionReached = false;
       hasSuccessfulSubmission = false;
