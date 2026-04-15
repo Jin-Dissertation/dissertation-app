@@ -1947,7 +1947,7 @@ function getVideoSourceUrl(raw) {
   // Allow already-prefixed relative paths
   if (value.startsWith('/') || value.includes('/')) return value;
 
-  // Default behavior: treat plain filenames as files inside /videos
+  // Default behavior: plain filenames live in /videos
   return `videos/${value}`;
 }
 
@@ -1956,6 +1956,20 @@ function getVideoMimeType(url) {
   if (clean.endsWith('.webm')) return 'video/webm';
   if (clean.endsWith('.ogg') || clean.endsWith('.ogv')) return 'video/ogg';
   return 'video/mp4';
+}
+
+function getCaptionSourceUrl(raw) {
+  const videoSrc = getVideoSourceUrl(raw);
+  if (!videoSrc) return '';
+
+  const parts = String(videoSrc).split('?');
+  const path = parts[0];
+  const query = parts.length > 1 ? `?${parts.slice(1).join('?')}` : '';
+
+  const captionPath = path.replace(/\.[^./]+$/, '.vtt');
+  if (captionPath === path) return '';
+
+  return `${captionPath}${query}`;
 }
 
 function scrollToEl(el, offset = 80) {
@@ -2342,8 +2356,10 @@ function renderVideoBlock(item, cardIndex, onComplete, onContinue = onComplete) 
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
+
   const videoSrc = getVideoSourceUrl(item.videoName);
   const mimeType = getVideoMimeType(videoSrc);
+  const captionsSrc = getCaptionSourceUrl(item.videoName);
 
   if (!videoSrc) {
     return renderIncompleteCard(item, cardIndex, onComplete, 'Video card is missing a video_name value.');
@@ -2359,6 +2375,13 @@ function renderVideoBlock(item, cardIndex, onComplete, onContinue = onComplete) 
       <div class="video-wrapper">
         <video controls playsinline preload="metadata">
           <source src="${html(videoSrc)}" type="${html(mimeType)}" />
+          ${captionsSrc ? `
+            <track
+              kind="subtitles"
+              src="${html(captionsSrc)}"
+              srclang="en"
+              label="English">
+          ` : ''}
           Your browser does not support the video tag.
         </video>
       </div>
@@ -2376,7 +2399,16 @@ function renderVideoBlock(item, cardIndex, onComplete, onContinue = onComplete) 
 
   const doneBtn = block.querySelector('.video-done-btn');
   const videoEl = block.querySelector('video');
+  const trackEl = block.querySelector('track');
   let videoStart = null;
+
+  // If the subtitle file is missing, do not show any custom error UI.
+  // Just remove the failed track and leave the video playable.
+  if (trackEl) {
+    trackEl.addEventListener('error', () => {
+      trackEl.remove();
+    });
+  }
 
   const observer = new IntersectionObserver(entries => {
     if (entries[0].isIntersecting && !videoStart) {
@@ -2385,7 +2417,8 @@ function renderVideoBlock(item, cardIndex, onComplete, onContinue = onComplete) 
         slot: item.slot,
         sectionIndex,
         video_name: item.videoName,
-        video_src: videoSrc
+        video_src: videoSrc,
+        captions_src: captionsSrc || ''
       });
     }
   }, { threshold: 0.3 });
@@ -2400,6 +2433,7 @@ function renderVideoBlock(item, cardIndex, onComplete, onContinue = onComplete) 
       sectionIndex,
       video_name: item.videoName,
       video_src: videoSrc,
+      captions_src: captionsSrc || '',
       watch_duration_ms: watchMs,
       video_current_time: videoEl ? Math.round(videoEl.currentTime * 1000) : null,
       video_duration_ms: videoEl && Number.isFinite(videoEl.duration)
