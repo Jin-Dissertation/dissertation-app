@@ -443,11 +443,13 @@
       background: #000;
     }
 
-    .video-wrapper iframe {
+    .video-wrapper iframe,
+    .video-wrapper video {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
       border: none;
+      background: #000;
     }
 
     .video-footer {
@@ -1935,34 +1937,25 @@ function formatBodyText(raw) {
   return htmlParts.join('');
 }
 
-function normalizeYouTubeVideoId(raw) {
+function getVideoSourceUrl(raw) {
   const value = String(raw || '').trim();
-  const validId = /^[A-Za-z0-9_-]{11}$/;
   if (!value) return '';
-  if (validId.test(value)) return value;
 
-  try {
-    const url = new URL(value);
-    const host = url.hostname.toLowerCase();
+  // Allow absolute URLs if ever needed later
+  if (/^https?:\/\//i.test(value)) return value;
 
-    if (host === 'youtu.be' || host.endsWith('.youtu.be')) {
-      const id = url.pathname.replace(/^\/+/, '').split('/')[0];
-      return validId.test(id) ? id : '';
-    }
+  // Allow already-prefixed relative paths
+  if (value.startsWith('/') || value.includes('/')) return value;
 
-    if (host.includes('youtube.com')) {
-      const watchId = url.searchParams.get('v');
-      if (validId.test(watchId || '')) return watchId;
+  // Default behavior: treat plain filenames as files inside /videos
+  return `videos/${value}`;
+}
 
-      const parts = url.pathname.split('/').filter(Boolean);
-      const markerIndex = parts.findIndex(part => ['embed', 'shorts', 'live', 'v'].includes(part));
-      if (markerIndex >= 0 && validId.test(parts[markerIndex + 1] || '')) return parts[markerIndex + 1];
-    }
-  } catch (_) {
-    return '';
-  }
-
-  return '';
+function getVideoMimeType(url) {
+  const clean = String(url || '').split('?')[0].toLowerCase();
+  if (clean.endsWith('.webm')) return 'video/webm';
+  if (clean.endsWith('.ogg') || clean.endsWith('.ogv')) return 'video/ogg';
+  return 'video/mp4';
 }
 
 function scrollToEl(el, offset = 80) {
@@ -2262,7 +2255,13 @@ function buildCardsForSection(rows) {
     const type  = slotRows[0]?.type;
     const first = slotRows[0];
 
-    if (type === 'video') return { type: 'video', slot, youtubeId: first.youtube_id };
+    if (type === 'video') {
+      return {
+        type: 'video',
+        slot,
+        videoName: first.video_name
+      };
+    }
     if (type === 'text') return { type: 'text', slot, header: first.header, body: first.body, body_mobile: first.body_mobile };
     if (type === 'text_image') return { type: 'text_image', slot, header: first.header, body: first.body, body_mobile: first.body_mobile, imageUrl: first.image_url, mobileImageUrl: first.mobile_image_url };
     if (type === 'question_image') {
@@ -2343,20 +2342,12 @@ function renderVideoBlock(item, cardIndex, onComplete, onContinue = onComplete) 
   const block = document.createElement('div');
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
-  const videoId = normalizeYouTubeVideoId(item.youtubeId);
-  const videoEmbedHtml = videoId
-    ? `
-        <iframe
-          src="https://www.youtube.com/embed/${html(videoId)}?rel=0&modestbranding=1"
-          title="Training video ${cardIndex + 1}"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen>
-        </iframe>
-      `
-    : `
-        <div class="video-unavailable">Video unavailable</div>
-        ${item.youtubeId ? `<small>${html(item.youtubeId)}</small>` : ''}
-      `;
+  const videoSrc = getVideoSourceUrl(item.videoName);
+  const mimeType = getVideoMimeType(videoSrc);
+
+  if (!videoSrc) {
+    return renderIncompleteCard(item, cardIndex, onComplete, 'Video card is missing a video_name value.');
+  }
 
   block.innerHTML = `
     <div class="section-label">
@@ -2366,7 +2357,10 @@ function renderVideoBlock(item, cardIndex, onComplete, onContinue = onComplete) 
     </div>
     <div class="video-card">
       <div class="video-wrapper">
-        ${videoEmbedHtml}
+        <video controls playsinline preload="metadata">
+          <source src="${html(videoSrc)}" type="${html(mimeType)}" />
+          Your browser does not support the video tag.
+        </video>
       </div>
       <div class="video-footer">
         <span class="video-footer-label">Watch the video above, then click when you're done.</span>
@@ -2381,12 +2375,18 @@ function renderVideoBlock(item, cardIndex, onComplete, onContinue = onComplete) 
   `;
 
   const doneBtn = block.querySelector('.video-done-btn');
+  const videoEl = block.querySelector('video');
   let videoStart = null;
 
   const observer = new IntersectionObserver(entries => {
     if (entries[0].isIntersecting && !videoStart) {
       videoStart = Date.now();
-      logEvent('video_visible', { slot: item.slot, sectionIndex, youtubeId: item.youtubeId });
+      logEvent('video_visible', {
+        slot: item.slot,
+        sectionIndex,
+        video_name: item.videoName,
+        video_src: videoSrc
+      });
     }
   }, { threshold: 0.3 });
   observer.observe(block);
@@ -2394,11 +2394,19 @@ function renderVideoBlock(item, cardIndex, onComplete, onContinue = onComplete) 
   doneBtn.addEventListener('click', () => {
     markInteraction();
     const watchMs = videoStart ? Date.now() - videoStart : null;
+
     logEvent('video_completed', {
-      slot: item.slot, sectionIndex,
-      youtubeId: item.youtubeId,
-      watch_duration_ms: watchMs
+      slot: item.slot,
+      sectionIndex,
+      video_name: item.videoName,
+      video_src: videoSrc,
+      watch_duration_ms: watchMs,
+      video_current_time: videoEl ? Math.round(videoEl.currentTime * 1000) : null,
+      video_duration_ms: videoEl && Number.isFinite(videoEl.duration)
+        ? Math.round(videoEl.duration * 1000)
+        : null
     });
+
     onContinue();
   });
 
