@@ -4002,19 +4002,44 @@ async function submitTrainingFeedback() {
   submitBtn.disabled = true;
   submitBtn.textContent = 'Sending…';
 
+  const currentCardNumber = getCurrentCardNumber();
+  const currentSectionNumber = getCurrentSectionNumber();
+  const currentSectionTitle = getCurrentSectionTitle();
+  const deviceLabel = getCompactDeviceLabel();
+  const feedbackSource = isMobileLikeViewport() ? 'mobile_drawer' : 'desktop_modal';
+
   try {
     const result = await postToAppsScript(API_URL, {
       action: 'sendFeedbackAlert',
+
       participant_code: participantCode,
+      participantCode: participantCode,
       user_id: participantCode,
+      userId: participantCode,
+      code: participantCode,
+
       session_id: sessionId,
+      sessionId: sessionId,
       session_seq: trainingSessionSeq,
-      current_card_number: getCurrentCardNumber(),
-      section_index: getCurrentSectionNumber(),
-      section_title: getCurrentSectionTitle(),
-      device_label: getCompactDeviceLabel(),
-      feedback_source: isMobileLikeViewport() ? 'mobile_drawer' : 'desktop_modal',
-      text_feedback: text
+      sessionSeq: trainingSessionSeq,
+
+      current_card_number: currentCardNumber,
+      currentCardNumber: currentCardNumber,
+
+      section_index: currentSectionNumber,
+      sectionIndex: currentSectionNumber,
+
+      section_title: currentSectionTitle,
+      sectionTitle: currentSectionTitle,
+
+      device_label: deviceLabel,
+      deviceLabel: deviceLabel,
+
+      feedback_source: feedbackSource,
+      feedbackSource: feedbackSource,
+
+      text_feedback: text,
+      textFeedback: text
     });
 
     if (!result || result.ok === false) {
@@ -4022,8 +4047,8 @@ async function submitTrainingFeedback() {
     }
 
     logEvent('feedback_sent', {
-      current_card_number: getCurrentCardNumber(),
-      section_index: getCurrentSectionNumber(),
+      current_card_number: currentCardNumber,
+      section_index: currentSectionNumber,
       text_length: text.length
     });
 
@@ -4038,11 +4063,21 @@ async function submitTrainingFeedback() {
       closeFeedbackModal();
     }, 900);
   } catch (err) {
+    const message = String(err?.message || 'Could not send feedback.');
+
     console.warn('Training feedback failed', err);
+
+    logEvent('feedback_send_failed', {
+      current_card_number: currentCardNumber,
+      section_index: currentSectionNumber,
+      error: message
+    });
+
     if (status) {
-      status.textContent = 'Could not send feedback. Please try again.';
+      status.textContent = `Could not send feedback: ${message}`;
       status.className = 'feedback-status is-error';
     }
+
     submitBtn.disabled = false;
     submitBtn.textContent = 'Send feedback';
   }
