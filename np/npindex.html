@@ -2278,7 +2278,7 @@
         <div class="accessIntro muted small">
           <p>This tool was originally developed as part of a research study exploring how prelicensure nurse educators use AI for multiple choice question writing. This version is available for general use and is separate from the research study</p>
           <p><strong>Who is eligible for the study?</strong><br>This study is open to actively working prelicensure nurse educators whose institutions have provided them with institutional access to one of the following AI products: ChatGPT, Gemini, or Copilot.</p>
-          <p><strong>Interested in participating?</strong><br>If you meet the eligibility criteria and are interested in participating, please review the study information by <a href="npstudyinfo.html">clicking here</a>.</p>
+          <p><strong>Interested in participating?</strong><br>If you meet the eligibility criteria and are interested in participating, please review the study information by <a href="npstudyinfo.html" id="linkStudyInfo" data-np-track="study_info">clicking here</a>.</p>
           <p>If you forget how to use the tool at any point, use the Help / FAQ link at the bottom of the page.</p>
         </div>
 
@@ -2747,7 +2747,7 @@
               href="nphelp.html"
               target="_blank"
               rel="noopener noreferrer"
-              class="helpFaqLink"
+              class="helpFaqLink" id="linkHelpFaq" data-np-track="help_faq"
             >
               Help / FAQ
             </a>
@@ -2783,11 +2783,11 @@
 
   <div class="modalBackdrop" id="modalEnd">
     <div class="modalCard">
-      <h3 style="margin:0 0 8px;">Finish session</h3>
-      <p class="muted" style="margin:0 0 12px;">This will finish this local session and start over.</p>
+      <h3 style="margin:0 0 8px;">End session</h3>
+      <p class="muted" style="margin:0 0 12px;">This will reset the tool and return you to the opening screen.</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnEndCancel" type="button">Cancel</button>
-        <button class="btn finishSessionBtn" id="btnEndConfirm" type="button">Finish session</button>
+        <button class="btn finishSessionBtn" id="btnEndConfirm" type="button">End session</button>
       </div>
     </div>
   </div>
@@ -3054,7 +3054,10 @@ const PROMPT_META = [
         "sidebarBtnFeedback",
         "sidebarFeedbackView",
         "finalFeedbackSection",
-        "trainingTipEndSession"
+        "trainingTipEndSession",
+        "modalMobileFeedback",
+        "audioRecorderPanel",
+        "sidebarAudioRecorderPanel"
       ].forEach((id) => {
         const el = $(id);
         if (el) el.style.display = "none";
@@ -3654,6 +3657,50 @@ const PROMPT_META = [
 
     function getCompactDeviceLabel() {
       return `${getDeviceType()} ${getOsLabel()} ${getViewportWidth()}`.trim();
+    }
+
+
+    const NP_USAGE_EVENT_ACTION = "logNpUsageEvent";
+    const NP_USAGE_SHEET_NAME = "np_usage_events";
+    const NP_PAGE_NAME = "npindex.html";
+
+    function sendNpUsageEvent(eventType, buttonId = "", detailText = "", detailJson = {}) {
+      if (!IS_NONPARTICIPANT || !eventType) return false;
+
+      const payload = {
+        action: NP_USAGE_EVENT_ACTION,
+        sheet_name: NP_USAGE_SHEET_NAME,
+        app_variant: "np",
+        page_name: NP_PAGE_NAME,
+        timestamp: nowIso(),
+        app_version: getAppVersion(),
+        event_type: String(eventType || "").trim(),
+        button_id: String(buttonId || "").trim(),
+        detail_text: String(detailText || "").trim(),
+        detail_json: detailJson || {},
+        stage: getStage(),
+        session_id: String(localStorage.getItem(KEYS.sessionId) || "").trim(),
+        device_type: getDeviceType(),
+        device_label: getCompactDeviceLabel()
+      };
+
+      try {
+        const body = JSON.stringify(payload);
+        if (navigator.sendBeacon) {
+          const blob = new Blob([body], { type: "text/plain;charset=utf-8" });
+          navigator.sendBeacon(AQG_API_URL, blob);
+          return true;
+        }
+        fetch(AQG_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body,
+          keepalive: true
+        }).catch(() => {});
+        return true;
+      } catch (_) {
+        return false;
+      }
     }
 
     function markInteraction(ts = Date.now()) {
@@ -6358,6 +6405,9 @@ const PROMPT_META = [
       configureTrainingTipsUI();
       configureTimerModeUI();
       configureNonparticipantModeUI();
+      if (IS_NONPARTICIPANT) {
+        sendNpUsageEvent("page_opened", "", "npindex opened");
+      }
       try {
         await loadRemoteConfig();
         appBootLoading = false;
@@ -6405,6 +6455,7 @@ const PROMPT_META = [
           const ready = await ensureRemoteConfigReadyForLogin();
           if (!ready) return;
           await initializeNonparticipantSession();
+          sendNpUsageEvent("tool_opened", "btnOpenTool", "Non-participant tool opened.");
           setLockedState(false);
           syncStarterPromptCopiedState();
           updateStarterCopyAvailability();
@@ -6658,13 +6709,13 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
     function saveCurrentSettingsAsPrevious() {
       const ctx = getContext();
       const payload = {
-        user_id: String(localStorage.getItem(KEYS.accessCode) || "").trim(),
+        user_id: IS_NONPARTICIPANT ? "" : String(localStorage.getItem(KEYS.accessCode) || "").trim(),
         course_context: String(ctx.course || "").trim(),
         question_context: String(ctx.area || "").trim(),
         extra_instructions: String(ctx.notes || "").trim(),
         desired_questions: String(ctx.questionCount || "10").trim() || "10",
         saved_at: nowIso(),
-        source: "starter_copy"
+        source: IS_NONPARTICIPANT ? "np_browser" : "starter_copy"
       };
 
       const hasUsefulContent =
@@ -6685,6 +6736,10 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
 
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== "object") return null;
+
+        if (IS_NONPARTICIPANT) {
+          return parsed;
+        }
 
         const currentUserId = String(localStorage.getItem(KEYS.accessCode) || "").trim();
         const savedUserId = String(parsed.user_id || "").trim();
@@ -6759,44 +6814,6 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
           btnLoadPreviousSettings.textContent = "Loading...";
 
           try {
-            const liveData = await fetchLatestLiveSession();
-            if (liveData?.ok === true && liveData?.found === true) {
-              const session = liveData.session || {};
-              const course = String(session.course_context || "").trim();
-              const area = String(session.question_context || "").trim();
-              const rawQuestionCount = String(session.desired_questions ?? "").trim();
-              const questionCount = rawQuestionCount || "10";
-              const notes = String(session.extra_instructions || "").trim();
-              const hasUsefulContext = !!(course || area || notes || (rawQuestionCount && rawQuestionCount !== "10"));
-
-              if (hasUsefulContext) {
-                applyContextSettingsToFields({ course, area, questionCount, notes });
-                queueLiveSessionUpdate("in_progress");
-                logEvent("previous_settings_loaded", { source: "latest_live_session" });
-
-                loadPreviousSettingsMsg.textContent = "Previous settings loaded from your most recent in-progress session.";
-                loadPreviousSettingsMsg.style.display = "block";
-                return;
-              }
-            }
-
-            const data = await fetchLatestSubmittedSettings();
-            if (data && data.ok === true && data.found === true) {
-              const settings = data.settings || data.latestSettings || data.submittedSettings || {};
-              const course = (settings.course_context || "").trim();
-              const area = (settings.question_context || "").trim();
-              const questionCount = String(settings.desired_questions ?? "").trim() || "10";
-              const notes = (settings.extra_instructions || "").trim();
-
-              applyContextSettingsToFields({ course, area, questionCount, notes });
-              queueLiveSessionUpdate("in_progress");
-              logEvent("previous_settings_loaded", { source: "latest_submitted_settings" });
-
-              loadPreviousSettingsMsg.textContent = "Previous settings loaded. You can use them as-is or edit them before continuing.";
-              loadPreviousSettingsMsg.style.display = "block";
-              return;
-            }
-
             const localSettings = getLocalPreviousSettings();
             if (localSettings) {
               const course = String(localSettings.course_context || "").trim();
@@ -6805,20 +6822,17 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
               const notes = String(localSettings.extra_instructions || "").trim();
 
               applyContextSettingsToFields({ course, area, questionCount, notes });
-              queueLiveSessionUpdate("in_progress");
-              logEvent("previous_settings_loaded", { source: "local_starter_copy_fallback" });
+              logEvent("previous_settings_loaded", { source: "local_browser_storage" });
+              sendNpUsageEvent("settings_restored", "btnLoadPreviousSettings", "Previous settings restored from browser storage.", {
+                source: "local_browser_storage"
+              });
 
-              loadPreviousSettingsMsg.textContent = "Previous settings loaded from this browser's saved fallback data.";
+              loadPreviousSettingsMsg.textContent = "Previous settings loaded from this browser.";
               loadPreviousSettingsMsg.style.display = "block";
               return;
             }
 
-            const hadLiveLookupError = !!(liveData && liveData.ok !== true && liveData.error);
-            const hadSubmittedLookupError = !!(data && data.ok !== true && data.error);
-            loadPreviousSettingsMsg.textContent =
-              hadLiveLookupError || hadSubmittedLookupError
-                ? "Could not load previous settings from the server, and no browser fallback was found."
-                : "No previous settings were found in your latest in-progress session, submitted settings, or browser fallback.";
+            loadPreviousSettingsMsg.textContent = "No previous settings were found in this browser.";
             loadPreviousSettingsMsg.style.display = "block";
           } finally {
             btnLoadPreviousSettings.disabled = false;
@@ -7501,6 +7515,29 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
     // the correct handler by card ID.
     const _copyCardHandlers = {};
 
+    document.addEventListener("click", (e) => {
+      if (!IS_NONPARTICIPANT) return;
+
+      const button = e.target.closest("button[id]");
+      if (button && !button.disabled) {
+        const buttonId = String(button.id || "").trim();
+        if (buttonId) {
+          sendNpUsageEvent("button_pressed", buttonId, (button.textContent || "").trim(), {
+            label: (button.textContent || "").trim()
+          });
+        }
+      }
+
+      const link = e.target.closest("a[data-np-track]");
+      if (link) {
+        const linkId = String(link.id || link.dataset.npTrack || "link").trim();
+        sendNpUsageEvent("link_clicked", linkId, (link.textContent || "").trim(), {
+          href: link.getAttribute("href") || "",
+          track: link.dataset.npTrack || ""
+        });
+      }
+    }, true);
+
     document.addEventListener("click", async (e) => {
       // Mobile timer pause button
       if (e.target.id === "btnMobilePauseTimer" || e.target.closest("#btnMobilePauseTimer")) {
@@ -7517,8 +7554,6 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
           setSidebarMode(sidebarMode === "preview" ? "collapsed" : "preview");
         } else if (modeBtn.id === "sidebarBtnHistory") {
           setSidebarMode(sidebarMode === "history" ? "collapsed" : "history");
-        } else if (modeBtn.id === "sidebarBtnFeedback") {
-          setSidebarMode(sidebarMode === "feedback" ? "collapsed" : "feedback", { entryPoint: "text" });
         } else if (modeBtn.id === "sidebarBtnCollapse") {
           setSidebarMode(sidebarMode === "collapsed" ? "preview" : "collapsed");
         }
