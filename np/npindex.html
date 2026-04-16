@@ -2278,7 +2278,7 @@
         <div class="accessIntro muted small">
           <p>This tool was originally developed as part of a research study exploring how prelicensure nurse educators use AI for multiple choice question writing. This version is available for general use and is separate from the research study</p>
           <p><strong>Who is eligible for the study?</strong><br>This study is open to actively working prelicensure nurse educators whose institutions have provided them with institutional access to one of the following AI products: ChatGPT, Gemini, or Copilot.</p>
-          <p><strong>Interested in participating?</strong><br>If you meet the eligibility criteria and are interested in participating, please review the study information by <a href="npstudyinfo.html" id="linkStudyInfo" data-np-track="study_info">clicking here</a>.</p>
+          <p><strong>Interested in participating?</strong><br>If you meet the eligibility criteria and are interested in participating, please review the study information by <a href="npstudyinfo.html">clicking here</a>.</p>
           <p>If you forget how to use the tool at any point, use the Help / FAQ link at the bottom of the page.</p>
         </div>
 
@@ -2297,7 +2297,7 @@
     <div id="appShell" style="display:none;">
       <div class="appHeaderBar">
         <div class="appHeaderActions">
-          <button id="btnResetSession" class="btn" type="button">Start over</button>
+          <button id="btnResetSession" class="btn" type="button">Reset</button>
           <button id="btnLogout" class="btn" type="button">Back to start</button>
         </div>
         <button id="btnMobileFeedback" class="btn" type="button">Feedback</button>
@@ -2322,7 +2322,7 @@
         <div class="bandBody">
           <div class="card">
             <div class="subBand" style="margin-top:0;">
-              <h4 class="subBandTitle">A. Select product and mode</h4>
+              <h4 class="subBandTitle">A. Select AI product</h4>
               <div class="row" id="productGridWrap">
                 <div style="flex:1; min-width: 240px;">
                   <input type="hidden" id="modelUsed" />
@@ -2336,49 +2336,28 @@
                 </div>
               </div>
 
-              <div id="productVersionEditor" class="subBand hidden" style="margin-top:10px;">
-              <h4 class="subBandTitle" id="productVersionTitle">Confirm product mode</h4>
-              <p class="muted small llmConfirmIntro" id="llmConfirmIntro"></p>
-
-              <div id="llmConfirmPanel" style="display:none; margin-top:8px;">
-                <p id="llmInstructionText" class="muted small" style="margin:0 0 6px;"></p>
-                <p id="llmWhereText" class="muted small" style="margin:0;"></p>
-
-                <details class="helpToggle" style="margin-top:8px;">
-                  <summary class="muted small whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
-                  <div class="llmImageRow">
-                    <div id="llmImage1"></div>
-                    <div id="llmImage2"></div>
-                  </div>
-                </details>
-
-                <div style="margin-top:10px;">
+              <div id="productVersionEditor" class="hidden" hidden style="display:none;">
+                <p class="muted small llmConfirmIntro" id="llmConfirmIntro"></p>
+                <div id="llmConfirmPanel" style="display:none; margin-top:8px;">
+                  <p id="llmInstructionText" class="muted small" style="margin:0 0 6px;"></p>
+                  <p id="llmWhereText" class="muted small" style="margin:0;"></p>
+                  <div id="llmImage1"></div>
+                  <div id="llmImage2"></div>
                   <label id="llmConfirmLabel"></label>
                   <select id="llmExpectedChoice" class="llmCompactSelect"></select>
+                  <p class="muted small" id="llmMismatchNote" style="display:none; margin:8px 0 0;"></p>
+                  <div id="llmMismatchWrap" style="display:none; margin-top:10px;">
+                    <label for="llmMismatchDescription">Please briefly describe the options you see in the menu.</label>
+                    <textarea id="llmMismatchDescription" placeholder="Example: Auto, Quick response, Think deeper"></textarea>
+                  </div>
                 </div>
-
-                <p class="muted small" id="llmMismatchNote" style="display:none; margin:8px 0 0;"></p>
-
-                <div id="llmMismatchWrap" style="display:none; margin-top:10px;">
-                  <label for="llmMismatchDescription">Please briefly describe the options you see in the menu.</label>
-                  <textarea id="llmMismatchDescription" placeholder="Example: Auto, Quick response, Think deeper"></textarea>
-                </div>
-                <div id="trainingTipMismatch" class="training-tip">
-                  <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-                  <p>If the mode you are using in your AI product doesn't match any of the options listed here, choose "I see something different" and briefly describe what you see.</p>
-                </div>
+                <button class="btn" id="btnConfirmProductVersion" type="button" hidden style="display:none;">Confirm product and mode</button>
               </div>
 
-              <div class="row" style="margin-top:10px;">
-                <button class="btn" id="btnConfirmProductVersion" type="button" disabled>Confirm product and mode</button>
+              <div id="productVersionSummary" class="hidden" hidden style="display:none;" aria-hidden="true">
+                <div class="title"></div>
+                <div class="muted small" id="productVersionSummaryText"></div>
               </div>
-            </div>
-
-            <div id="productVersionSummary" class="subBand productVersionSummary" style="display:none;" role="button" tabindex="0">
-              <div class="title">Product and mode confirmed</div>
-              <div class="muted small" id="productVersionSummaryText"></div>
-            </div>
-            </div>
 
             <div id="contextSubband" class="subBand hidden" style="margin-top:10px;">
               <h4 class="subBandTitle">B. Question context</h4>
@@ -2582,19 +2561,8 @@
               </div>
 
               <div id="finalizeLockedArea" class="finalizeLockedContent" style="margin-top:8px; display:none;">
-                <details class="feedbackCollapsible" id="finalModelOutputSection">
-                  <summary class="feedbackSummary">
-                    <div class="feedbackSummaryLeft">
-                      <span class="feedbackSummaryLabel">Optional model output</span>
-                      <span class="feedbackSummaryHint">— paste the AI response here if you want</span>
-                    </div>
-                    <span class="feedbackSummaryChevron" aria-hidden="true">›</span>
-                  </summary>
-                  <div class="feedbackInner">
-                    <div class="muted small finalizeNotice" id="finalizeCopyNotice"></div>
-                    <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
-                  </div>
-                </details>
+                <div class="muted small finalizeNotice" id="finalizeCopyNotice"></div>
+                <textarea id="llmResponse" placeholder="Paste the model output here." hidden style="display:none;"></textarea>
 
                 <details class="feedbackCollapsible" id="finalFeedbackSection">
                   <summary class="feedbackSummary">
@@ -2651,7 +2619,8 @@
 
               <p class="muted small" id="finalizeMsg" style="margin:10px 0 0;"></p>
 
-              <div id="trainingTipEndSession" class="trainingTip trainingTipSmall">
+              <div id="trainingTipEndSession",
+        "finalModelOutputSection" class="trainingTip trainingTipSmall">
                 <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
                 <p>Make sure you've pasted the AI's final response into the box above before ending. Once you end the session, your work is submitted and the app resets.</p>
               </div>
@@ -2747,7 +2716,7 @@
               href="nphelp.html"
               target="_blank"
               rel="noopener noreferrer"
-              class="helpFaqLink" id="linkHelpFaq" data-np-track="help_faq"
+              class="helpFaqLink"
             >
               Help / FAQ
             </a>
@@ -2759,11 +2728,11 @@
 
   <div class="modalBackdrop" id="modalReset">
     <div class="modalCard">
-      <h3 style="margin:0 0 8px;">Start over?</h3>
-      <p class="muted" style="margin:0 0 12px;">This clears your current browser session and starts over.</p>
+      <h3 style="margin:0 0 8px;">Reset?</h3>
+      <p class="muted" style="margin:0 0 12px;">This resets your current browser session.</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnResetCancel" type="button">Cancel</button>
-        <button class="btn danger" id="btnResetConfirm" type="button">Start over</button>
+        <button class="btn danger" id="btnResetConfirm" type="button">Reset</button>
       </div>
     </div>
   </div>
@@ -2783,11 +2752,11 @@
 
   <div class="modalBackdrop" id="modalEnd">
     <div class="modalCard">
-      <h3 style="margin:0 0 8px;">End session</h3>
-      <p class="muted" style="margin:0 0 12px;">This will reset the tool and return you to the opening screen.</p>
+      <h3 style="margin:0 0 8px;">Finish session</h3>
+      <p class="muted" style="margin:0 0 12px;">This will finish this local session and start over.</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnEndCancel" type="button">Cancel</button>
-        <button class="btn finishSessionBtn" id="btnEndConfirm" type="button">End session</button>
+        <button class="btn finishSessionBtn" id="btnEndConfirm" type="button">Finish session</button>
       </div>
     </div>
   </div>
@@ -3055,9 +3024,7 @@ const PROMPT_META = [
         "sidebarFeedbackView",
         "finalFeedbackSection",
         "trainingTipEndSession",
-        "modalMobileFeedback",
-        "audioRecorderPanel",
-        "sidebarAudioRecorderPanel"
+        "finalModelOutputSection"
       ].forEach((id) => {
         const el = $(id);
         if (el) el.style.display = "none";
@@ -3659,50 +3626,6 @@ const PROMPT_META = [
       return `${getDeviceType()} ${getOsLabel()} ${getViewportWidth()}`.trim();
     }
 
-
-    const NP_USAGE_EVENT_ACTION = "logNpUsageEvent";
-    const NP_USAGE_SHEET_NAME = "np_usage_events";
-    const NP_PAGE_NAME = "npindex.html";
-
-    function sendNpUsageEvent(eventType, buttonId = "", detailText = "", detailJson = {}) {
-      if (!IS_NONPARTICIPANT || !eventType) return false;
-
-      const payload = {
-        action: NP_USAGE_EVENT_ACTION,
-        sheet_name: NP_USAGE_SHEET_NAME,
-        app_variant: "np",
-        page_name: NP_PAGE_NAME,
-        timestamp: nowIso(),
-        app_version: getAppVersion(),
-        event_type: String(eventType || "").trim(),
-        button_id: String(buttonId || "").trim(),
-        detail_text: String(detailText || "").trim(),
-        detail_json: detailJson || {},
-        stage: getStage(),
-        session_id: String(localStorage.getItem(KEYS.sessionId) || "").trim(),
-        device_type: getDeviceType(),
-        device_label: getCompactDeviceLabel()
-      };
-
-      try {
-        const body = JSON.stringify(payload);
-        if (navigator.sendBeacon) {
-          const blob = new Blob([body], { type: "text/plain;charset=utf-8" });
-          navigator.sendBeacon(AQG_API_URL, blob);
-          return true;
-        }
-        fetch(AQG_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body,
-          keepalive: true
-        }).catch(() => {});
-        return true;
-      } catch (_) {
-        return false;
-      }
-    }
-
     function markInteraction(ts = Date.now()) {
       const currentTs = Number(ts);
       if (!Number.isFinite(currentTs)) return;
@@ -3979,7 +3902,8 @@ const PROMPT_META = [
 
 
     function configureTrainingTipsUI() {
-      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "trainingTipMismatch", "makingQuestionsTrainingTip", "trainingTipFinalizeIntro", "finalCopiedTrainingTip", "trainingTipFinalizeFeedback", "trainingTipEndSession", "trainingTipSamplePrompts"];
+      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "trainingTipMismatch", "makingQuestionsTrainingTip", "trainingTipFinalizeIntro", "finalCopiedTrainingTip", "trainingTipFinalizeFeedback", "trainingTipEndSession",
+        "finalModelOutputSection", "trainingTipSamplePrompts"];
       tipIds.forEach((id) => {
         const el = $(id);
         if (!el) return;
@@ -4140,10 +4064,7 @@ const PROMPT_META = [
 
     function isSetupVersionConfirmedForContext() {
       const product = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      if (!product) return false;
-      if (!["chatgpt", "gemini", "copilot"].includes(product)) return false;
-      return !!expectedChoice;
+      return ["chatgpt", "gemini", "copilot"].includes(product);
     }
 
     function getProductVersionSummaryText() {
@@ -4166,134 +4087,37 @@ const PROMPT_META = [
 
     function updateSetupSubbandVisibility() {
       const contextSubband = $("contextSubband");
-      const contextFields = $("contextFields");
       const productGridWrap = $("productGridWrap");
       const editor = $("productVersionEditor");
       const summary = $("productVersionSummary");
-      const summaryText = $("productVersionSummaryText");
-      const confirmBtn = $("btnConfirmProductVersion");
-      const canConfirm = isSetupVersionConfirmedForContext();
-      const isConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
-      const showConfirmed = isConfirmed && canConfirm;
-
       const productSelected = !!(localStorage.getItem(KEYS.llmProduct) || "");
-      if (confirmBtn) confirmBtn.disabled = !canConfirm;
-      if (summaryText) summaryText.textContent = getProductVersionSummaryText();
+
       if (productGridWrap) {
-        if (showConfirmed) {
-          productGridWrap.hidden = true;
-          productGridWrap.style.display = "none";
-        } else {
-          productGridWrap.hidden = false;
-          productGridWrap.style.display = "";
-        }
+        productGridWrap.hidden = false;
+        productGridWrap.style.display = "";
       }
       if (editor) {
-        const showEditor = productSelected && !showConfirmed;
-        editor.classList.toggle("hidden", !showEditor);
-        editor.hidden = !showEditor;
-        editor.style.display = showEditor ? "" : "none";
+        editor.hidden = true;
+        editor.style.display = "none";
       }
       if (summary) {
-        summary.hidden = !showConfirmed;
-        summary.style.display = showConfirmed ? "block" : "none";
+        summary.hidden = true;
+        summary.style.display = "none";
       }
-      if (contextSubband) contextSubband.classList.toggle("hidden", !showConfirmed);
-      // contextFields visibility is controlled by its parent contextSubband —
-      // toggling hidden on both caused layout issues on first-load confirm flow.
-      if (contextFields) contextFields.classList.remove("hidden");
+      if (contextSubband) {
+        contextSubband.classList.toggle("hidden", !productSelected);
+        contextSubband.hidden = !productSelected;
+        contextSubband.style.display = productSelected ? "" : "none";
+      }
       updateStarterCopyAvailability();
     }
 
     function renderLlmConfirmPanel(productKey) {
       const panel = $("llmConfirmPanel");
-      const expectedSelect = $("llmExpectedChoice");
-      const mismatchInput = $("llmMismatchDescription");
-      const config = LLM_UI_CONFIG[productKey];
-
-      if (!panel || !expectedSelect || !mismatchInput) return;
-
-      if (!config) {
-        panel.style.display = "none";
-        expectedSelect.innerHTML = "";
-        setLlmMismatchVisibility(false);
-        localStorage.removeItem(KEYS.llmExpectedChoice);
-        localStorage.removeItem(KEYS.llmMismatchDescription);
-        llmMismatchReported = false;
-        llmMismatchAlertAttempted = false;
-        const productVersionTitle = $("productVersionTitle");
-        const llmConfirmIntro = $("llmConfirmIntro");
-        if (productVersionTitle) productVersionTitle.textContent = "Confirm product mode";
-        if (llmConfirmIntro) llmConfirmIntro.textContent = "";
-        updateSetupSubbandVisibility();
-        return;
-      }
-
-      panel.style.display = "block";
-
-      const productVersionTitle = $("productVersionTitle");
-      const llmConfirmIntro = $("llmConfirmIntro");
-      if (productVersionTitle) productVersionTitle.textContent = "Confirm product mode";
-      if (llmConfirmIntro) llmConfirmIntro.textContent = "";
-      $("llmInstructionText").textContent = "";
-      $("llmWhereText").textContent = "";
-      $("llmConfirmLabel").textContent = "";
-
-      const helpImages = getLlmHelpImages(productKey);
-      const img1 = $("llmImage1");
-      const img2 = $("llmImage2");
-      const caption1 = "Click here to open the dropdown menu.";
-      const caption2 = "Confirm that the text here matches the option in the dropdown menu.";
-      if (img1) {
-        if (helpImages) {
-          img1.innerHTML = `<div class="helpExampleItem"><img src="${helpImages.image1Src}" class="helpExampleImage" alt="${helpImages.image1Alt}"><div class="helpExampleText">${caption1}</div></div>`;
-        } else {
-          img1.innerHTML = "";
-        }
-      }
-      if (img2) {
-        if (helpImages) {
-          img2.innerHTML = `<div class="helpExampleItem"><img src="${helpImages.image2Src}" class="helpExampleImage" alt="${helpImages.image2Alt}"><div class="helpExampleText">${caption2}</div></div>`;
-        } else {
-          img2.innerHTML = "";
-        }
-      }
-
-      const existingValue = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-      const options = getLlmOptionList(productKey);
-      expectedSelect.innerHTML = "";
-      options.forEach((opt) => {
-        const el = document.createElement("option");
-        el.value = opt.value;
-        el.textContent = opt.label;
-        expectedSelect.appendChild(el);
-      });
-
-      const defaultOption = options.find((o) => o.selectedByDefault) || options[0] || null;
-      const validValues = new Set(options.map((o) => o.value));
-      const selectedValue = validValues.has(existingValue) ? existingValue : (defaultOption?.value || "");
-      expectedSelect.value = selectedValue;
-      if (selectedValue) {
-        localStorage.setItem(KEYS.llmExpectedChoice, selectedValue);
-      } else {
-        localStorage.removeItem(KEYS.llmExpectedChoice);
-      }
-
-      if (selectedValue === "different") {
-        const mismatch = localStorage.getItem(KEYS.llmMismatchDescription) || "";
-        mismatchInput.value = mismatch;
-        setLlmMismatchVisibility(true);
-        if (mismatch.trim()) {
-          llmMismatchReported = true;
-          llmMismatchAlertAttempted = true;
-        }
-      } else {
-        mismatchInput.value = "";
-        setLlmMismatchVisibility(false);
-        localStorage.removeItem(KEYS.llmMismatchDescription);
-        llmMismatchReported = false;
-        llmMismatchAlertAttempted = false;
-      }
+      if (panel) panel.style.display = "none";
+      localStorage.removeItem(KEYS.llmMismatchDescription);
+      llmMismatchReported = false;
+      llmMismatchAlertAttempted = false;
       updateSetupSubbandVisibility();
     }
 
@@ -4346,41 +4170,26 @@ const PROMPT_META = [
       const notice = $("finalizeCopyNotice");
       const lockedArea = $("finalizeLockedArea");
       const endRow = $("endSessionRow");
-      const endTip = $("trainingTipEndSession");
+      const endTip = $("trainingTipEndSession",
+        "finalModelOutputSection");
       const finalCopiedTip = $("finalCopiedTrainingTip");
       const llm = $("llmResponse");
 
       if (notice) {
-        if (copied) {
-          const model = localStorage.getItem(KEYS.modelUsed) || "Other";
-          notice.style.display = "block";
-          notice.innerHTML = `
-            1) Paste the final prompt into your AI product.<br><br>
-            2) Click on the copy button below the response to copy it in its entirety<br>
-            <details class="helpToggle" style="display:inline-block; margin-top:6px;">
-              <summary class="whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
-              <div style="margin-top:6px;">${getFinalizeCopyInstructionLine(model)}</div>
-            </details><br><br>
-            3) Paste that response below.
-          `;
-        } else {
-          notice.style.display = "none";
-          notice.textContent = "";
-        }
+        notice.style.display = "none";
+        notice.textContent = "";
       }
-
       if (lockedArea) {
-        lockedArea.style.display = copied ? "block" : "none";
-        lockedArea.classList.toggle("finalizeLockedContent", !copied);
+        lockedArea.style.display = "none";
+        lockedArea.classList.remove("finalizeLockedContent");
       }
-      if (llm) llm.disabled = !copied;
+      if (llm) llm.disabled = true;
       if (endRow) endRow.style.display = copied ? "flex" : "none";
       updateEndSessionState();
       if (finalCopiedTip) {
         finalCopiedTip.hidden = !copied;
         finalCopiedTip.style.display = isTrainingMode && copied ? "block" : "none";
       }
-      // End Session training tip is shown only when the End Session section is visible.
       if (endTip) endTip.style.display = isTrainingMode && copied ? "block" : "none";
     }
 
@@ -6372,17 +6181,27 @@ const PROMPT_META = [
         btn.classList.toggle("selected", isSelected);
       });
       localStorage.setItem(KEYS.llmProduct, llmProduct);
+      localStorage.setItem(KEYS.llmExpectedChoice, llmProduct);
+      localStorage.removeItem(KEYS.llmMismatchDescription);
+      setProductVersionConfirmedState(true);
       if (logSelection) {
         markInteraction();
         logEvent("llm_product_selected", { llmProduct });
-        setProductVersionConfirmedState(false);
         queueLiveSessionUpdate("in_progress");
       }
       invalidateStarterIfSignatureChanged();
-      renderLlmConfirmPanel(llmProduct);
       renderPromptList();
       renderSetupSamplePromptBox();
       renderCopyCardPromptText();
+      updateSetupSubbandVisibility();
+      applyStageUI();
+      const contextSubband = $("contextSubband");
+      if (contextSubband) {
+        contextSubband.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      window.setTimeout(() => {
+        $("ctxCourse")?.focus();
+      }, 50);
     }
 
     function refreshCopyCardPreviews() {
@@ -6405,9 +6224,6 @@ const PROMPT_META = [
       configureTrainingTipsUI();
       configureTimerModeUI();
       configureNonparticipantModeUI();
-      if (IS_NONPARTICIPANT) {
-        sendNpUsageEvent("page_opened", "", "npindex opened");
-      }
       try {
         await loadRemoteConfig();
         appBootLoading = false;
@@ -6455,7 +6271,6 @@ const PROMPT_META = [
           const ready = await ensureRemoteConfigReadyForLogin();
           if (!ready) return;
           await initializeNonparticipantSession();
-          sendNpUsageEvent("tool_opened", "btnOpenTool", "Non-participant tool opened.");
           setLockedState(false);
           syncStarterPromptCopiedState();
           updateStarterCopyAvailability();
@@ -6709,13 +6524,13 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
     function saveCurrentSettingsAsPrevious() {
       const ctx = getContext();
       const payload = {
-        user_id: IS_NONPARTICIPANT ? "" : String(localStorage.getItem(KEYS.accessCode) || "").trim(),
+        user_id: String(localStorage.getItem(KEYS.accessCode) || "").trim(),
         course_context: String(ctx.course || "").trim(),
         question_context: String(ctx.area || "").trim(),
         extra_instructions: String(ctx.notes || "").trim(),
         desired_questions: String(ctx.questionCount || "10").trim() || "10",
         saved_at: nowIso(),
-        source: IS_NONPARTICIPANT ? "np_browser" : "starter_copy"
+        source: "starter_copy"
       };
 
       const hasUsefulContent =
@@ -6736,10 +6551,6 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
 
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== "object") return null;
-
-        if (IS_NONPARTICIPANT) {
-          return parsed;
-        }
 
         const currentUserId = String(localStorage.getItem(KEYS.accessCode) || "").trim();
         const savedUserId = String(parsed.user_id || "").trim();
@@ -6822,17 +6633,15 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
               const notes = String(localSettings.extra_instructions || "").trim();
 
               applyContextSettingsToFields({ course, area, questionCount, notes });
+              queueLiveSessionUpdate("in_progress");
               logEvent("previous_settings_loaded", { source: "local_browser_storage" });
-              sendNpUsageEvent("settings_restored", "btnLoadPreviousSettings", "Previous settings restored from browser storage.", {
-                source: "local_browser_storage"
-              });
 
               loadPreviousSettingsMsg.textContent = "Previous settings loaded from this browser.";
               loadPreviousSettingsMsg.style.display = "block";
               return;
             }
 
-            loadPreviousSettingsMsg.textContent = "No previous settings were found in this browser.";
+            loadPreviousSettingsMsg.textContent = "No previous settings were found for this browser yet.";
             loadPreviousSettingsMsg.style.display = "block";
           } finally {
             btnLoadPreviousSettings.disabled = false;
@@ -7515,29 +7324,6 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
     // the correct handler by card ID.
     const _copyCardHandlers = {};
 
-    document.addEventListener("click", (e) => {
-      if (!IS_NONPARTICIPANT) return;
-
-      const button = e.target.closest("button[id]");
-      if (button && !button.disabled) {
-        const buttonId = String(button.id || "").trim();
-        if (buttonId) {
-          sendNpUsageEvent("button_pressed", buttonId, (button.textContent || "").trim(), {
-            label: (button.textContent || "").trim()
-          });
-        }
-      }
-
-      const link = e.target.closest("a[data-np-track]");
-      if (link) {
-        const linkId = String(link.id || link.dataset.npTrack || "link").trim();
-        sendNpUsageEvent("link_clicked", linkId, (link.textContent || "").trim(), {
-          href: link.getAttribute("href") || "",
-          track: link.dataset.npTrack || ""
-        });
-      }
-    }, true);
-
     document.addEventListener("click", async (e) => {
       // Mobile timer pause button
       if (e.target.id === "btnMobilePauseTimer" || e.target.closest("#btnMobilePauseTimer")) {
@@ -7554,6 +7340,8 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
           setSidebarMode(sidebarMode === "preview" ? "collapsed" : "preview");
         } else if (modeBtn.id === "sidebarBtnHistory") {
           setSidebarMode(sidebarMode === "history" ? "collapsed" : "history");
+        } else if (modeBtn.id === "sidebarBtnFeedback") {
+          setSidebarMode(sidebarMode === "feedback" ? "collapsed" : "feedback", { entryPoint: "text" });
         } else if (modeBtn.id === "sidebarBtnCollapse") {
           setSidebarMode(sidebarMode === "collapsed" ? "preview" : "collapsed");
         }
