@@ -243,7 +243,7 @@
     #promptsInner { min-width: 0; overflow-x: hidden; }
     .lockMsg { border:1px dashed var(--border); border-radius: 10px; padding:10px; color: var(--muted); background: #f7faff; }
     .hidden { display:none; }
-    .modelGrid, .product-grid { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:14px; }
+    .modelGrid, .product-grid { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap:14px; }
     .modelOption, .product-card { border:1px solid var(--border); border-radius: 10px; padding:8px 6px; min-height:78px; background:#f8fbff; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; }
     .modelOption:hover, .product-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.08); border-color: var(--accent); }
     .modelOption:active, .product-card:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
@@ -267,6 +267,12 @@
     .productButton.selected .productIconCircle,
     .product-card.selected .productIconCircle {
       background: #e8f0ff;
+    }
+    .productIconText {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #334155;
     }
     .logo-openai{ background:#111827; }
     .logo-gemini{ background:#6d5ef6; }
@@ -332,8 +338,8 @@
       }
       .pageFooter { margin-top: 12px; }
     }
-    @media (max-width: 680px) {
-      .modelGrid, .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    @media (max-width: 900px) {
+      .modelGrid, .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     .subBand { border:1px solid var(--border); border-radius: 10px; background:rgba(16,33,61,0.02); padding:12px 14px; margin-top:10px; }
     .llmConfirmIntro { margin:10px 0 8px; }
@@ -373,15 +379,6 @@
     }
     .llmCompactSelect { width: 100%; max-width: 100%; min-width: 0; }
     .subBandTitle { margin:0 0 10px; font-size:14px; font-weight:600; }
-
-    .productVersionSummary {
-      cursor: pointer;
-      padding: 12px 14px;
-    }
-    .productVersionSummary .title {
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
 
     .twoCol { display:grid; grid-template-columns:1fr; gap:10px; }
     @media (min-width: 900px){ .twoCol { grid-template-columns:1fr 1fr; } }
@@ -2328,62 +2325,19 @@
         <div class="bandBody">
           <div class="card">
             <div class="subBand" style="margin-top:0;">
-              <h4 class="subBandTitle">A. Select product and mode</h4>
+              <h4 class="subBandTitle">A. Select AI product</h4>
               <div class="row" id="productGridWrap">
                 <div style="flex:1; min-width: 240px;">
                   <input type="hidden" id="modelUsed" />
                   <div class="modelGrid product-grid" id="modelGrid">
 
-                  <!-- Active products are currently limited to ChatGPT, Gemini, and Copilot. -->
                   <button class="modelOption product-card productButton" data-model="ChatGPT" type="button"><div class="productIconCircle"><img src="images/chatgpt.png" class="productIconImage" alt="ChatGPT"></div><span>ChatGPT</span></button>
 <button class="modelOption product-card productButton" data-model="Gemini" type="button"><div class="productIconCircle"><img src="images/gemini.png" class="productIconImage" alt="Gemini"></div><span>Gemini</span></button>
 <button class="modelOption product-card productButton" data-model="Copilot" type="button"><div class="productIconCircle"><img src="images/copilot.png" class="productIconImage" alt="Copilot"></div><span>Copilot</span></button>
+<button class="modelOption product-card productButton" data-model="Other AI" type="button"><div class="productIconCircle"><span class="productIconText" aria-hidden="true">AI</span></div><span>Other AI</span></button>
                   </div>
                 </div>
               </div>
-
-              <div id="productVersionEditor" class="subBand hidden" style="margin-top:10px;">
-              <h4 class="subBandTitle" id="productVersionTitle">Confirm product mode</h4>
-              <p class="muted small llmConfirmIntro" id="llmConfirmIntro"></p>
-
-              <div id="llmConfirmPanel" style="display:none; margin-top:8px;">
-                <p id="llmInstructionText" class="muted small" style="margin:0 0 6px;"></p>
-                <p id="llmWhereText" class="muted small" style="margin:0;"></p>
-
-                <details class="helpToggle" style="margin-top:8px;">
-                  <summary class="muted small whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
-                  <div class="llmImageRow">
-                    <div id="llmImage1"></div>
-                    <div id="llmImage2"></div>
-                  </div>
-                </details>
-
-                <div style="margin-top:10px;">
-                  <label id="llmConfirmLabel"></label>
-                  <select id="llmExpectedChoice" class="llmCompactSelect"></select>
-                </div>
-
-                <p class="muted small" id="llmMismatchNote" style="display:none; margin:8px 0 0;"></p>
-
-                <div id="llmMismatchWrap" style="display:none; margin-top:10px;">
-                  <label for="llmMismatchDescription">Please briefly describe the options you see in the menu.</label>
-                  <textarea id="llmMismatchDescription" placeholder="Example: Auto, Quick response, Think deeper"></textarea>
-                </div>
-                <div id="trainingTipMismatch" class="training-tip">
-                  <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-                  <p>If the mode you are using in your AI product doesn't match any of the options listed here, choose "I see something different" and briefly describe what you see.</p>
-                </div>
-              </div>
-
-              <div class="row" style="margin-top:10px;">
-                <button class="btn" id="btnConfirmProductVersion" type="button" disabled>Confirm product and mode</button>
-              </div>
-            </div>
-
-            <div id="productVersionSummary" class="subBand productVersionSummary" style="display:none;" role="button" tabindex="0">
-              <div class="title">Product and mode confirmed</div>
-              <div class="muted small" id="productVersionSummaryText"></div>
-            </div>
             </div>
 
             <div id="contextSubband" class="subBand hidden" style="margin-top:10px;">
@@ -2869,46 +2823,6 @@
       generatedAt: ""
     };
 
-    // Paste your webhook URL into LLM_MISMATCH_ALERT_WEBHOOK to receive immediate mismatch alerts.
-    const LLM_MISMATCH_ALERT_WEBHOOK = "";
-
-    // Active products are currently limited to ChatGPT, Gemini, and Copilot.
-    const LLM_UI_CONFIG = {
-      chatgpt: {
-        label: "ChatGPT",
-        whereText: "Click the model selector at the top of the chat.",
-        expectedOptions: [
-          { value: "inst-5.3_thi-5.4", label: "Auto selected; menu shows Instant 5.3 and Thinking 5.4" },
-          { value: "different", label: "I see something different" }
-        ],
-        defaultExpected: "inst-5.3_thi-5.4",
-        image1Alt: "ChatGPT model selector location",
-        image2Alt: "ChatGPT dropdown example"
-      },
-      gemini: {
-        label: "Gemini",
-        whereText: "Click the mode dropdown next to the prompt box.",
-        expectedOptions: [
-          { value: "gemini-3", label: "Fast selected; menu shows Gemini 3" },
-          { value: "different", label: "I see something different" }
-        ],
-        defaultExpected: "gemini-3",
-        image1Alt: "Gemini mode selector location",
-        image2Alt: "Gemini dropdown example"
-      },
-      copilot: {
-        label: "Microsoft Copilot",
-        whereText: "Click the dropdown next to the prompt box that shows the current mode.",
-        expectedOptions: [
-          { value: "gpt-5.1", label: "Smart selected; menu shows GPT 5.1" },
-          { value: "different", label: "I see something different" }
-        ],
-        defaultExpected: "gpt-5.1",
-        image1Alt: "Copilot mode selector location",
-        image2Alt: "Copilot dropdown example"
-      }
-    };
-
 // Prompt metadata (grouped for UI)
 const PROMPT_META = [
   {
@@ -3228,18 +3142,6 @@ const PROMPT_META = [
       };
     }
 
-    function getLlmOptionList(productKey) {
-      const remoteOptions = getRemoteLlmOptions(productKey);
-      if (remoteOptions.length) return remoteOptions;
-      const fallbackConfig = LLM_UI_CONFIG[productKey];
-      if (!fallbackConfig?.expectedOptions?.length) return [];
-      return fallbackConfig.expectedOptions.map((opt) => ({
-        value: opt.value,
-        label: opt.label,
-        selectedByDefault: opt.value === fallbackConfig.defaultExpected
-      }));
-    }
-
     function renderCopyCardPromptText() {
       const starterTitle = getPromptTitle("starter", "Copy starter prompt");
       const starterDescription = getPromptDescription("starter", "Paste this into your AI product to begin generating questions.");
@@ -3276,8 +3178,6 @@ const PROMPT_META = [
     let interactionTimes = [];
     let activeMsBase = 0;
     let submitInFlight = false;
-    let llmMismatchReported = false;
-    let llmMismatchAlertAttempted = false;
     let starterPromptCopied = false;
     let appBootLoading = true;
     let appBootReady = false;
@@ -3389,15 +3289,9 @@ const PROMPT_META = [
       const questionCount = ($("ctxQuestionCount")?.value || "10").trim() || "10";
       const notes = ($("ctxNotes")?.value || "").trim();
       const llmProduct = (localStorage.getItem(KEYS.llmProduct) || "").trim();
-      const llmExpectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      const llmMismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
-      const productVersionConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true" ? "true" : "false";
 
       return JSON.stringify({
         llmProduct,
-        llmExpectedChoice,
-        llmMismatchDescription,
-        productVersionConfirmed,
         course,
         area,
         questionCount,
@@ -3877,7 +3771,7 @@ const PROMPT_META = [
 
 
     function configureTrainingTipsUI() {
-      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "trainingTipMismatch", "makingQuestionsTrainingTip", "trainingTipFinalizeIntro", "finalCopiedTrainingTip", "trainingTipFinalizeFeedback", "trainingTipEndSession", "trainingTipSamplePrompts"];
+      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "makingQuestionsTrainingTip", "trainingTipFinalizeIntro", "finalCopiedTrainingTip", "trainingTipFinalizeFeedback", "trainingTipEndSession", "trainingTipSamplePrompts"];
       tipIds.forEach((id) => {
         const el = $(id);
         if (!el) return;
@@ -3954,245 +3848,25 @@ const PROMPT_META = [
     function normalizeLlmProduct(model) {
       const m = String(model || "").trim().toLowerCase();
       if (!m) return "";
-      if (["chatgpt", "gemini", "copilot"].includes(m)) return m;
+      if (["chatgpt", "gemini", "copilot", "otherai"].includes(m)) return m;
+      if (["other ai", "other_ai", "other-ai", "other"].includes(m)) return "otherai";
       return "";
     }
 
     function formatLlmProductLabel(productKey) {
-      if (LLM_UI_CONFIG[productKey]?.label) return LLM_UI_CONFIG[productKey].label;
-      return "—";
-    }
-
-    function formatLlmExpectedChoiceLabel(productKey, expectedChoice) {
-      if (!expectedChoice) return "—";
-      const options = getLlmOptionList(productKey);
-      const match = options.find((o) => o.value === expectedChoice);
-      return match?.label || expectedChoice;
-    }
-
-    function getLlmHelpImages(productKey) {
-      const map = {
-        chatgpt: {
-          image1Src: "images/chatgpt-1.png",
-          image2Src: "images/chatgpt-2.png",
-          image1Alt: "ChatGPT where to click",
-          image2Alt: "ChatGPT dropdown example"
-        },
-        copilot: {
-          image1Src: "images/copilot-1.png",
-          image2Src: "images/copilot-2.png",
-          image1Alt: "Copilot where to click",
-          image2Alt: "Copilot dropdown example"
-        },
-        gemini: {
-          image1Src: "images/gemini-1.png",
-          image2Src: "images/gemini-2.png",
-          image1Alt: "Gemini where to click",
-          image2Alt: "Gemini dropdown example"
-        }
-      };
-      return map[productKey] || null;
-    }
-
-
-    function setLlmMismatchVisibility(show, shouldFocus = false) {
-      const wrap = $("llmMismatchWrap");
-      const note = $("llmMismatchNote");
-      if (wrap) wrap.style.display = show ? "block" : "none";
-      if (note) note.style.display = show ? "block" : "none";
-      if (show && shouldFocus) {
-        requestAnimationFrame(() => $("llmMismatchDescription")?.focus());
-      }
-    }
-
-    async function sendLlmMismatchAlert(payload) {
-      if (!LLM_MISMATCH_ALERT_WEBHOOK.trim()) return;
-      try {
-        const res = await fetch(LLM_MISMATCH_ALERT_WEBHOOK, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        logEvent("llm_mismatch_alert_sent", { llmProduct: payload.llmProduct });
-      } catch (err) {
-        logEvent("llm_mismatch_alert_failed", {
-          llmProduct: payload.llmProduct,
-          error: String(err?.message || err || "unknown_error")
-        });
-      }
-    }
-
-    function isLlmConfirmationComplete() {
-      const product = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
-
-      if (!product) return false;
-      if (!["chatgpt", "gemini", "copilot"].includes(product)) return false;
-      if (!expectedChoice) return false;
-      if (expectedChoice === "different" && !mismatchDescription) return false;
-      return true;
-    }
-
-
-    function isSetupVersionConfirmedForContext() {
-      const product = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      if (!product) return false;
-      if (!["chatgpt", "gemini", "copilot"].includes(product)) return false;
-      return !!expectedChoice;
-    }
-
-    function getProductVersionSummaryText() {
-      const productKey = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-      const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
-      const productLabel = formatLlmProductLabel(productKey);
-
-      let versionLabel = formatLlmExpectedChoiceLabel(productKey, expectedChoice);
-      if (expectedChoice === "different") {
-        versionLabel = mismatchDescription || "I see something different";
-      }
-
-      return `Product: ${productLabel} · Mode: ${versionLabel || "—"}`;
-    }
-
-    function setProductVersionConfirmedState(isConfirmed) {
-      localStorage.setItem(KEYS.productVersionConfirmed, isConfirmed ? "true" : "false");
+      return MODEL_LABEL_BY_PRODUCT[normalizeLlmProduct(productKey)] || "—";
     }
 
     function updateSetupSubbandVisibility() {
       const contextSubband = $("contextSubband");
       const contextFields = $("contextFields");
-      const productGridWrap = $("productGridWrap");
-      const editor = $("productVersionEditor");
-      const summary = $("productVersionSummary");
-      const summaryText = $("productVersionSummaryText");
-      const confirmBtn = $("btnConfirmProductVersion");
-      const canConfirm = isSetupVersionConfirmedForContext();
-      const isConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
-      const showConfirmed = isConfirmed && canConfirm;
-
-      const productSelected = !!(localStorage.getItem(KEYS.llmProduct) || "");
-      if (confirmBtn) confirmBtn.disabled = !canConfirm;
-      if (summaryText) summaryText.textContent = getProductVersionSummaryText();
-      if (productGridWrap) {
-        if (showConfirmed) {
-          productGridWrap.hidden = true;
-          productGridWrap.style.display = "none";
-        } else {
-          productGridWrap.hidden = false;
-          productGridWrap.style.display = "";
-        }
-      }
-      if (editor) {
-        const showEditor = productSelected && !showConfirmed;
-        editor.classList.toggle("hidden", !showEditor);
-        editor.hidden = !showEditor;
-        editor.style.display = showEditor ? "" : "none";
-      }
-      if (summary) {
-        summary.hidden = !showConfirmed;
-        summary.style.display = showConfirmed ? "block" : "none";
-      }
-      if (contextSubband) contextSubband.classList.toggle("hidden", !showConfirmed);
+      const selectedProduct = normalizeLlmProduct(localStorage.getItem(KEYS.llmProduct) || "");
+      const showContextSubband = !!selectedProduct;
+      if (contextSubband) contextSubband.classList.toggle("hidden", !showContextSubband);
       // contextFields visibility is controlled by its parent contextSubband —
       // toggling hidden on both caused layout issues on first-load confirm flow.
       if (contextFields) contextFields.classList.remove("hidden");
       updateStarterCopyAvailability();
-    }
-
-    function renderLlmConfirmPanel(productKey) {
-      const panel = $("llmConfirmPanel");
-      const expectedSelect = $("llmExpectedChoice");
-      const mismatchInput = $("llmMismatchDescription");
-      const config = LLM_UI_CONFIG[productKey];
-
-      if (!panel || !expectedSelect || !mismatchInput) return;
-
-      if (!config) {
-        panel.style.display = "none";
-        expectedSelect.innerHTML = "";
-        setLlmMismatchVisibility(false);
-        localStorage.removeItem(KEYS.llmExpectedChoice);
-        localStorage.removeItem(KEYS.llmMismatchDescription);
-        llmMismatchReported = false;
-        llmMismatchAlertAttempted = false;
-        const productVersionTitle = $("productVersionTitle");
-        const llmConfirmIntro = $("llmConfirmIntro");
-        if (productVersionTitle) productVersionTitle.textContent = "Confirm product mode";
-        if (llmConfirmIntro) llmConfirmIntro.textContent = "";
-        updateSetupSubbandVisibility();
-        return;
-      }
-
-      panel.style.display = "block";
-
-      const productVersionTitle = $("productVersionTitle");
-      const llmConfirmIntro = $("llmConfirmIntro");
-      if (productVersionTitle) productVersionTitle.textContent = "Confirm product mode";
-      if (llmConfirmIntro) llmConfirmIntro.textContent = "";
-      $("llmInstructionText").textContent = "";
-      $("llmWhereText").textContent = "";
-      $("llmConfirmLabel").textContent = "";
-
-      const helpImages = getLlmHelpImages(productKey);
-      const img1 = $("llmImage1");
-      const img2 = $("llmImage2");
-      const caption1 = "Click here to open the dropdown menu.";
-      const caption2 = "Confirm that the text here matches the option in the dropdown menu.";
-      if (img1) {
-        if (helpImages) {
-          img1.innerHTML = `<div class="helpExampleItem"><img src="${helpImages.image1Src}" class="helpExampleImage" alt="${helpImages.image1Alt}"><div class="helpExampleText">${caption1}</div></div>`;
-        } else {
-          img1.innerHTML = "";
-        }
-      }
-      if (img2) {
-        if (helpImages) {
-          img2.innerHTML = `<div class="helpExampleItem"><img src="${helpImages.image2Src}" class="helpExampleImage" alt="${helpImages.image2Alt}"><div class="helpExampleText">${caption2}</div></div>`;
-        } else {
-          img2.innerHTML = "";
-        }
-      }
-
-      const existingValue = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-      const options = getLlmOptionList(productKey);
-      expectedSelect.innerHTML = "";
-      options.forEach((opt) => {
-        const el = document.createElement("option");
-        el.value = opt.value;
-        el.textContent = opt.label;
-        expectedSelect.appendChild(el);
-      });
-
-      const defaultOption = options.find((o) => o.selectedByDefault) || options[0] || null;
-      const validValues = new Set(options.map((o) => o.value));
-      const selectedValue = validValues.has(existingValue) ? existingValue : (defaultOption?.value || "");
-      expectedSelect.value = selectedValue;
-      if (selectedValue) {
-        localStorage.setItem(KEYS.llmExpectedChoice, selectedValue);
-      } else {
-        localStorage.removeItem(KEYS.llmExpectedChoice);
-      }
-
-      if (selectedValue === "different") {
-        const mismatch = localStorage.getItem(KEYS.llmMismatchDescription) || "";
-        mismatchInput.value = mismatch;
-        setLlmMismatchVisibility(true);
-        if (mismatch.trim()) {
-          llmMismatchReported = true;
-          llmMismatchAlertAttempted = true;
-        }
-      } else {
-        mismatchInput.value = "";
-        setLlmMismatchVisibility(false);
-        localStorage.removeItem(KEYS.llmMismatchDescription);
-        llmMismatchReported = false;
-        llmMismatchAlertAttempted = false;
-      }
-      updateSetupSubbandVisibility();
     }
 
     function setStage(stage) {
@@ -4230,15 +3904,6 @@ const PROMPT_META = [
     }
 
 
-    function getFinalizeCopyInstructionLine(model) {
-      const m = (model || "").trim();
-      const caption = "Click the copy button beneath the AI response.";
-      if (m === "ChatGPT") return `<div class="copyHelpExample"><img src="images/chatgpt-copy.png" class="copyHelpImage" alt="ChatGPT copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
-      if (m === "Gemini") return `<div class="copyHelpExample"><img src="images/gemini-copy.png" class="copyHelpImage" alt="Gemini copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
-      if (m === "Copilot") return `<div class="copyHelpExample"><img src="images/copilot-copy.png" class="copyHelpImage" alt="Copilot copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
-      return caption;
-    }
-
     function updateFinalizeContentUI() {
       const copied = localStorage.getItem(KEYS.finalPromptCopied) === "true";
       const notice = $("finalizeCopyNotice");
@@ -4250,15 +3915,11 @@ const PROMPT_META = [
 
       if (notice) {
         if (copied) {
-          const model = localStorage.getItem(KEYS.modelUsed) || "Other";
           notice.style.display = "block";
           notice.innerHTML = `
             1) Paste the final prompt into your AI product.<br><br>
-            2) Click on the copy button below the response to copy it in its entirety<br>
-            <details class="helpToggle" style="display:inline-block; margin-top:6px;">
-              <summary class="whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
-              <div style="margin-top:6px;">${getFinalizeCopyInstructionLine(model)}</div>
-            </details><br><br>
+            2) In your AI product, look for a button that copies the entire response.<br>
+            <span class="muted small">If you do not see it right away, look near the response for a copy icon or a button labeled Copy.</span><br><br>
             3) Paste that response below.
           `;
         } else {
@@ -4327,6 +3988,8 @@ const PROMPT_META = [
       localStorage.setItem(KEYS.finalPromptCopied, "false");
       localStorage.setItem(KEYS.finalizeVisited, "false");
       localStorage.setItem(KEYS.productVersionConfirmed, "false");
+      localStorage.removeItem(KEYS.llmExpectedChoice);
+      localStorage.removeItem(KEYS.llmMismatchDescription);
       localStorage.setItem(KEYS.submitClicked, "false");
 
       saveJSON(KEYS.context, {
@@ -4338,7 +4001,6 @@ const PROMPT_META = [
       saveJSON(KEYS.events, []);
 
       starterPromptCopied = false;
-      llmMismatchAlertAttempted = false;
       activeMsBase = 0;
       interactionTimes = [Date.now()];
 
@@ -4377,7 +4039,6 @@ const PROMPT_META = [
         $("endMsg").style.display = "none";
       }
 
-      renderLlmConfirmPanel("");
       updateSetupSubbandVisibility();
       refreshCopyCardPreviews();
       renderPromptList();
@@ -6118,7 +5779,7 @@ const PROMPT_META = [
         llm_product: localStorage.getItem(KEYS.llmProduct) || "",
         model_used: localStorage.getItem(KEYS.modelUsed) || "",
         llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
-        llm_mismatch_description: ($("llmMismatchDescription")?.value || localStorage.getItem(KEYS.llmMismatchDescription) || "").trim(),
+        llm_mismatch_description: (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim(),
         desired_questions: ctx.questionCount || "",
         course_context: ctx.course || "",
         question_context: ctx.area || "",
@@ -6243,7 +5904,7 @@ const PROMPT_META = [
     // Hoisted helpers (extracted from init for readability and reuse)
     // =================================================================
 
-    const MODEL_LABEL_BY_PRODUCT = { chatgpt: "ChatGPT", gemini: "Gemini", copilot: "Copilot" };
+    const MODEL_LABEL_BY_PRODUCT = { chatgpt: "ChatGPT", gemini: "Gemini", copilot: "Copilot", otherai: "Other AI" };
     const openModal = (id) => { const m = $(id); if (m) m.style.display = "flex"; };
     const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
     const openMobileFeedbackSheet = () => {
@@ -6265,17 +5926,21 @@ const PROMPT_META = [
         btn.classList.toggle("selected", isSelected);
       });
       localStorage.setItem(KEYS.llmProduct, llmProduct);
+      localStorage.removeItem(KEYS.llmExpectedChoice);
+      localStorage.removeItem(KEYS.llmMismatchDescription);
+      localStorage.setItem(KEYS.productVersionConfirmed, "true");
       if (logSelection) {
         markInteraction();
         logEvent("llm_product_selected", { llmProduct });
-        setProductVersionConfirmedState(false);
-        queueLiveSessionUpdate("in_progress");
       }
       invalidateStarterIfSignatureChanged();
-      renderLlmConfirmPanel(llmProduct);
+      updateSetupSubbandVisibility();
       renderPromptList();
       renderSetupSamplePromptBox();
       renderCopyCardPromptText();
+      if (logSelection) {
+        queueLiveSessionUpdate("in_progress");
+      }
     }
 
     function refreshCopyCardPreviews() {
@@ -6501,8 +6166,6 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
 
       const restoredProduct = normalizeLlmProduct(session.llm_product || "");
       const restoredModelUsed = String(session.model_used || "").trim();
-      const restoredExpectedChoice = String(session.llm_model || "").trim();
-      const restoredMismatchDescription = String(session.llm_description || "").trim();
       const restoredContextId = String(session.context_id || "").trim();
       const restoredSessionStart = String(session.session_start || "").trim();
       const restoredCourse = String(session.course_context || "").trim();
@@ -6519,9 +6182,9 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
       localStorage.setItem(KEYS.stage, restoredStage);
       localStorage.setItem(KEYS.llmProduct, restoredProduct);
       localStorage.setItem(KEYS.modelUsed, restoredModelUsed);
-      localStorage.setItem(KEYS.llmExpectedChoice, restoredExpectedChoice);
-      localStorage.setItem(KEYS.llmMismatchDescription, restoredMismatchDescription);
-      localStorage.setItem(KEYS.productVersionConfirmed, restoredProduct && restoredExpectedChoice ? "true" : "false");
+      localStorage.removeItem(KEYS.llmExpectedChoice);
+      localStorage.removeItem(KEYS.llmMismatchDescription);
+      localStorage.setItem(KEYS.productVersionConfirmed, restoredProduct ? "true" : "false");
       localStorage.setItem(KEYS.starterCopied, starterCopied ? "true" : "false");
       localStorage.setItem(KEYS.finalPromptCopied, finalPromptCopied ? "true" : "false");
       localStorage.setItem(KEYS.finalizeVisited, finalizeVisited ? "true" : "false");
@@ -6542,7 +6205,6 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
 
       if (restoredProduct) {
         selectModel(restoredProduct, { logSelection: false });
-        renderLlmConfirmPanel(restoredProduct);
       }
       starterPromptCopied = starterCopied;
       if (starterCopied) {
@@ -6623,6 +6285,9 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
       initBootAndConfig();
       const alreadyVerified = initAccessGate();
 
+      localStorage.removeItem(KEYS.llmExpectedChoice);
+      localStorage.removeItem(KEYS.llmMismatchDescription);
+      localStorage.setItem(KEYS.productVersionConfirmed, "false");
 
       // Hydrate fields
       const storedModelProduct = normalizeLlmProduct(localStorage.getItem(KEYS.modelUsed) || "");
@@ -6654,7 +6319,6 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
       if (initialProduct) {
         selectModel($("modelUsed").value || "", { logSelection: false });
       }
-      renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "");
       updateSetupSubbandVisibility();
 
       const btnLoadPreviousSettings = $("btnLoadPreviousSettings");
@@ -6737,136 +6401,8 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
         });
       }
 
-      const llmExpectedChoiceEl = $("llmExpectedChoice");
-      const llmMismatchDescriptionEl = $("llmMismatchDescription");
-
-      if (llmExpectedChoiceEl) {
-        llmExpectedChoiceEl.addEventListener("change", () => {
-          const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-          const expectedChoice = llmExpectedChoiceEl.value || "";
-          if (expectedChoice) {
-            localStorage.setItem(KEYS.llmExpectedChoice, expectedChoice);
-          } else {
-            localStorage.removeItem(KEYS.llmExpectedChoice);
-          }
-
-          logEvent("llm_expected_choice_selected", { llmProduct, expectedChoice });
-          markInteraction();
-          setProductVersionConfirmedState(false);
-          invalidateStarterIfSignatureChanged();
-          queueLiveSessionUpdate("in_progress");
-
-          if (expectedChoice === "different") {
-            setLlmMismatchVisibility(true, true);
-          } else {
-            setLlmMismatchVisibility(false);
-            if (llmMismatchDescriptionEl) llmMismatchDescriptionEl.value = "";
-            localStorage.removeItem(KEYS.llmMismatchDescription);
-            llmMismatchReported = false;
-            llmMismatchAlertAttempted = false;
-          }
-          updateSetupSubbandVisibility();
-        });
-      }
-
-      if (llmMismatchDescriptionEl) {
-        llmMismatchDescriptionEl.addEventListener("input", async () => {
-          const mismatchDescription = llmMismatchDescriptionEl.value || "";
-          markInteraction();
-          localStorage.setItem(KEYS.llmMismatchDescription, mismatchDescription);
-          setProductVersionConfirmedState(false);
-          invalidateStarterIfSignatureChanged();
-          updateSetupSubbandVisibility();
-          queueLiveSessionUpdate("in_progress");
-
-          const trimmed = mismatchDescription.trim();
-          const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-          const expectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-
-          if (!trimmed) {
-            llmMismatchReported = false;
-            llmMismatchAlertAttempted = false;
-            return;
-          }
-
-          if (!llmMismatchReported && trimmed) {
-            markInteraction();
-            llmMismatchReported = true;
-            logEvent("llm_mismatch_reported", {
-              llmProduct,
-              expectedChoice: "different",
-              mismatchDescription: trimmed
-            });
-          }
-
-          if (!llmMismatchAlertAttempted && trimmed && expectedChoice === "different") {
-            llmMismatchAlertAttempted = true;
-            await sendLlmMismatchAlert({
-              accessCode: localStorage.getItem(KEYS.accessCode) || "",
-              sessionId: localStorage.getItem(KEYS.sessionId) || "",
-              stage: getStage(),
-              modelUsed: localStorage.getItem(KEYS.modelUsed) || "",
-              llmProduct,
-              llmExpectedChoice: expectedChoice,
-              llmMismatchDescription: trimmed,
-              timestamp: nowIso()
-            });
-          }
-        });
-      }
-
-      const confirmProductVersionBtn = $("btnConfirmProductVersion");
-      const productVersionSummary = $("productVersionSummary");
       if (!localStorage.getItem(KEYS.productVersionConfirmed)) {
         localStorage.setItem(KEYS.productVersionConfirmed, "false");
-      }
-
-      if (confirmProductVersionBtn) {
-        confirmProductVersionBtn.addEventListener("click", () => {
-          if (!isSetupVersionConfirmedForContext()) {
-            return;
-          }
-          setProductVersionConfirmedState(true);
-          invalidateStarterIfSignatureChanged();
-          markInteraction();
-          logEvent("product_version_confirm_clicked");
-          queueLiveSessionUpdate("in_progress");
-          const confirmedProduct = localStorage.getItem(KEYS.llmProduct) || "";
-          const confirmedModel = localStorage.getItem(KEYS.llmExpectedChoice) || "";
-          const mismatchText = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
-
-          appendServerEvent(
-            "product_mode_confirmed",
-            "btnConfirmProductVersion",
-            `Product: ${formatLlmProductLabel(confirmedProduct)}. Model: ${confirmedModel || "[blank]"}.`,
-            {
-              LLM_Product: confirmedProduct,
-              LLM_Model: confirmedModel,
-              LLM_Description: mismatchText
-            }
-          );
-          updateSetupSubbandVisibility();
-          applyStageUI();
-        });
-      }
-
-      const reopenProductVersion = () => {
-        setProductVersionConfirmedState(false);
-        invalidateStarterIfSignatureChanged();
-        logEvent("product_version_reopened");
-        queueLiveSessionUpdate("in_progress");
-        updateSetupSubbandVisibility();
-        applyStageUI();
-      };
-
-      if (productVersionSummary) {
-        productVersionSummary.addEventListener("click", reopenProductVersion);
-        productVersionSummary.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            reopenProductVersion();
-          }
-        });
       }
 
       // Render prompts
@@ -6902,14 +6438,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
         const questionCount = ($("ctxQuestionCount").value || "10").trim() || "10";
 
         if (!model || !isStarterSetupValid()) {
-          $("setupMsg").textContent = "Please select a model and fill in course + content area before continuing.";
-          $("setupMsg").style.display = "block";
-          showExistingErrorToast("Complete required fields");
-          return;
-        }
-
-        if (!isLlmConfirmationComplete() || localStorage.getItem(KEYS.productVersionConfirmed) !== "true") {
-          $("setupMsg").textContent = "Please confirm product mode before continuing.";
+          $("setupMsg").textContent = "Please select an AI product and fill in course + content area before continuing.";
           $("setupMsg").style.display = "block";
           showExistingErrorToast("Complete required fields");
           return;
