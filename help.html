@@ -29,16 +29,16 @@
     }
 
     .pageShell {
-      max-width: 1240px;
+      max-width: 1440px;
       margin: 0 auto;
-      padding: 24px;
+      padding: 18px 24px 20px;
     }
 
     .appHeaderBar {
       display:flex;
       justify-content:space-between;
-      align-items:flex-start;
-      margin-bottom:14px;
+      align-items:center;
+      margin-bottom:10px;
       padding:6px 2px;
       gap:10px;
       flex-wrap:wrap;
@@ -114,7 +114,7 @@
 
     .pill {
       font-size: 12px;
-      padding: 6px 10px;
+      padding: 3px 8px;
       border:1px solid var(--border);
       border-radius: 999px;
       color: var(--muted);
@@ -135,7 +135,11 @@
       gap:10px;
       align-items:center;
       flex-wrap:wrap;
-      margin: 6px 0 12px;
+      margin: 0 0 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(16,33,61,0.02);
     }
 
     .searchWrap {
@@ -275,13 +279,14 @@
       align-items:center;
       gap:10px;
       flex-wrap:wrap;
-      margin-top: 18px;
+      margin-top: 14px;
     }
 
     .topLink {
       color: var(--accent);
       text-decoration: none;
-      font-size: 13px;
+      font-size: 12px;
+      line-height: 1.4;
       font-weight: 500;
     }
 
@@ -324,12 +329,12 @@
       <span class="pill">Help / FAQ</span>
     </div>
 
-    <div class="card heroCard">
-      <div class="heroTitle">
+    <div class="landingHeaderBlock" style="margin: 0 0 16px;">
+      <div class="heroTitle" style="margin-bottom:6px;">
         <h1>Help / FAQ</h1>
         <span id="faqCountBadge" class="countBadge">Loading items…</span>
       </div>
-      <p class="sub" style="margin-bottom:0;">
+      <p class="sub" style="margin:0;">
         If you forget the study instructions at any point, use this page as a quick reference.
         Click any question below to expand the answer.
       </p>
@@ -367,9 +372,9 @@
             <span class="small muted" id="lastUpdatedText">Waiting for data…</span>
             <a
               href="https://jin-dissertation.github.io/dissertation-app/"
-              class="btn primary"
+              class="topLink"
             >
-              Return to App
+              Return to app
             </a>
           </div>
         </div>
