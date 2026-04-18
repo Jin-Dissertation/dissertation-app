@@ -4,7 +4,7 @@
   <link rel="icon" href="favicon.ico" sizes="any">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>AI-Assisted Multiple Choice Question Writing Tool</title>
+  <title>AI-Assisted Multiple Choice Question Writing App</title>
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap");
     :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; --landing-max-width: 760px; }
@@ -2276,7 +2276,7 @@
 <body>
   <div class="pageShell is-landing">
     <div class="landingColumn">
-      <h1 class="landingHeader">AI-Assisted Multiple Choice Question Writing Tool</h1>
+      <h1 class="landingHeader">AI-Assisted Multiple Choice Question Writing App</h1>
       <p class="sub landingSubtitle">Study Participant Version</p>
       <div id="trainingTopNote" class="training-tip">
         <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
@@ -2296,13 +2296,13 @@
       <!-- Access gate -->
       <div class="card accessCard" id="accessGate">
         <div class="accessIntro muted small">
-          <p>This tool is part of a research study conducted by Taemin Jin. Questions about this study may be directed to <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e4908e8d8aa487968d89978b8aca9185ca818091">[email&#160;protected]</a>.</p>
+          <p>This app is part of a research study conducted by Taemin Jin. Questions about this study may be directed to <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e4908e8d8aa487968d89978b8aca9185ca818091">[email&#160;protected]</a>.</p>
           <p>This research study has been approved by the [UNIVERSITY NAME] Institutional Review Board (IRB), protocol ID #[NUMBER].</p>
-          <p>If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page. You can also click on Show training tips at the bottom of the page at any time to show various helpful tips.</p>
+          <p>If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page. You can also click Show training tips at any time for additional guidance.</p>
         </div>
 
         <div class="accessAction">
-          <p class="accessActionTitle" id="accessCodeLabel">Enter your participant code to enter the app</p>
+          <p class="accessActionTitle" id="accessCodeLabel">Enter your participant code to continue</p>
           <form class="accessRow" id="accessForm">
             <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" aria-labelledby="accessCodeLabel" aria-describedby="accessMsg" />
             <button class="btn primary accessBtn" id="btnVerifyAccess" type="submit">Continue</button>
@@ -2462,13 +2462,13 @@
         </summary>
         <div class="bandBody">
           <div class="lockMsg" id="lockPrompts">
-            Complete <strong>1) Set up</strong>, copy the starter prompt, and click Continue to unlock prompts.
+            Complete <strong>1) Set up</strong>, copy the starter prompt, and click <strong>Proceed to 2) Making questions</strong> to unlock prompts.
           </div>
 
           <div id="promptsInner" style="display:none;">
             <div class="card">
               <div class="trainingTip trainingTipSmall" id="makingQuestionsTrainingTip">
-                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>Training tip</span></div>
                 <p>The AI has now received general directions. From here, you can guide the process by typing in your own guidance or using the prompts below. Each button copies a prompt for a specific action. Click a button, paste the prompt into your AI conversation, and the AI will respond accordingly. If this is your first time using this app, I recommend trying each one at least once to get a feel for the kind of response you get from each.</p>
               </div>
               <div class="promptTopRow">
@@ -2554,12 +2554,12 @@
               </div>
 
               <div id="trainingTipFinalizeIntro" class="trainingTip trainingTipSmall">
-                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>Training tip</span></div>
                 <p>Paste the final prompt into your AI and it will respond with the finalized question set.</p>
               </div>
 
               <div id="finalCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
-                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>Training tip</span></div>
                 <p>The remaining two boxes are not part of the question-writing process. If you are willing, I would appreciate the chance to see your finalized question set so we can discuss it during the closing interview, and I would also welcome any feedback you would like to share.</p>
               </div>
 
@@ -2574,7 +2574,7 @@
                   </summary>
                   <div class="feedbackInner">
                     <div class="muted small finalizeNotice" id="finalizeCopyNotice"></div>
-                    <textarea id="llmResponse" placeholder="Paste the model output here."></textarea>
+                    <textarea id="llmResponse" placeholder="Paste your final question set here."></textarea>
                   </div>
                 </details>
 
@@ -2588,7 +2588,7 @@
                   </summary>
                   <div class="feedbackInner">
                     <div id="trainingTipFinalizeFeedback" class="trainingTip trainingTipSmall">
-                      <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                      <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>Training tip</span></div>
                       <p>Feel free to share anything about the workflow that felt confusing, helpful, or otherwise worth noting.<span class="desktop-only"> In the future, if you think of feedback in the middle of the process that you want to share, you can also click the feedback button in the right-side panel to submit quick feedback.</span></p>
                     </div>
 
@@ -2634,7 +2634,7 @@
               <p class="muted small" id="finalizeMsg" style="margin:10px 0 0;"></p>
 
               <div id="trainingTipEndSession" class="trainingTip trainingTipSmall">
-                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
+                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>Training tip</span></div>
                 <p>Ending the session will submit some information about your session and reset the app.</p>
               </div>
               <div class="finalActionRow" id="endSessionRow" style="display:none;">
@@ -2675,9 +2675,9 @@
             </div>
             <div id="sidebarFeedbackView" class="sidebarView">
               <div class="sidebarTextFeedbackBlock">
-                <p class="sidebarFeedbackHelp">Please provide any feedback about the app or your experience here, either in text or as an audio recording.</p>
+                <p class="sidebarFeedbackHelp">Please share any feedback about the app or your experience here, either in writing or as an audio recording.</p>
                 <p id="sidebarFeedbackSavedNote" class="sidebarFeedbackSavedNote hidden">Text feedback saved.</p>
-                <textarea id="sidebarSessionNotes" placeholder="Quick feedback entry..."></textarea>
+                <textarea id="sidebarSessionNotes" placeholder="Type quick feedback here..."></textarea>
                 <button class="btn" id="sidebarSubmitTextFeedback" type="button">Submit text feedback</button>
               </div>
               <div class="sidebarAudioRecorder" id="sidebarAudioRecorderPanel">
@@ -2715,7 +2715,7 @@
               </div>
             </div>
             <div class="muted small">
-              <div>Try the tool for ~15 min. Experiment with different prompts.</div>
+              <div>Try the app for ~15 min. Experiment with different prompts.</div>
             </div>
           </div>
         </aside>
@@ -2750,8 +2750,8 @@
 
   <div class="modalBackdrop" id="modalReset">
     <div class="modalCard">
-      <h3 style="margin:0 0 8px;">Reset this device?</h3>
-      <p class="muted" style="margin:0 0 12px;">This resets the app and starts a new session.</p>
+      <h3 style="margin:0 0 8px;">Reset session?</h3>
+      <p class="muted" style="margin:0 0 12px;">This will reset the current session and start a new one.</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnResetCancel" type="button">Cancel</button>
         <button class="btn danger" id="btnResetConfirm" type="button">Reset</button>
@@ -2763,7 +2763,7 @@
     <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="modalLogoutTitle">
       <h3 id="modalLogoutTitle" style="margin:0 0 8px;">Log out?</h3>
       <p class="muted" style="margin:0 0 12px;">
-        This will log you out and return you to the access-code screen.
+        This will log you out and return you to the participant code screen.
       </p>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnLogoutCancel" type="button">Cancel</button>
@@ -2789,11 +2789,11 @@
         <h3 id="mobileFeedbackTitle">Feedback</h3>
         <button class="mobileSheetClose" id="btnMobileFeedbackClose" type="button" aria-label="Close feedback panel">Done</button>
       </div>
-      <p class="mobileFeedbackHelper">Please provide any feedback about the app or your experience here, either in text or as an audio recording.</p>
+      <p class="mobileFeedbackHelper">Please share any feedback about the app or your experience here, either in writing or as an audio recording.</p>
       <p id="mobileFeedbackStatus" aria-live="polite"></p>
 
       <div class="mobileFeedbackSection">
-        <textarea id="mobileSessionNotes" placeholder="Quick feedback entry..."></textarea>
+        <textarea id="mobileSessionNotes" placeholder="Type quick feedback here..."></textarea>
         <button class="btn" id="btnMobileSubmitTextFeedback" type="button">Submit text feedback</button>
       </div>
 
@@ -6574,7 +6574,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
             renderSetupSamplePromptBox();
             updateProceedToPromptsAvailability();
             updateSetupSamplePromptVisibility();
-            $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI product to get started. It will respond with an initial question set plan — review it and type out a reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI a sample of your questions to work from. Once you're ready, ask the AI for your first question, then click on Proceed to 2) Making questions.";
+            $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI product to get started. It will respond with an initial question set plan — review it and type out a reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI a sample of your questions to work from. Once you're ready, ask the AI for your first question, then click Proceed to 2) Making questions.";
             $("setupMsg").style.display = "block";
 
             requestNewContextId()
@@ -6619,7 +6619,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
           return;
         }
         if (!hasCurrentStarterPromptCopy()) {
-          showExistingErrorToast("Please copy or re-copy the starter prompt before proceeding to Making questions.");
+          showExistingErrorToast("Please copy or re-copy the starter prompt before clicking Proceed to 2) Making questions.");
           return;
         }
         if (!isSetupComplete()) {
