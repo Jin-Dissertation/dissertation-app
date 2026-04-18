@@ -3904,6 +3904,21 @@ const PROMPT_META = [
     }
 
 
+    function getFinalizeCopyInstructionLine(model) {
+      const m = String(model || "").trim();
+      const caption = "Click the copy button beneath the AI response.";
+      if (m === "ChatGPT") {
+        return `<div class="copyHelpExample"><img src="images/chatgpt-copy.png" class="copyHelpImage" alt="ChatGPT copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      }
+      if (m === "Gemini") {
+        return `<div class="copyHelpExample"><img src="images/gemini-copy.png" class="copyHelpImage" alt="Gemini copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      }
+      if (m === "Copilot") {
+        return `<div class="copyHelpExample"><img src="images/copilot-copy.png" class="copyHelpImage" alt="Copilot copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
+      }
+      return `Look for a copy button, usually located just below the AI's response.`;
+    }
+
     function updateFinalizeContentUI() {
       const copied = localStorage.getItem(KEYS.finalPromptCopied) === "true";
       const notice = $("finalizeCopyNotice");
@@ -3915,11 +3930,15 @@ const PROMPT_META = [
 
       if (notice) {
         if (copied) {
+          const model = localStorage.getItem(KEYS.modelUsed) || "Other AI";
           notice.style.display = "block";
           notice.innerHTML = `
             1) Paste the final prompt into your AI product.<br><br>
-            2) In your AI product, look for a button that copies the entire response.<br>
-            <span class="muted small">If you do not see it right away, look near the response for a copy icon or a button labeled Copy.</span><br><br>
+            2) Click on the copy button below the response to copy it in its entirety<br>
+            <details class="helpToggle" style="display:inline-block; margin-top:6px;">
+              <summary class="whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
+              <div style="margin-top:6px;">${getFinalizeCopyInstructionLine(model)}</div>
+            </details><br><br>
             3) Paste that response below.
           `;
         } else {
