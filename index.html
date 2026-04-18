@@ -4,7 +4,7 @@
   <link rel="icon" href="favicon.ico" sizes="any">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Dissertation Prompt App</title>
+  <title>AI-Assisted Multiple Choice Question Writing Tool</title>
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap");
     :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; --landing-max-width: 760px; }
@@ -2253,8 +2253,8 @@
 <body>
   <div class="pageShell is-landing">
     <div class="landingColumn">
-      <h1 class="landingHeader">Dissertation Prompt App</h1>
-      <p class="sub landingSubtitle">Prompt workflow screen for study participants</p>
+      <h1 class="landingHeader">AI-Assisted Multiple Choice Question Writing Tool</h1>
+      <p class="sub landingSubtitle">Study Participant Version</p>
       <div id="trainingTopNote" class="training-tip">
         <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
         <p>You're in training mode. The blue "Training tip" boxes you'll see on this page are here to walk you through the app. They won't appear during your actual study session.</p>
@@ -2275,11 +2275,11 @@
         <div class="accessIntro muted small">
           <p>This tool is part of a research study conducted by Taemin Jin. Questions about this study may be directed to <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e4908e8d8aa487968d89978b8aca9185ca818091">[email&#160;protected]</a>.</p>
           <p>This research study has been approved by the [UNIVERSITY NAME] Institutional Review Board (IRB), protocol ID #[NUMBER].</p>
-          <p>If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
+          <p>If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page. You can also use the app in training mode, which will show various helpful tips.</p>
         </div>
 
         <div class="accessAction">
-          <p class="accessActionTitle" id="accessCodeLabel">Enter your participant code to begin this session</p>
+          <p class="accessActionTitle" id="accessCodeLabel">Enter your participant code to enter the app</p>
           <form class="accessRow" id="accessForm">
             <input class="accessInput" id="accessCodeInput" placeholder="code" autocomplete="off" autocapitalize="none" spellcheck="false" aria-labelledby="accessCodeLabel" aria-describedby="accessMsg" />
             <button class="btn primary accessBtn" id="btnVerifyAccess" type="submit">Continue</button>
@@ -4091,7 +4091,7 @@ const PROMPT_META = [
       const last = document.lastModified || "—";
       const footer = $("buildInfo");
       if (!footer) return;
-      footer.innerHTML = `Study session • <span id="lastUpdated">Last updated: ${last}</span>`;
+      footer.innerHTML = `<span id="lastUpdated">Last updated: ${last}</span>`;
     }
 
     // -----------------------------
@@ -6503,7 +6503,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
             renderSetupSamplePromptBox();
             updateProceedToPromptsAvailability();
             updateSetupSamplePromptVisibility();
-            $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI tool to get started. It will respond with a question set plan — review it and reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI examples to work from. Once you're ready, ask the AI for your first question, then click Continue.";
+            $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI product to get started. It will respond with a question set plan — review it and type out a reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI a sample of your questions to work from. Once you're ready, ask the AI for your first question, then click on <b>Proceed to 2) Making questions</b>.";
             $("setupMsg").style.display = "block";
 
             requestNewContextId()
