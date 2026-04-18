@@ -6613,7 +6613,13 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
             renderSetupSamplePromptBox();
             updateProceedToPromptsAvailability();
             updateSetupSamplePromptVisibility();
-            $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI product to get started. It will respond with an initial question set plan — review it and type out a reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI a sample of your questions to work from. Once you're ready, ask the AI for your first question, then click Proceed to 2) Making questions.";
+            $("setupMsg").innerHTML = `
+              <strong>Starter prompt copied!</strong><br><br>
+              Paste it into your AI product to get started.<br><br>
+              It will respond with an initial question set plan. Review it and type a reply if you'd like to adjust anything.<br><br>
+              You can also use the sample question prompts below to give the AI examples of your questions.<br><br>
+              Once you're ready, ask the AI for your first question, then click <strong>Proceed to 2) Making questions</strong>.
+            `;
             $("setupMsg").style.display = "block";
 
             requestNewContextId()
