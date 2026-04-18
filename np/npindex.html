@@ -3293,7 +3293,7 @@ const PROMPT_META = [
       });
     }
 
-    function appendNpButtonPress(buttonId = "", detailText = "") {
+    function appendNpButtonPress(buttonId = "") {
       if (!IS_NONPARTICIPANT) return;
 
       const sessionId = String(localStorage.getItem(KEYS.sessionId) || "").trim();
@@ -3313,8 +3313,7 @@ const PROMPT_META = [
           active_seconds: computeActiveSeconds(interactionTimes),
           device_os: getOsLabel(),
           device_type: getDeviceType(),
-          viewport_bucket: getViewportBucket(),
-          detail_text: detailText
+          viewport_bucket: getViewportBucket()
         }),
         keepalive: true
       }).catch((err) => {
@@ -3322,10 +3321,10 @@ const PROMPT_META = [
       });
     }
 
-    function trackNpButtonPress(buttonId, detailText = "") {
+    function trackNpButtonPress(buttonId) {
       if (!IS_NONPARTICIPANT) return;
       markInteraction();
-      appendNpButtonPress(buttonId, detailText);
+      appendNpButtonPress(buttonId);
     }
 
     async function loadRemoteConfig() {
@@ -5851,7 +5850,7 @@ const PROMPT_META = [
         });
 
         if (ok) {
-          trackNpButtonPress(`prompt:${id}`, `Copied sample prompt: ${promptTitle}`);
+          trackNpButtonPress(`prompt:${id}`);
           markInteraction();
           logEvent("prompt_copied", { promptId: id });
           appendServerEvent(
@@ -5979,7 +5978,7 @@ const PROMPT_META = [
         });
 
         if (ok) {
-          trackNpButtonPress(`prompt:${id}`, `Copied prompt: ${promptTitle}`);
+          trackNpButtonPress(`prompt:${id}`);
           markInteraction();
           logEvent("prompt_copied", { promptId: id });
           appendServerEvent(
@@ -6420,7 +6419,7 @@ const PROMPT_META = [
           const ready = await ensureRemoteConfigReadyForLogin();
           if (!ready) return;
           await initializeNonparticipantSession();
-          trackNpButtonPress("btnOpenTool", "Opened non-participant app.");
+          trackNpButtonPress("btnOpenTool");
           setLockedState(false);
           syncStarterPromptCopiedState();
           updateStarterCopyAvailability();
@@ -7038,7 +7037,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
 
             requestNewContextId()
               .then(() => {
-                trackNpButtonPress("starterCopyCard", buildContextDetailText(getContext()));
+                trackNpButtonPress("starterCopyCard");
                 appendServerEvent(
                   "starter_prompt_copied",
                   "starterCopyCard",
@@ -7086,7 +7085,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
           showExistingErrorToast("Complete required fields");
           return;
         }
-        trackNpButtonPress("btnGoPrompts", "Proceeded to Making questions.");
+        trackNpButtonPress("btnGoPrompts");
         $("bandSetup").open = false;
         setStage("prompts");
         appendServerEvent(
@@ -7099,7 +7098,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
 
       // Prompts controls
       $("btnEditContext").addEventListener("click", () => {
-        trackNpButtonPress("btnEditContext", "Returned to setup.");
+        trackNpButtonPress("btnEditContext");
         markInteraction();
         logEvent("edit_context_clicked");
         queueLiveSessionUpdate("in_progress");
@@ -7113,7 +7112,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
       });
 
       $("btnReadyFinal").addEventListener("click", () => {
-        trackNpButtonPress("btnReadyFinal", "Clicked I'm done making questions.");
+        trackNpButtonPress("btnReadyFinal");
         markInteraction();
         logEvent("done_making_questions_clicked");
         queueLiveSessionUpdate("in_progress");
@@ -7137,7 +7136,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
 
       // Finalize controls
       $("btnBackToPrompts").addEventListener("click", () => {
-        trackNpButtonPress("btnBackToPrompts", "Returned to Making questions.");
+        trackNpButtonPress("btnBackToPrompts");
         markInteraction();
         logEvent("back_to_making_questions_clicked");
         queueLiveSessionUpdate("in_progress");
@@ -7159,7 +7158,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
         finalCard?.blur();
         if (!ok) return;
         localStorage.setItem(KEYS.finalPromptCopied, "true");
-        trackNpButtonPress("finalCopyCard", "Copied final prompt.");
+        trackNpButtonPress("finalCopyCard");
         markInteraction();
         logEvent("final_prompt_copied", {});
         appendServerEvent(
@@ -7251,17 +7250,17 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
 
 
       $("btnResetSession").addEventListener("click", () => {
-        trackNpButtonPress("btnResetSession", "Opened reset modal.");
+        trackNpButtonPress("btnResetSession");
         try { logEvent("reset_opened"); } catch (err) { console.warn("Reset log failed", err); }
         openModal("modalReset");
       });
       $("btnResetCancel").addEventListener("click", () => {
-        trackNpButtonPress("btnResetCancel", "Cancelled reset.");
+        trackNpButtonPress("btnResetCancel");
         try { logEvent("reset_cancelled"); } catch (err) { console.warn("Reset log failed", err); }
         closeModal("modalReset");
       });
       $("btnResetConfirm").addEventListener("click", async () => {
-        trackNpButtonPress("btnResetConfirm", "Confirmed reset.");
+        trackNpButtonPress("btnResetConfirm");
         try { logEvent("reset_confirmed"); } catch (err) { console.warn("Reset log failed", err); }
 
         const confirmBtn = $("btnResetConfirm");
@@ -7286,19 +7285,19 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
       });
 
       $("btnLogout").addEventListener("click", () => {
-        trackNpButtonPress("btnLogout", "Opened back-to-start modal.");
+        trackNpButtonPress("btnLogout");
         try { logEvent("logout_opened"); } catch (err) { console.warn("Logout log failed", err); }
         openModal("modalLogout");
       });
 
       $("btnLogoutCancel").addEventListener("click", () => {
-        trackNpButtonPress("btnLogoutCancel", "Cancelled back to start.");
+        trackNpButtonPress("btnLogoutCancel");
         try { logEvent("logout_cancelled"); } catch (err) { console.warn("Logout log failed", err); }
         closeModal("modalLogout");
       });
 
       $("btnLogoutConfirm").addEventListener("click", () => {
-        trackNpButtonPress("btnLogoutConfirm", "Confirmed back to start.");
+        trackNpButtonPress("btnLogoutConfirm");
         try { logEvent("logout_confirmed"); } catch (err) { console.warn("Logout log failed", err); }
         clearSessionData();
         closeModal("modalLogout");
@@ -7306,17 +7305,17 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
       });
 
       $("btnEndSession").addEventListener("click", () => {
-        trackNpButtonPress("btnEndSession", "Opened end-session modal.");
+        trackNpButtonPress("btnEndSession");
         logEvent("end_session_opened");
         openModal("modalEnd");
       });
       $("btnEndCancel").addEventListener("click", () => {
-        trackNpButtonPress("btnEndCancel", "Cancelled end session.");
+        trackNpButtonPress("btnEndCancel");
         logEvent("end_session_cancelled");
         closeModal("modalEnd");
       });
       $("btnEndConfirm").addEventListener("click", async () => {
-        trackNpButtonPress("btnEndConfirm", "Confirmed end session.");
+        trackNpButtonPress("btnEndConfirm");
         markInteraction();
         logEvent("end_session_confirmed");
         const endMsg = $("endMsg");
@@ -7457,13 +7456,13 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
           buttonId = "helpFaqLink";
         } else if (target.classList.contains("trainingTipsLink")) {
           buttonId = "trainingTipsLink";
-        } else if (target.getAttribute("aria-label")) {
-          buttonId = target.getAttribute("aria-label").trim();
+        } else if (target.matches("[role='button']")) {
+          buttonId = "role_button";
         } else {
-          buttonId = (target.textContent || "").trim().replace(/\s+/g, " ").slice(0, 100) || "unknown_button";
+          buttonId = "unknown_button";
         }
 
-        trackNpButtonPress(buttonId, "");
+        trackNpButtonPress(buttonId);
       }, true);
 
       // Always show footer status immediately (even before access is verified)
