@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Study Information</title>
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+    :root {
+      --bg: #edf4ff;
+      --card: #ffffff;
+      --muted: #5f718f;
+      --text: #10213d;
+      --accent: #2f6edc;
+      --accent-soft: #dbe9ff;
+      --border: #c8d8f0;
+      --good-bg: #f5fbff;
+      --good-border: #b8d4f5;
+      --warm-bg: #fff9ef;
+      --warm-border: #ead6ad;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      letter-spacing: 0.01em;
+    }
+
+    .pageShell {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 20px 20px 28px;
+    }
+
+    .headerBlock {
+      margin: 8px 0 16px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(28px, 4vw, 38px);
+      line-height: 1.08;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 6px 18px rgba(16, 33, 61, 0.06);
+    }
+
+    .card + .card {
+      margin-top: 14px;
+    }
+
+    .introCard {
+      border-left: 5px solid var(--accent);
+      background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+    }
+
+    .sectionTitle {
+      margin: 0 0 10px;
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 750;
+    }
+
+    p {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    p + p {
+      margin-top: 10px;
+    }
+
+    .actionLine {
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    a:hover {
+      text-decoration-thickness: 2px;
+    }
+
+    .eligibilityBox {
+      background: var(--good-bg);
+      border-color: var(--good-border);
+    }
+
+    .perspectiveNote {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--warm-border);
+      background: var(--warm-bg);
+      border-radius: 12px;
+      color: #5b4320;
+    }
+
+    .smallLabel {
+      display: inline-block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #7b5a1f;
+    }
+
+    .footerRow {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      align-items: center;
+    }
+
+    .backLink {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      margin-top: 14px;
+    }
+
+    @media (max-width: 640px) {
+      .pageShell {
+        padding: 14px 14px 22px;
+      }
+
+      .card {
+        padding: 16px;
+        border-radius: 14px;
+      }
+
+      .sectionTitle {
+        font-size: 17px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="pageShell">
+    <header class="headerBlock">
+      <h1>Study Information</h1>
+      <p class="subtitle">Information for non-participants who want to learn more about the study connected to this tool.</p>
+    </header>
+
+    <section class="card introCard">
+      <p class="actionLine">
+        If you meet the eligibility criteria and wish to express interest in participating, you may complete the screening form
+        <a href="[QUALTRICS_SCREENING_LINK]" target="_blank" rel="noopener noreferrer">here</a>.
+      </p>
+    </section>
+
+    <section class="card eligibilityBox">
+      <h2 class="sectionTitle">Who is eligible for the study?</h2>
+      <p>
+        This study is open to actively working prelicensure nurse educators whose institutions have provided them with institutional access to one of the following AI products: ChatGPT, Gemini, or Copilot.
+      </p>
+      <div class="perspectiveNote">
+        <div class="smallLabel">Important note</div>
+        <p>
+          You do not need to be enthusiastic about AI to participate. I am specifically seeking a range of perspectives, including those of educators who feel uncertain about AI, cautious about it, skeptical of it, or not enthusiastic about using it.
+        </p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="sectionTitle">What is this study about?</h2>
+      <p>
+        This study explores how prelicensure nurse educators experience the use of AI for multiple choice question writing.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2 class="sectionTitle">What would participation involve?</h2>
+      <p>
+        If you qualify and choose to participate, participation would involve two interviews and completion of a training module.
+      </p>
+      <p>
+        Additional details about the study procedures and time commitment would be provided before you decide whether to participate.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2 class="sectionTitle">Questions?</h2>
+      <p>
+        If you have questions about the study, please contact Taemin Jin at
+        <a href="mailto:[YOUR_EMAIL]">[YOUR_EMAIL]</a>.
+      </p>
+      <div class="footerRow">
+        <a class="backLink" href="npindex.html">← Back to the tool</a>
+      </div>
+    </section>
+
+    <p class="meta">
+      Replace <strong>[QUALTRICS_SCREENING_LINK]</strong> and <strong>[YOUR_EMAIL]</strong> with your actual links before publishing.
+    </p>
+  </main>
+</body>
+</html>
