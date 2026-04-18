@@ -2545,8 +2545,8 @@
                 <details class="feedbackCollapsible" id="finalModelOutputSection">
                   <summary class="feedbackSummary">
                     <div class="feedbackSummaryLeft">
-                      <span class="feedbackSummaryLabel">Optional model output</span>
-                      <span class="feedbackSummaryHint">— paste the AI response here if you want</span>
+                      <span class="feedbackSummaryLabel">Share question set (optional)</span>
+                      <span class="feedbackSummaryHint">— share your final question set here</span>
                     </div>
                     <span class="feedbackSummaryChevron" aria-hidden="true">›</span>
                   </summary>
@@ -2559,8 +2559,8 @@
                 <details class="feedbackCollapsible" id="finalFeedbackSection">
                   <summary class="feedbackSummary">
                     <div class="feedbackSummaryLeft">
-                      <span class="feedbackSummaryLabel">Optional feedback</span>
-                      <span class="feedbackSummaryHint">— leave a comment or voice recording</span>
+                      <span class="feedbackSummaryLabel">Share feedback (optional)</span>
+                      <span class="feedbackSummaryHint">— leave a text comment or voice recording</span>
                     </div>
                     <span class="feedbackSummaryChevron" aria-hidden="true">›</span>
                   </summary>
@@ -2744,7 +2744,7 @@
   <div class="modalBackdrop" id="modalEnd">
     <div class="modalCard">
       <h3 style="margin:0 0 8px;">End session</h3>
-      <p class="muted" style="margin:0 0 12px;">This will submit your data and start over. Any recorded audio will be submitted automatically.</p>
+      <p class="muted" style="margin:0 0 12px;">This will submit your data and reset the app. Any recorded audio will be submitted automatically.</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnEndCancel" type="button">Cancel</button>
         <button class="btn finishSessionBtn" id="btnEndConfirm" type="button">End session</button>
@@ -6503,7 +6503,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
             renderSetupSamplePromptBox();
             updateProceedToPromptsAvailability();
             updateSetupSamplePromptVisibility();
-            $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI product to get started. It will respond with a question set plan — review it and type out a reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI a sample of your questions to work from. Once you're ready, ask the AI for your first question, then click on <b>Proceed to 2) Making questions</b>.";
+            $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI product to get started. It will respond with a question set plan — review it and type out a reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI a sample of your questions to work from. Once you're ready, ask the AI for your first question, then click on Proceed to 2) Making questions.";
             $("setupMsg").style.display = "block";
 
             requestNewContextId()
