@@ -598,6 +598,25 @@
     .helpFaqLink:hover {
       text-decoration: underline;
     }
+    .trainingTipsLink {
+      color: var(--muted);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      font-size: 13px;
+      font-weight: 500;
+      background: none;
+      border: 0;
+      padding: 0;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .trainingTipsLink:hover {
+      color: var(--accent);
+    }
+    .trainingTipsDivider {
+      color: var(--muted);
+      margin: 0 8px;
+    }
     .btn.ghost { background:#f1f7ff; border:1px solid var(--border); color:var(--text); padding:6px 10px; }
         .modalBackdrop { position:fixed; inset:0; background:rgba(16,33,61,.35); display:none; align-items:center; justify-content:center; z-index:10000; }
     .modalCard { width:min(460px, calc(100vw - 24px)); background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; }
@@ -2715,6 +2734,15 @@
             >
               Help / FAQ
             </a>
+            <span class="trainingTipsDivider" aria-hidden="true">•</span>
+            <button
+              id="btnToggleTrainingTipsFooter"
+              class="trainingTipsLink"
+              type="button"
+              aria-pressed="false"
+            >
+              Show training tips
+            </button>
           </div>
         </div>
       </div>
@@ -2942,6 +2970,7 @@ const PROMPT_META = [
     const nowIso = () => new Date().toISOString();
     const currentUrl = new URL(window.location.href);
     const isTrainingMode = currentUrl.searchParams.get("mode") === "training";
+    let trainingTipsVisible = isTrainingMode;
     function getSelectedLlmKey() {
       return normalizeLlmProduct(
         localStorage.getItem(KEYS.llmProduct)
@@ -3774,14 +3803,33 @@ const PROMPT_META = [
     }
 
 
+    function refreshTrainingTipsFooterLink() {
+      const btn = $("btnToggleTrainingTipsFooter");
+      if (!btn) return;
+      btn.textContent = trainingTipsVisible ? "Hide training tips" : "Show training tips";
+      btn.setAttribute("aria-pressed", trainingTipsVisible ? "true" : "false");
+    }
+
+    function setupTrainingTipsFooterToggle() {
+      const btn = $("btnToggleTrainingTipsFooter");
+      if (!btn) return;
+      refreshTrainingTipsFooterLink();
+      btn.addEventListener("click", () => {
+        trainingTipsVisible = !trainingTipsVisible;
+        configureTrainingTipsUI();
+        refreshTrainingTipsFooterLink();
+      });
+    }
+
     function configureTrainingTipsUI() {
       const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "makingQuestionsTrainingTip", "trainingTipFinalizeIntro", "finalCopiedTrainingTip", "trainingTipFinalizeFeedback", "trainingTipEndSession", "trainingTipSamplePrompts"];
       tipIds.forEach((id) => {
         const el = $(id);
         if (!el) return;
-        const shouldShow = isTrainingMode && ((id !== "starterCopiedTrainingTip" && id !== "finalCopiedTrainingTip") || !el.hidden);
+        const shouldShow = trainingTipsVisible && ((id !== "starterCopiedTrainingTip" && id !== "finalCopiedTrainingTip") || !el.hidden);
         el.style.display = shouldShow ? "block" : "none";
       });
+      refreshTrainingTipsFooterLink();
     }
 
     function configureTimerModeUI() {
@@ -5986,6 +6034,7 @@ const PROMPT_META = [
       configureTrainingTipsUI();
       configureTimerModeUI();
       setupTrainingModeToggle();
+      setupTrainingTipsFooterToggle();
       try {
         await loadRemoteConfig();
         appBootLoading = false;
