@@ -326,7 +326,7 @@
       >
         ← Back to app
       </a>
-      <span class="pill">Participant Help / FAQ</span>
+      <span class="pill">Non-participant Help / FAQ</span>
     </div>
 
     <div class="landingHeaderBlock" style="margin: 0 0 16px;">
@@ -335,8 +335,8 @@
         <span id="faqCountBadge" class="countBadge">Loading items…</span>
       </div>
       <p class="sub" style="margin:0;">
-        If you forget the study instructions at any point, use this page as a quick reference.
-        This version shows help topics relevant to study participants only.
+        If you forget how to use the app at any point, use this page as a quick reference.
+        This version shows help topics relevant to non-participant use only.
         Click any question below to expand the answer.
       </p>
     </div>
@@ -386,9 +386,9 @@
 
   <script>
     const FAQ_API_URL = "https://script.google.com/macros/s/AKfycbwvsWkIL7gCqt5dLy9Fu8MoEcwJue8BaA4pFOkW2Ug0sFucRq1IR3uekb6NTjm5Auo1/exec";
-    const FAQ_MODE = "participant";
-    const BACK_TO_APP_URL = "https://jin-dissertation.github.io/dissertation-app/";
-    const HELP_VARIANT_LABEL = "Participant Help / FAQ";
+    const FAQ_MODE = "np";
+    const BACK_TO_APP_URL = "https://jin-dissertation.github.io/dissertation-app/np/npindex.html";
+    const HELP_VARIANT_LABEL = "Non-participant Help / FAQ";
 
     document.querySelectorAll('a.topLink').forEach((link) => {
       if (link.textContent.includes("app")) {
