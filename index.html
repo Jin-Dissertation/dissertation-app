@@ -2273,7 +2273,7 @@
       <!-- Access gate -->
       <div class="card accessCard" id="accessGate">
         <div class="accessIntro muted small">
-          <p>This tool is part of a research study conducted by Taemin Jin. Questions about this study may be directed to <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e4908e8d8aa487968d89978b8aca9185ca818091">[email&#160;protected]</a>.</p>
+          <p>This app was developed as part of a research study conducted by Taemin Jin. Questions about this study may be directed to <a href="mailto:tjin@crimson.ua.edu">tjin@crimson.ua.edu</a>.</p>
           <p>This research study has been approved by the [UNIVERSITY NAME] Institutional Review Board (IRB), protocol ID #[NUMBER].</p>
           <p>If you forget the study instructions at any point, use the Help / FAQ link at the bottom of the page.</p>
         </div>
@@ -2411,7 +2411,7 @@
             <div id="setupSamplePromptBox" class="setupPromptBox" hidden>
               <div class="setupPromptBoxHeader">
                 <h4 class="setupPromptBoxTitle">Optional: Use sample questions</h4>
-                <p class="setupPromptBoxSub">If you have sample questions, you can use one of these prompts to guide the AI.</p>
+                <p class="setupPromptBoxSub">You can use one of these prompts to guide the AI using existing sample questions. Each of these prompts includes space below them for you to paste your sample questions.</p>
               </div>
               <div id="trainingTipSamplePrompts" class="trainingTip trainingTipSmall">
                 <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
@@ -2545,8 +2545,8 @@
                 <details class="feedbackCollapsible" id="finalModelOutputSection">
                   <summary class="feedbackSummary">
                     <div class="feedbackSummaryLeft">
-                      <span class="feedbackSummaryLabel">Optional model output</span>
-                      <span class="feedbackSummaryHint">— paste the AI response here if you want</span>
+                      <span class="feedbackSummaryLabel">Share finalized question set</span>
+                      <span class="feedbackSummaryHint">— if you would like to share your finalized set of questions</span>
                     </div>
                     <span class="feedbackSummaryChevron" aria-hidden="true">›</span>
                   </summary>
@@ -2559,8 +2559,8 @@
                 <details class="feedbackCollapsible" id="finalFeedbackSection">
                   <summary class="feedbackSummary">
                     <div class="feedbackSummaryLeft">
-                      <span class="feedbackSummaryLabel">Optional feedback</span>
-                      <span class="feedbackSummaryHint">— leave a comment or voice recording</span>
+                      <span class="feedbackSummaryLabel">Feedback</span>
+                      <span class="feedbackSummaryHint">— leave a text comment or voice recording</span>
                     </div>
                     <span class="feedbackSummaryChevron" aria-hidden="true">›</span>
                   </summary>
@@ -3919,7 +3919,10 @@ const PROMPT_META = [
           notice.innerHTML = `
             1) Paste the final prompt into your AI product.<br><br>
             2) In your AI product, look for a button that copies the entire response.<br>
-            <span class="muted small">If you do not see it right away, look near the response for a copy icon or a button labeled Copy.</span><br><br>
+            <details class="helpToggle" style="display:inline-block; margin-top:6px;">
+              <summary class="whereToggleSummary"><span class="whereToggleIcon" aria-hidden="true">▶</span><span>Where do I find this?</span></summary>
+              <div style="margin-top:6px;">${getFinalizeCopyInstructionLine(model)}</div>
+            </details><br><br>
             3) Paste that response below.
           `;
         } else {
@@ -6503,7 +6506,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
             renderSetupSamplePromptBox();
             updateProceedToPromptsAvailability();
             updateSetupSamplePromptVisibility();
-            $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI tool to get started. It will respond with a question set plan — review it and reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI examples to work from. Once you're ready, ask the AI for your first question, then click Continue.";
+            $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI product to get started. It will respond with a question set plan — review it and type out a reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI examples to work from. Once you're ready, ask the AI for your first question, then click Continue.";
             $("setupMsg").style.display = "block";
 
             requestNewContextId()
