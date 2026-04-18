@@ -589,6 +589,17 @@
       padding: 0;
       flex: 0 0 auto;
     }
+    .timerNoticeClose {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+    }
+    .timerNotice.is-close-ready .timerNoticeClose {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
     .helpFaqLink {
       color: var(--accent);
       text-decoration: none;
@@ -2828,7 +2839,7 @@
   <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
   <div class="timerNotice" id="timerNotice" style="display:none;" role="alert" aria-live="assertive">
     <div class="timerNoticeMessage" id="timerNoticeMessage"></div>
-    <button class="timerNoticeClose" id="timerNoticeClose" type="button" aria-label="Dismiss notification">×</button>
+    <button class="timerNoticeClose" id="timerNoticeClose" type="button" aria-label="Dismiss notification" aria-hidden="true" disabled>×</button>
   </div>
 
   <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
@@ -3282,22 +3293,48 @@ const PROMPT_META = [
     function hideTimerNotice() {
       const notice = $("timerNotice");
       const msg = $("timerNoticeMessage");
+      const closeBtn = $("timerNoticeClose");
       if (!notice || !msg) return;
       if (notice._hideTimer) clearTimeout(notice._hideTimer);
+      if (notice._unlockTimer) clearTimeout(notice._unlockTimer);
+      notice.classList.remove("is-close-ready");
       notice.style.display = "none";
       msg.textContent = "";
+      if (closeBtn) {
+        closeBtn.disabled = true;
+        closeBtn.setAttribute("aria-hidden", "true");
+      }
     }
 
     function showTimerNotice(message) {
       const notice = $("timerNotice");
       const msg = $("timerNoticeMessage");
+      const closeBtn = $("timerNoticeClose");
       if (!notice || !msg) return;
+
       if (notice._hideTimer) clearTimeout(notice._hideTimer);
+      if (notice._unlockTimer) clearTimeout(notice._unlockTimer);
+
+      notice.classList.remove("is-close-ready");
       msg.textContent = message;
       notice.style.display = "flex";
+
+      if (closeBtn) {
+        closeBtn.disabled = true;
+        closeBtn.setAttribute("aria-hidden", "true");
+      }
+
+      notice._unlockTimer = setTimeout(() => {
+        notice.classList.add("is-close-ready");
+        if (closeBtn) {
+          closeBtn.disabled = false;
+          closeBtn.setAttribute("aria-hidden", "false");
+        }
+      }, TIMER_NOTICE_MIN_VISIBLE_MS);
+
       notice._hideTimer = setTimeout(() => {
         hideTimerNotice();
-      }, 60000);
+      }, TIMER_NOTICE_AUTO_HIDE_MS);
     }
 
     const toast = (msg, { duration = 1400 } = {}) => {
@@ -3698,6 +3735,8 @@ const PROMPT_META = [
     }
 
     const TIMER_TRAINING_NOTICE_15_MIN_MS = 15 * 60 * 1000;
+    const TIMER_NOTICE_MIN_VISIBLE_MS = 5000;
+    const TIMER_NOTICE_AUTO_HIDE_MS = 60000;
 
     function formatElapsed(ms) {
       const totalSeconds = Math.max(0, Math.floor((ms || 0) / 1000));
