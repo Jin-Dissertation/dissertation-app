@@ -2393,7 +2393,7 @@
               </div>
               <div style="flex:1; min-width: 240px;">
                 <label>Additional parameters (optional)</label>
-                <input id="ctxNotes" placeholder="(e.g., higher difficulty, for a practice quiz)" />
+                <input id="ctxNotes" placeholder="e.g., higher difficulty, for a practice quiz" />
               </div>
             </div>
 
@@ -2402,7 +2402,7 @@
             </p>
             <div id="trainingTipStarterGate" class="trainingTip trainingTipSmall">
               <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-              <p>To move forward, fill in the course context and content area, then copy the starter prompt and paste it into your AI product. Once you've done that, the "Proceed to Making questions" button will unlock.</p>
+              <p>The app will not let you move forward until you fill in the fields for course context and topic.</p>
             </div>
 
             <div class="row copyPromptRow" style="margin-top:12px;">
@@ -2423,7 +2423,7 @@
             </div>
             <div id="starterCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
               <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-              <p>The starter prompt is now on your clipboard. Switch to your AI product and paste it into the message box<span class="desktop-only"> (<strong>Ctrl+V</strong> on Windows/Chromebook, or <strong>⌘+V</strong> on Mac). The <strong>Clipboard</strong> panel on the right shows what you last copied. Use the icons at the top of the panel to switch between a preview of the current copy and a history of everything you've copied this session</span><span class="mobile-only"> (tap and hold in the text field, then tap <strong>Paste</strong>)</span>. After the AI responds, come back here and proceed down.</p>
+              <p>The starter prompt has been copied onto your clipboard. Switch to your AI product and paste it into the message box<span class="desktop-only"> (<strong>Ctrl+V</strong> on Windows/Chromebook, or <strong>⌘+V</strong> on Mac). The <strong>Clipboard</strong> panel on the right shows what you last copied</span><span class="mobile-only"> (tap and hold in the text field, then tap <strong>Paste</strong>)</span>.</p>
               <p style="margin-top:8px;" class="mobile-only">Each prompt you copy stays on your clipboard until the next one replaces it. You can always re-copy a button if you need it again.</p>
             </div>
 
@@ -2438,7 +2438,7 @@
               </div>
               <div id="trainingTipSamplePrompts" class="trainingTip trainingTipSmall">
                 <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-                <p>If you have existing questions you'd like to use as a reference, they're a great way to quickly show the AI what you're looking for. To use one of these prompts, <strong>first copy the prompt</strong> and paste it into your AI product, <strong>then copy your sample questions</strong> and paste them into the same conversation. If you don't have samples or prefer to skip this, just click the blue <strong>Proceed</strong> button below.</p>
+                <p>If you have existing questions you'd like to use as a reference, they're a great way to quickly show the AI what you're looking for. To use one of these prompts, first copy the prompt and paste it into your AI product. Each prompt will give space for you to paste your sample questions at the bottom. If you don't have samples or prefer to skip this, just click the blue <strong>Proceed</strong> button below.</p>
               </div>
               <div id="setupSamplePromptList" class="setupPromptList promptListCompact"></div>
             </div>
@@ -2469,7 +2469,7 @@
             <div class="card">
               <div class="trainingTip trainingTipSmall" id="makingQuestionsTrainingTip">
                 <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
-                <p>The starter prompt gave the AI its overall directions. From here, you'll guide the conversation using the buttons below. Each button copies a pre-written prompt for a specific action, like accepting a question, requesting a replacement, or auditing your set. Click a button, paste the prompt into your AI conversation, and the AI will respond accordingly.</p>
+                <p>The AI has now received general directions. From here, you can guide the process by typing in your own guidance or using the buttons below. Each button copies a prompt for a specific action. Click a button, paste the prompt into your AI conversation, and the AI will respond accordingly. If this is your first time using this app, I recommend trying each one to get a feel for the kind of response you get from each.</p>
               </div>
               <div class="promptTopRow">
                 <div class="promptTopRowActions">
@@ -6575,7 +6575,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
             renderSetupSamplePromptBox();
             updateProceedToPromptsAvailability();
             updateSetupSamplePromptVisibility();
-            $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI product to get started. It will respond with a question set plan — review it and type out a reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI a sample of your questions to work from. Once you're ready, ask the AI for your first question, then click on Proceed to 2) Making questions.";
+            $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI product to get started. It will respond with an initial question set plan — review it and type out a reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI a sample of your questions to work from. Once you're ready, ask the AI for your first question, then click on Proceed to 2) Making questions.";
             $("setupMsg").style.display = "block";
 
             requestNewContextId()
