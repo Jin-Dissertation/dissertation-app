@@ -4,7 +4,7 @@
   <link rel="icon" href="favicon.ico" sizes="any">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>AI-Assisted Multiple Choice Question Writing Tool</title>
+  <title>AI-Assisted Multiple Choice Question Writing App</title>
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap");
     :root { --bg:#edf4ff; --card:#ffffff; --muted:#5f718f; --text:#10213d; --accent:#2f6edc; --accent-soft:#dbe9ff; --border:#c8d8f0; --warn:#f59e0b; --landing-max-width: 760px; }
@@ -243,7 +243,7 @@
     #promptsInner { min-width: 0; overflow-x: hidden; }
     .lockMsg { border:1px dashed var(--border); border-radius: 10px; padding:10px; color: var(--muted); background: #f7faff; }
     .hidden { display:none; }
-    .modelGrid, .product-grid { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:14px; }
+    .modelGrid, .product-grid { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap:14px; }
     .modelOption, .product-card { border:1px solid var(--border); border-radius: 10px; padding:8px 6px; min-height:78px; background:#f8fbff; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; }
     .modelOption:hover, .product-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.08); border-color: var(--accent); }
     .modelOption:active, .product-card:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
@@ -267,6 +267,12 @@
     .productButton.selected .productIconCircle,
     .product-card.selected .productIconCircle {
       background: #e8f0ff;
+    }
+    .productIconText {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #334155;
     }
     .logo-openai{ background:#111827; }
     .logo-gemini{ background:#6d5ef6; }
@@ -332,8 +338,8 @@
       }
       .pageFooter { margin-top: 12px; }
     }
-    @media (max-width: 680px) {
-      .modelGrid, .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    @media (max-width: 900px) {
+      .modelGrid, .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     .subBand { border:1px solid var(--border); border-radius: 10px; background:rgba(16,33,61,0.02); padding:12px 14px; margin-top:10px; }
     .llmConfirmIntro { margin:10px 0 8px; }
@@ -592,6 +598,17 @@
       padding: 0;
       flex: 0 0 auto;
     }
+    .timerNoticeClose {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+    }
+    .timerNotice.is-close-ready .timerNoticeClose {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
     .helpFaqLink {
       color: var(--accent);
       text-decoration: none;
@@ -600,6 +617,25 @@
     }
     .helpFaqLink:hover {
       text-decoration: underline;
+    }
+    .trainingTipsLink {
+      color: var(--muted);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      font-size: 13px;
+      font-weight: 500;
+      background: none;
+      border: 0;
+      padding: 0;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .trainingTipsLink:hover {
+      color: var(--accent);
+    }
+    .trainingTipsDivider {
+      color: var(--muted);
+      margin: 0 8px;
     }
     .btn.ghost { background:#f1f7ff; border:1px solid var(--border); color:var(--text); padding:6px 10px; }
         .modalBackdrop { position:fixed; inset:0; background:rgba(16,33,61,.35); display:none; align-items:center; justify-content:center; z-index:10000; }
@@ -1391,7 +1427,11 @@
       box-sizing: border-box;
     }
     .promptArea { min-width: 0; overflow-x: hidden; }
-    .finalizeNotice { margin:10px 0 0; display:none; }
+    .finalizeNotice { margin:0 0 10px; display:none; }
+
+    #finalizeCopyNotice details {
+      margin: 6px 0;
+    }
     .finalizeLockedContent { opacity:.6; pointer-events:none; user-select:none; }
     .finalActionBtn {
       min-height: 44px;
@@ -2256,7 +2296,7 @@
 <body>
   <div class="pageShell is-landing">
     <div class="landingColumn">
-      <h1 class="landingHeader">AI-Assisted Multiple Choice Question Writing Tool</h1>
+      <h1 class="landingHeader">AI-Assisted Multiple Choice Question Writing App</h1>
       <p class="sub landingSubtitle">Non-participant version</p>
       <div id="trainingTopNote" class="training-tip">
         <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
@@ -2269,23 +2309,23 @@
       <div id="sessionCompleteBanner" class="sessionCompleteBanner" hidden>
         <div class="sessionCompleteIcon" aria-hidden="true">✓</div>
         <div class="sessionCompleteContent">
-          <div class="sessionCompleteTitle">Session finished</div>
-          <div class="sessionCompleteBody">This browser session has been finished. You may now close this window.</div>
+          <div class="sessionCompleteTitle">Session complete</div>
+          <div class="sessionCompleteBody">This browser session has ended. You may now close this window.</div>
         </div>
       </div>
       <!-- Non-participant landing card -->
       <div class="card accessCard" id="accessGate">
         <div class="accessIntro muted small">
-          <p>This tool was originally developed as part of a research study exploring how prelicensure nurse educators use AI for multiple choice question writing. This version is available for general use and is separate from the research study</p>
+          <p>This app was originally developed as part of a research study exploring how prelicensure nurse educators use AI for multiple choice question writing. This version is available for general use and is separate from the research study.</p>
           <p><strong>Who is eligible for the study?</strong><br>This study is open to actively working prelicensure nurse educators whose institutions have provided them with institutional access to one of the following AI products: ChatGPT, Gemini, or Copilot.</p>
           <p><strong>Interested in participating?</strong><br>If you meet the eligibility criteria and are interested in participating, please review the study information by <a href="npstudyinfo.html">clicking here</a>.</p>
-          <p>If you forget how to use the tool at any point, use the Help / FAQ link at the bottom of the page.</p>
+          <p>If you forget how to use the app at any point, use the Help / FAQ link at the bottom of the page. You can also click Show training tips at any time for additional guidance.</p>
         </div>
 
         <div class="accessAction">
-          <p class="accessActionTitle" id="accessCodeLabel">Open the tool to begin</p>
+          <p class="accessActionTitle" id="accessCodeLabel">Open the app to begin</p>
           <div class="accessRow">
-            <button class="btn primary accessBtn" id="btnOpenTool" type="button">Open tool</button>
+            <button class="btn primary accessBtn" id="btnOpenTool" type="button">Open app</button>
           </div>
         </div>
 
@@ -2297,7 +2337,7 @@
     <div id="appShell" style="display:none;">
       <div class="appHeaderBar">
         <div class="appHeaderActions">
-          <button id="btnResetSession" class="btn" type="button">Reset</button>
+          <button id="btnResetSession" class="btn" type="button">Reset session</button>
           <button id="btnLogout" class="btn" type="button">Back to start</button>
         </div>
         <button id="btnMobileFeedback" class="btn" type="button">Feedback</button>
@@ -2328,10 +2368,10 @@
                   <input type="hidden" id="modelUsed" />
                   <div class="modelGrid product-grid" id="modelGrid">
 
-                  <!-- Active products are currently limited to ChatGPT, Gemini, and Copilot. -->
                   <button class="modelOption product-card productButton" data-model="ChatGPT" type="button"><div class="productIconCircle"><img src="images/chatgpt.png" class="productIconImage" alt="ChatGPT"></div><span>ChatGPT</span></button>
 <button class="modelOption product-card productButton" data-model="Gemini" type="button"><div class="productIconCircle"><img src="images/gemini.png" class="productIconImage" alt="Gemini"></div><span>Gemini</span></button>
 <button class="modelOption product-card productButton" data-model="Copilot" type="button"><div class="productIconCircle"><img src="images/copilot.png" class="productIconImage" alt="Copilot"></div><span>Copilot</span></button>
+<button class="modelOption product-card productButton" data-model="Other AI" type="button"><div class="productIconCircle"><img src="images/otherai.png" class="productIconImage" alt="Other AI"></div><span>Other AI</span></button>
                   </div>
                 </div>
               </div>
@@ -2367,18 +2407,18 @@
               <p id="loadPreviousSettingsMsg" class="muted small" style="display:none; margin:8px 0 0;"></p>
               <div id="trainingTipQuestionContext" class="training-tip">
                 <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-                <p>The first two fields are required to tell the AI what kind of questions to create. This doesn't have to be detailed; it's just a short, specific description to point the AI in the right direction.</p>
+                <p>The first two fields are required to tell the AI what kind of questions to create. This doesn't have to be detailed; it's just to point the AI in the right direction.</p>
               </div>
 
               <div id="contextFields">
             <div class="row" style="margin-top:10px;">
               <div style="flex:1; min-width: 240px;">
                 <label>Course</label>
-                <input id="ctxCourse" placeholder="e.g., Health Assessment" />
+                <input id="ctxCourse" placeholder="e.g., medical-surgical 1" />
               </div>
               <div style="flex:1; min-width: 240px;">
                 <label>Topic</label>
-                <input id="ctxArea" placeholder="e.g., Respiratory Assessment" />
+                <input id="ctxArea" placeholder="e.g., respiratory infections" />
               </div>
             </div>
 
@@ -2389,7 +2429,7 @@
               </div>
               <div style="flex:1; min-width: 240px;">
                 <label>Additional parameters (optional)</label>
-                <input id="ctxNotes" placeholder="(e.g., difficulty level, tone, purpose)" />
+                <input id="ctxNotes" placeholder="e.g., higher difficulty, for a practice quiz" />
               </div>
             </div>
 
@@ -2398,7 +2438,7 @@
             </p>
             <div id="trainingTipStarterGate" class="trainingTip trainingTipSmall">
               <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-              <p>To move forward, fill in the course context and content area, then copy the starter prompt and paste it into your AI product. Once you've done that, the "Proceed to Making questions" button will unlock.</p>
+              <p>The app will not let you move forward until you fill in the fields for course context and topic.</p>
             </div>
 
             <div class="row copyPromptRow" style="margin-top:12px;">
@@ -2419,7 +2459,7 @@
             </div>
             <div id="starterCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
               <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-              <p>The starter prompt is now on your clipboard. Switch to your AI product and paste it into the message box<span class="desktop-only"> (<strong>Ctrl+V</strong> on Windows/Chromebook, or <strong>⌘+V</strong> on Mac). The <strong>Clipboard</strong> panel on the right shows what you last copied. Use the icons at the top of the panel to switch between a preview of the current copy and a history of everything you've copied this session</span><span class="mobile-only"> (tap and hold in the text field, then tap <strong>Paste</strong>)</span>. After the AI responds, come back here and proceed down.</p>
+              <p>The starter prompt has been copied onto your clipboard. Switch to your AI product and paste it into the message box<span class="desktop-only"> (<strong>Ctrl+V</strong> on Windows/Chromebook, or <strong>⌘+V</strong> on Mac). The <strong>Clipboard</strong> panel on the right shows what you last copied</span><span class="mobile-only"> (tap and hold in the text field, then tap <strong>Paste</strong>)</span>.</p>
               <p style="margin-top:8px;" class="mobile-only">Each prompt you copy stays on your clipboard until the next one replaces it. You can always re-copy a button if you need it again.</p>
             </div>
 
@@ -2458,7 +2498,7 @@
         </summary>
         <div class="bandBody">
           <div class="lockMsg" id="lockPrompts">
-            Complete <strong>1) Set up</strong>, copy the starter prompt, and click Continue to unlock prompts.
+            Complete <strong>1) Set up</strong>, copy the starter prompt, and click <strong>Proceed to 2) Making questions</strong> to unlock prompts.
           </div>
 
           <div id="promptsInner" style="display:none;">
@@ -2555,9 +2595,8 @@
               </div>
 
               <div id="finalCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
-                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
-                <p></p><strong>Note: This last step goes in the opposite direction from what you've been doing.</strong> Instead of pasting <em>into</em> your AI product, you'll be copying <em>from</em> it.</p>
-                <p style="margin-top:8px;">This response won't be graded or evaluated on its own — it's just so I can review what the AI produced during your session and use it as a reference point for our interview conversation.</p>
+                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>Training tip</span></div>
+                <p><strong>Note:</strong> This last step goes in the opposite direction from what you've been doing. Instead of pasting <em>into</em> your AI product, you'll be copying <em>from</em> it.</p>
               </div>
 
               <div id="finalizeLockedArea" class="finalizeLockedContent" style="margin-top:8px; display:none;">
@@ -2619,10 +2658,9 @@
 
               <p class="muted small" id="finalizeMsg" style="margin:10px 0 0;"></p>
 
-              <div id="trainingTipEndSession",
-        "finalModelOutputSection" class="trainingTip trainingTipSmall">
+              <div id="trainingTipEndSession" class="trainingTip trainingTipSmall">
                 <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
-                <p>Make sure you've pasted the AI's final response into the box above before ending. Once you end the session, your work is submitted and the app resets.</p>
+                <p>Ending the session will submit some information about your session and reset the app.</p>
               </div>
               <div class="finalActionRow" id="endSessionRow" style="display:none;">
                 <button id="btnEndSession" class="btn finalActionBtn finishSessionBtn" type="button">
@@ -2702,7 +2740,7 @@
               </div>
             </div>
             <div class="muted small">
-              <div>Try the tool for ~15 min. Experiment with different prompts.</div>
+              <div>Try the app for ~15 min. Experiment with different prompts.</div>
             </div>
           </div>
         </aside>
@@ -2720,6 +2758,15 @@
             >
               Help / FAQ
             </a>
+            <span class="trainingTipsDivider" aria-hidden="true">•</span>
+            <button
+              id="btnToggleTrainingTipsFooter"
+              class="trainingTipsLink"
+              type="button"
+              aria-pressed="false"
+            >
+              Show training tips
+            </button>
           </div>
         </div>
       </div>
@@ -2728,7 +2775,7 @@
 
   <div class="modalBackdrop" id="modalReset">
     <div class="modalCard">
-      <h3 style="margin:0 0 8px;">Reset?</h3>
+      <h3 style="margin:0 0 8px;">Reset session?</h3>
       <p class="muted" style="margin:0 0 12px;">This resets your current browser session.</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnResetCancel" type="button">Cancel</button>
@@ -2806,7 +2853,7 @@
   <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
   <div class="timerNotice" id="timerNotice" style="display:none;" role="alert" aria-live="assertive">
     <div class="timerNoticeMessage" id="timerNoticeMessage"></div>
-    <button class="timerNoticeClose" id="timerNoticeClose" type="button" aria-label="Dismiss notification">×</button>
+    <button class="timerNoticeClose" id="timerNoticeClose" type="button" aria-label="Dismiss notification" aria-hidden="true" disabled>×</button>
   </div>
 
   <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
@@ -2869,6 +2916,14 @@
         defaultExpected: "gpt-5.1",
         image1Alt: "Copilot mode selector location",
         image2Alt: "Copilot dropdown example"
+      },
+      otherai: {
+        label: "Other AI",
+        whereText: "Use the product and mode that best match your normal workflow.",
+        expectedOptions: [],
+        defaultExpected: "",
+        image1Alt: "Other AI product",
+        image2Alt: "Other AI mode selector"
       }
     };
 
@@ -2986,7 +3041,8 @@ const PROMPT_META = [
     const $ = (id) => document.getElementById(id);
     const nowIso = () => new Date().toISOString();
     const currentUrl = new URL(window.location.href);
-    const isTrainingMode = false;
+    const isTrainingMode = currentUrl.searchParams.get("mode") === "training";
+    let trainingTipsVisible = isTrainingMode;
     const IS_NONPARTICIPANT = true;
 
     function generateLocalSessionId() {
@@ -3017,7 +3073,6 @@ const PROMPT_META = [
     function configureNonparticipantModeUI() {
       if (!IS_NONPARTICIPANT) return;
       [
-        "trainingTopNote",
         "landingTrainingCompleteBanner",
         "btnMobileFeedback",
         "sidebarBtnFeedback",
@@ -3031,6 +3086,7 @@ const PROMPT_META = [
       });
       const logoutBtn = $("btnLogout");
       if (logoutBtn) logoutBtn.textContent = "Back to start";
+      refreshTrainingTipsFooterLink();
     }
     function getSelectedLlmKey() {
       return normalizeLlmProduct(
@@ -3372,22 +3428,48 @@ const PROMPT_META = [
     function hideTimerNotice() {
       const notice = $("timerNotice");
       const msg = $("timerNoticeMessage");
+      const closeBtn = $("timerNoticeClose");
       if (!notice || !msg) return;
       if (notice._hideTimer) clearTimeout(notice._hideTimer);
+      if (notice._unlockTimer) clearTimeout(notice._unlockTimer);
+      notice.classList.remove("is-close-ready");
       notice.style.display = "none";
       msg.textContent = "";
+      if (closeBtn) {
+        closeBtn.disabled = true;
+        closeBtn.setAttribute("aria-hidden", "true");
+      }
     }
 
     function showTimerNotice(message) {
       const notice = $("timerNotice");
       const msg = $("timerNoticeMessage");
+      const closeBtn = $("timerNoticeClose");
       if (!notice || !msg) return;
+
       if (notice._hideTimer) clearTimeout(notice._hideTimer);
+      if (notice._unlockTimer) clearTimeout(notice._unlockTimer);
+
+      notice.classList.remove("is-close-ready");
       msg.textContent = message;
       notice.style.display = "flex";
+
+      if (closeBtn) {
+        closeBtn.disabled = true;
+        closeBtn.setAttribute("aria-hidden", "true");
+      }
+
+      notice._unlockTimer = setTimeout(() => {
+        notice.classList.add("is-close-ready");
+        if (closeBtn) {
+          closeBtn.disabled = false;
+          closeBtn.setAttribute("aria-hidden", "false");
+        }
+      }, TIMER_NOTICE_MIN_VISIBLE_MS);
+
       notice._hideTimer = setTimeout(() => {
         hideTimerNotice();
-      }, 60000);
+      }, TIMER_NOTICE_AUTO_HIDE_MS);
     }
 
     const toast = (msg, { duration = 1400 } = {}) => {
@@ -3797,6 +3879,8 @@ const PROMPT_META = [
     }
 
     const TIMER_TRAINING_NOTICE_15_MIN_MS = 15 * 60 * 1000;
+    const TIMER_NOTICE_MIN_VISIBLE_MS = 5000;
+    const TIMER_NOTICE_AUTO_HIDE_MS = 60000;
 
     function formatElapsed(ms) {
       const totalSeconds = Math.max(0, Math.floor((ms || 0) / 1000));
@@ -3901,15 +3985,33 @@ const PROMPT_META = [
     }
 
 
+    function refreshTrainingTipsFooterLink() {
+      const btn = $("btnToggleTrainingTipsFooter");
+      if (!btn) return;
+      btn.textContent = trainingTipsVisible ? "Hide training tips" : "Show training tips";
+      btn.setAttribute("aria-pressed", trainingTipsVisible ? "true" : "false");
+    }
+
+    function setupTrainingTipsFooterToggle() {
+      const btn = $("btnToggleTrainingTipsFooter");
+      if (!btn) return;
+      refreshTrainingTipsFooterLink();
+      btn.addEventListener("click", () => {
+        trainingTipsVisible = !trainingTipsVisible;
+        configureTrainingTipsUI();
+        refreshTrainingTipsFooterLink();
+      });
+    }
+
     function configureTrainingTipsUI() {
-      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "trainingTipMismatch", "makingQuestionsTrainingTip", "trainingTipFinalizeIntro", "finalCopiedTrainingTip", "trainingTipFinalizeFeedback", "trainingTipEndSession",
-        "finalModelOutputSection", "trainingTipSamplePrompts"];
+      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "makingQuestionsTrainingTip", "trainingTipFinalizeIntro", "finalCopiedTrainingTip", "trainingTipFinalizeFeedback", "trainingTipEndSession", "trainingTipSamplePrompts"];
       tipIds.forEach((id) => {
         const el = $(id);
         if (!el) return;
-        const shouldShow = isTrainingMode && ((id !== "starterCopiedTrainingTip" && id !== "finalCopiedTrainingTip") || !el.hidden);
+        const shouldShow = trainingTipsVisible && ((id !== "starterCopiedTrainingTip" && id !== "finalCopiedTrainingTip") || !el.hidden);
         el.style.display = shouldShow ? "block" : "none";
       });
+      refreshTrainingTipsFooterLink();
     }
 
     function configureTimerModeUI() {
@@ -3980,7 +4082,7 @@ const PROMPT_META = [
     function normalizeLlmProduct(model) {
       const m = String(model || "").trim().toLowerCase();
       if (!m) return "";
-      if (["chatgpt", "gemini", "copilot"].includes(m)) return m;
+      if (["chatgpt", "gemini", "copilot", "otherai"].includes(m)) return m;
       return "";
     }
 
@@ -4055,7 +4157,7 @@ const PROMPT_META = [
       const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
 
       if (!product) return false;
-      if (!["chatgpt", "gemini", "copilot"].includes(product)) return false;
+      if (!["chatgpt", "gemini", "copilot", "otherai"].includes(product)) return false;
       if (!expectedChoice) return false;
       if (expectedChoice === "different" && !mismatchDescription) return false;
       return true;
@@ -4064,7 +4166,7 @@ const PROMPT_META = [
 
     function isSetupVersionConfirmedForContext() {
       const product = localStorage.getItem(KEYS.llmProduct) || "";
-      return ["chatgpt", "gemini", "copilot"].includes(product);
+      return ["chatgpt", "gemini", "copilot", "otherai"].includes(product);
     }
 
     function getProductVersionSummaryText() {
@@ -4162,7 +4264,7 @@ const PROMPT_META = [
       if (m === "ChatGPT") return `<div class="copyHelpExample"><img src="images/chatgpt-copy.png" class="copyHelpImage" alt="ChatGPT copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
       if (m === "Gemini") return `<div class="copyHelpExample"><img src="images/gemini-copy.png" class="copyHelpImage" alt="Gemini copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
       if (m === "Copilot") return `<div class="copyHelpExample"><img src="images/copilot-copy.png" class="copyHelpImage" alt="Copilot copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
-      return caption;
+      return `Look for a copy button, usually located just below the AI's response.`;
     }
 
     function updateFinalizeContentUI() {
@@ -4170,8 +4272,7 @@ const PROMPT_META = [
       const notice = $("finalizeCopyNotice");
       const lockedArea = $("finalizeLockedArea");
       const endRow = $("endSessionRow");
-      const endTip = $("trainingTipEndSession",
-        "finalModelOutputSection");
+      const endTip = $("trainingTipEndSession");
       const finalCopiedTip = $("finalCopiedTrainingTip");
       const llm = $("llmResponse");
 
@@ -6159,7 +6260,7 @@ const PROMPT_META = [
     // Hoisted helpers (extracted from init for readability and reuse)
     // =================================================================
 
-    const MODEL_LABEL_BY_PRODUCT = { chatgpt: "ChatGPT", gemini: "Gemini", copilot: "Copilot" };
+    const MODEL_LABEL_BY_PRODUCT = { chatgpt: "ChatGPT", gemini: "Gemini", copilot: "Copilot", otherai: "Other AI" };
     const openModal = (id) => { const m = $(id); if (m) m.style.display = "flex"; };
     const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
     const openMobileFeedbackSheet = () => {
@@ -6223,6 +6324,8 @@ const PROMPT_META = [
       updateFooterMode();
       configureTrainingTipsUI();
       configureTimerModeUI();
+      setupTrainingModeToggle();
+      setupTrainingTipsFooterToggle();
       configureNonparticipantModeUI();
       try {
         await loadRemoteConfig();
@@ -6264,7 +6367,7 @@ const PROMPT_META = [
         const endedFlag = sessionStorage.getItem("dissertation.ended");
         if (endedFlag === "true") {
           sessionStorage.removeItem("dissertation.ended");
-          toast("Session finished. A new session is ready.", { duration: 4000 });
+          toast("Session complete. A new session is ready.", { duration: 4000 });
         }
         setLockedState(true);
         $("btnOpenTool")?.addEventListener("click", async () => {
@@ -6883,7 +6986,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
             renderSetupSamplePromptBox();
             updateProceedToPromptsAvailability();
             updateSetupSamplePromptVisibility();
-            $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI tool to get started. It will respond with a question set plan — review it and reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI examples to work from. Once you're ready, ask the AI for your first question, then click Continue.";
+            $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI product to get started. It will respond with an initial question set plan — review it and reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI examples to work from. Once you're ready, ask the AI for your first question, then click Proceed to 2) Making questions.";
             $("setupMsg").style.display = "block";
 
             requestNewContextId()
