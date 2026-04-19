@@ -2300,7 +2300,7 @@
       <p class="sub landingSubtitle">Non-participant version</p>
       <div id="trainingTopNote" class="training-tip">
         <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-        <p>You're in training mode. The blue "Training tip" boxes you'll see on this page are here to walk you through the app. They won't appear during your actual study session.</p>
+        <p>These blue “Training tip” boxes will help guide you through the app. You can show or hide them at any time using the Show/Hide training tips button at the bottom of the page.</p>
       </div>
       <div id="landingTrainingCompleteBanner" class="trainingCompletionBanner" hidden>
         <div class="trainingCompletionTitle"><span aria-hidden="true">✓</span><span>Training activity complete</span></div>
@@ -2407,7 +2407,7 @@
               <p id="loadPreviousSettingsMsg" class="muted small" style="display:none; margin:8px 0 0;"></p>
               <div id="trainingTipQuestionContext" class="training-tip">
                 <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-                <p>The first two fields are required to tell the AI what kind of questions to create. This doesn't have to be detailed; it's just to point the AI in the right direction.</p>
+                <p>The <strong>course</strong> and <strong>topic</strong> fields are required to tell the AI what kind of questions to create. They doesn't have to be detailed; you're just trying to point the AI in the right direction.</p>
               </div>
 
               <div id="contextFields">
@@ -2438,7 +2438,7 @@
             </p>
             <div id="trainingTipStarterGate" class="trainingTip trainingTipSmall">
               <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-              <p>The app will not let you move forward until you fill in the fields for course context and topic.</p>
+              <p>The Additional parameters field may be especially helpful if you have a very specific goal in mind. If nothing comes to mind right away, I recommend skipping it rather than spending time trying to think of something; it may be faster to review the initial plan and redirect the AI from there.</p>
             </div>
 
             <div class="row copyPromptRow" style="margin-top:12px;">
@@ -2474,7 +2474,7 @@
               </div>
               <div id="trainingTipSamplePrompts" class="trainingTip trainingTipSmall">
                 <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-                <p>If you have existing questions you'd like to use as a reference, they're a great way to quickly show the AI what you're looking for. To use one of these prompts, <strong>first copy the prompt</strong> and paste it into your AI product, <strong>then copy your sample questions</strong> and paste them into the same conversation. If you don't have samples or prefer to skip this, just click the blue <strong>Proceed</strong> button below.</p>
+                <p>If you have existing questions you'd like to use as a reference, they're a great way to quickly show the AI what you're looking for. To use one of these prompts, <strong>first copy the prompt</strong> and paste it into your AI product, <strong>then copy your sample questions</strong> and paste them into the same conversation. If you don't have samples or prefer to skip this, just click the blue <strong>Proceed to 2) Making questions</strong> button below.</p>
               </div>
               <div id="setupSamplePromptList" class="setupPromptList promptListCompact"></div>
             </div>
@@ -7035,7 +7035,11 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
             renderSetupSamplePromptBox();
             updateProceedToPromptsAvailability();
             updateSetupSamplePromptVisibility();
-            $("setupMsg").textContent = "Starter prompt copied! Paste it into your AI product to get started. It will respond with an initial question set plan — review it and reply if you'd like to adjust anything. You can also use the sample question prompts below to give the AI examples to work from. Once you're ready, ask the AI for your first question, then click Proceed to 2) Making questions.";
+            $("setupMsg").innerHTML = `
+              <strong>You’ve copied the first prompt.</strong> The next step is to paste it into your AI product.<br><br>
+              The AI will not start by writing questions right away; it will first show you an initial plan. If you want, you can type instructions to change that initial plan.<br><br>
+              After that, ask the AI for the first question and click <strong>Proceed to 2) Making questions</strong>.
+            `;
             $("setupMsg").style.display = "block";
 
             requestNewContextId()
