@@ -2991,48 +2991,51 @@ const PROMPT_META = [
   }
 ];
     const SETUP_SAMPLE_PROMPT_IDS = ["sample_copy_style", "sample_new_version", "sample_supplement", "sample_practice"];
+
+    const STORAGE_PREFIX = "dissertation.np";
+
     // Intentionally outside KEYS so reset/clear session flows preserve it.
-    const LAST_PREVIOUS_SETTINGS_KEY = "dissertation.lastPreviousSettings";
+    const LAST_PREVIOUS_SETTINGS_KEY = `${STORAGE_PREFIX}.lastPreviousSettings`;
 
     // -----------------------------
     // Storage keys
     // -----------------------------
     const KEYS = {
-      accessVerified: "dissertation.accessVerified",
-      accessCode: "dissertation.accessCode",
-      clientKey: "dissertation.clientKey",
-      sessionId: "dissertation.sessionId",
-      contextId: "dissertation.contextId",
-      sessionStartTime: "dissertation.sessionStartTime",
-      modelUsed: "dissertation.modelUsed",
-      context: "dissertation.context",
-      starterCopied: "dissertation.starterCopied",
-      starterCopiedSetupSignature: "dissertation.starterCopiedSetupSignature",
-      stage: "dissertation.stage", // "setup" | "prompts" | "finalize"
-      events: "dissertation.events",
-      finalPrompt: "dissertation.finalPrompt",
-      anyCopy: "dissertation.anyCopy",
-      finalizeVisited: "dissertation.finalizeVisited",
-      finalPromptCopied: "dissertation.finalPromptCopied",
-      submitClicked: "dissertation.submitClicked",
-      llmProduct: "dissertation.llmProduct",
-      llmExpectedChoice: "dissertation.llmExpectedChoice",
-      llmMismatchDescription: "dissertation.llmMismatchDescription",
-      productVersionConfirmed: "dissertation.productVersionConfirmed",
-      resubmitting: "dissertation.resubmitting",
-      timerStartedAt: "dissertation.timerStartedAt",
-      timerElapsedBeforePause: "dissertation.timerElapsedBeforePause",
-      timerPaused: "dissertation.timerPaused",
-      timerWarned35: "dissertation.timerWarned35",
-      timerWarned40: "dissertation.timerWarned40",
-      trainingTenMinuteNoticeShown: "dissertation.trainingTenMinuteNoticeShown",
-      submissionAttempted: "dissertation.submissionAttempted",
-      submissionStatus: "dissertation.submissionStatus",
-      submissionCompletedAt: "dissertation.submissionCompletedAt",
-      submissionError: "dissertation.submissionError",
-      appsScriptResponseFileName: "dissertation.appsScriptResponseFileName",
-      appsScriptResponseFileId: "dissertation.appsScriptResponseFileId",
-      autosaveEventIndex: "dissertation.autosaveEventIndex"
+      accessVerified: `${STORAGE_PREFIX}.accessVerified`,
+      accessCode: `${STORAGE_PREFIX}.accessCode`,
+      clientKey: `${STORAGE_PREFIX}.clientKey`,
+      sessionId: `${STORAGE_PREFIX}.sessionId`,
+      contextId: `${STORAGE_PREFIX}.contextId`,
+      sessionStartTime: `${STORAGE_PREFIX}.sessionStartTime`,
+      modelUsed: `${STORAGE_PREFIX}.modelUsed`,
+      context: `${STORAGE_PREFIX}.context`,
+      starterCopied: `${STORAGE_PREFIX}.starterCopied`,
+      starterCopiedSetupSignature: `${STORAGE_PREFIX}.starterCopiedSetupSignature`,
+      stage: `${STORAGE_PREFIX}.stage`,
+      events: `${STORAGE_PREFIX}.events`,
+      finalPrompt: `${STORAGE_PREFIX}.finalPrompt`,
+      anyCopy: `${STORAGE_PREFIX}.anyCopy`,
+      finalizeVisited: `${STORAGE_PREFIX}.finalizeVisited`,
+      finalPromptCopied: `${STORAGE_PREFIX}.finalPromptCopied`,
+      submitClicked: `${STORAGE_PREFIX}.submitClicked`,
+      llmProduct: `${STORAGE_PREFIX}.llmProduct`,
+      llmExpectedChoice: `${STORAGE_PREFIX}.llmExpectedChoice`,
+      llmMismatchDescription: `${STORAGE_PREFIX}.llmMismatchDescription`,
+      productVersionConfirmed: `${STORAGE_PREFIX}.productVersionConfirmed`,
+      resubmitting: `${STORAGE_PREFIX}.resubmitting`,
+      timerStartedAt: `${STORAGE_PREFIX}.timerStartedAt`,
+      timerElapsedBeforePause: `${STORAGE_PREFIX}.timerElapsedBeforePause`,
+      timerPaused: `${STORAGE_PREFIX}.timerPaused`,
+      timerWarned35: `${STORAGE_PREFIX}.timerWarned35`,
+      timerWarned40: `${STORAGE_PREFIX}.timerWarned40`,
+      trainingTenMinuteNoticeShown: `${STORAGE_PREFIX}.trainingTenMinuteNoticeShown`,
+      submissionAttempted: `${STORAGE_PREFIX}.submissionAttempted`,
+      submissionStatus: `${STORAGE_PREFIX}.submissionStatus`,
+      submissionCompletedAt: `${STORAGE_PREFIX}.submissionCompletedAt`,
+      submissionError: `${STORAGE_PREFIX}.submissionError`,
+      appsScriptResponseFileName: `${STORAGE_PREFIX}.appsScriptResponseFileName`,
+      appsScriptResponseFileId: `${STORAGE_PREFIX}.appsScriptResponseFileId`,
+      autosaveEventIndex: `${STORAGE_PREFIX}.autosaveEventIndex`
     };
 
     // -----------------------------
