@@ -1943,7 +1943,7 @@
     }
 
     /* Mobile-only layout overrides (phones / touch-first small screens only). */
-    @media (max-width: 820px) and (hover: none) and (pointer: coarse) {
+    @media (max-width: 820px) {
       body { font-size: 15px; }
       .pageShell { padding: 12px 12px 16px; }
       .layoutGrid {
@@ -2231,7 +2231,7 @@
     /* Desktop/mobile visibility helpers */
     .desktop-only { display: inline; }
     .mobile-only { display: none; }
-    @media (max-width: 820px) and (hover: none) and (pointer: coarse) {
+    @media (max-width: 820px) {
       .desktop-only { display: none !important; }
       .mobile-only { display: inline !important; }
       .mobileTimerBar.is-training-visible {
