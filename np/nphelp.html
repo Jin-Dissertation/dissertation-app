@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Dissertation Prompt App – Non-participant Help / FAQ</title>
+  <title>Non-participant Help / FAQ</title>
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap");
 
@@ -259,9 +259,37 @@
     .faqBody {
       padding: 0 14px 14px;
       color: var(--text);
-      line-height: 1.6;
-      white-space: pre-wrap;
-      overflow-wrap:anywhere;
+      line-height: 1.55;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .faqBody p {
+      margin: 0 0 10px;
+    }
+
+    .faqBody p:last-child {
+      margin-bottom: 0;
+    }
+
+    .faqBody ul,
+    .faqBody ol {
+      margin: 6px 0 8px 0;
+      padding-left: 22px;
+    }
+
+    .faqBody li {
+      margin: 0 0 6px;
+    }
+
+    .faqBody li:last-child {
+      margin-bottom: 0;
+    }
+
+    .faqBody br.tight-break {
+      display: block;
+      content: "";
+      margin-top: 6px;
     }
 
     .emptyState {
@@ -427,39 +455,66 @@
       html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
 
       // Email addresses → mailto links
-      html = html.replace(/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/g,
-        '<a href="mailto:$1" style="color:var(--accent);">$1</a>');
+      html = html.replace(
+        /([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/g,
+        '<a href="mailto:$1" style="color:var(--accent);">$1</a>'
+      );
 
-      // Convert bullet lines (• item) into an HTML list
-      const lines = html.split("\n");
-      let result = [];
-      let inList = false;
+      const rawLines = html.split("\n").map(line => line.trim());
 
-      for (const line of lines) {
-        const bulletMatch = line.match(/^\u2022\s*(.*)/);
-        if (bulletMatch) {
-          if (!inList) { result.push("<ul style=\"margin:6px 0 6px 4px;padding-left:18px;\">"); inList = true; }
-          result.push("<li>" + bulletMatch[1] + "</li>");
-        } else {
-          if (inList) { result.push("</ul>"); inList = false; }
-          result.push(line);
-        }
+      const blocks = [];
+      let paragraphLines = [];
+      let listItems = [];
+      let listType = null;
+
+      function flushParagraph() {
+        if (!paragraphLines.length) return;
+        blocks.push(`<p>${paragraphLines.join("<br>")}</p>`);
+        paragraphLines = [];
       }
-      if (inList) result.push("</ul>");
 
-      html = result.join("\n");
+      function flushList() {
+        if (!listItems.length || !listType) return;
+        const tag = listType === "ol" ? "ol" : "ul";
+        blocks.push(`<${tag}>${listItems.map(item => `<li>${item}</li>`).join("")}</${tag}>`);
+        listItems = [];
+        listType = null;
+      }
 
-      // Convert numbered lines (1. item) at start of line
-      html = html.replace(/^(\d+)\.\s/gm, "<strong>$1.</strong> ");
+      for (const line of rawLines) {
+        if (!line) {
+          flushParagraph();
+          flushList();
+          continue;
+        }
 
-      // Remaining newlines to <br>
-      html = html.replace(/\n/g, "<br>");
+        const bulletMatch = line.match(/^[•\-]\s+(.*)$/);
+        const numberMatch = line.match(/^\d+\.\s+(.*)$/);
 
-      // Clean up double <br> around lists
-      html = html.replace(/<br><ul/g, "<ul");
-      html = html.replace(/<\/ul><br>/g, "</ul>");
+        if (bulletMatch) {
+          flushParagraph();
+          if (listType && listType !== "ul") flushList();
+          listType = "ul";
+          listItems.push(bulletMatch[1]);
+          continue;
+        }
 
-      return html;
+        if (numberMatch) {
+          flushParagraph();
+          if (listType && listType !== "ol") flushList();
+          listType = "ol";
+          listItems.push(numberMatch[1]);
+          continue;
+        }
+
+        flushList();
+        paragraphLines.push(line);
+      }
+
+      flushParagraph();
+      flushList();
+
+      return blocks.join("");
     }
 
     function setStatus(message, isError = false) {
