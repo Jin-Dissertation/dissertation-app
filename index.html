@@ -4137,6 +4137,7 @@ const PROMPT_META = [
       localStorage.setItem(KEYS.starterCopied, "false");
       localStorage.setItem(KEYS.finalPromptCopied, "false");
       localStorage.setItem(KEYS.finalizeVisited, "false");
+      updateConditionalTrainingTips();
       localStorage.setItem(KEYS.productVersionConfirmed, "false");
       localStorage.removeItem(KEYS.llmExpectedChoice);
       localStorage.removeItem(KEYS.llmMismatchDescription);
@@ -5327,6 +5328,7 @@ const PROMPT_META = [
       updateStarterCopyAvailability();
       updateProceedToPromptsAvailability();
       updateSetupSamplePromptVisibility();
+      updateConditionalTrainingTips();
     }
 
     // -----------------------------
@@ -6365,6 +6367,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
         localStorage.setItem(KEYS.starterCopied, "false");
         localStorage.removeItem(KEYS.starterCopiedSetupSignature);
       }
+      updateConditionalTrainingTips();
       renderPromptList();
       renderSetupSamplePromptBox();
       refreshCopyCardPreviews();
@@ -6775,6 +6778,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
         finalCard?.blur();
         if (!ok) return;
         localStorage.setItem(KEYS.finalPromptCopied, "true");
+        updateConditionalTrainingTips();
         markInteraction();
         logEvent("final_prompt_copied", {});
         appendServerEvent(
