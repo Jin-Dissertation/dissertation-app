@@ -2293,29 +2293,35 @@
 
 
 /* =========================================================
-   Non-participant sage theme override
-   Added to replace the leftover blue-heavy UI styling
-   with a muted sage / olive palette that matches the page bg.
+   Non-participant warm cream theme override
+   Bright, light yellow/cream palette with stronger contrast.
+   Green is reserved mostly for primary/proceed actions.
    ========================================================= */
 :root {
-  --bg: #edf3ec;
-  --card: #fbfdf9;
-  --muted: #5f6f63;
-  --text: #213126;
-  --accent: #5f7a62;
-  --accent-soft: #dee9df;
-  --border: #c7d4c8;
-  --warn: #b88335;
+  --bg: #f8f4e8;
+  --card: #fffdf8;
+  --muted: #7a6b4f;
+  --text: #2f281c;
+  --accent: #b9892f;
+  --accent-soft: #f5e8c8;
+  --border: #dfd3b5;
+  --warn: #bd7d2f;
   --landing-max-width: 760px;
 
-  --surface-1: #f6faf5;
-  --surface-2: #eef4ee;
-  --surface-3: #e5ede6;
-  --surface-4: #f1f5f0;
-  --accent-deep: #4c6650;
-  --accent-ink: #38513d;
-  --soft-shadow: rgba(33, 49, 38, 0.08);
-  --soft-shadow-strong: rgba(33, 49, 38, 0.14);
+  --surface-1: #fffdf9;
+  --surface-2: #fbf3dd;
+  --surface-3: #f6ead0;
+  --surface-4: #f9f1dc;
+
+  --accent-deep: #95691f;
+  --accent-ink: #6f4f19;
+
+  --action: #496b4f;
+  --action-deep: #35533a;
+  --action-soft: #dfeadf;
+
+  --soft-shadow: rgba(84, 67, 29, 0.08);
+  --soft-shadow-strong: rgba(84, 67, 29, 0.14);
 }
 
 body {
@@ -2356,6 +2362,14 @@ textarea {
   background: var(--card);
 }
 
+.card,
+.modalCard,
+.mobileFeedbackSheet,
+.stickySidebar.recentCard,
+.accessCard {
+  box-shadow: 0 6px 18px var(--soft-shadow);
+}
+
 .accessIntro {
   background: var(--surface-1);
 }
@@ -2363,13 +2377,14 @@ textarea {
 .accessIntro p,
 .copyHelpCaption,
 .helpExampleText {
-  color: #4b5c4f;
+  color: #5c503b;
 }
 
 input,
 select,
 textarea,
-.promptDetailsText {
+.promptDetailsText,
+.copiedText.recentPreview {
   background: var(--surface-1);
   color: var(--text);
 }
@@ -2378,39 +2393,52 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(95, 122, 98, 0.14);
+  box-shadow: 0 0 0 3px rgba(185, 137, 47, 0.14);
 }
 
 .btn,
 .btn.ghost {
-  background: var(--surface-2);
+  background: #fbf6e9;
   border-color: var(--border);
   color: var(--text);
 }
 
-.btn.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #ffffff;
+.btn:hover:not(:disabled),
+.btn.ghost:hover:not(:disabled) {
+  background: #f7eed8;
+  border-color: #d2c19a;
+  box-shadow: 0 2px 8px var(--soft-shadow);
 }
 
-.btn.primary:hover:not(:disabled) {
-  background: var(--accent-deep);
-  border-color: var(--accent-deep);
-  box-shadow: 0 2px 8px rgba(95, 122, 98, 0.24);
+/* Reserve green for major action buttons */
+.btn.primary,
+.stageActionBtn,
+#btnOpenTool {
+  background: var(--action);
+  border-color: var(--action);
+  color: #ffffff;
+  font-weight: 650;
+}
+
+.btn.primary:hover:not(:disabled),
+.stageActionBtn:hover:not(:disabled),
+#btnOpenTool:hover:not(:disabled) {
+  background: var(--action-deep);
+  border-color: var(--action-deep);
+  box-shadow: 0 2px 10px rgba(73, 107, 79, 0.24);
 }
 
 .helpFaqLink {
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 
 .trainingTipsLink:hover,
 .helpFaqLink:hover {
-  color: var(--accent-deep);
+  color: var(--accent-ink);
 }
 
 .toast {
-  background: rgba(33, 49, 38, 0.95);
+  background: rgba(47, 40, 28, 0.96);
   border-color: var(--accent);
 }
 
@@ -2422,21 +2450,28 @@ details.band > summary {
 details.band > summary:hover,
 details.band[open] > summary {
   background: var(--surface-3);
-  border-color: #b7c7b9;
+  border-color: #d1c29d;
+  box-shadow: 0 2px 6px rgba(84, 67, 29, 0.06);
 }
 
 .tag.ok {
-  border-color: rgba(95, 122, 98, 0.4);
-  color: var(--accent-ink);
-  background: var(--accent-soft);
+  border-color: rgba(73, 107, 79, 0.35);
+  color: #35533a;
+  background: #e5efe6;
+}
+
+.tag.lock {
+  border-color: rgba(189, 125, 47, 0.45);
+  color: #8a5c1f;
+  background: #fff3df;
 }
 
 .lockMsg {
-  background: #f7faf6;
+  background: #fffdf8;
 }
 
 .subBand {
-  background: rgba(33, 49, 38, 0.03);
+  background: rgba(84, 67, 29, 0.025);
 }
 
 .modelOption,
@@ -2447,62 +2482,63 @@ details.band[open] > summary {
 .modelOption:hover,
 .product-card:hover {
   border-color: var(--accent);
-  box-shadow: 0 4px 10px var(--soft-shadow);
+  box-shadow: 0 4px 12px var(--soft-shadow);
 }
 
 .modelOption.active,
 .modelOption.selected,
 .product-card.selected {
-  border-color: var(--accent);
+  border-color: var(--accent-deep);
   background: var(--accent-soft);
+  box-shadow: 0 3px 12px rgba(149, 105, 31, 0.14);
 }
 
 .productIconCircle {
-  background: #edf2ec;
+  background: #f5efe0;
 }
 
 .productButton.selected .productIconCircle,
 .product-card.selected .productIconCircle {
-  background: #dbe7dc;
+  background: #eddcb8;
 }
 
 .productIconText {
-  color: #445548;
+  color: #5b4a2e;
 }
 
 #btnMobileFeedback {
-  color: #4f6153;
-  border-color: #c5d1c6;
+  color: #66563d;
+  border-color: #d7c8a8;
 }
 
 #mobileFeedbackStatus,
 .sidebarFeedbackSavedNote {
-  color: #546857;
+  color: #6a5d45;
 }
 
 .mobileSheetClose {
-  background: var(--surface-2);
-  border-color: #b7c7b9;
+  background: #faf1db;
+  border-color: #d6c39d;
   color: var(--accent-ink);
 }
 
 .mobileSheetClose:hover {
-  background: var(--surface-3);
-  border-color: #9fb2a1;
+  background: #f5e7c7;
+  border-color: #c8b081;
 }
 
 .mobileSheetClose:active {
-  background: #dce6dd;
+  background: #efddb4;
 }
 
 #sessionTimerCard {
-  background: var(--surface-1) !important;
-  border-color: var(--border) !important;
+  background: #fffaf0 !important;
+  border-color: #dfd3b5 !important;
 }
 
 .timerCard.timerComplete {
-  border-color: #7fa386;
-  background: #eef7f0;
+  border-color: #8aa08d;
+  background: #eef6ef;
 }
 
 .timerNotice {
@@ -2511,36 +2547,36 @@ details.band[open] > summary {
 }
 
 .mobileTimerBar {
-  background: var(--surface-1);
+  background: #fff9ef;
   border-color: var(--border);
 }
 
 .sidebarModeBtn:hover {
-  background: var(--surface-3);
-  border-color: #c1d0c3;
+  background: #f7edd5;
+  border-color: #d6c39d;
   color: var(--text);
 }
 
 .sidebarModeBtn.is-active {
   background: var(--accent-soft);
-  border-color: rgba(95, 122, 98, 0.35);
+  border-color: rgba(185, 137, 47, 0.35);
   color: var(--accent-ink);
 }
 
 .stickySidebar.recentCard.feedback-emphasis {
-  border-color: rgba(95, 122, 98, 0.5);
+  border-color: rgba(185, 137, 47, 0.45);
   box-shadow:
-    0 0 0 3px rgba(95, 122, 98, 0.12),
-    0 6px 14px rgba(33, 49, 38, 0.08);
+    0 0 0 3px rgba(185, 137, 47, 0.10),
+    0 8px 18px rgba(84, 67, 29, 0.08);
 }
 
 .copyHistoryItem:hover,
 .promptCard:hover,
 .copyCard:hover,
 .copiedText.recentPreview:not(.is-empty):hover {
-  background: #f8fbf7;
-  border-color: #aebfae;
-  box-shadow: 0 2px 8px rgba(33, 49, 38, 0.07);
+  background: #fffaf0;
+  border-color: #d2c19a;
+  box-shadow: 0 2px 8px rgba(84, 67, 29, 0.08);
 }
 
 .copyHistoryItem:active,
@@ -2548,147 +2584,142 @@ details.band[open] > summary {
 .copyCard.is-active,
 .copiedText.recentPreview:not(.is-empty):active {
   background: var(--accent-soft);
-  border-color: var(--accent);
+  border-color: var(--accent-deep);
 }
 
 .copyHistoryTime {
-  color: #8a998d;
+  color: #9a8a68;
 }
 
 .promptSection {
-  border-color: #c8d4c9;
-  border-left-color: #8ea391;
-  background: var(--surface-2);
+  border-color: #dccfb1;
+  border-left-color: #b6914a;
+  background: #fff8e9;
 }
 
 .promptSectionTitle {
-  color: #2c3f31;
+  color: #3e321f;
 }
 
 .promptSection.section-accept {
-  background: #f2f7f1;
-  border-color: #c7d4c8;
-  border-left-color: #7f957f;
+  background: #fff7e5;
+  border-color: #dfd0ad;
+  border-left-color: #c09b52;
 }
 
 .promptSection.section-refine {
-  background: #edf4ef;
-  border-color: #c7d4c8;
-  border-left-color: #6f8b77;
+  background: #fdf2e6;
+  border-color: #e3cfb9;
+  border-left-color: #c28b58;
 }
 
 .promptSection.section-refine .promptCard {
-  background: #f8fbf8;
-  border-color: #c7d4c8;
+  background: #fffaf4;
+  border-color: #e0d0b6;
 }
 
 .promptSection.section-refine .promptCard:hover {
-  background: #f1f6f2;
-  border-color: #aebfae;
-  box-shadow: 0 2px 8px rgba(72, 97, 79, 0.08);
+  background: #fff4e8;
+  border-color: #d3b58b;
+  box-shadow: 0 2px 8px rgba(111, 79, 25, 0.08);
 }
 
 .promptSection.section-refine .promptCard.is-active {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: #f8e8c7;
+  border-color: var(--accent-deep);
 }
 
 .promptSection.section-audit {
-  background: #faf5eb;
-  border-color: #dfcfaf;
-  border-left-color: #b08a4f;
+  background: #faf5ea;
+  border-color: #ddd1b7;
+  border-left-color: #ab8451;
 }
 
 .promptSection.section-review {
-  background: #f3f7f3;
-  border-color: #d1dbd2;
-  border-left-color: #879b8a;
+  background: #fffbf1;
+  border-color: #e5d9bb;
+  border-left-color: #b49a63;
 }
 
 .setupPromptBox {
-  border-color: #d2dbc8;
-  border-left-color: #93a884;
-  background: #f5f8f2;
+  border-color: #ddd2b8;
+  border-left-color: #ba9855;
+  background: #fff9ee;
 }
 
 .setupPromptBoxTitle {
-  color: #334533;
+  color: #4a3b23;
 }
 
 .setupPromptBoxSub {
-  color: #647663;
+  color: #76684c;
 }
 
 .setupPromptBox .promptCard {
-  background: #fbfdf8;
-  border-color: #d2dbc8;
+  background: #fffdf7;
+  border-color: #e0d4ba;
 }
 
 .setupPromptBox .promptCard:hover {
-  background: #f1f6ee;
-  border-color: #b0c0ac;
-  box-shadow: 0 2px 8px rgba(72, 97, 79, 0.09);
+  background: #fff6e7;
+  border-color: #cfb483;
+  box-shadow: 0 2px 8px rgba(111, 79, 25, 0.09);
 }
 
 .setupPromptBox .promptCard.is-active {
-  background: #e7efe4;
-  border-color: #7f957f;
+  background: #f5e7c7;
+  border-color: #a97c2c;
 }
 
-.setupPromptBox .promptChevronBtn:hover {
-  background: #edf4ea;
-  border-color: #7f957f;
-  color: #48614d;
-}
-
+.setupPromptBox .promptChevronBtn:hover,
 .promptChevronBtn:hover {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: #f8e8c9;
+  border-color: #b9892f;
   color: var(--accent-ink);
 }
 
 .promptDetailsText {
-  background: var(--surface-1);
+  background: #fffcf6;
 }
 
 .finalActionRow {
-  border-top-color: #d8e1d8;
+  border-top-color: #e2d7be;
 }
 
 .feedbackCollapsible {
-  border-color: #d2dbd2;
-  background: var(--surface-1);
+  border-color: #ddd1b8;
+  background: #fffdf8;
 }
 
 .audioControlRow .audioStateStatus {
-  background: #edf2ee;
+  background: #f7f1e4;
   border-color: var(--border);
 }
 
 .audioMeterHistory {
-  background: #ecf1ec;
+  background: #f5eedf;
 }
 
 .trainingTip,
 .training-tip,
 .trainingNote {
-  background: #edf4ee;
-  border-color: #c8d5c9;
-  border-left-color: #7f987f;
-  color: #314336;
-  box-shadow: 0 2px 6px rgba(33, 49, 38, 0.04);
+  background: #fff8e9;
+  border-color: #dfcfac;
+  border-left-color: #c1984a;
+  color: #4a3a21;
+  box-shadow: 0 2px 6px rgba(84, 67, 29, 0.04);
 }
 
 .trainingTipLabel,
 .training-tip-label,
 .trainingNoteLabel {
-  color: #4f6954;
+  color: #8b6626;
 }
 
 .trainingTip p,
 .training-tip p,
 .trainingNote p {
-  color: #415344;
+  color: #5c4d34;
 }
 
 .feedbackSummaryHint,
@@ -2699,18 +2730,19 @@ details.band[open] > summary {
   color: var(--muted);
 }
 
-/* keep the stronger green success cards aligned with the new palette */
+/* Keep existing success and danger actions intact, but let the page shadows match */
 .trainingCompletionBanner,
 .sessionCompleteBanner {
-  box-shadow: 0 4px 10px rgba(33, 49, 38, 0.05);
+  box-shadow: 0 4px 12px rgba(84, 67, 29, 0.06);
 }
 
-/* redefine the proceed pulse so it matches the new accent */
+/* Pulse now harmonizes with the green action buttons */
 @keyframes proceedReadyPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(95, 122, 98, 0.42); }
-  65%  { box-shadow: 0 0 0 10px rgba(95, 122, 98, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(95, 122, 98, 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(73, 107, 79, 0.42); }
+  65%  { box-shadow: 0 0 0 10px rgba(73, 107, 79, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(73, 107, 79, 0); }
 }
+
 
   </style>
 </head>
