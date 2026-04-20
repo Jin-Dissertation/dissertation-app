@@ -3462,6 +3462,7 @@ const PROMPT_META = [
         copiedTip.hidden = true;
         copiedTip.style.display = "none";
       }
+      updateConditionalTrainingTips();
 
       const setupMsg = $("setupMsg");
       if (setupMsg && (setupMsg.textContent || "").includes("Starter prompt copied.")) {
@@ -3863,14 +3864,58 @@ const PROMPT_META = [
     }
 
     function configureTrainingTipsUI() {
-      const tipIds = ["trainingTopNote", "trainingTipQuestionContext", "trainingTipStarterGate", "starterCopiedTrainingTip", "makingQuestionsTrainingTip", "trainingTipFinalizeIntro", "finalCopiedTrainingTip", "trainingTipFinalizeFeedback", "trainingTipEndSession", "trainingTipSamplePrompts"];
+      const tipIds = [
+        "trainingTopNote",
+        "trainingTipQuestionContext",
+        "trainingTipStarterGate",
+        "makingQuestionsTrainingTip",
+        "trainingTipFinalizeIntro",
+        "trainingTipFinalizeFeedback",
+        "trainingTipSamplePrompts"
+      ];
+
       tipIds.forEach((id) => {
         const el = $(id);
         if (!el) return;
-        const shouldShow = trainingTipsVisible && ((id !== "starterCopiedTrainingTip" && id !== "finalCopiedTrainingTip") || !el.hidden);
-        el.style.display = shouldShow ? "block" : "none";
+        el.style.display = trainingTipsVisible ? "block" : "none";
       });
+
+      updateConditionalTrainingTips();
       refreshTrainingTipsFooterLink();
+    }
+
+    function updateConditionalTrainingTips() {
+      const starterCopiedTip = $("starterCopiedTrainingTip");
+      const finalCopiedTip = $("finalCopiedTrainingTip");
+      const endTip = $("trainingTipEndSession");
+
+      const showStarterCopiedTip =
+        trainingTipsVisible && hasCurrentStarterPromptCopy();
+
+      const showFinalCopiedTip =
+        trainingTipsVisible &&
+        isTrainingMode &&
+        localStorage.getItem(KEYS.finalPromptCopied) === "true";
+
+      const showEndTip =
+        trainingTipsVisible &&
+        isTrainingMode &&
+        localStorage.getItem(KEYS.finalPromptCopied) === "true";
+
+      if (starterCopiedTip) {
+        starterCopiedTip.hidden = !showStarterCopiedTip;
+        starterCopiedTip.style.display = showStarterCopiedTip ? "block" : "none";
+      }
+
+      if (finalCopiedTip) {
+        finalCopiedTip.hidden = !showFinalCopiedTip;
+        finalCopiedTip.style.display = showFinalCopiedTip ? "block" : "none";
+      }
+
+      if (endTip) {
+        endTip.hidden = !showEndTip;
+        endTip.style.display = showEndTip ? "block" : "none";
+      }
     }
 
     function configureTimerModeUI() {
@@ -4017,8 +4062,6 @@ const PROMPT_META = [
       const notice = $("finalizeCopyNotice");
       const lockedArea = $("finalizeLockedArea");
       const endRow = $("endSessionRow");
-      const endTip = $("trainingTipEndSession");
-      const finalCopiedTip = $("finalCopiedTrainingTip");
       const llm = $("llmResponse");
 
       if (notice) {
@@ -4047,12 +4090,7 @@ const PROMPT_META = [
       if (llm) llm.disabled = !copied;
       if (endRow) endRow.style.display = copied ? "flex" : "none";
       updateEndSessionState();
-      if (finalCopiedTip) {
-        finalCopiedTip.hidden = !copied;
-        finalCopiedTip.style.display = isTrainingMode && copied ? "block" : "none";
-      }
-      // End Session training tip is shown only when the End Session section is visible.
-      if (endTip) endTip.style.display = isTrainingMode && copied ? "block" : "none";
+      updateConditionalTrainingTips();
     }
 
 
@@ -6605,13 +6643,8 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
             starterPromptCopied = true;
             localStorage.setItem(KEYS.starterCopied, "true");
             localStorage.setItem(KEYS.starterCopiedSetupSignature, getStarterSetupSignature());
+            updateConditionalTrainingTips();
             saveCurrentSettingsAsPrevious();
-
-            const copiedTip = $("starterCopiedTrainingTip");
-            if (isTrainingMode && copiedTip) {
-              copiedTip.hidden = false;
-              copiedTip.style.display = "block";
-            }
 
             renderSetupSamplePromptBox();
             updateProceedToPromptsAvailability();
@@ -6708,6 +6741,7 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
         localStorage.setItem(KEYS.finalPrompt, fp);
         if ($("finalCopyPreview")) $("finalCopyPreview").textContent = fp;
         localStorage.setItem(KEYS.finalPromptCopied, "false");
+        updateConditionalTrainingTips();
         logEvent("final_prompt_ready", {});
         setStage("finalize");
         appendServerEvent(
@@ -6750,10 +6784,6 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
           {}
         );
         queueLiveSessionUpdate("in_progress");
-        const finalCopiedTip = $("finalCopiedTrainingTip");
-        if (isTrainingMode && finalCopiedTip) {
-          finalCopiedTip.hidden = false;
-        }
         updateFinalizeContentUI();
       };
 
