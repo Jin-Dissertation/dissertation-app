@@ -2291,6 +2291,427 @@
       color: #2d5a3a;
     }
 
+
+/* =========================================================
+   Non-participant sage theme override
+   Added to replace the leftover blue-heavy UI styling
+   with a muted sage / olive palette that matches the page bg.
+   ========================================================= */
+:root {
+  --bg: #edf3ec;
+  --card: #fbfdf9;
+  --muted: #5f6f63;
+  --text: #213126;
+  --accent: #5f7a62;
+  --accent-soft: #dee9df;
+  --border: #c7d4c8;
+  --warn: #b88335;
+  --landing-max-width: 760px;
+
+  --surface-1: #f6faf5;
+  --surface-2: #eef4ee;
+  --surface-3: #e5ede6;
+  --surface-4: #f1f5f0;
+  --accent-deep: #4c6650;
+  --accent-ink: #38513d;
+  --soft-shadow: rgba(33, 49, 38, 0.08);
+  --soft-shadow-strong: rgba(33, 49, 38, 0.14);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.card,
+.modalCard,
+.mobileFeedbackSheet,
+.copyHistoryItem,
+.copiedText.recentPreview,
+.copyCard,
+.promptCard,
+.promptDetailsText,
+.lockMsg,
+.feedbackCollapsible,
+.accessIntro,
+.modelOption,
+.product-card,
+input,
+select,
+textarea {
+  border-color: var(--border);
+}
+
+.card,
+.modalCard,
+.mobileFeedbackSheet,
+.copyHistoryItem,
+.copiedText.recentPreview,
+.copyCard,
+.promptCard,
+.accessIntro,
+.modelOption,
+.product-card,
+.feedbackCollapsible[open] {
+  background: var(--card);
+}
+
+.accessIntro {
+  background: var(--surface-1);
+}
+
+.accessIntro p,
+.copyHelpCaption,
+.helpExampleText {
+  color: #4b5c4f;
+}
+
+input,
+select,
+textarea,
+.promptDetailsText {
+  background: var(--surface-1);
+  color: var(--text);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(95, 122, 98, 0.14);
+}
+
+.btn,
+.btn.ghost {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+.btn.primary:hover:not(:disabled) {
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
+  box-shadow: 0 2px 8px rgba(95, 122, 98, 0.24);
+}
+
+.helpFaqLink {
+  color: var(--accent);
+}
+
+.trainingTipsLink:hover,
+.helpFaqLink:hover {
+  color: var(--accent-deep);
+}
+
+.toast {
+  background: rgba(33, 49, 38, 0.95);
+  border-color: var(--accent);
+}
+
+details.band > summary {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+details.band > summary:hover,
+details.band[open] > summary {
+  background: var(--surface-3);
+  border-color: #b7c7b9;
+}
+
+.tag.ok {
+  border-color: rgba(95, 122, 98, 0.4);
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+}
+
+.lockMsg {
+  background: #f7faf6;
+}
+
+.subBand {
+  background: rgba(33, 49, 38, 0.03);
+}
+
+.modelOption,
+.product-card {
+  background: var(--surface-1);
+}
+
+.modelOption:hover,
+.product-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 4px 10px var(--soft-shadow);
+}
+
+.modelOption.active,
+.modelOption.selected,
+.product-card.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.productIconCircle {
+  background: #edf2ec;
+}
+
+.productButton.selected .productIconCircle,
+.product-card.selected .productIconCircle {
+  background: #dbe7dc;
+}
+
+.productIconText {
+  color: #445548;
+}
+
+#btnMobileFeedback {
+  color: #4f6153;
+  border-color: #c5d1c6;
+}
+
+#mobileFeedbackStatus,
+.sidebarFeedbackSavedNote {
+  color: #546857;
+}
+
+.mobileSheetClose {
+  background: var(--surface-2);
+  border-color: #b7c7b9;
+  color: var(--accent-ink);
+}
+
+.mobileSheetClose:hover {
+  background: var(--surface-3);
+  border-color: #9fb2a1;
+}
+
+.mobileSheetClose:active {
+  background: #dce6dd;
+}
+
+#sessionTimerCard {
+  background: var(--surface-1) !important;
+  border-color: var(--border) !important;
+}
+
+.timerCard.timerComplete {
+  border-color: #7fa386;
+  background: #eef7f0;
+}
+
+.timerNotice {
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
+}
+
+.mobileTimerBar {
+  background: var(--surface-1);
+  border-color: var(--border);
+}
+
+.sidebarModeBtn:hover {
+  background: var(--surface-3);
+  border-color: #c1d0c3;
+  color: var(--text);
+}
+
+.sidebarModeBtn.is-active {
+  background: var(--accent-soft);
+  border-color: rgba(95, 122, 98, 0.35);
+  color: var(--accent-ink);
+}
+
+.stickySidebar.recentCard.feedback-emphasis {
+  border-color: rgba(95, 122, 98, 0.5);
+  box-shadow:
+    0 0 0 3px rgba(95, 122, 98, 0.12),
+    0 6px 14px rgba(33, 49, 38, 0.08);
+}
+
+.copyHistoryItem:hover,
+.promptCard:hover,
+.copyCard:hover,
+.copiedText.recentPreview:not(.is-empty):hover {
+  background: #f8fbf7;
+  border-color: #aebfae;
+  box-shadow: 0 2px 8px rgba(33, 49, 38, 0.07);
+}
+
+.copyHistoryItem:active,
+.promptCard.is-active,
+.copyCard.is-active,
+.copiedText.recentPreview:not(.is-empty):active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.copyHistoryTime {
+  color: #8a998d;
+}
+
+.promptSection {
+  border-color: #c8d4c9;
+  border-left-color: #8ea391;
+  background: var(--surface-2);
+}
+
+.promptSectionTitle {
+  color: #2c3f31;
+}
+
+.promptSection.section-accept {
+  background: #f2f7f1;
+  border-color: #c7d4c8;
+  border-left-color: #7f957f;
+}
+
+.promptSection.section-refine {
+  background: #edf4ef;
+  border-color: #c7d4c8;
+  border-left-color: #6f8b77;
+}
+
+.promptSection.section-refine .promptCard {
+  background: #f8fbf8;
+  border-color: #c7d4c8;
+}
+
+.promptSection.section-refine .promptCard:hover {
+  background: #f1f6f2;
+  border-color: #aebfae;
+  box-shadow: 0 2px 8px rgba(72, 97, 79, 0.08);
+}
+
+.promptSection.section-refine .promptCard.is-active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.promptSection.section-audit {
+  background: #faf5eb;
+  border-color: #dfcfaf;
+  border-left-color: #b08a4f;
+}
+
+.promptSection.section-review {
+  background: #f3f7f3;
+  border-color: #d1dbd2;
+  border-left-color: #879b8a;
+}
+
+.setupPromptBox {
+  border-color: #d2dbc8;
+  border-left-color: #93a884;
+  background: #f5f8f2;
+}
+
+.setupPromptBoxTitle {
+  color: #334533;
+}
+
+.setupPromptBoxSub {
+  color: #647663;
+}
+
+.setupPromptBox .promptCard {
+  background: #fbfdf8;
+  border-color: #d2dbc8;
+}
+
+.setupPromptBox .promptCard:hover {
+  background: #f1f6ee;
+  border-color: #b0c0ac;
+  box-shadow: 0 2px 8px rgba(72, 97, 79, 0.09);
+}
+
+.setupPromptBox .promptCard.is-active {
+  background: #e7efe4;
+  border-color: #7f957f;
+}
+
+.setupPromptBox .promptChevronBtn:hover {
+  background: #edf4ea;
+  border-color: #7f957f;
+  color: #48614d;
+}
+
+.promptChevronBtn:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.promptDetailsText {
+  background: var(--surface-1);
+}
+
+.finalActionRow {
+  border-top-color: #d8e1d8;
+}
+
+.feedbackCollapsible {
+  border-color: #d2dbd2;
+  background: var(--surface-1);
+}
+
+.audioControlRow .audioStateStatus {
+  background: #edf2ee;
+  border-color: var(--border);
+}
+
+.audioMeterHistory {
+  background: #ecf1ec;
+}
+
+.trainingTip,
+.training-tip,
+.trainingNote {
+  background: #edf4ee;
+  border-color: #c8d5c9;
+  border-left-color: #7f987f;
+  color: #314336;
+  box-shadow: 0 2px 6px rgba(33, 49, 38, 0.04);
+}
+
+.trainingTipLabel,
+.training-tip-label,
+.trainingNoteLabel {
+  color: #4f6954;
+}
+
+.trainingTip p,
+.training-tip p,
+.trainingNote p {
+  color: #415344;
+}
+
+.feedbackSummaryHint,
+.feedbackSummaryChevron,
+.pageFooterMeta,
+.pageFooterLink,
+.trainingTipsDivider {
+  color: var(--muted);
+}
+
+/* keep the stronger green success cards aligned with the new palette */
+.trainingCompletionBanner,
+.sessionCompleteBanner {
+  box-shadow: 0 4px 10px rgba(33, 49, 38, 0.05);
+}
+
+/* redefine the proceed pulse so it matches the new accent */
+@keyframes proceedReadyPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(95, 122, 98, 0.42); }
+  65%  { box-shadow: 0 0 0 10px rgba(95, 122, 98, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(95, 122, 98, 0); }
+}
+
   </style>
 </head>
 <body>
