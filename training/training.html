@@ -2191,125 +2191,169 @@ function askResumeChoice() {
 // ─────────────────────────────────────────────
 // BUILD CONTENT STRUCTURE FROM TRAINING ROWS
 // ─────────────────────────────────────────────
-// SECTION GROUPING: rows are grouped by section first, then by slot inside each section.
-function buildStructure(rows) {
-  const normalized = rows.map((r, idx) => ({
-    ...r,
-    section_id: (r.section_id || 'training').trim() || 'training',
-    section_title: (r.section_title || 'Training').trim() || 'Training',
-    section_order: Number.parseInt(r.section_order, 10) || 1,
-    _rowIndex: idx
-  }));
+// SECTION GROUPING: sections are inferred from first appearance in the sheet,
+// and cards within each section follow row order.
+function firstFilled(...values) {
+  for (const value of values) {
+    if (value != null && String(value).trim() !== '') return String(value).trim();
+  }
+  return '';
+}
 
+function splitPipeBlob(value) {
+  return String(value || '')
+    .replace(/\r\n?/g, '\n')
+    .split('|')
+    .map(part => part.trim())
+    .filter(Boolean);
+}
+
+function buildStructure(rows) {
+  const normalized = rows
+    .map((r, idx) => ({
+      ...r,
+      section_id: (r.section_id || 'training').trim() || 'training',
+      section_title: (r.section_title || 'Training').trim() || 'Training',
+      _rowIndex: idx
+    }))
+    .filter(r => r.type);
+
+  const sections = [];
   const sectionMap = new Map();
+
   normalized.forEach(row => {
-    const key = `${row.section_order}__${row.section_id}`;
+    const key = row.section_id || row.section_title;
     if (!sectionMap.has(key)) {
-      sectionMap.set(key, {
+      const section = {
         id: row.section_id,
         title: row.section_title,
-        order: row.section_order,
+        order: sections.length + 1,
         rows: []
-      });
+      };
+      sectionMap.set(key, section);
+      sections.push(section);
     }
     sectionMap.get(key).rows.push(row);
   });
 
-  const sections = [...sectionMap.values()]
-    .sort((a,b) => a.order - b.order || a.id.localeCompare(b.id))
-    .map(section => ({
-      ...section,
-      cards: buildCardsForSection(section.rows)
-    }));
+  const structured = sections.map(section => ({
+    ...section,
+    cards: buildCardsForSection(section.rows)
+  }));
 
-  return flattenMultiQuestionCards(sections);
-}
-
-function flattenMultiQuestionCards(structure) {
-  return structure.map(section => {
-    const flatCards = [];
-
-    section.cards.forEach(card => {
-      if (card && card.type === 'quiz' && Array.isArray(card.questions) && card.questions.length > 1) {
-        card.questions.forEach((q, idx) => {
-          flatCards.push({
-            ...card,
-            type: 'quiz_single',
-            questions: [q],
-            quizSeriesIndex: idx + 1,
-            quizSeriesSize: card.questions.length,
-            quizQuestion: q
-          });
-        });
-      } else if (card && card.type === 'quiz' && Array.isArray(card.questions) && card.questions.length === 1) {
-        flatCards.push({
-          ...card,
-          type: 'quiz_single',
-          questions: [card.questions[0]],
-          quizSeriesIndex: 1,
-          quizSeriesSize: 1,
-          quizQuestion: card.questions[0]
-        });
-      } else {
-        flatCards.push(card);
-      }
-    });
-
-    return {
-      ...section,
-      cards: flatCards
-    };
-  });
+  return flattenMultiQuestionCards(structured);
 }
 
 function buildCardsForSection(rows) {
-  const allSlots = [...new Set(rows.map(r => parseInt(r.slot, 10)).filter(n => !Number.isNaN(n)))].sort((a,b)=>a-b);
-  return allSlots.map(slot => {
-    const slotRows = rows.filter(r => parseInt(r.slot, 10) === slot);
-    const type  = slotRows[0]?.type;
-    const first = slotRows[0];
+  const cards = [];
+  let slotCounter = 1;
+  let currentQuiz = null;
+
+  const flushQuiz = () => {
+    if (currentQuiz && currentQuiz.questions.length) {
+      cards.push(currentQuiz);
+      slotCounter += 1;
+    }
+    currentQuiz = null;
+  };
+
+  rows.forEach(row => {
+    const type = String(row.type || '').trim();
+
+    if (type === 'quiz') {
+      const questionNum = Number.parseInt(row.question_num, 10) || 0;
+      const shouldStartNewQuiz = !currentQuiz || questionNum === 1;
+
+      if (shouldStartNewQuiz) {
+        flushQuiz();
+        currentQuiz = {
+          type: 'quiz',
+          slot: slotCounter,
+          quizNum: cards.filter(card => card.type === 'quiz').length + 1,
+          questions: []
+        };
+      }
+
+      currentQuiz.questions.push({
+        quizNum: currentQuiz.quizNum,
+        questionNum: row.question_num,
+        stem: row.stem,
+        correct: firstFilled(row.correct_blob, row.correct),
+        distractors: splitPipeBlob(firstFilled(row.distractors_blob)),
+        feedback: row.feedback,
+        showIdk: String(row.show_idk || '').toLowerCase() === 'yes'
+      });
+      return;
+    }
+
+    flushQuiz();
 
     if (type === 'video') {
-      return {
+      cards.push({
         type: 'video',
-        slot,
-        videoName: first.video_name
-      };
+        slot: slotCounter++,
+        videoName: row.video_name
+      });
+      return;
     }
-    if (type === 'text') return { type: 'text', slot, header: first.header, body: first.body, body_mobile: first.body_mobile };
-    if (type === 'text_image') return { type: 'text_image', slot, header: first.header, body: first.body, body_mobile: first.body_mobile, imageUrl: first.image_url, mobileImageUrl: first.mobile_image_url };
+
+    if (type === 'text') {
+      cards.push({
+        type: 'text',
+        slot: slotCounter++,
+        header: row.header,
+        body: row.body,
+        body_mobile: row.body_mobile
+      });
+      return;
+    }
+
+    if (type === 'text_image') {
+      cards.push({
+        type: 'text_image',
+        slot: slotCounter++,
+        header: row.header,
+        body: row.body,
+        body_mobile: row.body_mobile,
+        imageUrl: row.image_url,
+        mobileImageUrl: row.mobile_image_url
+      });
+      return;
+    }
+
     if (type === 'question_image') {
-      const distractors = [first.distractor_1, first.distractor_2, first.distractor_3, first.distractor_4].filter(d => d && d.trim());
-      return { type: 'question_image', slot, stem: first.stem, correct: first.correct, distractors, feedback: first.feedback, showIdk: first.show_idk?.toLowerCase() === 'yes', imageUrl: first.image_url, mobileImageUrl: first.mobile_image_url };
+      cards.push({
+        type: 'question_image',
+        slot: slotCounter++,
+        stem: row.stem,
+        correct: firstFilled(row.correct_blob, row.correct),
+        distractors: splitPipeBlob(firstFilled(row.distractors_blob)),
+        feedback: row.feedback,
+        showIdk: String(row.show_idk || '').toLowerCase() === 'yes',
+        imageUrl: row.image_url,
+        mobileImageUrl: row.mobile_image_url
+      });
+      return;
     }
+
     if (type === 'categorize') {
-      return {
+      cards.push({
         type: 'categorize',
-        slot,
-        header: first.header,
-        body: first.body,
-        body_mobile: first.body_mobile,
-        stem: first.stem,
-        feedback: first.feedback,
-        correctBlob: first.correct_blob
-      };
+        slot: slotCounter++,
+        header: row.header,
+        body: row.body,
+        body_mobile: row.body_mobile,
+        stem: row.stem,
+        feedback: row.feedback,
+        correctBlob: firstFilled(row.correct_blob, row.correct)
+      });
+      return;
     }
-
-    const qRows = slotRows.sort((a, b) => parseInt(a.question_num,10) - parseInt(b.question_num,10));
-    const quizNum = qRows[0]?.quiz_num || slot;
-    const questions = qRows.map(r => ({
-      quizNum: r.quiz_num,
-      questionNum: r.question_num,
-      stem: r.stem,
-      correct: r.correct,
-      distractors: [r.distractor_1, r.distractor_2, r.distractor_3, r.distractor_4].filter(d => d && d.trim()),
-      feedback: r.feedback,
-      showIdk: r.show_idk?.toLowerCase() === 'yes'
-    }));
-    return { type: 'quiz', slot, quizNum, questions };
   });
-}
 
+  flushQuiz();
+  return cards;
+}
 
 // ─────────────────────────────────────────────
 // RENDER INCOMPLETE CARD
