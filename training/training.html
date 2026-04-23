@@ -2244,6 +2244,44 @@ function buildStructure(rows) {
   return flattenMultiQuestionCards(structured);
 }
 
+
+function flattenMultiQuestionCards(structure) {
+  return structure.map(section => {
+    const flatCards = [];
+
+    (section.cards || []).forEach(card => {
+      if (card && card.type === 'quiz' && Array.isArray(card.questions) && card.questions.length > 1) {
+        card.questions.forEach((q, idx) => {
+          flatCards.push({
+            ...card,
+            type: 'quiz_single',
+            questions: [q],
+            quizSeriesIndex: idx + 1,
+            quizSeriesSize: card.questions.length,
+            quizQuestion: q
+          });
+        });
+      } else if (card && card.type === 'quiz' && Array.isArray(card.questions) && card.questions.length === 1) {
+        flatCards.push({
+          ...card,
+          type: 'quiz_single',
+          questions: [card.questions[0]],
+          quizSeriesIndex: 1,
+          quizSeriesSize: 1,
+          quizQuestion: card.questions[0]
+        });
+      } else {
+        flatCards.push(card);
+      }
+    });
+
+    return {
+      ...section,
+      cards: flatCards
+    };
+  });
+}
+
 function buildCardsForSection(rows) {
   const cards = [];
   let slotCounter = 1;
