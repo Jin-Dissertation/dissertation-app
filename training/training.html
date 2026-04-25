@@ -2363,15 +2363,17 @@ function buildCardsForSection(rows) {
       return;
     }
 
-    if (type === 'categorize' || type === 'categorization') {
+    if (type === 'categorize' || type === 'categorization' || type === 'matching') {
+      const mappedType = type === 'matching' ? 'matching' : 'categorization';
       cards.push({
-        type: 'categorization',
+        type: mappedType,
         slot: slotCounter++,
         header: row.header,
         body: row.body,
         body_mobile: row.body_mobile,
         stem: row.stem,
         feedback: row.feedback,
+        settings: row.settings,
         correctBlob: firstFilled(row.correct_blob, row.correct)
       });
       return;
@@ -2849,6 +2851,7 @@ function renderCategorizeBlock(item, cardIndex, onComplete, onContinue = onCompl
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
 
+  const isMatching = String(item.type || '').trim().toLowerCase() === 'matching';
   const { mappings, categories, items } = getCategorizeMappingsAndCategories(item.correctBlob);
   const sectionState = quizStates[sectionIndex] || {
     itemOrder: null,
@@ -2869,8 +2872,12 @@ function renderCategorizeBlock(item, cardIndex, onComplete, onContinue = onCompl
   const stemHtml = item.stem ? `<p class="question-stem">${html(item.stem)}</p>` : '';
   const mobileMode = isMobileLikeViewport();
   const helperText = mobileMode
-    ? 'Tap an item to select it, then tap a category area to place it. Leave unrelated items in the item pool.'
-    : 'Drag each item into the correct category. Leave unrelated items in the item pool.';
+    ? (isMatching
+      ? 'Tap an item to select it, then tap a matching option to place it. Leave unmatched distractors in the item pool.'
+      : 'Tap an item to select it, then tap a category area to place it. Leave unrelated items in the item pool.')
+    : (isMatching
+      ? 'Drag each item to its correct match. Leave unmatched distractors in the item pool.'
+      : 'Drag each item into the correct category. Leave unrelated items in the item pool.');
 
   const poolItemsHtml = sectionState.itemOrder
     .map((text, idx) => `<button class="categorize-item" data-item="${html(text)}" data-item-index="${idx}" type="button">${html(text)}</button>`)
@@ -2896,7 +2903,7 @@ function renderCategorizeBlock(item, cardIndex, onComplete, onContinue = onCompl
       <p class="categorize-helper">${html(helperText)}</p>
       <div class="categorize-layout">
         <div class="categorize-pool" data-category="pool">
-          <p class="categorize-pool-title">Items to place</p>
+          <p class="categorize-pool-title">${html(isMatching ? 'Items to match' : 'Items to place')}</p>
           <div class="categorize-items">${poolItemsHtml}</div>
           <p class="categorize-mobile-hint"${mobileMode ? '' : ' style="display:none;"'}>No item selected.</p>
         </div>
@@ -3114,7 +3121,7 @@ function renderCategorizeBlock(item, cardIndex, onComplete, onContinue = onCompl
     }
     sectionState.isCorrect = allCorrect;
 
-    logEvent('categorize_answered', {
+    logEvent(isMatching ? 'matching_answered' : 'categorize_answered', {
       slot: item.slot,
       sectionIndex,
       is_correct: allCorrect
@@ -3559,7 +3566,7 @@ function renderTraining(structure, savedState = null) {
       else if (item.type === 'text') block = renderTextBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'text_image') block = renderTextImageBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'question_image') block = renderQuestionImageBlock(item, cardIndex, onComplete, onContinue);
-      else if (item.type === 'categorize' || item.type === 'categorization') block = renderCategorizeBlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'categorize' || item.type === 'categorization' || item.type === 'matching') block = renderCategorizeBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'quiz' || item.type === 'quiz_single') block = renderQuizBlock(item, cardIndex, onComplete, onContinue);
       else block = renderQuizBlock(item, cardIndex, onComplete, onContinue);
       block.dataset.cardIndex = String(cardIndex);
@@ -3816,7 +3823,7 @@ function buildCardResponseValues() {
 
       if (card?.type === 'question_image') {
         if (state.answered) value = state.isCorrect ? 1 : 0;
-      } else if (card?.type === 'categorize' || card?.type === 'categorization') {
+      } else if (card?.type === 'categorize' || card?.type === 'categorization' || card?.type === 'matching') {
         if (state.submitted) value = state.isCorrect ? 1 : 0;
       } else if (card?.type === 'quiz') {
         if (state.completed) {
