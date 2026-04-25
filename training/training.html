@@ -1828,29 +1828,18 @@ function parseCategorizeMappings(blob) {
   const raw = String(blob || '').replace(/\r\n?/g, '\n').trim();
   if (!raw) return [];
 
-  const usesNewFormat = raw.includes('---');
-
-  const entries = usesNewFormat
-    ? raw.split('\n').map(line => line.trim()).filter(Boolean)
-    : raw.split('||').map(part => part.trim()).filter(Boolean);
-
-  return entries
+  return raw
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
     .map(entry => {
-      let left = '';
-      let right = '';
+      const delimiterIndex = entry.indexOf('::');
+      if (delimiterIndex === -1) return null;
 
-      if (usesNewFormat) {
-        const parts = entry.split('---');
-        left = parts.shift() || '';
-        right = parts.join('---') || '';
-      } else {
-        const parts = entry.split('|');
-        left = parts[0] || '';
-        right = parts[1] || '';
-      }
+      const rawItem = entry.slice(0, delimiterIndex).trim();
+      const rawCategory = entry.slice(delimiterIndex + 2).trim();
 
-      const rawItem = String(left).replace(/\|+$/g, '').trim();
-      const rawCategory = String(right).replace(/\|+$/g, '').trim();
+      if (!rawItem && !rawCategory) return null;
 
       return {
         item: isCategorizeNA(rawItem) ? '' : rawItem,
@@ -1859,7 +1848,7 @@ function parseCategorizeMappings(blob) {
         rawCategory
       };
     })
-    .filter(entry => entry.rawItem || entry.rawCategory);
+    .filter(Boolean);
 }
 
 function getCategorizeMappingsAndCategories(blob) {
@@ -2296,7 +2285,7 @@ function buildCardsForSection(rows) {
   };
 
   rows.forEach(row => {
-    const type = String(row.type || '').trim();
+    const type = String(row.type || '').trim().toLowerCase();
 
     if (type === 'quiz') {
       const questionNum = Number.parseInt(row.question_num, 10) || 0;
@@ -2374,9 +2363,9 @@ function buildCardsForSection(rows) {
       return;
     }
 
-    if (type === 'categorize') {
+    if (type === 'categorize' || type === 'categorization') {
       cards.push({
-        type: 'categorize',
+        type: 'categorization',
         slot: slotCounter++,
         header: row.header,
         body: row.body,
@@ -2880,8 +2869,8 @@ function renderCategorizeBlock(item, cardIndex, onComplete, onContinue = onCompl
   const stemHtml = item.stem ? `<p class="question-stem">${html(item.stem)}</p>` : '';
   const mobileMode = isMobileLikeViewport();
   const helperText = mobileMode
-    ? 'Tap an item to select it, then tap a category area to place it.'
-    : 'Drag each item into the correct category.';
+    ? 'Tap an item to select it, then tap a category area to place it. Leave unrelated items in the item pool.'
+    : 'Drag each item into the correct category. Leave unrelated items in the item pool.';
 
   const poolItemsHtml = sectionState.itemOrder
     .map((text, idx) => `<button class="categorize-item" data-item="${html(text)}" data-item-index="${idx}" type="button">${html(text)}</button>`)
@@ -3570,7 +3559,7 @@ function renderTraining(structure, savedState = null) {
       else if (item.type === 'text') block = renderTextBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'text_image') block = renderTextImageBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'question_image') block = renderQuestionImageBlock(item, cardIndex, onComplete, onContinue);
-      else if (item.type === 'categorize') block = renderCategorizeBlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'categorize' || item.type === 'categorization') block = renderCategorizeBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'quiz' || item.type === 'quiz_single') block = renderQuizBlock(item, cardIndex, onComplete, onContinue);
       else block = renderQuizBlock(item, cardIndex, onComplete, onContinue);
       block.dataset.cardIndex = String(cardIndex);
@@ -3827,7 +3816,7 @@ function buildCardResponseValues() {
 
       if (card?.type === 'question_image') {
         if (state.answered) value = state.isCorrect ? 1 : 0;
-      } else if (card?.type === 'categorize') {
+      } else if (card?.type === 'categorize' || card?.type === 'categorization') {
         if (state.submitted) value = state.isCorrect ? 1 : 0;
       } else if (card?.type === 'quiz') {
         if (state.completed) {
