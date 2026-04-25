@@ -4563,8 +4563,8 @@ function handlePracticeCategorizeAnswer(question, container, mappings, placement
       `;
     } else {
       const answerText = mappings
+        .filter(mapping => !isNAValue(mapping.item))
         .map(mapping => {
-          if (isNAValue(mapping.item)) return `No items → ${mapping.category}`;
           if (isNAValue(mapping.category)) return `${mapping.item} → No category`;
           return `${mapping.item} → ${mapping.category}`;
         })
@@ -5329,9 +5329,9 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
   }
 
   if (type === 'categorization') {
-    const { mappings, categories } = getCategorizeMappingsAndCategories(question.correct_blob);
+    const { mappings, categories, items: categoryItems } = getCategorizeMappingsAndCategories(question.correct_blob);
     if (!mappings.length) return renderIncompleteCard(item, sectionIndex, onComplete, 'Categorize card is missing answer mappings.');
-    const allItems = [...new Set(mappings.map(m => m.item))];
+    const allItems = categoryItems;
     state.itemOrder = getStableOptionOrder(state.itemOrder, allItems);
     const items = state.itemOrder;
     const isMobileMode = window.matchMedia('(max-width: 700px)').matches;
@@ -5375,7 +5375,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
       </div>
       ${!state.submitted ? '<div class="practice-categorize-controls"><button type="button" class="action-btn secondary module-categorize-reset">Reset placements</button><button type="button" class="action-btn module-categorize-submit">Check Answer</button></div>' : ''}
       <div class="practice-feedback" style="margin-top:8px;">
-        ${state.submitted ? `${buildPracticeStyledResultHtml(state.wasCorrect, `Correct placement:<br><br>${mappings.map(m => isNAValue(m.item) ? `No items → ${html(m.category)}` : isNAValue(m.category) ? `${html(m.item)} → No category` : `${html(m.item)} → ${html(m.category)}`).join('<br>')}`)}${buildPracticeRationaleHtml(question.rationale)}` : ''}
+        ${state.submitted ? `${buildPracticeStyledResultHtml(state.wasCorrect, `Correct placement:<br><br>${mappings.filter(m => !isNAValue(m.item)).map(m => isNAValue(m.category) ? `${html(m.item)} → No category` : `${html(m.item)} → ${html(m.category)}`).join('<br>')}`)}${buildPracticeRationaleHtml(question.rationale)}` : ''}
       </div>
     `);
     initializePracticeStemToggle(block);
