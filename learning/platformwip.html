@@ -5347,9 +5347,11 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
   }
 
   if (type === 'categorization' || type === 'matching') {
+    const isMatching = type === 'matching';
     const { mappings, categories, items: categoryItems } = getCategorizeMappingsAndCategories(question.correct_blob);
-    if (!mappings.length) return renderIncompleteCard(item, sectionIndex, onComplete, 'Categorize card is missing answer mappings.');
+    if (!mappings.length) return renderIncompleteCard(item, sectionIndex, onComplete, isMatching ? 'Matching card is missing answer mappings.' : 'Categorization card is missing answer mappings.');
     const allItems = categoryItems;
+    const poolTitle = isMatching ? 'Items / no match' : 'Items / no category';
     state.itemOrder = getStableOptionOrder(state.itemOrder, allItems);
     const items = state.itemOrder;
     const isMobileMode = window.matchMedia('(max-width: 700px)').matches;
@@ -5370,7 +5372,10 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
       <div id="practice-stem" class="practice-stem">${question.stem}</div>
       <button id="practice-stem-toggle" class="practice-stem-toggle" style="display:none;" type="button">Expand case</button>
       <div class="practice-categorize-helper">
-        ${isMobileMode ? 'Tap an item, then tap a category area to place it. Leave unrelated items in the item pool.' : 'Drag each item into the correct category. Leave unrelated items in the item pool.'}
+        ${isMobileMode
+          ? (isMatching ? 'Tap an item, then tap the matching option. Leave unmatched items in the item pool.' : 'Tap an item, then tap a category area to place it. Leave unrelated items in the item pool.')
+          : (isMatching ? 'Drag each item to the matching option. Leave unmatched items in the item pool.' : 'Drag each item into the correct category. Leave unrelated items in the item pool.')
+        }
       </div>
       <div class="practice-categorize-layout">
         <div class="practice-categorize-pool practice-categorize-dropzone" data-category="pool">
@@ -5393,7 +5398,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
       </div>
       ${!state.submitted ? '<div class="practice-categorize-controls"><button type="button" class="action-btn secondary module-categorize-reset">Reset placements</button><button type="button" class="action-btn module-categorize-submit">Check Answer</button></div>' : ''}
       <div class="practice-feedback" style="margin-top:8px;">
-        ${state.submitted ? `${buildPracticeStyledResultHtml(state.wasCorrect, `Correct placement:<br><br>${mappings.filter(m => !isNAValue(m.item)).map(m => isNAValue(m.category) ? `${html(m.item)} → No category` : `${html(m.item)} → ${html(m.category)}`).join('<br>')}`)}${buildPracticeRationaleHtml(question.rationale)}` : ''}
+        ${state.submitted ? `${buildPracticeStyledResultHtml(state.wasCorrect, `${isMatching ? 'Correct match' : 'Correct placement'}:<br><br>${mappings.filter(m => !isNAValue(m.item)).map(m => isNAValue(m.category) ? `${html(m.item)} → ${isMatching ? 'No match' : 'No category'}` : `${html(m.item)} → ${html(m.category)}`).join('<br>')}`)}${buildPracticeRationaleHtml(question.feedback || question.rationale)}` : ''}
       </div>
     `);
     initializePracticeStemToggle(block);
