@@ -431,6 +431,15 @@
       padding: 0;
     }
 
+    .fitb-blank {
+      display: inline-block;
+      min-width: 8.5em;
+      text-align: center;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      color: #10213d;
+    }
+
     /* === Answer buttons (denser) === */
     .practice-answer-btn {
       display: flex;
@@ -3796,6 +3805,7 @@ function renderFITBQuestion(q, index, total) {
 
   const stateKey = getPracticeQuestionStateKey(q);
   const acceptedAnswers = parseAcceptedFitbAnswers(q.correct_blob || '');
+  const stemHtml = buildFITBStemHtml(q.stem, acceptedAnswers);
 
   container.innerHTML = `
     <div class="practice-question-card">
@@ -3805,7 +3815,7 @@ function renderFITBQuestion(q, index, total) {
       </div>
 
       <div id="practice-stem" class="practice-stem">
-        ${q.stem}
+        ${stemHtml}
       </div>
 
       <button id="practice-stem-toggle" class="practice-stem-toggle" style="display:none;">
@@ -5073,6 +5083,37 @@ function parseAcceptedFitbAnswers(raw) {
     });
 }
 
+function escapeRegExp(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildFITBStemHtml(rawStem, acceptedAnswers = []) {
+  const source = String(rawStem || '');
+  const blankHtml = '<span class="fitb-blank" aria-label="blank">_____________________</span>';
+
+  // Primary convention: hide anything wrapped in backticks.
+  if (/`([^`]+)`/.test(source)) {
+    return html(source).replace(/`([^`]+)`/g, blankHtml);
+  }
+
+  // Fallback: if the answer appears in the stem without backticks, hide the first matching accepted answer.
+  const answers = (Array.isArray(acceptedAnswers) ? acceptedAnswers : parseAcceptedFitbAnswers(acceptedAnswers))
+    .map(answer => String(answer || '').trim())
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
+
+  for (const answer of answers) {
+    const pattern = new RegExp(escapeRegExp(answer), 'i');
+    if (pattern.test(source)) {
+      const sentinel = '%%FITB_BLANK%%';
+      const masked = source.replace(pattern, sentinel);
+      return html(masked).replace(sentinel, blankHtml);
+    }
+  }
+
+  return html(source);
+}
+
 function isFitbAnswerCorrect(userAnswer, acceptedAnswers) {
   const userNormalized = normalizeGradedText(userAnswer);
   if (!userNormalized) return false;
@@ -5247,10 +5288,11 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
   if (type === 'fitb') {
     const acceptedAnswers = parseAcceptedFitbAnswers(question.correct_blob || '');
     const displayedCorrect = getDisplayedFitbAnswer(acceptedAnswers);
+    const stemHtml = buildFITBStemHtml(question.stem, acceptedAnswers);
     if (!acceptedAnswers.length) return renderIncompleteCard(item, sectionIndex, onComplete, 'FITB card is missing answer data.');
     const isCorrect = state.submitted ? isFitbAnswerCorrect(state.text, acceptedAnswers) : false;
     renderFrame(`
-      <div id="practice-stem" class="practice-stem">${question.stem}</div>
+      <div id="practice-stem" class="practice-stem">${stemHtml}</div>
       <button id="practice-stem-toggle" class="practice-stem-toggle" style="display:none;" type="button">Expand case</button>
       <div style="margin-top:10px;">
         <input type="text" class="gate-input module-fitb-input" value="${html(state.text || '')}" placeholder="Type your answer" ${state.submitted ? 'disabled' : ''} />
