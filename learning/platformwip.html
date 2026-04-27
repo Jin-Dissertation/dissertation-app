@@ -1963,26 +1963,36 @@ function getStableOptionOrder(savedOrder, allOptions) {
   return kept.concat(missing);
 }
 
+
 function splitBlob(value) {
   const raw = String(value || '').trim();
   if (!raw) return [];
+  if (raw.includes('|') && !raw.includes('||')) {
+    throw new Error('SBA/SATA option blobs must use || as the divider. Single | is only allowed inside FITB correct_blob.');
+  }
   return raw
-    .split(raw.includes('||') ? '||' : '|')
-    .map(s => s.trim())
+    .split(/\s*\|\|\s*/g)
+    .map(s => s.replace(/\r\n?/g, '\n').trim())
     .filter(Boolean);
 }
+
 
 function normalizeQuestionType(value) {
   const raw = String(value || '').trim().toLowerCase();
   const compact = raw.replace(/[\s_-]+/g, '');
 
-  if (['sba', 'singlebestanswer', 'singlebest'].includes(compact)) return 'sba';
-  if (['sbaimage', 'singlebestanswerimage'].includes(compact)) return 'sba_image';
-  if (['sata', 'selectallthatapply'].includes(compact)) return 'sata';
-  if (['fitb', 'fitbtext', 'fitbdropdown', 'fillintheblank', 'richfillblank'].includes(compact)) return 'fitb';
-  if (['categorization', 'categorize', 'category', 'categories'].includes(compact)) return 'categorization';
-  if (['matching', 'match'].includes(compact)) return 'matching';
-  if (['essay', 'shortanswer'].includes(compact)) return 'essay';
+  if (compact === 'sba') return 'sba';
+  if (compact === 'sata') return 'sata';
+  if (compact === 'fitb') return 'fitb';
+  if (compact === 'categorization') return 'categorization';
+  if (compact === 'matching') return 'matching';
+  if (compact === 'essay') return 'essay';
+
+  // Non-question module/card types pass through unchanged.
+  if (['text', 'textimage', 'video', 'reflection', 'poll'].includes(compact)) {
+    if (compact === 'textimage') return 'text_image';
+    return raw;
+  }
 
   return raw;
 }
@@ -2009,38 +2019,65 @@ function parseSettings(value) {
   return out;
 }
 
-function parseCategoryMappings(blob) {
+
+function parseMappingLines(blob) {
   return String(blob || '')
     .replace(/\r\n?/g, '\n')
     .split('\n')
-    .map(part => part.trim())
+    .map(line => line.trim())
     .filter(Boolean)
-    .map(part => {
-      const dividerIndex = part.indexOf('::');
-      if (dividerIndex === -1) return null;
-
-      const item = part.slice(0, dividerIndex).trim();
-      const category = part.slice(dividerIndex + 2).trim();
-
-      if (!item || !category) return null;
-      if (isNAValue(item) && isNAValue(category)) return null;
-      return { item, category };
-    })
-    .filter(Boolean);
+    .map((line, index) => {
+      const pieces = line.split('::');
+      if (pieces.length !== 2) {
+        throw new Error(`Mapping line ${index + 1} must contain exactly one :: divider.`);
+      }
+      const left = pieces[0].trim();
+      const right = pieces[1].trim();
+      if (!left || !right) {
+        throw new Error(`Mapping line ${index + 1} has an empty side.`);
+      }
+      if (isNAValue(left) && isNAValue(right)) {
+        throw new Error(`Mapping line ${index + 1} cannot be N/A::N/A.`);
+      }
+      return { left, right };
+    });
 }
 
-function parseCategorizeMappings(blob) {
-  return parseCategoryMappings(blob);
+function parseCategoryMappings(blob, type = 'categorization') {
+  const normalizedType = normalizeQuestionType(type || 'categorization');
+  const lines = parseMappingLines(blob);
+
+  return lines.map((line, index) => {
+    if (normalizedType === 'matching') {
+      if (isNAValue(line.right)) {
+        throw new Error(`Matching line ${index + 1} uses Item::N/A. Canvas-style matching only allows unmatched distractors on the right side using N/A::Distractor Match.`);
+      }
+      return { item: line.left, category: line.right };
+    }
+
+    if (normalizedType === 'categorization') {
+      // New categorization convention is Category::Item.
+      return { item: line.right, category: line.left };
+    }
+
+    throw new Error(`Unsupported mapping type: ${normalizedType}`);
+  });
 }
 
-function getCategorizeMappingsAndCategories(blob) {
-  const mappings = parseCategoryMappings(blob);
+function parseCategorizeMappings(blob, type = 'categorization') {
+  return parseCategoryMappings(blob, type);
+}
+
+function getCategorizeMappingsAndCategories(blob, type = 'categorization') {
+  const normalizedType = normalizeQuestionType(type || 'categorization');
+  const mappings = parseCategoryMappings(blob, normalizedType);
   return {
     mappings,
     categories: [...new Set(mappings.map(mapping => mapping.category).filter(category => !isNAValue(category)))],
     items: [...new Set(mappings.map(mapping => mapping.item).filter(item => !isNAValue(item)))]
   };
 }
+
 function normalizeBool(value) {
   return ['true', 'yes', '1'].includes(String(value || '').trim().toLowerCase());
 }
@@ -2486,8 +2523,8 @@ function bindPracticeKeyboardShortcuts() {
     const question = practiceTestState.questions?.[practiceTestState.currentIndex];
     if (!question) return;
 
-    const itemType = normalizeQuestionType(question.item_type || question.question_type || question.type || '');
-    if (!['sba', 'sba_image', 'sata'].includes(itemType)) return;
+    const itemType = normalizeQuestionType(question.item_type || question.type || '');
+    if (!['sba', 'sata'].includes(itemType)) return;
 
     const key = String(event.key || '');
     const isDigitShortcut = ['1', '2', '3', '4', '5'].includes(key);
@@ -2498,7 +2535,7 @@ function bindPracticeKeyboardShortcuts() {
     const nextBtn = document.getElementById('practice-next-btn');
     const feedbackShowing = isElementVisible(nextWrap);
 
-    if (itemType === 'sba' || itemType === 'sba_image') {
+    if (itemType === 'sba') {
       if (isDigitShortcut) {
         const buttons = [...document.querySelectorAll('.practice-answer-btn')].filter(isElementVisible);
         const targetBtn = buttons[Number(key) - 1];
@@ -2544,9 +2581,6 @@ function getCurrentPracticeQuestionId() {
   const currentQuestion = getCurrentPracticeQuestion();
   return String(
     currentQuestion?.item_id ||
-    currentQuestion?.question_id ||
-    currentQuestion?.id ||
-    currentQuestion?.questionId ||
     ''
   ).trim();
 }
@@ -2589,7 +2623,7 @@ function getAllQuestionFeedbackForSubmit() {
 
   const questionById = {};
   questions.forEach(q => {
-    const qid = String(q?.item_id || q?.question_id || '').trim();
+    const qid = String(q?.item_id || '').trim();
     if (qid) questionById[qid] = q;
   });
 
@@ -2671,15 +2705,15 @@ function renderPracticeFeedbackAnswerStateForCurrentQuestion() {
   const answerState = practiceTestState.answerState?.[stateKey];
   if (!answerState || !answerState.feedbackShown) return;
 
-  const questionType = normalizeQuestionType(question.item_type || question.question_type || question.type || '');
+  const questionType = normalizeQuestionType(question.item_type || question.type || '');
 
-  if (questionType === 'sba' || questionType === 'sba_image') {
-    handlePracticeAnswer(question, answerState.selected || '', answerState.correct || '', answerState.feedback || answerState.rationale || '');
+  if (questionType === 'sba') {
+    handlePracticeAnswer(question, answerState.selected || '', answerState.correct || '', answerState.feedback || '');
     return;
   }
 
   if (questionType === 'fitb') {
-    handlePracticeFITBAnswer(question, answerState.selected || '', answerState.correct || '', answerState.feedback || answerState.rationale || '');
+    handlePracticeFITBAnswer(question, answerState.selected || '', answerState.correct || '', answerState.feedback || '');
     return;
   }
 
@@ -2688,18 +2722,18 @@ function renderPracticeFeedbackAnswerStateForCurrentQuestion() {
       question,
       Array.isArray(answerState.selectedAnswers) ? answerState.selectedAnswers : [],
       Array.isArray(answerState.correctAnswers) ? answerState.correctAnswers : [],
-      answerState.feedback || answerState.rationale || ''
+      answerState.feedback || ''
     );
     return;
   }
 
-  if (questionType === 'categorization') {
+  if (questionType === 'categorization' || questionType === 'matching') {
     const container = document.getElementById("practice-question-container");
     if (!container) return;
-    const mappings = parseCategorizeMappings(question.correct_blob);
+    const mappings = parseCategorizeMappings(question.correct_blob, questionType);
     const placements = Array.isArray(answerState.placements) ? answerState.placements : [];
     if (!placements.length) return;
-    handlePracticeCategorizeAnswer(question, container, mappings, placements, answerState.feedback || answerState.rationale || '');
+    handlePracticeCategorizeAnswer(question, container, mappings, placements, answerState.feedback || '');
   }
 }
 
@@ -3366,7 +3400,7 @@ function initializePracticeSession(questionSet) {
       ...q,
       _stateKey: [
         String(q?.topic || '').trim(),
-        String(q?.item_id || q?.question_id || q?.id || q?.questionId || 'q').trim() || 'q',
+        String(q?.item_id || 'q').trim() || 'q',
         String(index)
       ].join('::')
     }))
@@ -3413,12 +3447,10 @@ function renderCurrentPracticeQuestion() {
   if (!q) return;
   resetFeedbackUiForNewQuestion();
 
-    const itemType = normalizeQuestionType(q.item_type || q.question_type || q.type || "");
+    const itemType = normalizeQuestionType(q.item_type || q.type || "");
 
   if (itemType === "sba") {
     renderSBAQuestion(q, index, questions.length);
-  } else if (itemType === "sba_image") {
-    renderSBAImageQuestion(q, index, questions.length);
   } else if (itemType === "fitb") {
     renderFITBQuestion(q, index, questions.length);
   } else if (itemType === "sata") {
@@ -3455,7 +3487,7 @@ function renderCurrentPracticeQuestion() {
 }
 
 function getQuestionFeedback(question) {
-  return String(question?.feedback || question?.rationale || "").trim();
+  return String(question?.feedback || "").trim();
 }
 
 function buildPracticeRationaleHtml(feedback) {
@@ -3496,7 +3528,7 @@ function initializePracticeStemToggle(container) {
 
 function recordPracticeQuestionResult(question, isCorrect) {
   if (!practiceTestState) return;
-  if (!question || !(question.item_id || question.question_id)) return;
+  if (!question || !question.item_id) return;
 
   const stateKey = getPracticeQuestionStateKey(question);
 
@@ -3509,9 +3541,9 @@ function recordPracticeQuestionResult(question, isCorrect) {
 
   practiceTestState.results.push({
     _stateKey: stateKey,
-    item_id: question.item_id || question.question_id,
+    item_id: question.item_id,
     topic: question.topic || "",
-    item_type: normalizeQuestionType(question.item_type || question.question_type || question.type || ""),
+    item_type: normalizeQuestionType(question.item_type || question.type || ""),
     is_correct: !!isCorrect
   });
 
@@ -3729,6 +3761,9 @@ function renderSBAQuestion(q, index, total) {
 
   const allOptions = [correct, ...distractors];
   const uniqueOptions = [...new Set(allOptions.filter(Boolean))];
+  const imageHtml = q.media_url
+    ? `<div class="practice-image-wrap"><img src="${html(q.media_url)}" alt="Question image" class="practice-image" /></div>`
+    : '';
   const stateKey = getPracticeQuestionStateKey(q);
   const previousState = stateKey ? practiceTestState.answerState?.[stateKey] || {} : {};
   const optionOrder = getStableOptionOrder(previousState.optionOrder, uniqueOptions);
@@ -3752,6 +3787,8 @@ function renderSBAQuestion(q, index, total) {
       <button id="practice-stem-toggle" class="practice-stem-toggle" style="display:none;">
         Expand case
       </button>
+
+      ${imageHtml}
 
       <div style="margin-top:10px;">
         ${optionOrder.map(answer => `
@@ -4007,7 +4044,8 @@ function renderCategorizeQuestion(q, index, total) {
   const container = document.getElementById("practice-question-container");
   if (!container) return;
 
-  const { mappings, categories: uniqueCategories, items } = getCategorizeMappingsAndCategories(q.correct_blob);
+  const questionKind = normalizeQuestionType(q.item_type || q.type || 'categorization');
+  const { mappings, categories: uniqueCategories, items } = getCategorizeMappingsAndCategories(q.correct_blob, questionKind);
 
   const shuffledItems = items.slice();
   for (let i = shuffledItems.length - 1; i > 0; i--) {
@@ -4016,7 +4054,6 @@ function renderCategorizeQuestion(q, index, total) {
   }
 
   const isMobileMode = window.matchMedia("(max-width: 700px)").matches;
-  const questionKind = normalizeQuestionType(q.item_type || q.question_type || q.type || 'categorization');
   const isMatching = questionKind === 'matching';
   const helperText = isMobileMode
     ? (isMatching
@@ -4365,11 +4402,10 @@ function handlePracticeAnswer(question, selected, correct, rationale) {
     const previousState = practiceTestState.answerState?.[stateKey] || {};
     practiceTestState.answerState[stateKey] = {
       ...previousState,
-      type: normalizeQuestionType(question.item_type || question.question_type || question.type || 'sba'),
+      type: normalizeQuestionType(question.item_type || question.type || 'sba'),
       selected,
       correct,
       feedback: rationale || '',
-      rationale: rationale || '',
       feedbackShown: true
     };
   }
@@ -4436,11 +4472,10 @@ function handlePracticeFITBAnswer(question, selected, correctInput, rationale) {
   recordPracticeQuestionResult(question, isCorrect);
   if (stateKey) {
     practiceTestState.answerState[stateKey] = {
-      type: normalizeQuestionType(question.item_type || question.question_type || question.type || 'fitb'),
+      type: normalizeQuestionType(question.item_type || question.type || 'fitb'),
       selected,
       correct: acceptedAnswers.join('|'),
       feedback: rationale || '',
-      rationale: rationale || '',
       feedbackShown: true
     };
   }
@@ -4522,11 +4557,10 @@ function handlePracticeSATAAnswer(question, selectedAnswers, correctAnswers, rat
     const previousState = practiceTestState.answerState?.[stateKey] || {};
     practiceTestState.answerState[stateKey] = {
       ...previousState,
-      type: normalizeQuestionType(question.item_type || question.question_type || question.type || 'sata'),
+      type: normalizeQuestionType(question.item_type || question.type || 'sata'),
       selectedAnswers: Array.isArray(selectedAnswers) ? selectedAnswers : [],
       correctAnswers: Array.isArray(correctAnswers) ? correctAnswers : [],
       feedback: rationale || '',
-      rationale: rationale || '',
       feedbackShown: true
     };
   }
@@ -4539,6 +4573,8 @@ function handlePracticeSATAAnswer(question, selectedAnswers, correctAnswers, rat
 
 function handlePracticeCategorizeAnswer(question, container, mappings, placements, rationale) {
   const stateKey = getPracticeQuestionStateKey(question);
+  const questionKind = normalizeQuestionType(question.item_type || question.type || 'categorization');
+  const isMatching = questionKind === 'matching';
   const feedback = container.querySelector("#practice-feedback");
   const submitBtn = container.querySelector("#practice-categorize-submit");
   const items = container.querySelectorAll(".practice-categorize-item");
@@ -4589,7 +4625,7 @@ function handlePracticeCategorizeAnswer(question, container, mappings, placement
       const answerText = mappings
         .filter(mapping => !isNAValue(mapping.item))
         .map(mapping => {
-          if (isNAValue(mapping.category)) return `${mapping.item} → No category`;
+          if (isNAValue(mapping.category)) return `${mapping.item} → ${isMatching ? 'No match' : 'No category'}`;
           return `${mapping.item} → ${mapping.category}`;
         })
         .join("<br>");
@@ -4614,10 +4650,9 @@ function handlePracticeCategorizeAnswer(question, container, mappings, placement
   recordPracticeQuestionResult(question, allCorrect);
   if (stateKey) {
     practiceTestState.answerState[stateKey] = {
-      type: normalizeQuestionType(question.item_type || question.question_type || question.type || 'categorization'),
+      type: normalizeQuestionType(question.item_type || question.type || 'categorization'),
       placements: Array.isArray(placements) ? placements : [],
       feedback: rationale || '',
-      rationale: rationale || '',
       feedbackShown: true
     };
   }
@@ -4847,24 +4882,33 @@ function buildStructure(rows) {
   return sections;
 }
 
+
 function buildCardsForSection(rows) {
   const allSlots = [...new Set(rows.map(r => parseInt(r.slot, 10)).filter(n => !Number.isNaN(n)))].sort((a,b)=>a-b);
   return allSlots.map(slot => {
     const slotRows = rows.filter(r => parseInt(r.slot, 10) === slot).sort((a,b) => (a._rowIndex || 0) - (b._rowIndex || 0));
     const first = slotRows[0] || {};
-    const type = String(first.type || '').trim();
+    const type = normalizeQuestionType(first.type || '');
+    const correctBlob = String(first.correct_blob || '').trim();
+    const distractorsBlob = String(first.distractors_blob || '').trim();
+
+    let categoryMappings = [];
+    if (type === 'categorization' || type === 'matching') {
+      categoryMappings = parseCategoryMappings(correctBlob, type);
+    }
+
     return {
       type,
       slot,
       header: first.header || '',
       body: first.body || '',
       mediaUrl: first.media_url || '',
-      prompt: first.prompt || '',
-      options: splitBlob(first.options_blob),
-      answers: splitBlob(first.answers_blob),
-      categoryMappings: parseCategoryMappings(first.answers_blob),
-      feedback: first.feedback || first.rationale || '',
-      rationale: first.feedback || first.rationale || '',
+      prompt: first.stem || '',
+      stem: first.stem || '',
+      options: splitBlob(distractorsBlob),
+      answers: type === 'sata' ? splitBlob(correctBlob) : (correctBlob ? [correctBlob] : []),
+      categoryMappings,
+      feedback: first.feedback || '',
       settings: parseSettings(first.settings)
     };
   });
@@ -4905,7 +4949,7 @@ function renderFeedbackAndRationale(item, state, correctness = 'neutral') {
   return `
     <div class="feedback-box show ${statusClass}">
       <span class="feedback-label">${statusLabel}</span>
-      ${(item.feedback || item.rationale) ? `<div>${html(item.feedback || item.rationale)}</div>` : ''}
+      ${(item.feedback) ? `<div>${html(item.feedback)}</div>` : ''}
     </div>
   `;
 }
@@ -5034,7 +5078,6 @@ function isQuestionCardType(type) {
   const t = normalizeQuestionType(type);
   return [
     'sba',
-    'sba_image',
     'sata',
     'fitb',
     'categorization',
@@ -5087,31 +5130,16 @@ function escapeRegExp(value) {
   return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+
 function buildFITBStemHtml(rawStem, acceptedAnswers = []) {
   const source = String(rawStem || '');
   const blankHtml = '<span class="fitb-blank" aria-label="blank">_____________________</span>';
 
-  // Primary convention: hide anything wrapped in backticks.
-  if (/`([^`]+)`/.test(source)) {
-    return html(source).replace(/`([^`]+)`/g, blankHtml);
+  if (!/`([^`]+)`/.test(source)) {
+    return html(source);
   }
 
-  // Fallback: if the answer appears in the stem without backticks, hide the first matching accepted answer.
-  const answers = (Array.isArray(acceptedAnswers) ? acceptedAnswers : parseAcceptedFitbAnswers(acceptedAnswers))
-    .map(answer => String(answer || '').trim())
-    .filter(Boolean)
-    .sort((a, b) => b.length - a.length);
-
-  for (const answer of answers) {
-    const pattern = new RegExp(escapeRegExp(answer), 'i');
-    if (pattern.test(source)) {
-      const sentinel = '%%FITB_BLANK%%';
-      const masked = source.replace(pattern, sentinel);
-      return html(masked).replace(sentinel, blankHtml);
-    }
-  }
-
-  return html(source);
+  return html(source).replace(/`([^`]+)`/g, blankHtml);
 }
 
 function isFitbAnswerCorrect(userAnswer, acceptedAnswers) {
@@ -5152,32 +5180,30 @@ function markModuleQuestionSubmitted(state, isCorrect) {
   persistProgress();
 }
 
+
 function adaptModuleCardToPracticeQuestion(item, sectionIndex) {
   const type = normalizeQuestionType(item.type || '');
   const mappings = Array.isArray(item.categoryMappings) ? item.categoryMappings : [];
   const mappingBlob = mappings.map(m => `${m.item}::${m.category}`).join('\n');
   const correctBlobByType = {
     sba: item.answers?.[0] || '',
-    sba_image: item.answers?.[0] || '',
-    fitb: (item.answers || []).join('|'),
-    sata: (item.answers || []).join('|'),
+    fitb: item.answers?.[0] || '',
+    sata: (item.answers || []).join('||'),
     categorization: mappingBlob,
     matching: mappingBlob
   };
   const distractorsByType = {
-    sba: (item.options || []).filter(opt => opt !== (item.answers?.[0] || '')).join('|'),
-    sba_image: (item.options || []).filter(opt => opt !== (item.answers?.[0] || '')).join('|'),
+    sba: (item.options || []).join('||'),
     fitb: '',
-    sata: (item.options || []).join('|'),
+    sata: (item.options || []).join('||'),
     categorization: '',
     matching: ''
   };
 
   return {
     item_type: type,
-    stem: item.prompt || '',
-    feedback: item.feedback || item.rationale || '',
-    rationale: item.feedback || item.rationale || '',
+    stem: item.stem || item.prompt || '',
+    feedback: item.feedback || '',
     media_url: item.mediaUrl || '',
     correct_blob: correctBlobByType[type] || '',
     distractors_blob: distractorsByType[type] || '',
@@ -5205,7 +5231,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
   block.id = `section-${sectionIndex}`;
 
   if (!question.stem) {
-    return renderIncompleteCard(item, sectionIndex, onComplete, 'Question card is missing prompt.');
+    return renderIncompleteCard(item, sectionIndex, onComplete, 'Question card is missing stem.');
   }
 
   const renderFrame = (inner) => {
@@ -5227,14 +5253,14 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
     return block;
   };
 
-  if (type === 'sba' || type === 'sba_image') {
+  if (type === 'sba') {
     const correct = String(question.correct_blob || '');
     if (!correct) return renderIncompleteCard(item, sectionIndex, onComplete, 'SBA card is missing answer data.');
     const distractors = splitBlob(question.distractors_blob);
     const allOptions = [correct, ...distractors].filter(Boolean);
     state.optionOrder = getStableOptionOrder(state.optionOrder, allOptions);
     const options = state.optionOrder;
-    const imageHtml = type === 'sba_image' && question.media_url
+    const imageHtml = type === 'sba' && question.media_url
       ? `<div class="practice-image-wrap"><img src="${html(question.media_url)}" alt="Question image" class="practice-image" /></div>`
       : '';
 
@@ -5250,7 +5276,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
         `).join('')}
       </div>
       <div class="practice-feedback" style="margin-top:8px;">
-        ${state.submitted ? `${buildPracticeStyledResultHtml(state.wasCorrect, `Correct answer: ${html(correct)}`)}${buildPracticeRationaleHtml(question.rationale)}` : ''}
+        ${state.submitted ? `${buildPracticeStyledResultHtml(state.wasCorrect, `Correct answer: ${html(correct)}`)}${buildPracticeRationaleHtml(question.feedback)}` : ''}
       </div>
     `);
 
@@ -5299,7 +5325,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
       </div>
       ${!state.submitted ? '<div style="margin-top:10px;"><button type="button" class="action-btn module-fitb-submit">Check Answer</button></div>' : ''}
       <div class="practice-feedback" style="margin-top:8px;">
-        ${state.submitted ? `${buildPracticeStyledResultHtml(isCorrect, `Correct answer: ${html(displayedCorrect)}`)}${buildPracticeRationaleHtml(question.rationale)}` : ''}
+        ${state.submitted ? `${buildPracticeStyledResultHtml(isCorrect, `Correct answer: ${html(displayedCorrect)}`)}${buildPracticeRationaleHtml(question.feedback)}` : ''}
       </div>
     `);
     initializePracticeStemToggle(block);
@@ -5348,7 +5374,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
       </div>
       ${!state.submitted ? '<div style="margin-top:10px;"><button type="button" class="action-btn module-sata-submit">Check Answer</button></div>' : ''}
       <div class="practice-feedback" style="margin-top:8px;">
-        ${state.submitted ? `${buildPracticeStyledResultHtml(state.wasCorrect, `Correct answer(s): ${html(correctAnswers.join(', '))}`)}${buildPracticeRationaleHtml(question.rationale)}` : ''}
+        ${state.submitted ? `${buildPracticeStyledResultHtml(state.wasCorrect, `Correct answer(s): ${html(correctAnswers.join(', '))}`)}${buildPracticeRationaleHtml(question.feedback)}` : ''}
       </div>
     `);
     initializePracticeStemToggle(block);
@@ -5390,7 +5416,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
 
   if (type === 'categorization' || type === 'matching') {
     const isMatching = type === 'matching';
-    const { mappings, categories, items: categoryItems } = getCategorizeMappingsAndCategories(question.correct_blob);
+    const { mappings, categories, items: categoryItems } = getCategorizeMappingsAndCategories(question.correct_blob, type);
     if (!mappings.length) return renderIncompleteCard(item, sectionIndex, onComplete, isMatching ? 'Matching card is missing answer mappings.' : 'Categorization card is missing answer mappings.');
     const allItems = categoryItems;
     const poolTitle = isMatching ? 'Items / no match' : 'Items / no category';
@@ -5440,7 +5466,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
       </div>
       ${!state.submitted ? '<div class="practice-categorize-controls"><button type="button" class="action-btn secondary module-categorize-reset">Reset placements</button><button type="button" class="action-btn module-categorize-submit">Check Answer</button></div>' : ''}
       <div class="practice-feedback" style="margin-top:8px;">
-        ${state.submitted ? `${buildPracticeStyledResultHtml(state.wasCorrect, `${isMatching ? 'Correct match' : 'Correct placement'}:<br><br>${mappings.filter(m => !isNAValue(m.item)).map(m => isNAValue(m.category) ? `${html(m.item)} → ${isMatching ? 'No match' : 'No category'}` : `${html(m.item)} → ${html(m.category)}`).join('<br>')}`)}${buildPracticeRationaleHtml(question.feedback || question.rationale)}` : ''}
+        ${state.submitted ? `${buildPracticeStyledResultHtml(state.wasCorrect, `${isMatching ? 'Correct match' : 'Correct placement'}:<br><br>${mappings.filter(m => !isNAValue(m.item)).map(m => isNAValue(m.category) ? `${html(m.item)} → ${isMatching ? 'No match' : 'No category'}` : `${html(m.item)} → ${html(m.category)}`).join('<br>')}`)}${buildPracticeRationaleHtml(question.feedback)}` : ''}
       </div>
     `);
     initializePracticeStemToggle(block);
@@ -5551,7 +5577,7 @@ function renderModuleQuestionCard(item, sectionIndex, onComplete) {
 }
 
 function renderReflectionCard(item, sectionIndex, onComplete) {
-  if (!item.prompt) return renderIncompleteCard(item, sectionIndex, onComplete, 'Reflection card is missing prompt.');
+  if (!item.stem && !item.prompt) return renderIncompleteCard(item, sectionIndex, onComplete, 'Reflection card is missing stem.');
   const state = ensureCardState(sectionIndex, { text: '', submitted: false, completed: false });
   const block = document.createElement('div');
   block.className = 'section-block';
@@ -5559,7 +5585,7 @@ function renderReflectionCard(item, sectionIndex, onComplete) {
   block.innerHTML = baseCardShell(sectionIndex, 'Reflection', `
     <div class="interactive-card">
       <h2 class="content-header">${html(item.header)}</h2>${bodyHtml ? `<div class="content-body">${bodyHtml}</div>` : ''}
-      <p class="question-stem">${html(item.prompt)}</p>
+      <p class="question-stem">${html(item.stem || item.prompt)}</p>
       <textarea class="reflection-input" placeholder="Write your reflection..." ${state.submitted?'disabled':''}>${html(state.text)}</textarea>
       <button class="action-btn">Submit reflection</button>
       ${state.submitted ? `<div class="poll-ack">Your reflection was saved.</div>${renderFeedbackAndRationale(item, state, 'neutral')}` : ''}
@@ -5578,7 +5604,7 @@ function renderReflectionCard(item, sectionIndex, onComplete) {
 }
 
 function renderPollCard(item, sectionIndex, onComplete) {
-  if (!item.prompt || item.options.length === 0) return renderIncompleteCard(item, sectionIndex, onComplete, 'Poll card is missing prompt/options.');
+  if (!(item.stem || item.prompt) || item.options.length === 0) return renderIncompleteCard(item, sectionIndex, onComplete, 'Poll card is missing stem/options.');
   const multi = String(item.settings.mode || '').toLowerCase() === 'multi';
   const state = ensureCardState(sectionIndex, { submitted: false, selected: multi ? [] : '', completed: false });
   const block = document.createElement('div');
@@ -5592,7 +5618,7 @@ function renderPollCard(item, sectionIndex, onComplete) {
   block.innerHTML = baseCardShell(sectionIndex, 'Poll', `
     <div class="interactive-card">
       <h2 class="content-header">${html(item.header)}</h2>${bodyHtml ? `<div class="content-body">${bodyHtml}</div>` : ''}
-      <p class="question-stem">${html(item.prompt)}</p>
+      <p class="question-stem">${html(item.stem || item.prompt)}</p>
       <div class="poll-options">${optionsHtml}</div>
       <button class="action-btn">Submit</button>
       ${state.submitted ? `<div class="poll-ack">Thanks for sharing your response.</div>${renderFeedbackAndRationale(item, state, 'neutral')}` : ''}
@@ -6504,7 +6530,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('.feedback-option').forEach(btn => {
     btn.addEventListener('click', () => {
       const question = practiceTestState.questions?.[practiceTestState.currentIndex];
-      const questionId = String(question?.item_id || question?.question_id || '').trim();
+      const questionId = String(question?.item_id || '').trim();
       if (!questionId) return;
 
       const rawValue = String(btn.dataset.value || '').trim();
