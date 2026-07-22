@@ -932,26 +932,27 @@
     }
 
     .text-image-inner {
-      display: grid;
-      grid-template-columns: 3fr 2fr;
+      display: flex;
+      flex-direction: column;
     }
 
     .text-image-text {
       padding: 28px 28px;
-      border-right: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
     }
 
     .text-image-img {
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 28px 20px;
       background: var(--cream-dark);
     }
 
     .text-image-img img {
-      max-width: 100%;
-      max-height: 280px;
+      width: 100%;
+      max-width: 620px;      /* keeps landscape images readable, not oversized on wide screens */
+      max-height: 460px;     /* taller cap than before, since image now has full-width room */
       object-fit: contain;
       border-radius: 6px;
       cursor: zoom-in;
@@ -2007,9 +2008,18 @@ function formatBodyText(raw) {
   const normalized = String(raw || '').replace(/\r\n?/g, '\n').trim();
   if (!normalized) return '';
 
-  const applyInlineFormatting = text => text
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // NOTE: runs on already-escaped text (html() has been applied upstream),
+  // so URLs contain no raw < > " that could break out of the attribute.
+  const linkify = text => text.replace(
+    /(https?:\/\/[^\s<]+[^\s<.,;:!?)\]"'])/g,
+    '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
+
+  const applyInlineFormatting = text => linkify(
+    text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+  );
 
   const blocks = normalized.split(/\n\s*\n/);
   const htmlParts = [];
