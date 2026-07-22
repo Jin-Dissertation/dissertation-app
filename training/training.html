@@ -2041,18 +2041,42 @@ function formatBodyText(raw) {
   return htmlParts.join('');
 }
 
-function getVideoSourceUrl(raw) {
+// Determine how a video_name value should be played:
+//   { kind: 'iframe', src }  -> embedded player (YouTube / Vimeo)
+//   { kind: 'file',   src }  -> HTML5 <video> (direct .mp4/.webm, local or remote)
+// Backward compatible: plain filenames still resolve to videos/<name>.
+function getVideoEmbedInfo(raw) {
   const value = String(raw || '').trim();
-  if (!value) return '';
+  if (!value) return null;
 
-  // Allow absolute URLs if ever needed later
-  if (/^https?:\/\//i.test(value)) return value;
+  // YouTube: watch?v=, youtu.be/, /embed/, /shorts/
+  let m = value.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{6,})/i);
+  if (m) {
+    return { kind: 'iframe', src: `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1` };
+  }
 
-  // Allow already-prefixed relative paths
-  if (value.startsWith('/') || value.includes('/')) return value;
+  // Vimeo: vimeo.com/<id> or player.vimeo.com/video/<id>
+  m = value.match(/(?:vimeo\.com\/(?:video\/)?)(\d{6,})/i);
+  if (m) {
+    return { kind: 'iframe', src: `https://player.vimeo.com/video/${m[1]}` };
+  }
 
-  // Default behavior: plain filenames live in /videos
-  return `videos/${value}`;
+  // Any other absolute URL -> treat as a direct video file hosted elsewhere
+  if (/^https?:\/\//i.test(value)) return { kind: 'file', src: value };
+
+  // Already-prefixed relative path -> direct file, as-is
+  if (value.startsWith('/') || value.includes('/')) return { kind: 'file', src: value };
+
+  // Plain filename -> lives in /videos (legacy default)
+  return { kind: 'file', src: `videos/${value}` };
+}
+
+// Legacy helper kept so getCaptionSourceUrl and any other callers still work.
+// Returns a source string only for direct files; empty for embeds.
+function getVideoSourceUrl(raw) {
+  const info = getVideoEmbedInfo(raw);
+  if (!info) return '';
+  return info.kind === 'file' ? info.src : '';
 }
 
 function getVideoMimeType(url) {
@@ -2513,22 +2537,26 @@ function renderVideoBlock(item, cardIndex, onComplete, onContinue = onComplete) 
   block.className = 'section-block';
   block.id = `section-${sectionIndex}`;
 
-  const videoSrc = getVideoSourceUrl(item.videoName);
+  const embedInfo = getVideoEmbedInfo(item.videoName);
+  const isIframe = embedInfo && embedInfo.kind === 'iframe';
+  const videoSrc = embedInfo ? embedInfo.src : '';
   const mimeType = getVideoMimeType(videoSrc);
-  const captionsSrc = getCaptionSourceUrl(item.videoName);
+  const captionsSrc = isIframe ? '' : getCaptionSourceUrl(item.videoName);
 
-  if (!videoSrc) {
+  if (!embedInfo || !videoSrc) {
     return renderIncompleteCard(item, cardIndex, onComplete, 'Video card is missing a video_name value.');
   }
 
-  block.innerHTML = `
-    <div class="section-label">
-      <span class="section-num">Card ${cardIndex + 1}</span>
-      <div class="section-rule"></div>
-      <span class="section-type-badge">Video</span>
-    </div>
-    <div class="video-card">
-      <div class="video-wrapper">
+  const playerMarkup = isIframe
+    ? `
+        <iframe
+          src="${html(videoSrc)}"
+          title="Training video"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen>
+        </iframe>`
+    : `
         <video controls playsinline preload="metadata">
           <source src="${html(videoSrc)}" type="${html(mimeType)}" />
           ${captionsSrc ? `
@@ -2540,7 +2568,16 @@ function renderVideoBlock(item, cardIndex, onComplete, onContinue = onComplete) 
               default>
           ` : ''}
           Your browser does not support the video tag.
-        </video>
+        </video>`;
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Card ${cardIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Video</span>
+    </div>
+    <div class="video-card">
+      <div class="video-wrapper">${playerMarkup}
       </div>
       <div class="video-footer">
         <span class="video-footer-label">Watch the video above, then click when you're done.</span>
