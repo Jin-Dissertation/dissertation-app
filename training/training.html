@@ -146,12 +146,31 @@
     }
 
     .gate-sub {
-      font-size: 0.95rem;
-      color: var(--muted);
-      font-style: italic;
-      margin-bottom: 36px;
-      max-width: 420px;
-    }
+  font-size: 0.95rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-bottom: 16px;
+  max-width: 420px;
+}
+
+.gate-irb {
+  max-width: 540px;
+  margin-bottom: 28px;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.gate-irb a {
+  color: var(--navy);
+  font-weight: 400;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.gate-irb a:hover {
+  color: var(--gold);
+}
 
     .gate-form {
       display: flex;
@@ -1428,30 +1447,46 @@
 <div id="app">
 
   <!-- ACCESS GATE -->
-  <div id="gate">
-    <p class="gate-eyebrow">Professional Development Module</p>
-    <h1 class="gate-title">AI-Assisted MCQ Development for Nursing Education</h1>
-    <p class="gate-sub">Enter your participant code to begin the training session.</p>
-    <form class="gate-form" id="gate-form">
-      <input
-        class="gate-input"
-        id="code-input"
-        type="text"
-        placeholder="your-code"
-        autocomplete="off"
-        autocapitalize="none"
-        autocorrect="off"
-        spellcheck="false"
-        inputmode="text"
-        enterkeyhint="go"
-        aria-label="Participant code"
-      />
-      <button class="gate-btn" id="gate-submit-btn" type="submit">
-        <span class="gate-btn-label">Begin</span>
-      </button>
-    </form>
-    <p class="gate-error" id="gate-error"></p>
-  </div>
+<div id="gate">
+  <p class="gate-eyebrow">Professional Development Module</p>
+
+  <h1 class="gate-title">
+    AI-Assisted MCQ Development for Nursing Education
+  </h1>
+
+  <p class="gate-sub">
+    Enter your participant code to begin the training session.
+  </p>
+
+  <p class="gate-irb">
+    This module is part of a research study conducted by Taemin Jin and approved
+    by the University of Alabama Institutional Review Board (IRB #26-07-9875).
+    Questions about the study may be directed to
+    <a href="mailto:tjin@crimson.ua.edu">tjin@crimson.ua.edu</a>.
+  </p>
+
+  <form class="gate-form" id="gate-form">
+    <input
+      class="gate-input"
+      id="code-input"
+      type="text"
+      placeholder="your-code"
+      autocomplete="off"
+      autocapitalize="none"
+      autocorrect="off"
+      spellcheck="false"
+      inputmode="text"
+      enterkeyhint="go"
+      aria-label="Participant code"
+    />
+
+    <button class="gate-btn" id="gate-submit-btn" type="submit">
+      <span class="gate-btn-label">Begin</span>
+    </button>
+  </form>
+
+  <p class="gate-error" id="gate-error"></p>
+</div>
 
   <!-- LOADING -->
   <div id="loading">
