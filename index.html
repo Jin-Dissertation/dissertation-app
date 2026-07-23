@@ -401,6 +401,33 @@
       color: #3d5370;
       border-color: #cddcf1;
     }
+    .privacyConfirmBlock {
+      background: #fff8e6;
+      border: 1px solid #e0c983;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin: 0 0 12px;
+    }
+    .privacyConfirmLabel {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.86rem;
+      line-height: 1.5;
+      cursor: pointer;
+    }
+    .privacyConfirmLabel input[type="checkbox"] {
+      flex: 0 0 auto;
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      cursor: pointer;
+    }
+    .btn.isPrivacyBlocked {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .modalBackdrop.mobileSheetBackdrop {
       align-items: flex-end;
       justify-content: stretch;
@@ -2788,9 +2815,38 @@
     <div class="modalCard">
       <h3 style="margin:0 0 8px;">End session</h3>
       <p class="muted" style="margin:0 0 12px;">This will submit your data and reset the app. Any recorded audio will be submitted automatically.</p>
+      <div class="privacyConfirmBlock">
+        <label class="privacyConfirmLabel">
+          <input type="checkbox" id="chkEndPrivacy" />
+          <span>I confirm that anything I am submitting — including my pasted question set, written feedback, and any audio recording — does not contain personal, protected, or confidential information about myself, my institution, my students, or any other person.</span>
+        </label>
+      </div>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnEndCancel" type="button">Cancel</button>
         <button class="btn finishSessionBtn" id="btnEndConfirm" type="button">End session</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBackdrop" id="modalPrivacy" aria-hidden="true">
+    <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="modalPrivacyTitle">
+      <h3 id="modalPrivacyTitle" style="margin:0 0 8px;">Before you submit</h3>
+      <p class="muted" style="margin:0 0 10px;" id="modalPrivacyIntro">
+        Please take a moment to check what you are about to send.
+      </p>
+      <p class="muted small" style="margin:0 0 12px;">
+        Submissions should not include names, student identifiers, grades, protected health information,
+        or any other personal or confidential details about you, your institution, or another person.
+      </p>
+      <div class="privacyConfirmBlock">
+        <label class="privacyConfirmLabel">
+          <input type="checkbox" id="chkPrivacyConfirm" />
+          <span>I confirm that what I am submitting does not contain personal, protected, or confidential information of any kind.</span>
+        </label>
+      </div>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn" id="btnPrivacyCancel" type="button">Cancel</button>
+        <button class="btn primary" id="btnPrivacyConfirm" type="button">Confirm and submit</button>
       </div>
     </div>
   </div>
@@ -4731,6 +4787,11 @@ const PROMPT_META = [
       const nextEntry = (sourceInput.value || "").trim();
       if (!nextEntry) return;
 
+      const privacyOk = await confirmNoProtectedInfo(
+        "You are about to submit written feedback. Please review it before sending."
+      );
+      if (!privacyOk) return;
+
       const originalLabel = submitBtn.dataset.originalLabel || submitBtn.textContent || "Submit text feedback";
       submitBtn.dataset.originalLabel = originalLabel;
       submitBtn.disabled = true;
@@ -5006,7 +5067,13 @@ const PROMPT_META = [
         $(id)?.addEventListener("click", stopAudioRecording);
       });
       ["btnAudioSubmit", "sidebarBtnAudioSubmit", "btnMobileAudioSubmit"].forEach((id) => {
-        $(id)?.addEventListener("click", () => { submitAudioRecording(); });
+        $(id)?.addEventListener("click", async () => {
+          const ok = await confirmNoProtectedInfo(
+            "You are about to submit an audio recording. Please make sure it does not include anything identifying."
+          );
+          if (!ok) return;
+          submitAudioRecording();
+        });
       });
       ["btnAudioDelete", "sidebarBtnAudioDelete", "btnMobileAudioDelete"].forEach((id) => {
         $(id)?.addEventListener("click", () => {
@@ -6058,6 +6125,64 @@ const PROMPT_META = [
     const MODEL_LABEL_BY_PRODUCT = { chatgpt: "ChatGPT", gemini: "Gemini", copilot: "Copilot", otherai: "Other AI" };
     const openModal = (id) => { const m = $(id); if (m) m.style.display = "flex"; };
     const closeModal = (id) => { const m = $(id); if (m) m.style.display = "none"; };
+
+    // IRB-required confirmation: participant must affirm that the content they are
+    // about to transmit contains no personal, protected, or confidential information.
+    // Returns a Promise that resolves true (proceed) or false (cancelled).
+    function confirmNoProtectedInfo(introText) {
+      return new Promise((resolve) => {
+        const modal = $("modalPrivacy");
+        const chk = $("chkPrivacyConfirm");
+        const okBtn = $("btnPrivacyConfirm");
+        const cancelBtn = $("btnPrivacyCancel");
+        const intro = $("modalPrivacyIntro");
+
+        // If the modal is somehow missing, fail closed rather than transmitting.
+        if (!modal || !chk || !okBtn || !cancelBtn) { resolve(false); return; }
+
+        if (intro && introText) intro.textContent = introText;
+
+        chk.checked = false;
+        const syncBtn = () => {
+          okBtn.disabled = !chk.checked;
+          okBtn.classList.toggle("isPrivacyBlocked", !chk.checked);
+        };
+        syncBtn();
+
+        const cleanup = () => {
+          chk.removeEventListener("change", syncBtn);
+          okBtn.removeEventListener("click", onOk);
+          cancelBtn.removeEventListener("click", onCancel);
+          modal.removeEventListener("click", onBackdrop);
+          document.removeEventListener("keydown", onKey);
+          closeModal("modalPrivacy");
+          modal.setAttribute("aria-hidden", "true");
+        };
+        const onOk = () => {
+          if (!chk.checked) return;
+          try { logEvent("privacy_confirmation_accepted"); } catch (err) {}
+          cleanup();
+          resolve(true);
+        };
+        const onCancel = () => {
+          try { logEvent("privacy_confirmation_cancelled"); } catch (err) {}
+          cleanup();
+          resolve(false);
+        };
+        const onBackdrop = (e) => { if (e.target === modal) onCancel(); };
+        const onKey = (e) => { if (e.key === "Escape") onCancel(); };
+
+        chk.addEventListener("change", syncBtn);
+        okBtn.addEventListener("click", onOk);
+        cancelBtn.addEventListener("click", onCancel);
+        modal.addEventListener("click", onBackdrop);
+        document.addEventListener("keydown", onKey);
+
+        modal.setAttribute("aria-hidden", "false");
+        openModal("modalPrivacy");
+        setTimeout(() => { try { chk.focus(); } catch (err) {} }, 30);
+      });
+    }
     const openMobileFeedbackSheet = () => {
       openModal("modalMobileFeedback");
       window.setTimeout(() => {
@@ -6916,12 +7041,29 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
       $("btnEndSession").addEventListener("click", () => {
         logEvent("end_session_opened");
         openModal("modalEnd");
+        // IRB-required confirmation must be re-affirmed every time the dialog opens.
+        (function initEndPrivacyGate() {
+          const chk = $("chkEndPrivacy");
+          const confirmBtn = $("btnEndConfirm");
+          if (!chk || !confirmBtn) return;
+          chk.checked = false;
+          const sync = () => {
+            confirmBtn.disabled = !chk.checked;
+            confirmBtn.classList.toggle("isPrivacyBlocked", !chk.checked);
+          };
+          chk.onchange = sync;
+          sync();
+        })();
       });
       $("btnEndCancel").addEventListener("click", () => {
         logEvent("end_session_cancelled");
         closeModal("modalEnd");
       });
       $("btnEndConfirm").addEventListener("click", async () => {
+        // Defensive: do not transmit unless the IRB-required affirmation is checked.
+        const privacyChk = $("chkEndPrivacy");
+        if (privacyChk && !privacyChk.checked) return;
+        try { logEvent("privacy_confirmation_accepted", { scope: "end_session" }); } catch (err) {}
         markInteraction();
         logEvent("end_session_confirmed");
         const endMsg = $("endMsg");
