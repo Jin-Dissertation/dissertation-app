@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+
+  "name": "dissertation-study-api",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-26",
+  "workers_dev": true,
+
+  "d1_databases": [
+    {
+      "binding": "STUDY_DB",
+      "database_name": "dissertation-study-data",
+      "database_id": "716d60c6-cf39-4278-b8fd-612814020107"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "STUDY_AUDIO",
+      "bucket_name": "dissertation-study-audio"
+    },
+    {
+      "binding": "TRAINING_MEDIA",
+      "bucket_name": "dissertation-training-media"
+    }
+  ]
+}
