@@ -1,0 +1,12 @@
+{
+  "name": "dissertation-study-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "preview": "wrangler preview"
+  },
+  "devDependencies": {
+    "wrangler": "^4.135.0"
+  }
+}
