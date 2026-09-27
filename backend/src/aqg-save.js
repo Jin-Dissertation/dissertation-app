@@ -595,3 +595,307 @@ export async function getLatestAqgLiveSession(env, input) {
     }
   };
 }
+
+
+export async function submitAqgSession(env, input) {
+  if (JSON.stringify(input).length > MAX_PAYLOAD_CHARS) {
+    return {
+      status: 413,
+      body: { ok: false, error: "This submission is too large.", code: "PAYLOAD_TOO_LARGE", retryable: false }
+    };
+  }
+
+  if (Array.isArray(input.batch_events) && input.batch_events.length > MAX_BATCH_EVENTS) {
+    return {
+      status: 413,
+      body: { ok: false, error: "Too many events in one submission.", code: "PAYLOAD_TOO_LARGE", retryable: false }
+    };
+  }
+
+  const auth = await authorizeAccessCode(env, input, "aqg");
+  if (!auth.ok) return { status: auth.status, body: auth.body };
+
+  const participantId = auth.participantId;
+  const sessionId = textValue(input.session_id, input.sessionId);
+  const requestId = textValue(input.request_id);
+  const baseRevision = Number(input.base_revision);
+
+  if (!sessionId || !requestId || requestId.length > 120) {
+    return {
+      status: 400,
+      body: { ok: false, error: "Participant, session, and request identifier are required.", code: "MISSING_SESSION", retryable: false }
+    };
+  }
+
+  if (!Number.isInteger(baseRevision) || baseRevision < 0) {
+    return {
+      status: 400,
+      body: { ok: false, error: "A valid base revision is required.", code: "INVALID_REQUEST", retryable: false }
+    };
+  }
+
+  const operation = "aqg:submitSession";
+  const requestHash = await sha256Hex(
+    JSON.stringify(stableValue({ ...input, user_id: participantId }))
+  );
+
+  const existingReceipt = await getReceipt(env.STUDY_DB, requestId);
+  if (existingReceipt) {
+    if (existingReceipt.operation !== operation || existingReceipt.request_hash !== requestHash) {
+      return {
+        status: 409,
+        body: { ok: false, error: "This request identifier was already used for a different operation.", code: "REQUEST_ID_CONFLICT", retryable: false }
+      };
+    }
+    const prior = receiptResponse(existingReceipt);
+    if (prior) {
+      return {
+        status: Number(existingReceipt.response_status || 200),
+        body: { ...prior, duplicate: true }
+      };
+    }
+  }
+
+  const previous = await env.STUDY_DB
+    .prepare("SELECT * FROM aqg_live_sessions WHERE participant_id = ?1 AND session_id = ?2")
+    .bind(participantId, sessionId)
+    .first();
+
+  if (!previous) {
+    return {
+      status: 404,
+      body: { ok: false, error: "No live session was found to submit.", code: "MISSING_SESSION", retryable: false }
+    };
+  }
+
+  const currentRevision = Number(previous.revision || 0);
+
+  if (previous.status === "submitted") {
+    return {
+      status: 200,
+      body: { ok: true, submitted: true, revision: currentRevision, duplicate: true }
+    };
+  }
+
+  if (baseRevision !== currentRevision) {
+    return {
+      status: 409,
+      body: {
+        ok: false,
+        error: "Another window has saved this session, or this page is outdated.",
+        code: "REVISION_CONFLICT",
+        retryable: false,
+        revision: currentRevision
+      }
+    };
+  }
+
+  const submittedAt = new Date().toISOString();
+  const nextRevision = currentRevision + 1;
+  const fullEventsJson =
+    Array.isArray(input.events) || typeof input.events === "object"
+      ? jsonText(input.events, previous.events_json || null)
+      : previous.events_json || null;
+  const progressJson =
+    input.progress_json !== undefined
+      ? jsonText(input.progress_json, previous.progress_json || null)
+      : previous.progress_json || null;
+
+  const eventBuild = buildEventStatements(
+    env.STUDY_DB,
+    input,
+    participantId,
+    sessionId,
+    requestId,
+    nextRevision,
+    previous.last_event_at || ""
+  );
+  const lastEventAt = eventBuild.lastEventAt || previous.last_event_at || null;
+  const closeType = textValue(input.session_close_type, input.sessionCloseType, previous.session_close_type, "end_session");
+  const closeAt = textValue(input.session_close_at, input.sessionCloseAt, submittedAt);
+
+  const responseBody = {
+    ok: true,
+    submitted: true,
+    revision: nextRevision,
+    duplicate: false
+  };
+
+  const liveStatement = env.STUDY_DB
+    .prepare(
+      `UPDATE aqg_live_sessions SET
+         revision = ?1,
+         last_save_id = ?2,
+         last_event_at = ?3,
+         context_id = ?4,
+         status = 'submitted',
+         session_start = ?5,
+         last_activity_at = ?6,
+         submitted_at = ?6,
+         llm_product = ?7,
+         llm_model = ?8,
+         llm_description = ?9,
+         model_used = ?10,
+         course_context = ?11,
+         question_context = ?12,
+         extra_instructions = ?13,
+         desired_questions = ?14,
+         final_response = ?15,
+         feedback_text = ?16,
+         audio_object_key = ?17,
+         audio_duration_seconds = ?18,
+         active_seconds = ?19,
+         progress_json = ?20,
+         events_json = ?21,
+         session_close_type = ?22,
+         session_close_at = ?23,
+         app_version = ?24,
+         mode = ?25,
+         updated_at = ?6
+       WHERE participant_id = ?26
+         AND session_id = ?27
+         AND revision = ?28
+         AND status <> 'submitted'
+       RETURNING revision`
+    )
+    .bind(
+      nextRevision,
+      requestId,
+      lastEventAt,
+      textValue(input.context_id, input.contextId, previous.context_id) || null,
+      textValue(input.session_start, input.sessionStart, previous.session_start) || null,
+      submittedAt,
+      textValue(input.llm_product, input.llmProduct, previous.llm_product) || null,
+      textValue(input.llm_expected_choice, input.llmExpectedChoice, previous.llm_model) || null,
+      textValue(input.llm_mismatch_description, input.llmMismatchDescription, previous.llm_description) || null,
+      textValue(input.model_used, input.modelUsed, previous.model_used) || null,
+      textValue(input.course_context, input.courseContext, previous.course_context) || null,
+      textValue(input.question_context, input.questionContext, previous.question_context) || null,
+      textValue(input.extra_instructions, input.extraInstructions, previous.extra_instructions) || null,
+      textValue(input.desired_questions, input.desiredQuestions, previous.desired_questions) || null,
+      textValue(input.llm_response, input.llmResponse, previous.final_response) || null,
+      textValue(input.session_notes, input.sessionNotes, previous.feedback_text) || null,
+      textValue(input.audio_object_key, previous.audio_object_key) || null,
+      numberOrNull(input.audio_duration ?? previous.audio_duration_seconds),
+      numberOrNull(input.active_seconds ?? input.activeSeconds ?? previous.active_seconds),
+      progressJson,
+      fullEventsJson,
+      closeType,
+      closeAt,
+      textValue(input.app_version, input.appVersion, previous.app_version) || null,
+      textValue(input.mode, previous.mode, "standard") || "standard",
+      participantId,
+      sessionId,
+      baseRevision
+    );
+
+  const submissionStatement = env.STUDY_DB
+    .prepare(
+      `INSERT OR IGNORE INTO aqg_submissions (
+         record_id, participant_id, session_id, context_id, status, session_start,
+         submitted_at, llm_product, llm_model, llm_description, course_context,
+         question_context, extra_instructions, desired_questions, final_response,
+         feedback_text, audio_object_key, audio_duration_seconds, active_seconds,
+         session_close_type, session_close_at, app_version, mode, created_at
+       )
+       SELECT
+         ?1, participant_id, session_id, context_id, 'submitted', session_start,
+         submitted_at, llm_product, llm_model, llm_description, course_context,
+         question_context, extra_instructions, desired_questions, final_response,
+         feedback_text, audio_object_key, audio_duration_seconds, active_seconds,
+         session_close_type, session_close_at, app_version, mode, ?2
+       FROM aqg_live_sessions
+       WHERE participant_id = ?3
+         AND session_id = ?4
+         AND revision = ?5
+         AND last_save_id = ?6
+         AND status = 'submitted'`
+    )
+    .bind(crypto.randomUUID(), submittedAt, participantId, sessionId, nextRevision, requestId);
+
+  const settingsStatement = env.STUDY_DB
+    .prepare(
+      `INSERT INTO aqg_latest_settings (
+         participant_id, source_session_id, course_context, question_context,
+         extra_instructions, desired_questions, updated_at
+       )
+       SELECT
+         participant_id, session_id, course_context, question_context,
+         extra_instructions, desired_questions, ?1
+       FROM aqg_live_sessions
+       WHERE participant_id = ?2
+         AND session_id = ?3
+         AND revision = ?4
+         AND last_save_id = ?5
+         AND status = 'submitted'
+       ON CONFLICT(participant_id) DO UPDATE SET
+         source_session_id = excluded.source_session_id,
+         course_context = excluded.course_context,
+         question_context = excluded.question_context,
+         extra_instructions = excluded.extra_instructions,
+         desired_questions = excluded.desired_questions,
+         updated_at = excluded.updated_at`
+    )
+    .bind(submittedAt, participantId, sessionId, nextRevision, requestId);
+
+  const receiptStatement = env.STUDY_DB
+    .prepare(
+      `INSERT OR IGNORE INTO request_receipts
+         (request_id, operation, request_hash, response_status, response_json, created_at)
+       SELECT ?1, ?2, ?3, 200, ?4, ?5
+       WHERE EXISTS (
+         SELECT 1 FROM aqg_live_sessions
+         WHERE participant_id = ?6
+           AND session_id = ?7
+           AND revision = ?8
+           AND last_save_id = ?1
+           AND status = 'submitted'
+       )`
+    )
+    .bind(
+      requestId,
+      operation,
+      requestHash,
+      JSON.stringify(responseBody),
+      submittedAt,
+      participantId,
+      sessionId,
+      nextRevision
+    );
+
+  const batchResults = await env.STUDY_DB.batch([
+    liveStatement,
+    ...eventBuild.statements,
+    submissionStatement,
+    settingsStatement,
+    receiptStatement
+  ]);
+
+  const savedRevision = batchResults?.[0]?.results?.[0]?.revision;
+  if (Number(savedRevision) !== nextRevision) {
+    const latest = await env.STUDY_DB
+      .prepare("SELECT revision, status FROM aqg_live_sessions WHERE participant_id = ?1 AND session_id = ?2")
+      .bind(participantId, sessionId)
+      .first();
+
+    if (latest?.status === "submitted") {
+      return {
+        status: 200,
+        body: { ok: true, submitted: true, revision: Number(latest.revision || currentRevision), duplicate: true }
+      };
+    }
+
+    return {
+      status: 409,
+      body: {
+        ok: false,
+        error: "Another window has saved this session, or this page is outdated.",
+        code: "REVISION_CONFLICT",
+        retryable: false,
+        revision: Number(latest?.revision || currentRevision)
+      }
+    };
+  }
+
+  return { status: 200, body: responseBody };
+}
