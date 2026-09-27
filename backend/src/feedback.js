@@ -301,7 +301,8 @@ export async function saveAqgFeedback(env, input) {
       ok: true,
       feedback_id: feedbackId,
       duplicate: false,
-      notification_queued: true
+      notification_queued: true,
+      notification_id: notificationId
     }
   };
 }
@@ -439,6 +440,7 @@ export async function saveTrainingFeedback(env, input) {
   }
 
   const now = new Date().toISOString();
+  const notificationId = crypto.randomUUID();
 
   let msSincePrevious = null;
   if (sessionId) {
@@ -515,7 +517,7 @@ export async function saveTrainingFeedback(env, input) {
          ?1, 'training_feedback', ?2, NULLIF(?3, ''), ?4, 'pending', 0, ?5
        )`
     ).bind(
-      crypto.randomUUID(),
+      notificationId,
       participantId,
       sessionId,
       payload,
@@ -578,7 +580,8 @@ export async function saveTrainingFeedback(env, input) {
       ok: true,
       feedback_id: feedbackId,
       duplicate: false,
-      notification_queued: true
+      notification_queued: true,
+      notification_id: notificationId
     }
   };
 }
