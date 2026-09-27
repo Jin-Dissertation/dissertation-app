@@ -215,3 +215,28 @@ export async function validateAccessCode(env, input, app) {
     }
   };
 }
+
+
+export async function authorizeAccessCode(env, input, app) {
+  const validation = await validateAccessCode(env, input, app);
+
+  if (validation.body?.valid === true && validation.body?.participant_id) {
+    return {
+      ok: true,
+      participantId: String(validation.body.participant_id)
+    };
+  }
+
+  return {
+    ok: false,
+    status: validation.status === 400 ? 400 : 401,
+    body: {
+      ok: false,
+      error: validation.body?.error || "Unauthorized",
+      code: validation.body?.locked ? "RATE_LIMITED" : "UNAUTHORIZED",
+      retryable: false,
+      locked: Boolean(validation.body?.locked),
+      retryAfterSeconds: Number(validation.body?.retryAfterSeconds || 0)
+    }
+  };
+}
