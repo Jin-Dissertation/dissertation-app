@@ -1624,6 +1624,7 @@ let sectionState = [];
 let trainingSessionSeq = 0;
 let currentLiveRevision = 0;
 let currentLiveLastSaveId = '';
+let liveSaveChain = Promise.resolve();
 let pendingSessionCreateRequestId = '';
 window.trainingSessionSeq = trainingSessionSeq;
 
@@ -1653,6 +1654,13 @@ function getOrCreateClientKey() {
 
 function setTrainingMode(isTraining) {
   document.body.classList.toggle('training-mode', !!isTraining);
+}
+
+function createRequestId(prefix) {
+  const suffix = window.crypto?.randomUUID
+    ? window.crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `${prefix}-${suffix}`;
 }
 
 let setGateLoading = null;
@@ -4487,37 +4495,43 @@ function cancelQueuedLiveSessionUpdate() {
   }
 }
 
+async function performLiveSessionUpdate(statusOverride = 'in_progress') {
+  const payload = {
+    ...buildLiveSessionSnapshot(statusOverride),
+    request_id: createRequestId('training-save'),
+    base_revision: currentLiveRevision
+  };
+
+  const data = await postToAppsScript(
+    `${WORKER_API_URL}/v1/training/save-session`,
+    payload,
+    { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS }
+  );
+
+  if (!data?.ok || !Number.isInteger(Number(data.revision))) {
+    throw new Error(data?.error || 'Training session save failed.');
+  }
+
+  currentLiveRevision = Number(data.revision);
+  currentLiveLastSaveId = payload.request_id;
+  return data;
+}
+
+function enqueueLiveSessionUpdate(statusOverride = 'in_progress') {
+  const task = liveSaveChain
+    .catch(() => null)
+    .then(() => performLiveSessionUpdate(statusOverride));
+
+  liveSaveChain = task.catch(() => null);
+  return task;
+}
+
 async function sendLiveSessionUpdate(statusOverride = 'in_progress') {
-  const payload = buildLiveSessionSnapshot(statusOverride);
-
   try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload),
-      keepalive: true
-    });
-
-    const text = await response.text();
-    let data = null;
-
-    try {
-      data = JSON.parse(text);
-    } catch (_) {
-      console.warn('Live session update returned non-JSON response', text);
-      return;
-    }
-
-    if (!response.ok || data?.ok === false) {
-      console.warn('Live session update failed', {
-        status: response.status,
-        payload,
-        response: data
-      });
-      return;
-    }
+    return await enqueueLiveSessionUpdate(statusOverride);
   } catch (err) {
-    console.warn('Live session update network error', err, payload);
+    console.warn('Live session update failed', err);
+    return null;
   }
 }
 
@@ -4537,8 +4551,7 @@ function queueLiveSessionUpdate(statusOverride = 'in_progress', delay = LIVE_UPD
 
 async function syncLiveSessionUpdate(statusOverride = 'in_progress') {
   cancelQueuedLiveSessionUpdate();
-  const payload = buildLiveSessionSnapshot(statusOverride);
-  return postToAppsScript(API_URL, payload, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
+  return enqueueLiveSessionUpdate(statusOverride);
 }
 
 function syncMilestoneProgress(reason, extra = {}) {
