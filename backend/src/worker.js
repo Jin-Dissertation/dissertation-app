@@ -3,7 +3,7 @@ import { createSessionId, createContextId } from "./sessions.js";
 import { saveAqgLiveSession, getLatestAqgLiveSession, submitAqgSession, getLatestAqgSubmittedSettings } from "./aqg-save.js";
 import { saveAqgFeedback, saveTrainingFeedback } from "./feedback.js";
 import { uploadAqgAudio } from "./audio.js";
-import { saveTrainingLiveSession, getLatestTrainingLiveSession, submitTrainingSession } from "./training-save.js";
+import { saveTrainingLiveSession, getLatestTrainingLiveSession, submitTrainingSession, appendTrainingEvent } from "./training-save.js";
 
 function corsHeaders() {
   return {
@@ -274,6 +274,27 @@ export default {
       }
     }
 
+
+    if (
+      request.method === "POST" &&
+      url.pathname === "/v1/training/append-event"
+    ) {
+      try {
+        const body = await parseBody(request);
+        const result = await appendTrainingEvent(env, body);
+        return json(result.body, result.status);
+      } catch {
+        return json(
+          {
+            ok: false,
+            error: "Training event append failed",
+            code: "SERVER_ERROR",
+            retryable: true
+          },
+          500
+        );
+      }
+    }
 
     if (
       request.method === "POST" &&
