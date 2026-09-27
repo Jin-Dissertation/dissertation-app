@@ -145,7 +145,7 @@ export default {
     ) {
       try {
         const body = await parseBody(request);
-        const result = await loadTrainingContent(env, body);
+        const result = await loadTrainingContent(env, body, request.url);
         return json(result.body, result.status);
       } catch {
         return json(
