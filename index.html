@@ -6367,25 +6367,21 @@ const PROMPT_META = [
 
     async function fetchLatestLiveSession() {
   const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
-  const userId = accessCode;
 
-  if (!userId) {
+  if (!accessCode) {
     return { ok: false, found: false, error: "No access code found." };
   }
 
   try {
-    const response = await fetch(AQG_API_URL, {
+    const response = await fetch(`${WORKER_API_URL}/v1/aqg/latest-live-session`, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
-        action: "getLatestLiveSession",
-        user_id: userId
-      }),
-      redirect: "follow"
+        user_id: accessCode
+      })
     });
 
-    const text = await response.text();
-    return JSON.parse(text);
+    return await response.json();
   } catch (err) {
     return { ok: false, found: false, error: String(err?.message || err || "unknown_error") };
   }
