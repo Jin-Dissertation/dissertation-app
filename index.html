@@ -3003,6 +3003,7 @@ const PROMPT_META = [
       clientKey: `${STORAGE_PREFIX}.clientKey`,
       sessionId: `${STORAGE_PREFIX}.sessionId`,
       sessionCreateRequestId: `${STORAGE_PREFIX}.sessionCreateRequestId`,
+      contextCreateRequestId: `${STORAGE_PREFIX}.contextCreateRequestId`,
       contextId: `${STORAGE_PREFIX}.contextId`,
       sessionStartTime: `${STORAGE_PREFIX}.sessionStartTime`,
       modelUsed: `${STORAGE_PREFIX}.modelUsed`,
@@ -3202,17 +3203,44 @@ const PROMPT_META = [
         throw new Error("Missing access code or session ID.");
       }
 
-      const data = await postAqgAction("createContextId", {
-        user_id: accessCode,
-        session_id: sessionId
-      });
-
-      if (!data?.ok || !data.context_id) {
-        throw new Error("Could not create context ID.");
+      let requestId = (localStorage.getItem(KEYS.contextCreateRequestId) || "").trim();
+      if (!requestId) {
+        requestId = "aqg-create-context-" + crypto.randomUUID();
+        localStorage.setItem(KEYS.contextCreateRequestId, requestId);
       }
 
-      localStorage.setItem(KEYS.contextId, data.context_id);
-      return data.context_id;
+      let lastError = null;
+
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          const response = await fetch(`${WORKER_API_URL}/v1/aqg/create-context`, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              user_id: accessCode,
+              session_id: sessionId,
+              request_id: requestId
+            })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok || !data?.ok || !data.context_id) {
+            throw new Error(data?.error || "Could not create context ID.");
+          }
+
+          localStorage.setItem(KEYS.contextId, data.context_id);
+          localStorage.removeItem(KEYS.contextCreateRequestId);
+          return data.context_id;
+        } catch (err) {
+          lastError = err;
+          if (attempt === 0) {
+            await new Promise((resolve) => window.setTimeout(resolve, 400));
+          }
+        }
+      }
+
+      throw lastError || new Error("Could not create context ID.");
     }
 
     function buildContextDetailText(ctx = getContext()) {
