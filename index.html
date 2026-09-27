@@ -3002,6 +3002,7 @@ const PROMPT_META = [
       accessCode: `${STORAGE_PREFIX}.accessCode`,
       clientKey: `${STORAGE_PREFIX}.clientKey`,
       sessionId: `${STORAGE_PREFIX}.sessionId`,
+      sessionCreateRequestId: `${STORAGE_PREFIX}.sessionCreateRequestId`,
       contextId: `${STORAGE_PREFIX}.contextId`,
       sessionStartTime: `${STORAGE_PREFIX}.sessionStartTime`,
       modelUsed: `${STORAGE_PREFIX}.modelUsed`,
@@ -3153,17 +3154,44 @@ const PROMPT_META = [
       const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
       if (!accessCode) throw new Error("No access code found.");
 
-      const data = await postAqgAction("createSessionId", {
-        user_id: accessCode
-      });
-
-      if (!data?.ok || !data.session_id) {
-        throw new Error("Could not create session ID.");
+      let requestId = (localStorage.getItem(KEYS.sessionCreateRequestId) || "").trim();
+      if (!requestId) {
+        requestId = "aqg-create-session-" + crypto.randomUUID();
+        localStorage.setItem(KEYS.sessionCreateRequestId, requestId);
       }
 
-      localStorage.setItem(KEYS.sessionId, data.session_id);
-      localStorage.removeItem(KEYS.contextId);
-      return data.session_id;
+      let lastError = null;
+
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          const response = await fetch(`${WORKER_API_URL}/v1/aqg/create-session`, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              user_id: accessCode,
+              request_id: requestId
+            })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok || !data?.ok || !data.session_id) {
+            throw new Error(data?.error || "Could not create session ID.");
+          }
+
+          localStorage.setItem(KEYS.sessionId, data.session_id);
+          localStorage.removeItem(KEYS.sessionCreateRequestId);
+          localStorage.removeItem(KEYS.contextId);
+          return data.session_id;
+        } catch (err) {
+          lastError = err;
+          if (attempt === 0) {
+            await new Promise((resolve) => window.setTimeout(resolve, 400));
+          }
+        }
+      }
+
+      throw lastError || new Error("Could not create session ID.");
     }
 
     async function requestNewContextId() {
