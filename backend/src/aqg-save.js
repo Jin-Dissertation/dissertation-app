@@ -899,3 +899,40 @@ export async function submitAqgSession(env, input) {
 
   return { status: 200, body: responseBody };
 }
+
+
+export async function getLatestAqgSubmittedSettings(env, input) {
+  const auth = await authorizeAccessCode(env, input, "aqg");
+  if (!auth.ok) return { status: auth.status, body: auth.body };
+
+  const row = await env.STUDY_DB
+    .prepare(
+      `SELECT participant_id, source_session_id, course_context, question_context,
+              extra_instructions, desired_questions, updated_at
+       FROM aqg_latest_settings
+       WHERE participant_id = ?1
+       LIMIT 1`
+    )
+    .bind(auth.participantId)
+    .first();
+
+  if (!row) {
+    return { status: 200, body: { ok: true, found: false } };
+  }
+
+  return {
+    status: 200,
+    body: {
+      ok: true,
+      found: true,
+      settings: {
+        course_context: row.course_context || "",
+        question_context: row.question_context || "",
+        extra_instructions: row.extra_instructions || "",
+        desired_questions: row.desired_questions || ""
+      },
+      source_session_id: row.source_session_id || "",
+      last_activity_at: row.updated_at || ""
+    }
+  };
+}
