@@ -1622,6 +1622,7 @@ let completionLogged = false;
 let submitInFlight = false;
 let sectionState = [];
 let trainingSessionSeq = 0;
+let pendingSessionCreateRequestId = '';
 window.trainingSessionSeq = trainingSessionSeq;
 
 // ─────────────────────────────────────────────
@@ -1678,15 +1679,23 @@ function returnToGate() {
 }
 
 async function createSessionIdFromBackend(code) {
-  const data = await postToAppsScript(API_URL, {
-    action: 'createSessionId',
+  if (!pendingSessionCreateRequestId) {
+    pendingSessionCreateRequestId = window.crypto?.randomUUID
+      ? `training-create-${window.crypto.randomUUID()}`
+      : `training-create-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+
+  const data = await postToAppsScript(`${WORKER_API_URL}/v1/training/create-session`, {
     participant_code: code,
-    user_id: code
+    user_id: code,
+    request_id: pendingSessionCreateRequestId
   });
 
   if (!data?.ok || !data?.session_id) {
     throw new Error(data?.error || 'Could not create a session ID.');
   }
+
+  pendingSessionCreateRequestId = '';
 
   return {
     sessionId: String(data.session_id),
