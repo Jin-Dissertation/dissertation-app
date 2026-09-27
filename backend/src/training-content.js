@@ -6,7 +6,7 @@ function contentKey(version) {
   return `content/${version}/training-content.json`;
 }
 
-export async function loadTrainingContent(env, input) {
+export async function loadTrainingContent(env, input, requestUrl) {
   const auth = await authorizeAccessCode(env, input, "training");
   if (!auth.ok) return { status: auth.status, body: auth.body };
 
@@ -69,12 +69,30 @@ export async function loadTrainingContent(env, input) {
     };
   }
 
+  const origin = requestUrl ? new URL(requestUrl).origin : "";
+  const resolvedRows = rows.map((row) => {
+    const copy = { ...row };
+
+    for (const field of ["media_url", "mobile_image_url"]) {
+      const value = String(copy[field] || "").trim();
+      if (value.startsWith("images/")) {
+        const filename = value.slice("images/".length);
+        if (ALLOWED_TRAINING_IMAGES.has(filename) && origin) {
+          copy[field] =
+            `${origin}/v1/training/media/${requestedVersion}/${filename}`;
+        }
+      }
+    }
+
+    return copy;
+  });
+
   return {
     status: 200,
     body: {
       ok: true,
       content_version: requestedVersion,
-      rows
+      rows: resolvedRows
     }
   };
 }
