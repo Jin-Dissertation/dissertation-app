@@ -3005,6 +3005,8 @@ const PROMPT_META = [
       sessionCreateRequestId: `${STORAGE_PREFIX}.sessionCreateRequestId`,
       contextCreateRequestId: `${STORAGE_PREFIX}.contextCreateRequestId`,
       contextId: `${STORAGE_PREFIX}.contextId`,
+      liveRevision: `${STORAGE_PREFIX}.liveRevision`,
+      liveLastSaveId: `${STORAGE_PREFIX}.liveLastSaveId`,
       sessionStartTime: `${STORAGE_PREFIX}.sessionStartTime`,
       modelUsed: `${STORAGE_PREFIX}.modelUsed`,
       context: `${STORAGE_PREFIX}.context`,
@@ -3181,6 +3183,8 @@ const PROMPT_META = [
           }
 
           localStorage.setItem(KEYS.sessionId, data.session_id);
+          localStorage.setItem(KEYS.liveRevision, "0");
+          localStorage.removeItem(KEYS.liveLastSaveId);
           localStorage.removeItem(KEYS.sessionCreateRequestId);
           localStorage.removeItem(KEYS.contextId);
           return data.session_id;
@@ -3336,6 +3340,7 @@ const PROMPT_META = [
     let sidebarMode = "preview";  // "preview" | "history" | "feedback" | "collapsed"
     let sessionTimerIntervalId = null;
     let liveUpdateTimer = null;
+    let liveSaveChain = Promise.resolve();
     let interactionTimes = [];
     let activeMsBase = 0;
     let submitInFlight = false;
@@ -3777,39 +3782,45 @@ const PROMPT_META = [
       }
     }
 
+    async function performLiveSessionUpdate(statusOverride = "in_progress") {
+      const requestId = "aqg-save-" + crypto.randomUUID();
+      const baseRevision = Number(localStorage.getItem(KEYS.liveRevision) || "0");
+      const payload = {
+        ...buildLiveSessionSnapshot(statusOverride),
+        request_id: requestId,
+        base_revision: baseRevision
+      };
+
+      const data = await postToAppsScript(
+        `${WORKER_API_URL}/v1/aqg/save-session`,
+        payload,
+        { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS }
+      );
+
+      if (!data?.ok || !Number.isInteger(Number(data.revision))) {
+        throw new Error(data?.error || "AQG live session save failed.");
+      }
+
+      localStorage.setItem(KEYS.liveRevision, String(Number(data.revision)));
+      localStorage.setItem(KEYS.liveLastSaveId, requestId);
+      return data;
+    }
+
+    function enqueueLiveSessionUpdate(statusOverride = "in_progress") {
+      const task = liveSaveChain
+        .catch(() => null)
+        .then(() => performLiveSessionUpdate(statusOverride));
+
+      liveSaveChain = task.catch(() => null);
+      return task;
+    }
+
     async function sendLiveSessionUpdate(statusOverride = "in_progress") {
-      const payload = buildLiveSessionSnapshot(statusOverride);
-
       try {
-        const response = await fetch(AQG_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload),
-          keepalive: true
-        });
-
-        const text = await response.text();
-        let data = null;
-
-        try {
-          data = JSON.parse(text);
-        } catch (err) {
-          console.warn("Live session update returned non-JSON response", text);
-          return;
-        }
-
-        if (!response.ok || data?.ok === false) {
-          console.warn("Live session update failed", {
-            status: response.status,
-            payload,
-            response: data
-          });
-          return;
-        }
-
-        console.log("Live session update ok", data);
+        return await enqueueLiveSessionUpdate(statusOverride);
       } catch (err) {
-        console.warn("Live session update network error", err, payload);
+        console.warn("Live session update failed", err);
+        return null;
       }
     }
 
@@ -3827,8 +3838,7 @@ const PROMPT_META = [
 
     async function syncLiveSessionUpdate(statusOverride = "in_progress") {
       cancelQueuedLiveSessionUpdate();
-      const payload = buildLiveSessionSnapshot(statusOverride);
-      return postToAppsScript(AQG_API_URL, payload, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
+      return enqueueLiveSessionUpdate(statusOverride);
     }
 
     function logEvent(type, data = {}) {
@@ -6508,6 +6518,12 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
       const restoredEvents = Array.isArray(data?.events) ? data.events : [];
 
       localStorage.setItem(KEYS.sessionId, restoredSessionId);
+      localStorage.setItem(KEYS.liveRevision, String(Number(session.revision || 0)));
+      if (session.last_save_id) {
+        localStorage.setItem(KEYS.liveLastSaveId, String(session.last_save_id));
+      } else {
+        localStorage.removeItem(KEYS.liveLastSaveId);
+      }
       localStorage.setItem(KEYS.contextId, restoredContextId);
       localStorage.setItem(KEYS.sessionStartTime, restoredSessionStart || nowIso());
       localStorage.setItem(KEYS.stage, restoredStage);
