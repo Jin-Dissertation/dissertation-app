@@ -3007,6 +3007,7 @@ const PROMPT_META = [
       contextId: `${STORAGE_PREFIX}.contextId`,
       liveRevision: `${STORAGE_PREFIX}.liveRevision`,
       liveLastSaveId: `${STORAGE_PREFIX}.liveLastSaveId`,
+      pendingServerEvents: `${STORAGE_PREFIX}.pendingServerEvents`,
       sessionStartTime: `${STORAGE_PREFIX}.sessionStartTime`,
       modelUsed: `${STORAGE_PREFIX}.modelUsed`,
       context: `${STORAGE_PREFIX}.context`,
@@ -3273,25 +3274,21 @@ const PROMPT_META = [
 
       if (!accessCode || !sessionId || !eventType) return;
 
-      fetch(AQG_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "appendEvent",
-          user_id: accessCode,
-          session_id: sessionId,
-          context_id: contextId,
-          device_label: deviceLabel,
-          event_type: eventType,
-          button_id: buttonId,
-          detail_text: detailText,
-          detail_json: detailJson,
-          timestamp: new Date().toISOString()
-        }),
-        keepalive: true
-      }).catch((err) => {
-        console.warn("appendEvent failed", err);
+      const pending = loadJSON(KEYS.pendingServerEvents, []);
+      pending.push({
+        event_id: "aqg-event-" + crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        context_id: contextId,
+        event_type: eventType,
+        button_id: buttonId,
+        detail_text: detailText,
+        detail_json: detailJson,
+        device_label: deviceLabel
       });
+      saveJSON(KEYS.pendingServerEvents, pending);
+
+      // Flush promptly through the same serialized, revision-safe Worker save path.
+      queueLiveSessionUpdate("in_progress", 0);
     }
 
     async function loadRemoteConfig() {
@@ -3785,10 +3782,13 @@ const PROMPT_META = [
     async function performLiveSessionUpdate(statusOverride = "in_progress") {
       const requestId = "aqg-save-" + crypto.randomUUID();
       const baseRevision = Number(localStorage.getItem(KEYS.liveRevision) || "0");
+      const pendingEvents = loadJSON(KEYS.pendingServerEvents, []);
+      const batchEvents = Array.isArray(pendingEvents) ? pendingEvents.slice(0, 80) : [];
       const payload = {
         ...buildLiveSessionSnapshot(statusOverride),
         request_id: requestId,
-        base_revision: baseRevision
+        base_revision: baseRevision,
+        batch_events: batchEvents
       };
 
       const data = await postToAppsScript(
@@ -3803,6 +3803,19 @@ const PROMPT_META = [
 
       localStorage.setItem(KEYS.liveRevision, String(Number(data.revision)));
       localStorage.setItem(KEYS.liveLastSaveId, requestId);
+
+      if (batchEvents.length) {
+        const savedIds = new Set(batchEvents.map((event) => event.event_id));
+        const remaining = loadJSON(KEYS.pendingServerEvents, []).filter(
+          (event) => !savedIds.has(event?.event_id)
+        );
+        saveJSON(KEYS.pendingServerEvents, remaining);
+
+        if (remaining.length) {
+          queueLiveSessionUpdate("in_progress", 0);
+        }
+      }
+
       return data;
     }
 
