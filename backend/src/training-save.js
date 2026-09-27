@@ -892,3 +892,216 @@ export async function submitTrainingSession(env, input) {
     }
   };
 }
+
+
+export async function appendTrainingEvent(env, input) {
+  const auth = await authorizeAccessCode(env, input, "training");
+  if (!auth.ok) return { status: auth.status, body: auth.body };
+
+  const participantId = auth.participantId;
+  const sessionId = textValue(input.session_id, input.sessionId);
+  const requestId = textValue(input.request_id, input.event_id);
+  const eventId = textValue(input.event_id, input.request_id);
+  const eventType = textValue(input.event_type, input.eventType, input.type);
+
+  if (!sessionId || !requestId || !eventId || !eventType || requestId.length > 120 || eventId.length > 160) {
+    return {
+      status: 400,
+      body: {
+        ok: false,
+        error: "Session, request, event identifier, and event type are required.",
+        code: "INVALID_REQUEST",
+        retryable: false
+      }
+    };
+  }
+
+  const operation = "training:appendEvent";
+  const requestHash = await sha256Hex(
+    JSON.stringify(stableValue({ ...input, user_id: participantId }))
+  );
+
+  const existingReceipt = await getReceipt(env.STUDY_DB, requestId);
+  if (existingReceipt) {
+    if (
+      existingReceipt.operation !== operation ||
+      existingReceipt.request_hash !== requestHash
+    ) {
+      return {
+        status: 409,
+        body: {
+          ok: false,
+          error: "This request identifier was already used for a different operation.",
+          code: "REQUEST_ID_CONFLICT",
+          retryable: false
+        }
+      };
+    }
+
+    const prior = receiptResponse(existingReceipt);
+    if (prior) {
+      return {
+        status: Number(existingReceipt.response_status || 200),
+        body: { ...prior, duplicate: true }
+      };
+    }
+  }
+
+  const session = await env.STUDY_DB
+    .prepare(
+      `SELECT session_seq, status, last_event_at
+       FROM training_live_sessions
+       WHERE participant_id = ?1 AND session_id = ?2
+       LIMIT 1`
+    )
+    .bind(participantId, sessionId)
+    .first();
+
+  if (!session) {
+    if (!(await sessionWasAllocated(env.STUDY_DB, participantId, sessionId))) {
+      return {
+        status: 403,
+        body: {
+          ok: false,
+          error: "This session does not belong to this participant.",
+          code: "SESSION_CHANGED",
+          retryable: false
+        }
+      };
+    }
+  }
+
+  const timestamp = eventTimestamp(input, input.last_activity_at);
+  const latestEvent = await env.STUDY_DB
+    .prepare(
+      `SELECT event_timestamp
+       FROM training_events
+       WHERE participant_id = ?1 AND session_id = ?2
+       ORDER BY event_timestamp DESC
+       LIMIT 1`
+    )
+    .bind(participantId, sessionId)
+    .first();
+
+  const previousTimestamp = latestEvent?.event_timestamp || session?.last_event_at || "";
+  const previousMs = previousTimestamp ? Date.parse(previousTimestamp) : NaN;
+  const currentMs = Date.parse(timestamp);
+  const msSincePrevious =
+    Number.isFinite(previousMs) && Number.isFinite(currentMs)
+      ? Math.max(0, currentMs - previousMs)
+      : null;
+
+  const responseBody = {
+    ok: true,
+    appended: true,
+    event_id: eventId,
+    duplicate: false
+  };
+
+  const now = new Date().toISOString();
+
+  const eventStatement = env.STUDY_DB
+    .prepare(
+      `INSERT OR IGNORE INTO training_events (
+         record_id, event_id, batch_id, event_timestamp, ms_since_previous,
+         participant_id, session_id, session_seq, event_type, section_index,
+         card_index, detail_text, detail_json, device_label, created_at
+       )
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)`
+    )
+    .bind(
+      crypto.randomUUID(),
+      eventId,
+      participantId + ":" + sessionId + ":" + requestId,
+      timestamp,
+      msSincePrevious,
+      participantId,
+      sessionId,
+      numberOrNull(input.session_seq ?? input.sessionSeq ?? session?.session_seq),
+      eventType,
+      numberOrNull(input.section_index ?? input.sectionIndex),
+      numberOrNull(
+        input.card_index ??
+          input.cardIndex ??
+          input.current_card_number ??
+          input.currentCardNumber
+      ),
+      textValue(input.detail_text, input.detailText) || null,
+      jsonText(input.detail_json ?? input.detailJson ?? input.details, null),
+      textValue(input.device_label, input.deviceLabel) || null,
+      now
+    );
+
+  const liveStatement = env.STUDY_DB
+    .prepare(
+      `UPDATE training_live_sessions
+       SET last_event_at = CASE
+             WHEN last_event_at IS NULL OR last_event_at = '' OR last_event_at < ?1 THEN ?1
+             ELSE last_event_at
+           END,
+           last_event_type = ?2,
+           last_activity_at = CASE
+             WHEN last_activity_at IS NULL OR last_activity_at = '' OR last_activity_at < ?1 THEN ?1
+             ELSE last_activity_at
+           END,
+           updated_at = ?3
+       WHERE participant_id = ?4 AND session_id = ?5`
+    )
+    .bind(timestamp, eventType, now, participantId, sessionId);
+
+  const receiptStatement = env.STUDY_DB
+    .prepare(
+      `INSERT OR IGNORE INTO request_receipts
+       (request_id, operation, request_hash, response_status, response_json, created_at)
+       VALUES (?1, ?2, ?3, 200, ?4, ?5)`
+    )
+    .bind(
+      requestId,
+      operation,
+      requestHash,
+      JSON.stringify(responseBody),
+      now
+    );
+
+  const results = await env.STUDY_DB.batch([
+    eventStatement,
+    liveStatement,
+    receiptStatement
+  ]);
+
+  const inserted = Number(results?.[0]?.meta?.changes || 0) > 0;
+
+  if (!inserted) {
+    const existing = await env.STUDY_DB
+      .prepare(
+        `SELECT participant_id, session_id
+         FROM training_events
+         WHERE event_id = ?1`
+      )
+      .bind(eventId)
+      .first();
+
+    if (
+      existing &&
+      (existing.participant_id !== participantId ||
+        existing.session_id !== sessionId)
+    ) {
+      return {
+        status: 409,
+        body: {
+          ok: false,
+          error: "This event identifier was already used for a different request.",
+          code: "REQUEST_ID_CONFLICT",
+          retryable: false
+        }
+      };
+    }
+
+    return {
+      status: 200,
+      body: { ...responseBody, duplicate: true }
+    };
+  }
+
+  return { status: 200, body: responseBody };
+}
