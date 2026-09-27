@@ -4827,8 +4827,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let validateData = null;
     try {
-      validateData = await postToAppsScript(API_URL, {
-        action: 'validateCode',
+      validateData = await postToAppsScript(`${WORKER_API_URL}/v1/training/validate-code`, {
         code: entered,
         client_key: getOrCreateClientKey()
       });
