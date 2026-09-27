@@ -3,7 +3,7 @@ import { createSessionId, createContextId } from "./sessions.js";
 import { saveAqgLiveSession, getLatestAqgLiveSession, submitAqgSession, getLatestAqgSubmittedSettings } from "./aqg-save.js";
 import { saveAqgFeedback } from "./feedback.js";
 import { uploadAqgAudio } from "./audio.js";
-import { saveTrainingLiveSession } from "./training-save.js";
+import { saveTrainingLiveSession, getLatestTrainingLiveSession } from "./training-save.js";
 
 function corsHeaders() {
   return {
@@ -121,6 +121,28 @@ export default {
         return json({ ok: false, error: "Session allocation failed", code: "SERVER_ERROR", retryable: true }, 500);
       }
     }
+
+    if (
+      request.method === "POST" &&
+      url.pathname === "/v1/training/latest-live-session"
+    ) {
+      try {
+        const body = await parseBody(request);
+        const result = await getLatestTrainingLiveSession(env, body);
+        return json(result.body, result.status);
+      } catch {
+        return json(
+          {
+            ok: false,
+            error: "Training session recovery failed",
+            code: "SERVER_ERROR",
+            retryable: true
+          },
+          500
+        );
+      }
+    }
+
 
     if (
       request.method === "POST" &&
