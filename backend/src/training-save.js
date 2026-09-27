@@ -745,3 +745,150 @@ export async function getLatestTrainingLiveSession(env, input) {
     }
   };
 }
+
+
+export async function submitTrainingSession(env, input) {
+  const auth = await authorizeAccessCode(env, input, "training");
+  if (!auth.ok) return { status: auth.status, body: auth.body };
+
+  const participantId = auth.participantId;
+  const sessionId = textValue(input.session_id, input.sessionId);
+
+  if (!sessionId) {
+    return {
+      status: 400,
+      body: {
+        ok: false,
+        error: "Participant and session are required.",
+        code: "MISSING_SESSION",
+        retryable: false
+      }
+    };
+  }
+
+  const existingSubmission = await env.STUDY_DB
+    .prepare(
+      "SELECT submitted_at FROM training_submissions WHERE participant_id = ?1 AND session_id = ?2 LIMIT 1"
+    )
+    .bind(participantId, sessionId)
+    .first();
+
+  if (existingSubmission) {
+    const live = await env.STUDY_DB
+      .prepare(
+        "SELECT revision FROM training_live_sessions WHERE participant_id = ?1 AND session_id = ?2 LIMIT 1"
+      )
+      .bind(participantId, sessionId)
+      .first();
+
+    return {
+      status: 200,
+      body: {
+        ok: true,
+        submitted: true,
+        revision: Number(live?.revision || 0),
+        duplicate: true
+      }
+    };
+  }
+
+  const saved = await saveTrainingLiveSession(env, {
+    ...input,
+    status: "submitted",
+    last_event_type: "session_submitted"
+  });
+
+  if (!saved?.body?.ok) {
+    if (saved?.body?.code !== "SESSION_CLOSED") return saved;
+  }
+
+  const live = await env.STUDY_DB
+    .prepare(
+      "SELECT * FROM training_live_sessions WHERE participant_id = ?1 AND session_id = ?2 LIMIT 1"
+    )
+    .bind(participantId, sessionId)
+    .first();
+
+  if (!live || live.status !== "submitted") {
+    return {
+      status: 409,
+      body: {
+        ok: false,
+        error: "The training session could not be finalized.",
+        code: "SUBMISSION_NOT_COMMITTED",
+        retryable: true
+      }
+    };
+  }
+
+  const submittedAt = new Date().toISOString();
+  const details = { ...input, user_id: participantId };
+  delete details.batch_events;
+
+  const submission = env.STUDY_DB
+    .prepare(
+      `INSERT OR IGNORE INTO training_submissions (
+         record_id, participant_id, session_id, session_seq, session_start,
+         session_end, duration_ms, duration_formatted, active_seconds,
+         total_questions, correct_first, event_count, item_count, app_version,
+         content_version, current_card_number, device_trail, submitted_at,
+         details_json, created_at
+       )
+       VALUES (
+         ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9,
+         ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20
+       )`
+    )
+    .bind(
+      crypto.randomUUID(),
+      participantId,
+      sessionId,
+      numberOrNull(input.session_seq ?? live.session_seq),
+      textValue(input.session_start, live.session_start) || null,
+      textValue(input.session_end, submittedAt),
+      numberOrNull(input.duration_ms),
+      textValue(input.duration_formatted) || null,
+      numberOrNull(input.active_seconds),
+      numberOrNull(input.total_questions),
+      numberOrNull(input.correct_first),
+      Array.isArray(input.events) ? input.events.length : numberOrNull(input.event_count),
+      numberOrNull(input.item_count),
+      textValue(input.app_version, live.app_version) || null,
+      textValue(input.content_version, live.content_version) || null,
+      numberOrNull(
+        input.current_card_number ??
+          input.device_card_number ??
+          live.current_card_number
+      ),
+      live.device_trail || null,
+      submittedAt,
+      JSON.stringify(details),
+      submittedAt
+    );
+
+  const submissionItems = env.STUDY_DB
+    .prepare(
+      `INSERT OR IGNORE INTO training_submission_items (
+         record_id, participant_id, session_id, content_version,
+         item_number, response_text, response_ms, created_at
+       )
+       SELECT
+         lower(hex(randomblob(16))), participant_id, session_id, content_version,
+         item_number, response_text, response_ms, ?1
+       FROM training_live_items
+       WHERE participant_id = ?2 AND session_id = ?3`
+    )
+    .bind(submittedAt, participantId, sessionId);
+
+  await env.STUDY_DB.batch([submission, submissionItems]);
+
+  return {
+    status: 200,
+    body: {
+      ok: true,
+      submitted: true,
+      revision: Number(live.revision || saved?.body?.revision || 0),
+      duplicate: Boolean(saved?.body?.duplicate)
+    }
+  };
+}
