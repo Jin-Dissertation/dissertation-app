@@ -2,6 +2,7 @@ import { validateAccessCode } from "./auth.js";
 import { createSessionId, createContextId } from "./sessions.js";
 import { saveAqgLiveSession, getLatestAqgLiveSession, submitAqgSession, getLatestAqgSubmittedSettings } from "./aqg-save.js";
 import { saveAqgFeedback } from "./feedback.js";
+import { uploadAqgAudio } from "./audio.js";
 
 function corsHeaders() {
   return {
@@ -176,6 +177,28 @@ export default {
           {
             ok: false,
             error: "Session submission failed",
+            code: "SERVER_ERROR",
+            retryable: true
+          },
+          500
+        );
+      }
+    }
+
+
+    if (
+      request.method === "POST" &&
+      url.pathname === "/v1/aqg/upload-audio"
+    ) {
+      try {
+        const body = await parseBody(request);
+        const result = await uploadAqgAudio(env, body);
+        return json(result.body, result.status);
+      } catch {
+        return json(
+          {
+            ok: false,
+            error: "Audio upload failed",
             code: "SERVER_ERROR",
             retryable: true
           },
