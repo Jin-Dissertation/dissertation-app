@@ -39,6 +39,36 @@ async function sessionBelongsToParticipant(db, participantId, sessionId) {
   return row?.ok === 1;
 }
 
+
+async function trainingSessionBelongsToParticipant(db, participantId, sessionId) {
+  if (!sessionId) return true;
+
+  const row = await db
+    .prepare(
+      `SELECT 1 AS ok
+       WHERE EXISTS (
+         SELECT 1
+         FROM request_receipts
+         WHERE operation = 'training:createSessionId'
+           AND json_extract(response_json, '$.user_id') = ?1
+           AND json_extract(response_json, '$.session_id') = ?2
+       )
+       OR EXISTS (
+         SELECT 1 FROM training_live_sessions
+         WHERE participant_id = ?1 AND session_id = ?2
+       )
+       OR EXISTS (
+         SELECT 1 FROM training_submissions
+         WHERE participant_id = ?1 AND session_id = ?2
+       )
+       LIMIT 1`
+    )
+    .bind(participantId, sessionId)
+    .first();
+
+  return row?.ok === 1;
+}
+
 export async function saveAqgFeedback(env, input) {
   const auth = await authorizeAccessCode(env, input, "aqg");
   if (!auth.ok) return { status: auth.status, body: auth.body };
@@ -264,6 +294,25 @@ export async function saveTrainingFeedback(env, input) {
 
   if (!textFeedback) {
     return { status: 400, body: { ok: false, error: "No feedback content provided.", code: "INVALID_REQUEST", retryable: false } };
+  }
+
+  if (
+    sessionId &&
+    !(await trainingSessionBelongsToParticipant(
+      env.STUDY_DB,
+      participantId,
+      sessionId
+    ))
+  ) {
+    return {
+      status: 403,
+      body: {
+        ok: false,
+        error: "This session does not belong to this participant.",
+        code: "SESSION_CHANGED",
+        retryable: false
+      }
+    };
   }
 
   const existing = await env.STUDY_DB
