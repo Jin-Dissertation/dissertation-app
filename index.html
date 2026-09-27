@@ -3388,6 +3388,7 @@ const PROMPT_META = [
     let uploadedAudioInfo = null;
     let audioStartedAt = null;
     let audioUploadInProgress = false;
+    let audioUploadRequestId = null;
     let audioElapsedMs = 0;
     let audioElapsedLastStartedAt = null;
     let audioElapsedTickHandle = null;
@@ -5041,13 +5042,23 @@ const PROMPT_META = [
     async function submitAudioRecording() {
       if (!audioBlob || audioUploadInProgress || audioSubmitted) return;
 
-      const accessCode = localStorage.getItem(KEYS.accessCode) || "participant";
-      const sessionId = localStorage.getItem(KEYS.sessionId) || "session";
+      const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
+      const sessionId = (localStorage.getItem(KEYS.sessionId) || "").trim();
+      if (!accessCode || !sessionId) {
+        toast("Audio upload could not start because the session is missing.");
+        return { ok: false };
+      }
+
       const safeUser = sanitizeFilenamePart(accessCode);
       const safeSession = sanitizeFilenamePart(sessionId);
-      // filename format: username_YYMMDD_sessionID.ext
       const ext = (audioBlob.type || "").includes("ogg") ? "ogg" : "webm";
       const filename = `${safeUser}_${getYYMMDD()}_${safeSession}.${ext}`;
+      const mimeType = audioBlob.type || `audio/${ext}`;
+      const durationSeconds = Math.max(0, Number(audioDuration || 0) / 1000);
+
+      if (!audioUploadRequestId) {
+        audioUploadRequestId = "aqg-audio-" + crypto.randomUUID();
+      }
 
       try {
         audioUploadInProgress = true;
@@ -5059,43 +5070,38 @@ const PROMPT_META = [
 
         setAudioUploadButtonState("uploading", "Encoding audio…");
         const audioBase64 = await blobToBase64(audioBlob);
-        setAudioUploadButtonState("uploading", "Uploading… 0%");
+        setAudioUploadButtonState("uploading", "Uploading…");
 
-        const body = new URLSearchParams({
-          action: "uploadAudio",
-          accessCode,
-          session_id: sessionId,
-          filename,
-          mimeType: audioBlob.type || `audio/${ext}`,
-          audioBase64
-        });
-
-        const fetchResponse = await fetch(AQG_API_URL, {
-          method: "POST",
-          body
-        });
-        const response = {
-          status: fetchResponse.status,
-          ok: fetchResponse.ok,
-          text: await fetchResponse.text()
-        };
+        const data = await postToAppsScript(
+          `${WORKER_API_URL}/v1/aqg/upload-audio`,
+          {
+            request_id: audioUploadRequestId,
+            user_id: accessCode,
+            session_id: sessionId,
+            filename,
+            mimeType,
+            audioBase64,
+            audio_duration_seconds: durationSeconds
+          },
+          { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS }
+        );
 
         setAudioUploadButtonState("uploading", "Processing…");
-        const text = response.text;
-        let data = {};
-        try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
-        if (!response.ok || data.ok === false) {
-          throw new Error(data.error || `Upload failed (${response.status})`);
+        const objectKey = data.objectKey || data.audioFileId || data.fileId || "";
+        if (!data?.ok || !objectKey) {
+          throw new Error(data?.error || "Audio upload did not return a storage key.");
         }
 
         uploadedAudioInfo = {
           audioFilename: data.filename || filename,
-          audioFileId: data.fileId || data.audioFileId || "",
+          audioFileId: objectKey,
           audioFileUrl: "",
-          audioMimeType: audioBlob.type || `audio/${ext}`,
-          audioDuration: audioDuration
+          audioMimeType: mimeType,
+          audioDuration: durationSeconds
         };
+        localStorage.setItem(KEYS.audioObjectKey, objectKey);
+        localStorage.setItem(KEYS.audioDurationSeconds, String(durationSeconds));
 
         audioSubmitted = true;
         markInteraction();
@@ -5103,11 +5109,11 @@ const PROMPT_META = [
         appendServerEvent(
           "audio_uploaded",
           "btnAudioSubmit",
-          uploadedAudioInfo?.audioFilename || "",
+          uploadedAudioInfo.audioFilename || "",
           {
-            audio_duration: uploadedAudioInfo?.audioDuration || "",
-            audio_filename: uploadedAudioInfo?.audioFilename || "",
-            audio_file_id: uploadedAudioInfo?.audioFileId || ""
+            audio_duration_seconds: durationSeconds,
+            audio_filename: uploadedAudioInfo.audioFilename || "",
+            audio_object_key: objectKey
           }
         );
         queueLiveSessionUpdate("in_progress");
