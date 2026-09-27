@@ -251,3 +251,57 @@ export async function saveAqgFeedback(env, input) {
     }
   };
 }
+
+
+export async function saveTrainingFeedback(env, input) {
+  const auth = await authorizeAccessCode(env, input, "training");
+  if (!auth.ok) return { status: auth.status, body: auth.body };
+
+  const participantId = auth.participantId;
+  const sessionId = firstText(input, ["session_id", "sessionId"]);
+  const feedbackId = firstText(input, ["feedback_id", "feedbackId", "request_id"]) || crypto.randomUUID();
+  const textFeedback = firstText(input, ["text_feedback", "textFeedback", "feedback_text", "feedbackText"]);
+
+  if (!textFeedback) {
+    return { status: 400, body: { ok: false, error: "No feedback content provided.", code: "INVALID_REQUEST", retryable: false } };
+  }
+
+  const existing = await env.STUDY_DB
+    .prepare("SELECT participant_id, session_id FROM training_feedback WHERE feedback_id = ?1")
+    .bind(feedbackId)
+    .first();
+
+  if (existing) {
+    if (existing.participant_id !== participantId || String(existing.session_id || "") !== sessionId) {
+      return { status: 409, body: { ok: false, error: "This feedback identifier was already used for a different request.", code: "REQUEST_ID_CONFLICT", retryable: false } };
+    }
+    return { status: 200, body: { ok: true, feedback_id: feedbackId, duplicate: true } };
+  }
+
+  const now = new Date().toISOString();
+  const sessionSeq = input.session_seq == null ? null : Number(input.session_seq);
+  const sectionIndex = input.section_index == null ? null : Number(input.section_index);
+  const cardIndex = input.card_index == null ? null : Number(input.card_index);
+  const sectionTitle = firstText(input, ["section_title", "sectionTitle"]);
+  const feedbackSource = firstText(input, ["feedback_source", "feedbackSource"]);
+  const deviceLabel = firstText(input, ["device_label", "deviceLabel"]);
+
+  const payload = JSON.stringify({
+    feedback_id: feedbackId,
+    participant_id: participantId,
+    session_id: sessionId,
+    text_feedback: textFeedback,
+    submitted_at: now
+  });
+
+  await env.STUDY_DB.batch([
+    env.STUDY_DB.prepare(
+      "INSERT INTO training_feedback (record_id, feedback_id, participant_id, session_id, session_seq, submitted_at, section_index, section_title, card_index, feedback_source, text_feedback, device_label, notification_status, created_at) VALUES (?1, ?2, ?3, NULLIF(?4, ''), ?5, ?6, ?7, NULLIF(?8, ''), ?9, NULLIF(?10, ''), ?11, NULLIF(?12, ''), 'pending', ?6)"
+    ).bind(crypto.randomUUID(), feedbackId, participantId, sessionId, sessionSeq, now, sectionIndex, sectionTitle, cardIndex, feedbackSource, textFeedback, deviceLabel),
+    env.STUDY_DB.prepare(
+      "INSERT INTO notification_outbox (notification_id, notification_type, participant_id, session_id, payload_json, status, attempt_count, created_at) VALUES (?1, 'training_feedback', ?2, NULLIF(?3, ''), ?4, 'pending', 0, ?5)"
+    ).bind(crypto.randomUUID(), participantId, sessionId, payload, now)
+  ]);
+
+  return { status: 200, body: { ok: true, feedback_id: feedbackId, duplicate: false, notification_queued: true } };
+}
