@@ -5,6 +5,7 @@ import { saveAqgFeedback, saveTrainingFeedback } from "./feedback.js";
 import { uploadAqgAudio } from "./audio.js";
 import { saveTrainingLiveSession, getLatestTrainingLiveSession, submitTrainingSession, appendTrainingEvent } from "./training-save.js";
 import { loadTrainingContent, getTrainingMedia } from "./training-content.js";
+import { deliverNotification, flushPendingNotifications } from "./notifications.js";
 
 function corsHeaders() {
   return {
@@ -48,7 +49,7 @@ async function parseBody(request) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") {
@@ -321,6 +322,20 @@ export default {
       try {
         const body = await parseBody(request);
         const result = await appendTrainingEvent(env, body);
+
+        if (
+          result.status === 200 &&
+          result.body?.completion_notification_id &&
+          ctx?.waitUntil
+        ) {
+          ctx.waitUntil(
+            deliverNotification(
+              env,
+              result.body.completion_notification_id
+            )
+          );
+        }
+
         return json(result.body, result.status);
       } catch {
         return json(
@@ -342,6 +357,17 @@ export default {
       try {
         const body = await parseBody(request);
         const result = await saveTrainingFeedback(env, body);
+
+        if (
+          result.status === 200 &&
+          result.body?.notification_id &&
+          ctx?.waitUntil
+        ) {
+          ctx.waitUntil(
+            deliverNotification(env, result.body.notification_id)
+          );
+        }
+
         return json(result.body, result.status);
       } catch {
         return json(
@@ -363,6 +389,17 @@ export default {
       try {
         const body = await parseBody(request);
         const result = await saveAqgFeedback(env, body);
+
+        if (
+          result.status === 200 &&
+          result.body?.notification_id &&
+          ctx?.waitUntil
+        ) {
+          ctx.waitUntil(
+            deliverNotification(env, result.body.notification_id)
+          );
+        }
+
         return json(result.body, result.status);
       } catch {
         return json(
@@ -428,5 +465,9 @@ export default {
       },
       404
     );
+  },
+
+  async scheduled(_event, env, ctx) {
+    ctx.waitUntil(flushPendingNotifications(env, 10));
   }
 };
