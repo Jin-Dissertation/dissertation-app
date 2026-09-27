@@ -1,6 +1,6 @@
 import { validateAccessCode } from "./auth.js";
 import { createSessionId } from "./sessions.js";
-import { saveAqgLiveSession, getLatestAqgLiveSession, submitAqgSession } from "./aqg-save.js";
+import { saveAqgLiveSession, getLatestAqgLiveSession, submitAqgSession, getLatestAqgSubmittedSettings } from "./aqg-save.js";
 
 function corsHeaders() {
   return {
@@ -153,6 +153,28 @@ export default {
           {
             ok: false,
             error: "Session submission failed",
+            code: "SERVER_ERROR",
+            retryable: true
+          },
+          500
+        );
+      }
+    }
+
+
+    if (
+      request.method === "POST" &&
+      url.pathname === "/v1/aqg/latest-submitted-settings"
+    ) {
+      try {
+        const body = await parseBody(request);
+        const result = await getLatestAqgSubmittedSettings(env, body);
+        return json(result.body, result.status);
+      } catch {
+        return json(
+          {
+            ok: false,
+            error: "Submitted settings lookup failed",
             code: "SERVER_ERROR",
             retryable: true
           },
