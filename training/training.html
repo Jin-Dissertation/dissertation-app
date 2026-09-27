@@ -1622,6 +1622,8 @@ let completionLogged = false;
 let submitInFlight = false;
 let sectionState = [];
 let trainingSessionSeq = 0;
+let currentLiveRevision = 0;
+let currentLiveLastSaveId = '';
 let pendingSessionCreateRequestId = '';
 window.trainingSessionSeq = trainingSessionSeq;
 
@@ -2239,8 +2241,7 @@ async function postToAppsScript(url, payload, options = {}) {
 }
 
 async function loadServerSavedProgress(code) {
-  const data = await postToAppsScript(API_URL, {
-    action: 'getLatestLiveSession',
+  const data = await postToAppsScript(`${WORKER_API_URL}/v1/training/latest-live-session`, {
     participant_code: code,
     user_id: code
   });
@@ -2254,7 +2255,10 @@ async function loadServerSavedProgress(code) {
     ...progress,
     participantCode: progress.participantCode || code,
     sessionId: progress.sessionId || session.session_id || '',
+    sessionSeq: progress.sessionSeq || session.session_seq || '',
     sessionStart: progress.sessionStart || session.session_start || '',
+    liveRevision: Number(session.revision || 0),
+    liveLastSaveId: session.last_save_id || '',
     _source: 'server',
     _savedAt: session.progress_saved_at || session.last_activity_at || ''
   };
@@ -2329,6 +2333,8 @@ function applySavedProgress(saved) {
   sessionId = saved.sessionId || saved.session_id || sessionId;
   sessionStart = saved.sessionStart || saved.session_start || sessionStart;
   trainingSessionSeq = Number(saved.sessionSeq || saved.session_seq || trainingSessionSeq || 0);
+  currentLiveRevision = Number(saved.liveRevision || saved.revision || 0);
+  currentLiveLastSaveId = saved.liveLastSaveId || saved.last_save_id || '';
   window.trainingSessionSeq = trainingSessionSeq;
   totalQuestions = saved.totalQuestions || 0;
   correctFirst = saved.correctFirst || 0;
@@ -4896,6 +4902,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const createdSession = await createSessionIdFromBackend(entered);
         sessionId = createdSession.sessionId;
         trainingSessionSeq = createdSession.sessionSeq || 0;
+        currentLiveRevision = 0;
+        currentLiveLastSaveId = '';
         window.trainingSessionSeq = trainingSessionSeq;
       } catch (err) {
         setGateLoading(false);
