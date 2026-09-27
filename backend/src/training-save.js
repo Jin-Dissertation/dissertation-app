@@ -748,27 +748,102 @@ export async function getLatestTrainingLiveSession(env, input) {
 
 
 export async function submitTrainingSession(env, input) {
+  if (JSON.stringify(input).length > MAX_PAYLOAD_CHARS) {
+    return {
+      status: 413,
+      body: {
+        ok: false,
+        error: "This submission is too large.",
+        code: "PAYLOAD_TOO_LARGE",
+        retryable: false
+      }
+    };
+  }
+
+  if (
+    Array.isArray(input.batch_events) &&
+    input.batch_events.length > MAX_BATCH_EVENTS
+  ) {
+    return {
+      status: 413,
+      body: {
+        ok: false,
+        error: "Too many events in one submission.",
+        code: "PAYLOAD_TOO_LARGE",
+        retryable: false
+      }
+    };
+  }
+
   const auth = await authorizeAccessCode(env, input, "training");
   if (!auth.ok) return { status: auth.status, body: auth.body };
 
   const participantId = auth.participantId;
   const sessionId = textValue(input.session_id, input.sessionId);
+  const requestId = textValue(input.request_id);
+  const baseRevision = Number(input.base_revision);
 
-  if (!sessionId) {
+  if (!sessionId || !requestId || requestId.length > 120) {
     return {
       status: 400,
       body: {
         ok: false,
-        error: "Participant and session are required.",
+        error: "Participant, session, and request identifier are required.",
         code: "MISSING_SESSION",
         retryable: false
       }
     };
   }
 
+  if (!Number.isInteger(baseRevision) || baseRevision < 0) {
+    return {
+      status: 400,
+      body: {
+        ok: false,
+        error: "A valid base revision is required.",
+        code: "INVALID_REQUEST",
+        retryable: false
+      }
+    };
+  }
+
+  const operation = "training:submitSession";
+  const requestHash = await sha256Hex(
+    JSON.stringify(stableValue({ ...input, user_id: participantId }))
+  );
+
+  const existingReceipt = await getReceipt(env.STUDY_DB, requestId);
+  if (existingReceipt) {
+    if (
+      existingReceipt.operation !== operation ||
+      existingReceipt.request_hash !== requestHash
+    ) {
+      return {
+        status: 409,
+        body: {
+          ok: false,
+          error: "This request identifier was already used for a different submission.",
+          code: "REQUEST_ID_CONFLICT",
+          retryable: false
+        }
+      };
+    }
+
+    const prior = receiptResponse(existingReceipt);
+    if (prior) {
+      return {
+        status: Number(existingReceipt.response_status || 200),
+        body: { ...prior, duplicate: true }
+      };
+    }
+  }
+
   const existingSubmission = await env.STUDY_DB
     .prepare(
-      "SELECT submitted_at FROM training_submissions WHERE participant_id = ?1 AND session_id = ?2 LIMIT 1"
+      `SELECT submitted_at
+       FROM training_submissions
+       WHERE participant_id = ?1 AND session_id = ?2
+       LIMIT 1`
     )
     .bind(participantId, sessionId)
     .first();
@@ -776,7 +851,10 @@ export async function submitTrainingSession(env, input) {
   if (existingSubmission) {
     const live = await env.STUDY_DB
       .prepare(
-        "SELECT revision FROM training_live_sessions WHERE participant_id = ?1 AND session_id = ?2 LIMIT 1"
+        `SELECT revision
+         FROM training_live_sessions
+         WHERE participant_id = ?1 AND session_id = ?2
+         LIMIT 1`
       )
       .bind(participantId, sessionId)
       .first();
@@ -792,105 +870,408 @@ export async function submitTrainingSession(env, input) {
     };
   }
 
-  const saved = await saveTrainingLiveSession(env, {
-    ...input,
-    status: "submitted",
-    last_event_type: "session_submitted"
-  });
-
-  if (!saved?.body?.ok) {
-    if (saved?.body?.code !== "SESSION_CLOSED") return saved;
-  }
-
-  const live = await env.STUDY_DB
+  const previous = await env.STUDY_DB
     .prepare(
-      "SELECT * FROM training_live_sessions WHERE participant_id = ?1 AND session_id = ?2 LIMIT 1"
+      `SELECT *
+       FROM training_live_sessions
+       WHERE participant_id = ?1 AND session_id = ?2
+       LIMIT 1`
     )
     .bind(participantId, sessionId)
     .first();
 
-  if (!live || live.status !== "submitted") {
+  if (!previous) {
+    const allocated = await sessionWasAllocated(
+      env.STUDY_DB,
+      participantId,
+      sessionId
+    );
+
+    if (!allocated) {
+      return {
+        status: 403,
+        body: {
+          ok: false,
+          error: "This session does not belong to this participant.",
+          code: "SESSION_CHANGED",
+          retryable: false
+        }
+      };
+    }
+  }
+
+  if (previous?.status === "submitted") {
     return {
       status: 409,
       body: {
         ok: false,
-        error: "The training session could not be finalized.",
+        error: "The session is closed but its immutable submission is missing.",
         code: "SUBMISSION_NOT_COMMITTED",
-        retryable: true
+        retryable: true,
+        revision: Number(previous?.revision || 0)
       }
     };
   }
 
-  const submittedAt = new Date().toISOString();
+  const currentRevision = Number(previous?.revision || 0);
+
+  if (baseRevision !== currentRevision) {
+    return {
+      status: 409,
+      body: {
+        ok: false,
+        error: "Another window has saved this session, or this page is outdated.",
+        code: "REVISION_CONFLICT",
+        retryable: false,
+        revision: currentRevision
+      }
+    };
+  }
+
+  const now = new Date().toISOString();
+  const nextRevision = currentRevision + 1;
+  const snapshot = extractItemSnapshot(input);
+
+  const progressJson =
+    input.progress_json !== undefined
+      ? jsonText(input.progress_json, previous?.progress_json || null)
+      : previous?.progress_json || null;
+
+  const incomingDeviceLabel = textValue(input.device_label, input.deviceLabel);
+  const incomingCardNumber = textValue(
+    input.device_card_number,
+    input.deviceCardNumber,
+    input.current_card_number,
+    input.currentCardNumber
+  );
+
+  const deviceTrail =
+    input.device_trail !== undefined || input.deviceTrail !== undefined
+      ? textValue(input.device_trail, input.deviceTrail)
+      : appendDeviceTrail(
+          previous?.device_trail || "",
+          incomingDeviceLabel,
+          incomingCardNumber
+        );
+
+  const eventBuild = buildEventStatements(
+    env.STUDY_DB,
+    input,
+    participantId,
+    sessionId,
+    requestId,
+    nextRevision,
+    previous?.last_event_at || ""
+  );
+
+  const lastEventAt =
+    eventBuild.lastEventAt || previous?.last_event_at || null;
+  const lastActivityAt = textValue(
+    input.last_activity_at,
+    input.lastActivityAt,
+    input.t,
+    previous?.last_activity_at,
+    now
+  );
+
+  const responseBody = {
+    ok: true,
+    submitted: true,
+    revision: nextRevision,
+    duplicate: false
+  };
+
+  const liveStatement = env.STUDY_DB
+    .prepare(
+      `INSERT INTO training_live_sessions (
+         record_id, participant_id, session_id, session_seq, revision,
+         last_save_id, last_event_at, session_start, last_activity_at, status,
+         app_version, content_version, current_card_number, device_trail,
+         progress_json, progress_saved_at, last_event_type, created_at, updated_at
+       )
+       VALUES (
+         ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 'submitted',
+         ?10, ?11, ?12, ?13, ?14, ?15, 'session_submitted', ?16, ?17
+       )
+       ON CONFLICT(participant_id, session_id) DO UPDATE SET
+         session_seq = COALESCE(excluded.session_seq, training_live_sessions.session_seq),
+         revision = excluded.revision,
+         last_save_id = excluded.last_save_id,
+         last_event_at = COALESCE(excluded.last_event_at, training_live_sessions.last_event_at),
+         session_start = COALESCE(excluded.session_start, training_live_sessions.session_start),
+         last_activity_at = excluded.last_activity_at,
+         status = 'submitted',
+         app_version = COALESCE(excluded.app_version, training_live_sessions.app_version),
+         content_version = COALESCE(excluded.content_version, training_live_sessions.content_version),
+         current_card_number = COALESCE(excluded.current_card_number, training_live_sessions.current_card_number),
+         device_trail = COALESCE(excluded.device_trail, training_live_sessions.device_trail),
+         progress_json = COALESCE(excluded.progress_json, training_live_sessions.progress_json),
+         progress_saved_at = COALESCE(excluded.progress_saved_at, training_live_sessions.progress_saved_at),
+         last_event_type = 'session_submitted',
+         updated_at = excluded.updated_at
+       WHERE training_live_sessions.revision = ?18
+         AND training_live_sessions.status <> 'submitted'
+       RETURNING revision`
+    )
+    .bind(
+      previous?.record_id || crypto.randomUUID(),
+      participantId,
+      sessionId,
+      numberOrNull(input.session_seq ?? input.sessionSeq ?? previous?.session_seq),
+      nextRevision,
+      requestId,
+      lastEventAt,
+      textValue(input.session_start, input.sessionStart, previous?.session_start) || null,
+      lastActivityAt,
+      textValue(input.app_version, input.appVersion, previous?.app_version) || null,
+      textValue(input.content_version, input.contentVersion, previous?.content_version) || null,
+      numberOrNull(
+        input.current_card_number ??
+          input.currentCardNumber ??
+          input.device_card_number ??
+          input.deviceCardNumber ??
+          previous?.current_card_number
+      ),
+      deviceTrail || null,
+      progressJson,
+      textValue(
+        input.progress_saved_at,
+        input.progressSavedAt,
+        lastActivityAt,
+        previous?.progress_saved_at
+      ) || null,
+      previous?.created_at || now,
+      now,
+      baseRevision
+    );
+
+  const itemStatements = [];
+  if (snapshot.hasSnapshot) {
+    const contentVersion =
+      textValue(
+        input.content_version,
+        input.contentVersion,
+        previous?.content_version
+      ) || null;
+
+    for (let i = 1; i <= snapshot.itemCount; i += 1) {
+      itemStatements.push(
+        env.STUDY_DB
+          .prepare(
+            `INSERT INTO training_live_items (
+               record_id, participant_id, session_id, content_version,
+               item_number, response_text, response_ms, updated_at
+             )
+             SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8
+             WHERE EXISTS (
+               SELECT 1 FROM training_live_sessions
+               WHERE participant_id = ?2
+                 AND session_id = ?3
+                 AND revision = ?9
+                 AND last_save_id = ?10
+                 AND status = 'submitted'
+             )
+             ON CONFLICT(participant_id, session_id, item_number) DO UPDATE SET
+               content_version = excluded.content_version,
+               response_text = excluded.response_text,
+               response_ms = excluded.response_ms,
+               updated_at = excluded.updated_at`
+          )
+          .bind(
+            crypto.randomUUID(),
+            participantId,
+            sessionId,
+            contentVersion,
+            i,
+            snapshot.responses[i - 1],
+            snapshot.msValues[i - 1],
+            now,
+            nextRevision,
+            requestId
+          )
+      );
+    }
+  }
+
   const details = { ...input, user_id: participantId };
   delete details.batch_events;
 
-  const submission = env.STUDY_DB
+  const submissionStatement = env.STUDY_DB
     .prepare(
-      `INSERT OR IGNORE INTO training_submissions (
+      `INSERT INTO training_submissions (
          record_id, participant_id, session_id, session_seq, session_start,
          session_end, duration_ms, duration_formatted, active_seconds,
          total_questions, correct_first, event_count, item_count, app_version,
          content_version, current_card_number, device_trail, submitted_at,
          details_json, created_at
        )
-       VALUES (
-         ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9,
-         ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20
+       SELECT
+         ?1, ?2, ?3, ?4, ?5,
+         ?6, ?7, ?8, ?9,
+         ?10, ?11, ?12, ?13, ?14,
+         ?15, ?16, ?17, ?18,
+         ?19, ?18
+       WHERE EXISTS (
+         SELECT 1 FROM training_live_sessions
+         WHERE participant_id = ?2
+           AND session_id = ?3
+           AND revision = ?20
+           AND last_save_id = ?21
+           AND status = 'submitted'
        )`
     )
     .bind(
       crypto.randomUUID(),
       participantId,
       sessionId,
-      numberOrNull(input.session_seq ?? live.session_seq),
-      textValue(input.session_start, live.session_start) || null,
-      textValue(input.session_end, submittedAt),
+      numberOrNull(input.session_seq ?? input.sessionSeq ?? previous?.session_seq),
+      textValue(input.session_start, input.sessionStart, previous?.session_start) || null,
+      textValue(input.session_end, input.sessionEnd, now),
       numberOrNull(input.duration_ms),
       textValue(input.duration_formatted) || null,
       numberOrNull(input.active_seconds),
       numberOrNull(input.total_questions),
       numberOrNull(input.correct_first),
-      Array.isArray(input.events) ? input.events.length : numberOrNull(input.event_count),
-      numberOrNull(input.item_count),
-      textValue(input.app_version, live.app_version) || null,
-      textValue(input.content_version, live.content_version) || null,
+      Array.isArray(input.events)
+        ? input.events.length
+        : numberOrNull(input.event_count),
+      numberOrNull(input.item_count ?? snapshot.itemCount),
+      textValue(input.app_version, input.appVersion, previous?.app_version) || null,
+      textValue(
+        input.content_version,
+        input.contentVersion,
+        previous?.content_version
+      ) || null,
       numberOrNull(
         input.current_card_number ??
+          input.currentCardNumber ??
           input.device_card_number ??
-          live.current_card_number
+          input.deviceCardNumber ??
+          previous?.current_card_number
       ),
-      live.device_trail || null,
-      submittedAt,
+      deviceTrail || null,
+      now,
       JSON.stringify(details),
-      submittedAt
+      nextRevision,
+      requestId
     );
 
-  const submissionItems = env.STUDY_DB
+  const submissionItemsStatement = env.STUDY_DB
     .prepare(
-      `INSERT OR IGNORE INTO training_submission_items (
+      `INSERT INTO training_submission_items (
          record_id, participant_id, session_id, content_version,
          item_number, response_text, response_ms, created_at
        )
        SELECT
-         lower(hex(randomblob(16))), participant_id, session_id, content_version,
-         item_number, response_text, response_ms, ?1
-       FROM training_live_items
-       WHERE participant_id = ?2 AND session_id = ?3`
+         lower(hex(randomblob(16))), i.participant_id, i.session_id,
+         i.content_version, i.item_number, i.response_text, i.response_ms, ?1
+       FROM training_live_items i
+       WHERE i.participant_id = ?2
+         AND i.session_id = ?3
+         AND EXISTS (
+           SELECT 1 FROM training_live_sessions l
+           WHERE l.participant_id = ?2
+             AND l.session_id = ?3
+             AND l.revision = ?4
+             AND l.last_save_id = ?5
+             AND l.status = 'submitted'
+         )`
     )
-    .bind(submittedAt, participantId, sessionId);
+    .bind(now, participantId, sessionId, nextRevision, requestId);
 
-  await env.STUDY_DB.batch([submission, submissionItems]);
+  const receiptStatement = env.STUDY_DB
+    .prepare(
+      `INSERT OR IGNORE INTO request_receipts (
+         request_id, operation, request_hash, response_status,
+         response_json, created_at
+       )
+       SELECT ?1, ?2, ?3, 200, ?4, ?5
+       WHERE EXISTS (
+         SELECT 1 FROM training_submissions
+         WHERE participant_id = ?6 AND session_id = ?7
+       )
+       AND EXISTS (
+         SELECT 1 FROM training_live_sessions
+         WHERE participant_id = ?6
+           AND session_id = ?7
+           AND revision = ?8
+           AND last_save_id = ?1
+           AND status = 'submitted'
+       )`
+    )
+    .bind(
+      requestId,
+      operation,
+      requestHash,
+      JSON.stringify(responseBody),
+      now,
+      participantId,
+      sessionId,
+      nextRevision
+    );
 
-  return {
-    status: 200,
-    body: {
-      ok: true,
-      submitted: true,
-      revision: Number(live.revision || saved?.body?.revision || 0),
-      duplicate: Boolean(saved?.body?.duplicate)
-    }
-  };
+  const batchResults = await env.STUDY_DB.batch([
+    liveStatement,
+    ...eventBuild.statements,
+    ...itemStatements,
+    submissionStatement,
+    submissionItemsStatement,
+    receiptStatement
+  ]);
+
+  const committedRevision = batchResults?.[0]?.results?.[0]?.revision;
+
+  if (Number(committedRevision) !== nextRevision) {
+    const latest = await env.STUDY_DB
+      .prepare(
+        `SELECT revision, status
+         FROM training_live_sessions
+         WHERE participant_id = ?1 AND session_id = ?2`
+      )
+      .bind(participantId, sessionId)
+      .first();
+
+    return {
+      status: 409,
+      body: {
+        ok: false,
+        error:
+          latest?.status === "submitted"
+            ? "This session has already been submitted."
+            : "Another window has saved this session, or this page is outdated.",
+        code:
+          latest?.status === "submitted"
+            ? "SESSION_CLOSED"
+            : "REVISION_CONFLICT",
+        retryable: false,
+        revision: Number(latest?.revision || currentRevision)
+      }
+    };
+  }
+
+  const committedSubmission = await env.STUDY_DB
+    .prepare(
+      `SELECT 1 AS ok
+       FROM training_submissions
+       WHERE participant_id = ?1 AND session_id = ?2
+       LIMIT 1`
+    )
+    .bind(participantId, sessionId)
+    .first();
+
+  if (committedSubmission?.ok !== 1) {
+    return {
+      status: 500,
+      body: {
+        ok: false,
+        error: "The immutable training submission was not created.",
+        code: "SUBMISSION_NOT_COMMITTED",
+        retryable: true
+      }
+    };
+  }
+
+  return { status: 200, body: responseBody };
 }
 
 
