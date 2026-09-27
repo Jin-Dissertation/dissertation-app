@@ -1751,12 +1751,14 @@ function logEvent(type, data = {}) {
 function appendTrainingEvent(eventType, data = {}, options = {}) {
   if (!participantCode || !sessionId || !eventType) return Promise.resolve(null);
 
+  const eventId = createRequestId('training-event');
   const payload = {
-    action: 'appendEvent',
     participant_code: participantCode,
     user_id: participantCode,
     session_id: sessionId,
     session_seq: window.trainingSessionSeq || '',
+    request_id: eventId,
+    event_id: eventId,
     event_type: eventType,
     timestamp: now(),
     device_label: getCompactDeviceLabel(),
@@ -1764,16 +1766,15 @@ function appendTrainingEvent(eventType, data = {}, options = {}) {
     ...data
   };
 
-  if (options.awaitResponse) {
-    return postToAppsScript(API_URL, payload, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
-  }
+  const request = postToAppsScript(
+    `${WORKER_API_URL}/v1/training/append-event`,
+    payload,
+    { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS }
+  );
 
-  fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload),
-    keepalive: true
-  }).catch(err => {
+  if (options.awaitResponse) return request;
+
+  request.catch(err => {
     console.warn('appendEvent failed', err, payload);
   });
 
