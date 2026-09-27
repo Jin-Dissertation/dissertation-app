@@ -1,5 +1,5 @@
 import { validateAccessCode } from "./auth.js";
-import { createSessionId } from "./sessions.js";
+import { createSessionId, createContextId } from "./sessions.js";
 import { saveAqgLiveSession, getLatestAqgLiveSession, submitAqgSession, getLatestAqgSubmittedSettings } from "./aqg-save.js";
 
 function corsHeaders() {
@@ -118,6 +118,28 @@ export default {
         return json({ ok: false, error: "Session allocation failed", code: "SERVER_ERROR", retryable: true }, 500);
       }
     }
+
+    if (
+      request.method === "POST" &&
+      url.pathname === "/v1/aqg/create-context"
+    ) {
+      try {
+        const body = await parseBody(request);
+        const result = await createContextId(env, body);
+        return json(result.body, result.status);
+      } catch {
+        return json(
+          {
+            ok: false,
+            error: "Context allocation failed",
+            code: "SERVER_ERROR",
+            retryable: true
+          },
+          500
+        );
+      }
+    }
+
 
     if (
       request.method === "POST" &&
