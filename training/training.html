@@ -1626,6 +1626,8 @@ let currentLiveRevision = 0;
 let currentLiveLastSaveId = '';
 let liveSaveChain = Promise.resolve();
 let pendingSessionCreateRequestId = '';
+let pendingSubmissionRequestId = '';
+let pendingSubmissionPayload = null;
 window.trainingSessionSeq = trainingSessionSeq;
 
 // ─────────────────────────────────────────────
@@ -2352,6 +2354,8 @@ function applySavedProgress(saved) {
   hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
   completionLogged = !!saved.completionReached;
   submitInFlight = false;
+  pendingSubmissionRequestId = '';
+  pendingSubmissionPayload = null;
   quizStates = saved.quizStates && typeof saved.quizStates === 'object' ? saved.quizStates : {};
   interactionTimes = Array.isArray(saved.interactionTimes)
     ? saved.interactionTimes.map(Number).filter(Number.isFinite).slice(-1)
@@ -4191,42 +4195,64 @@ async function submitSession() {
   }
   if (status) status.textContent = '';
 
-  const elapsed = sessionStart ? Date.now() - sessionStart : 0;
-  const activeSeconds = computeActiveSeconds(interactionTimes);
-  const { itemValues, itemMap, itemMeta } = buildCardResponseValues();
-  const { itemMsValues, itemMsMap } = buildCardMsValues();
-  const payload = {
-    action:           'submitSession',
-    source:           'training',
-    app_version:      APP_VERSION,
-    content_version:  CONTENT_VERSION,
-    device_label:     getCompactDeviceLabel(),
-    device_card_number: getCurrentCardNumber(),
-    participant_code: participantCode,
-    session_id:       sessionId,
-    session_seq:     trainingSessionSeq,
-    session_start:    sessionStart ? new Date(sessionStart).toISOString() : null,
-    session_end:      now(),
-    duration_ms:      elapsed,
-    duration_formatted: formatDuration(elapsed),
-    active_seconds:   activeSeconds,
-    total_questions:  totalQuestions,
-    correct_first:    correctFirst,
-    item_values:      itemValues,
-    item_ms_values:   itemMsValues,
-    item_map:         itemMap,
-    item_ms_map:      itemMsMap,
-    item_meta:        itemMeta,
-    item_count:       itemValues.length,
-    progress_json:    buildProgressSnapshot(),
-    progress_saved_at: now(),
-    events: getSubmissionEvents()
-  };
-
   try {
-    const data = await postToAppsScript(API_URL, payload, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
+    cancelQueuedLiveSessionUpdate();
+    await liveSaveChain.catch(() => null);
+
+    if (!pendingSubmissionPayload) {
+      const elapsed = sessionStart ? Date.now() - sessionStart : 0;
+      const activeSeconds = computeActiveSeconds(interactionTimes);
+      const { itemValues, itemMap, itemMeta } = buildCardResponseValues();
+      const { itemMsValues, itemMsMap } = buildCardMsValues();
+
+      pendingSubmissionRequestId =
+        pendingSubmissionRequestId || createRequestId('training-submit');
+
+      pendingSubmissionPayload = {
+        source:           'training',
+        app_version:      APP_VERSION,
+        content_version:  CONTENT_VERSION,
+        device_label:     getCompactDeviceLabel(),
+        device_card_number: getCurrentCardNumber(),
+        participant_code: participantCode,
+        user_id:          participantCode,
+        session_id:       sessionId,
+        session_seq:      trainingSessionSeq,
+        request_id:       pendingSubmissionRequestId,
+        base_revision:    currentLiveRevision,
+        status:           'submitted',
+        session_start:    sessionStart ? new Date(sessionStart).toISOString() : null,
+        session_end:      now(),
+        last_activity_at: now(),
+        duration_ms:      elapsed,
+        duration_formatted: formatDuration(elapsed),
+        active_seconds:   activeSeconds,
+        total_questions:  totalQuestions,
+        correct_first:    correctFirst,
+        item_values:      itemValues,
+        item_ms_values:   itemMsValues,
+        item_map:         itemMap,
+        item_ms_map:      itemMsMap,
+        item_meta:        itemMeta,
+        item_count:       itemValues.length,
+        progress_json:    buildProgressSnapshot(),
+        progress_saved_at: now(),
+        events:           getSubmissionEvents()
+      };
+    }
+
+    const payload = pendingSubmissionPayload;
+    const data = await postToAppsScript(
+      `${WORKER_API_URL}/v1/training/submit-session`,
+      payload,
+      { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS }
+    );
 
     if (data && data.ok) {
+      currentLiveRevision = Number(data.revision || currentLiveRevision);
+      currentLiveLastSaveId = pendingSubmissionRequestId;
+      pendingSubmissionRequestId = '';
+      pendingSubmissionPayload = null;
       hasSuccessfulSubmission = true;
       refreshSaveExitAvailability();
       trainingActive = false;
@@ -4251,9 +4277,8 @@ async function submitSession() {
       btn.disabled = false;
       btn.textContent = 'Retry submission';
     }
-    queueLiveSessionUpdate('in_progress', 250);
     logEvent('session_submit_failed', { error: String(err.message) });
-    offerDownload(payload);
+    offerDownload(pendingSubmissionPayload || {});
   } finally {
     submitInFlight = false;
   }
@@ -4938,6 +4963,8 @@ document.addEventListener('DOMContentLoaded', () => {
       cardTimingState = {};
       completionLogged = false;
       submitInFlight = false;
+      pendingSubmissionRequestId = '';
+      pendingSubmissionPayload = null;
     }
 
     markInteraction();
