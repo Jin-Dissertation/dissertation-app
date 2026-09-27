@@ -78,3 +78,37 @@ export async function loadTrainingContent(env, input) {
     }
   };
 }
+
+
+const ALLOWED_TRAINING_IMAGES = new Set([
+  "stat-birkhead.png",
+  "stat-flaws.png",
+  "flawed-question.png",
+  "flawed-question-annotated.png",
+  "stat-confidence.png"
+]);
+
+export async function getTrainingMedia(env, version, filename) {
+  if (
+    version !== CURRENT_TRAINING_CONTENT_VERSION ||
+    !ALLOWED_TRAINING_IMAGES.has(filename)
+  ) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  const key = `content/${version}/images/${filename}`;
+  const object = await env.TRAINING_MEDIA.get(key);
+
+  if (!object) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  return new Response(object.body, {
+    status: 200,
+    headers: {
+      "content-type": "image/png",
+      "cache-control": "public, max-age=86400",
+      "access-control-allow-origin": "*"
+    }
+  });
+}
