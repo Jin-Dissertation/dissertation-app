@@ -1372,11 +1372,32 @@ export async function appendTrainingEvent(env, input) {
       ? Math.max(0, currentMs - previousMs)
       : null;
 
+  const sessionSeq = numberOrNull(
+    input.session_seq ?? input.sessionSeq ?? session?.session_seq
+  );
+  const sectionIndex = numberOrNull(
+    input.section_index ?? input.sectionIndex
+  );
+  const cardIndex = numberOrNull(
+    input.card_index ??
+      input.cardIndex ??
+      input.current_card_number ??
+      input.currentCardNumber
+  );
+
+  const completionNotificationId =
+    cardIndex !== null && cardIndex >= 22
+      ? `training-completion:${participantId}`
+      : "";
+
   const responseBody = {
     ok: true,
     appended: true,
     event_id: eventId,
-    duplicate: false
+    duplicate: false,
+    ...(completionNotificationId
+      ? { completion_notification_id: completionNotificationId }
+      : {})
   };
 
   const now = new Date().toISOString();
@@ -1398,15 +1419,10 @@ export async function appendTrainingEvent(env, input) {
       msSincePrevious,
       participantId,
       sessionId,
-      numberOrNull(input.session_seq ?? input.sessionSeq ?? session?.session_seq),
+      sessionSeq,
       eventType,
-      numberOrNull(input.section_index ?? input.sectionIndex),
-      numberOrNull(
-        input.card_index ??
-          input.cardIndex ??
-          input.current_card_number ??
-          input.currentCardNumber
-      ),
+      sectionIndex,
+      cardIndex,
       textValue(input.detail_text, input.detailText) || null,
       jsonText(input.detail_json ?? input.detailJson ?? input.details, null),
       textValue(input.device_label, input.deviceLabel) || null,
@@ -1444,11 +1460,41 @@ export async function appendTrainingEvent(env, input) {
       now
     );
 
-  const results = await env.STUDY_DB.batch([
+  const statements = [
     eventStatement,
     liveStatement,
     receiptStatement
-  ]);
+  ];
+
+  if (completionNotificationId) {
+    const completionPayload = JSON.stringify({
+      participant_id: participantId,
+      session_id: sessionId,
+      session_seq: sessionSeq,
+      card_index: cardIndex,
+      reached_at: timestamp
+    });
+
+    statements.push(
+      env.STUDY_DB
+        .prepare(
+          `INSERT OR IGNORE INTO notification_outbox
+           (notification_id, notification_type, participant_id, session_id,
+            payload_json, status, attempt_count, created_at)
+           VALUES
+           (?1, 'training_completion', ?2, ?3, ?4, 'pending', 0, ?5)`
+        )
+        .bind(
+          completionNotificationId,
+          participantId,
+          sessionId,
+          completionPayload,
+          now
+        )
+    );
+  }
+
+  const results = await env.STUDY_DB.batch(statements);
 
   const inserted = Number(results?.[0]?.meta?.changes || 0) > 0;
 
