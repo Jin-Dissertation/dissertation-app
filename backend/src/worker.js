@@ -4,7 +4,7 @@ import { saveAqgLiveSession, getLatestAqgLiveSession, submitAqgSession, getLates
 import { saveAqgFeedback, saveTrainingFeedback } from "./feedback.js";
 import { uploadAqgAudio } from "./audio.js";
 import { saveTrainingLiveSession, getLatestTrainingLiveSession, submitTrainingSession, appendTrainingEvent } from "./training-save.js";
-import { loadTrainingContent } from "./training-content.js";
+import { loadTrainingContent, getTrainingMedia } from "./training-content.js";
 
 function corsHeaders() {
   return {
@@ -122,6 +122,22 @@ export default {
         return json({ ok: false, error: "Session allocation failed", code: "SERVER_ERROR", retryable: true }, 500);
       }
     }
+
+    if (
+      request.method === "GET" &&
+      url.pathname.startsWith("/v1/training/media/")
+    ) {
+      const parts = url.pathname.split("/").filter(Boolean);
+      const version = parts[3] || "";
+      const filename = parts[4] || "";
+
+      if (parts.length !== 5) {
+        return new Response("Not found", { status: 404 });
+      }
+
+      return getTrainingMedia(env, version, filename);
+    }
+
 
     if (
       request.method === "POST" &&
