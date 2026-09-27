@@ -3035,6 +3035,7 @@ const PROMPT_META = [
       submissionStatus: `${STORAGE_PREFIX}.submissionStatus`,
       submissionCompletedAt: `${STORAGE_PREFIX}.submissionCompletedAt`,
       submissionError: `${STORAGE_PREFIX}.submissionError`,
+      submitRequestId: `${STORAGE_PREFIX}.submitRequestId`,
       appsScriptResponseFileName: `${STORAGE_PREFIX}.appsScriptResponseFileName`,
       appsScriptResponseFileId: `${STORAGE_PREFIX}.appsScriptResponseFileId`,
       autosaveEventIndex: `${STORAGE_PREFIX}.autosaveEventIndex`
@@ -6140,18 +6141,94 @@ const PROMPT_META = [
       submitInFlight = true;
       localStorage.setItem(KEYS.submitClicked, "true");
       markInteraction();
-      const payload = buildSessionRecord();
+
+      let payload = buildSessionRecord();
 
       try {
-        const data = await postToAppsScript(AQG_API_URL, payload, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
+        // Stop a not-yet-started autosave and wait for any save already in flight.
+        // This ensures base_revision matches the latest committed Worker revision.
+        cancelQueuedLiveSessionUpdate();
+        await liveSaveChain;
+
+        // The submit endpoint accepts at most 80 durable events. Keep two slots
+        // for the final close/submitted events and flush older queued events first.
+        while (true) {
+          const pending = loadJSON(KEYS.pendingServerEvents, []);
+          if (!Array.isArray(pending) || pending.length <= 78) break;
+          await enqueueLiveSessionUpdate("in_progress");
+        }
+
+        let requestId = (localStorage.getItem(KEYS.submitRequestId) || "").trim();
+        if (!requestId) {
+          requestId = "aqg-submit-" + crypto.randomUUID();
+          localStorage.setItem(KEYS.submitRequestId, requestId);
+        }
+
+        const closeTimestamp = nowIso();
+        const pendingEvents = loadJSON(KEYS.pendingServerEvents, []);
+        const durablePending = Array.isArray(pendingEvents) ? pendingEvents.slice() : [];
+        const contextId = (localStorage.getItem(KEYS.contextId) || "").trim();
+        const deviceLabel = getCompactDeviceLabel();
+        const submissionRecord = buildSessionRecord();
+
+        const finalEvents = [
+          {
+            event_id: "aqg-event-" + crypto.randomUUID(),
+            timestamp: closeTimestamp,
+            context_id: contextId,
+            event_type: "session_closed",
+            button_id: "btnEndConfirm",
+            detail_text: "Session closed by end session.",
+            detail_json: {
+              SessionCloseType: "end_session",
+              SessionCloseAt: closeTimestamp,
+              llm_response_present: !!(submissionRecord.llm_response || "").trim(),
+              session_notes_present: !!(submissionRecord.session_notes || "").trim(),
+              audio_present: !!uploadedAudioInfo
+            },
+            device_label: deviceLabel
+          },
+          {
+            event_id: "aqg-event-" + crypto.randomUUID(),
+            timestamp: closeTimestamp,
+            context_id: contextId,
+            event_type: "session_submitted",
+            button_id: "btnEndConfirm",
+            detail_text: "Session submitted.",
+            detail_json: {
+              submitted_session_id: submissionRecord.session_id || "",
+              submitted_context_id: submissionRecord.context_id || ""
+            },
+            device_label: deviceLabel
+          }
+        ];
+
+        payload = {
+          ...submissionRecord,
+          request_id: requestId,
+          base_revision: Number(localStorage.getItem(KEYS.liveRevision) || "0"),
+          session_close_type: "end_session",
+          session_close_at: closeTimestamp,
+          batch_events: [...durablePending, ...finalEvents]
+        };
+
+        const data = await postToAppsScript(
+          `${WORKER_API_URL}/v1/aqg/submit-session`,
+          payload,
+          { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS }
+        );
+
         const success = !!(data?.ok || data?.duplicate);
         if (!success) throw new Error(data?.error || "unknown_error");
+
+        localStorage.setItem(KEYS.liveRevision, String(Number(data.revision || localStorage.getItem(KEYS.liveRevision) || "0")));
+        localStorage.setItem(KEYS.liveLastSaveId, requestId);
         localStorage.setItem(KEYS.submissionStatus, "success");
         localStorage.setItem(KEYS.submissionCompletedAt, nowIso());
         localStorage.removeItem(KEYS.submissionError);
-        if (data.fileName) localStorage.setItem(KEYS.appsScriptResponseFileName, data.fileName);
-        if (data.fileId) localStorage.setItem(KEYS.appsScriptResponseFileId, data.fileId);
-        logEvent("session_submitted", { ok: true, duplicate: !!data.duplicate, fileName: data.fileName || "" });
+        localStorage.removeItem(KEYS.submitRequestId);
+        saveJSON(KEYS.pendingServerEvents, []);
+        logEvent("session_submitted", { ok: true, duplicate: !!data.duplicate });
         return { ok: true, data };
       } catch (err) {
         localStorage.setItem(KEYS.submissionStatus, "failed");
@@ -7181,36 +7258,6 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
         try {
           const result = await submitSession();
           if (result?.ok) {
-            const submissionRecord = buildSessionRecord();
-            const submittedResponseText = (submissionRecord.llm_response || "").trim();
-            const submittedNotesText = (submissionRecord.session_notes || "").trim();
-            const submittedAudioUrl = (submissionRecord.audio_file_url || "").trim();
-            const closeTimestamp = new Date().toISOString();
-
-            appendServerEvent(
-              "session_closed",
-              "btnEndConfirm",
-              "Session closed by end session.",
-              {
-                SessionCloseType: "end_session",
-                SessionCloseAt: closeTimestamp,
-                llm_response_present: !!submittedResponseText,
-                session_notes_present: !!submittedNotesText,
-                audio_present: !!submittedAudioUrl
-              }
-            );
-
-            appendServerEvent(
-              "session_submitted",
-              "btnEndConfirm",
-              "Session submitted.",
-              {
-                submitted_session_id: submissionRecord.session_id || "",
-                submitted_context_id: submissionRecord.context_id || "",
-                submitted_audio_url: submittedAudioUrl || ""
-              }
-            );
-
             if (confirmBtn) confirmBtn.textContent = "Finishing…";
 
             if (isTrainingMode) {
