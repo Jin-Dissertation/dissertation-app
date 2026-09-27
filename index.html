@@ -2908,9 +2908,11 @@
     // Config
     // -----------------------------
 
-    const ACCESS_VERIFY_URL = "https://script.google.com/macros/s/AKfycbxL2vkcsWNQVRDug2rnZU01eQesd4S7QXY-3Qtm7ZeWgzTNw7jjvdYxT-DzMjD9gMTj/exec";
+    const WORKER_API_URL = "https://dissertation-study-api.professor-jin.workers.dev";
 
-    // Unified Apps Script backend endpoint for AQG (config + live updates + final submit).
+    // Legacy Apps Script endpoint retained temporarily while remaining AQG calls
+    // are migrated incrementally to Cloudflare.
+    const ACCESS_VERIFY_URL = "https://script.google.com/macros/s/AKfycbxL2vkcsWNQVRDug2rnZU01eQesd4S7QXY-3Qtm7ZeWgzTNw7jjvdYxT-DzMjD9gMTj/exec";
     const AQG_API_URL = "https://script.google.com/macros/s/AKfycbxL2vkcsWNQVRDug2rnZU01eQesd4S7QXY-3Qtm7ZeWgzTNw7jjvdYxT-DzMjD9gMTj/exec";
     const REQUEST_TIMEOUT_MS = 15000;
     const LIVE_UPDATE_DEBOUNCE_MS = 400;
@@ -6105,10 +6107,10 @@ const PROMPT_META = [
     }
 
     async function validateAccessCodeWithBackend(code) {
-      const response = await fetch(ACCESS_VERIFY_URL, {
+      const response = await fetch(`${WORKER_API_URL}/v1/aqg/validate-code`, {
         method: "POST",
-        body: new URLSearchParams({
-          action: "validateCode",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
           code,
           client_key: getOrCreateClientKey()
         })
