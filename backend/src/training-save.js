@@ -689,3 +689,59 @@ export async function saveTrainingLiveSession(env, input) {
 
   return { status: 200, body: responseBody };
 }
+
+
+export async function getLatestTrainingLiveSession(env, input) {
+  const auth = await authorizeAccessCode(env, input, "training");
+  if (!auth.ok) return { status: auth.status, body: auth.body };
+
+  const row = await env.STUDY_DB
+    .prepare(
+      `SELECT *
+       FROM training_live_sessions
+       WHERE participant_id = ?1
+         AND status <> 'submitted'
+       ORDER BY COALESCE(last_activity_at, progress_saved_at, session_start, '') DESC,
+                updated_at DESC
+       LIMIT 1`
+    )
+    .bind(auth.participantId)
+    .first();
+
+  if (!row) {
+    return { status: 200, body: { ok: true, found: false } };
+  }
+
+  let progress = null;
+  try {
+    if (row.progress_json) progress = JSON.parse(row.progress_json);
+  } catch {
+    progress = null;
+  }
+
+  return {
+    status: 200,
+    body: {
+      ok: true,
+      found: true,
+      session: {
+        revision: Number(row.revision || 0),
+        last_save_id: row.last_save_id || "",
+        user_id: auth.participantId,
+        session_id: row.session_id || "",
+        session_seq: row.session_seq == null ? "" : String(row.session_seq),
+        session_start: row.session_start || "",
+        last_activity_at: row.last_activity_at || "",
+        status: row.status || "",
+        app_version: row.app_version || "",
+        content_version: row.content_version || "",
+        current_card_number:
+          row.current_card_number == null ? "" : String(row.current_card_number),
+        device_trail: row.device_trail || "",
+        progress_json: row.progress_json || "",
+        progress_saved_at: row.progress_saved_at || ""
+      },
+      progress
+    }
+  };
+}
