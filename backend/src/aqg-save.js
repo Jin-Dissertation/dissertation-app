@@ -535,3 +535,63 @@ export async function saveAqgLiveSession(env, input) {
 
   return { status: 200, body: responseBody };
 }
+
+
+export async function getLatestAqgLiveSession(env, input) {
+  const auth = await authorizeAccessCode(env, input, "aqg");
+  if (!auth.ok) return { status: auth.status, body: auth.body };
+
+  const row = await env.STUDY_DB
+    .prepare(
+      "SELECT * FROM aqg_live_sessions WHERE participant_id = ?1 AND status <> 'submitted' ORDER BY COALESCE(last_activity_at, session_close_at, submitted_at, session_start, '') DESC, updated_at DESC LIMIT 1"
+    )
+    .bind(auth.participantId)
+    .first();
+
+  if (!row) {
+    return { status: 200, body: { ok: true, found: false } };
+  }
+
+  let progress = null;
+  let events = [];
+  try { if (row.progress_json) progress = JSON.parse(row.progress_json); } catch {}
+  try { if (row.events_json) events = JSON.parse(row.events_json); } catch {}
+
+  return {
+    status: 200,
+    body: {
+      ok: true,
+      found: true,
+      session: {
+        revision: Number(row.revision || 0),
+        last_save_id: row.last_save_id || "",
+        user_id: auth.participantId,
+        session_id: row.session_id || "",
+        context_id: row.context_id || "",
+        session_start: row.session_start || "",
+        last_activity_at: row.last_activity_at || "",
+        submitted_at: row.submitted_at || "",
+        status: row.status || "",
+        app_version: row.app_version || "",
+        mode: row.mode || "",
+        llm_product: row.llm_product || "",
+        llm_model: row.llm_model || "",
+        llm_description: row.llm_description || "",
+        model_used: row.model_used || "",
+        course_context: row.course_context || "",
+        question_context: row.question_context || "",
+        extra_instructions: row.extra_instructions || "",
+        desired_questions: row.desired_questions || "",
+        final_response: row.final_response || "",
+        feedback_text: row.feedback_text || "",
+        audio_file_url: "",
+        audio_duration: row.audio_duration_seconds == null ? "" : String(row.audio_duration_seconds),
+        active_seconds: row.active_seconds == null ? "" : String(row.active_seconds),
+        session_close_type: row.session_close_type || "",
+        session_close_at: row.session_close_at || ""
+      },
+      progress,
+      events
+    }
+  };
+}
