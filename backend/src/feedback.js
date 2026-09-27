@@ -10,6 +10,15 @@ function firstText(input, keys) {
   return "";
 }
 
+function finiteNumberOrNull(...values) {
+  for (const value of values) {
+    if (value === undefined || value === null || value === "") continue;
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+
 async function sessionBelongsToParticipant(db, participantId, sessionId) {
   if (!sessionId) return true;
 
@@ -289,11 +298,28 @@ export async function saveTrainingFeedback(env, input) {
 
   const participantId = auth.participantId;
   const sessionId = firstText(input, ["session_id", "sessionId"]);
-  const feedbackId = firstText(input, ["feedback_id", "feedbackId", "request_id"]) || crypto.randomUUID();
-  const textFeedback = firstText(input, ["text_feedback", "textFeedback", "feedback_text", "feedbackText"]);
+  const feedbackId =
+    firstText(input, ["feedback_id", "feedbackId", "request_id"]) ||
+    crypto.randomUUID();
+  const textFeedback = firstText(input, [
+    "text_feedback",
+    "textFeedback",
+    "feedback_text",
+    "feedbackText",
+    "detail_text",
+    "detailText"
+  ]);
 
   if (!textFeedback) {
-    return { status: 400, body: { ok: false, error: "No feedback content provided.", code: "INVALID_REQUEST", retryable: false } };
+    return {
+      status: 400,
+      body: {
+        ok: false,
+        error: "No feedback content provided.",
+        code: "INVALID_REQUEST",
+        retryable: false
+      }
+    };
   }
 
   if (
@@ -315,42 +341,230 @@ export async function saveTrainingFeedback(env, input) {
     };
   }
 
+  const suppliedSessionSeq = finiteNumberOrNull(
+    input.session_seq,
+    input.sessionSeq
+  );
+  const sectionIndex = finiteNumberOrNull(
+    input.section_index,
+    input.sectionIndex
+  );
+  const cardIndex = finiteNumberOrNull(
+    input.card_index,
+    input.cardIndex,
+    input.current_card_number,
+    input.currentCardNumber
+  );
+  const sectionTitle = firstText(input, ["section_title", "sectionTitle"]);
+  const feedbackSource = firstText(input, [
+    "feedback_source",
+    "feedbackSource"
+  ]);
+  const deviceLabel = firstText(input, ["device_label", "deviceLabel"]);
+
+  const sessionRow = sessionId
+    ? await env.STUDY_DB
+        .prepare(
+          `SELECT session_seq, last_event_at
+           FROM training_live_sessions
+           WHERE participant_id = ?1 AND session_id = ?2
+           LIMIT 1`
+        )
+        .bind(participantId, sessionId)
+        .first()
+    : null;
+
+  const sessionSeq =
+    suppliedSessionSeq ?? finiteNumberOrNull(sessionRow?.session_seq);
+
   const existing = await env.STUDY_DB
-    .prepare("SELECT participant_id, session_id FROM training_feedback WHERE feedback_id = ?1")
+    .prepare(
+      `SELECT participant_id, session_id, session_seq, section_index,
+              section_title, card_index, feedback_source, text_feedback,
+              device_label
+       FROM training_feedback
+       WHERE feedback_id = ?1`
+    )
     .bind(feedbackId)
     .first();
 
   if (existing) {
-    if (existing.participant_id !== participantId || String(existing.session_id || "") !== sessionId) {
-      return { status: 409, body: { ok: false, error: "This feedback identifier was already used for a different request.", code: "REQUEST_ID_CONFLICT", retryable: false } };
+    const sameRequest =
+      existing.participant_id === participantId &&
+      String(existing.session_id || "") === sessionId &&
+      finiteNumberOrNull(existing.session_seq) === sessionSeq &&
+      finiteNumberOrNull(existing.section_index) === sectionIndex &&
+      String(existing.section_title || "") === sectionTitle &&
+      finiteNumberOrNull(existing.card_index) === cardIndex &&
+      String(existing.feedback_source || "") === feedbackSource &&
+      String(existing.text_feedback || "") === textFeedback &&
+      String(existing.device_label || "") === deviceLabel;
+
+    if (!sameRequest) {
+      return {
+        status: 409,
+        body: {
+          ok: false,
+          error:
+            "This feedback identifier was already used for a different request.",
+          code: "REQUEST_ID_CONFLICT",
+          retryable: false
+        }
+      };
     }
-    return { status: 200, body: { ok: true, feedback_id: feedbackId, duplicate: true } };
+
+    return {
+      status: 200,
+      body: {
+        ok: true,
+        feedback_id: feedbackId,
+        duplicate: true
+      }
+    };
   }
 
   const now = new Date().toISOString();
-  const sessionSeq = input.session_seq == null ? null : Number(input.session_seq);
-  const sectionIndex = input.section_index == null ? null : Number(input.section_index);
-  const cardIndex = input.card_index == null ? null : Number(input.card_index);
-  const sectionTitle = firstText(input, ["section_title", "sectionTitle"]);
-  const feedbackSource = firstText(input, ["feedback_source", "feedbackSource"]);
-  const deviceLabel = firstText(input, ["device_label", "deviceLabel"]);
+
+  let msSincePrevious = null;
+  if (sessionId) {
+    const latestEvent = await env.STUDY_DB
+      .prepare(
+        `SELECT event_timestamp
+         FROM training_events
+         WHERE participant_id = ?1 AND session_id = ?2
+         ORDER BY event_timestamp DESC
+         LIMIT 1`
+      )
+      .bind(participantId, sessionId)
+      .first();
+
+    const previousTimestamp =
+      latestEvent?.event_timestamp || sessionRow?.last_event_at || "";
+    const previousMs = previousTimestamp
+      ? Date.parse(previousTimestamp)
+      : NaN;
+    const currentMs = Date.parse(now);
+
+    if (Number.isFinite(previousMs) && Number.isFinite(currentMs)) {
+      msSincePrevious = Math.max(0, currentMs - previousMs);
+    }
+  }
 
   const payload = JSON.stringify({
     feedback_id: feedbackId,
     participant_id: participantId,
     session_id: sessionId,
+    session_seq: sessionSeq,
+    section_index: sectionIndex,
+    section_title: sectionTitle,
+    card_index: cardIndex,
+    feedback_source: feedbackSource,
     text_feedback: textFeedback,
+    device_label: deviceLabel,
     submitted_at: now
   });
 
-  await env.STUDY_DB.batch([
+  const statements = [
     env.STUDY_DB.prepare(
-      "INSERT INTO training_feedback (record_id, feedback_id, participant_id, session_id, session_seq, submitted_at, section_index, section_title, card_index, feedback_source, text_feedback, device_label, notification_status, created_at) VALUES (?1, ?2, ?3, NULLIF(?4, ''), ?5, ?6, ?7, NULLIF(?8, ''), ?9, NULLIF(?10, ''), ?11, NULLIF(?12, ''), 'pending', ?6)"
-    ).bind(crypto.randomUUID(), feedbackId, participantId, sessionId, sessionSeq, now, sectionIndex, sectionTitle, cardIndex, feedbackSource, textFeedback, deviceLabel),
-    env.STUDY_DB.prepare(
-      "INSERT INTO notification_outbox (notification_id, notification_type, participant_id, session_id, payload_json, status, attempt_count, created_at) VALUES (?1, 'training_feedback', ?2, NULLIF(?3, ''), ?4, 'pending', 0, ?5)"
-    ).bind(crypto.randomUUID(), participantId, sessionId, payload, now)
-  ]);
+      `INSERT INTO training_feedback (
+         record_id, feedback_id, participant_id, session_id, session_seq,
+         submitted_at, section_index, section_title, card_index,
+         feedback_source, text_feedback, device_label,
+         notification_status, created_at
+       )
+       VALUES (
+         ?1, ?2, ?3, NULLIF(?4, ''), ?5, ?6, ?7, NULLIF(?8, ''),
+         ?9, NULLIF(?10, ''), ?11, NULLIF(?12, ''), 'pending', ?6
+       )`
+    ).bind(
+      crypto.randomUUID(),
+      feedbackId,
+      participantId,
+      sessionId,
+      sessionSeq,
+      now,
+      sectionIndex,
+      sectionTitle,
+      cardIndex,
+      feedbackSource,
+      textFeedback,
+      deviceLabel
+    ),
 
-  return { status: 200, body: { ok: true, feedback_id: feedbackId, duplicate: false, notification_queued: true } };
+    env.STUDY_DB.prepare(
+      `INSERT INTO notification_outbox (
+         notification_id, notification_type, participant_id, session_id,
+         payload_json, status, attempt_count, created_at
+       )
+       VALUES (
+         ?1, 'training_feedback', ?2, NULLIF(?3, ''), ?4, 'pending', 0, ?5
+       )`
+    ).bind(
+      crypto.randomUUID(),
+      participantId,
+      sessionId,
+      payload,
+      now
+    )
+  ];
+
+  if (sessionId) {
+    statements.push(
+      env.STUDY_DB.prepare(
+        `INSERT OR IGNORE INTO training_events (
+           record_id, event_id, batch_id, event_timestamp, ms_since_previous,
+           participant_id, session_id, session_seq, event_type,
+           section_index, card_index, detail_text, detail_json,
+           device_label, created_at
+         )
+         VALUES (
+           ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'feedback_submitted',
+           ?9, ?10, ?11, ?12, NULLIF(?13, ''), ?4
+         )`
+      ).bind(
+        crypto.randomUUID(),
+        `feedback:${feedbackId}`,
+        `feedback:${feedbackId}`,
+        now,
+        msSincePrevious,
+        participantId,
+        sessionId,
+        sessionSeq,
+        sectionIndex,
+        cardIndex,
+        textFeedback.slice(0, 500),
+        JSON.stringify({
+          feedback_text: textFeedback,
+          section_title: sectionTitle,
+          feedback_source: feedbackSource
+        }),
+        deviceLabel
+      ),
+
+      env.STUDY_DB.prepare(
+        `UPDATE training_live_sessions
+         SET last_event_at = ?1,
+             last_event_type = 'feedback_submitted',
+             last_activity_at = CASE
+               WHEN last_activity_at IS NULL OR last_activity_at = '' OR last_activity_at < ?1
+               THEN ?1 ELSE last_activity_at
+             END,
+             updated_at = ?1
+         WHERE participant_id = ?2 AND session_id = ?3`
+      ).bind(now, participantId, sessionId)
+    );
+  }
+
+  await env.STUDY_DB.batch(statements);
+
+  return {
+    status: 200,
+    body: {
+      ok: true,
+      feedback_id: feedbackId,
+      duplicate: false,
+      notification_queued: true
+    }
+  };
 }
+
