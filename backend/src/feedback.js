@@ -191,7 +191,9 @@ export async function saveAqgFeedback(env, input) {
 
   const existing = await env.STUDY_DB
     .prepare(
-      `SELECT feedback_id, participant_id, session_id
+      `SELECT feedback_id, participant_id, session_id, text_feedback,
+              audio_object_key, audio_original_filename, audio_mime_type,
+              audio_duration_seconds
        FROM aqg_feedback
        WHERE feedback_id = ?1`
     )
@@ -199,10 +201,23 @@ export async function saveAqgFeedback(env, input) {
     .first();
 
   if (existing) {
-    if (
-      existing.participant_id !== participantId ||
-      String(existing.session_id || "") !== sessionId
-    ) {
+    const storedDuration =
+      existing.audio_duration_seconds === null ||
+      existing.audio_duration_seconds === undefined ||
+      existing.audio_duration_seconds === ""
+        ? null
+        : Number(existing.audio_duration_seconds);
+
+    const sameRequest =
+      existing.participant_id === participantId &&
+      String(existing.session_id || "") === sessionId &&
+      String(existing.text_feedback || "") === textFeedback &&
+      String(existing.audio_object_key || "") === audioObjectKey &&
+      String(existing.audio_original_filename || "") === audioOriginalFilename &&
+      String(existing.audio_mime_type || "") === audioMimeType &&
+      storedDuration === audioDurationSeconds;
+
+    if (!sameRequest) {
       return {
         status: 409,
         body: {
