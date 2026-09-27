@@ -7,20 +7,38 @@ import { saveTrainingLiveSession, getLatestTrainingLiveSession, submitTrainingSe
 import { loadTrainingContent, getTrainingMedia } from "./training-content.js";
 import { deliverNotification, flushPendingNotifications } from "./notifications.js";
 
-function corsHeaders() {
-  return {
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET, POST, OPTIONS",
-    "access-control-allow-headers": "content-type"
-  };
+const ALLOWED_BROWSER_ORIGINS = new Set([
+  "https://jin-dissertation.github.io",
+  "http://127.0.0.1:8000",
+  "http://localhost:8000"
+]);
+
+function browserOriginAllowed(request) {
+  const origin = request?.headers?.get("origin") || "";
+  return !origin || ALLOWED_BROWSER_ORIGINS.has(origin);
 }
 
-function json(data, status = 200) {
+function corsHeaders(request) {
+  const origin = request?.headers?.get("origin") || "";
+  const headers = {
+    "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-allow-headers": "content-type",
+    "vary": "Origin"
+  };
+
+  if (origin && ALLOWED_BROWSER_ORIGINS.has(origin)) {
+    headers["access-control-allow-origin"] = origin;
+  }
+
+  return headers;
+}
+
+function json(data, status = 200, request = null) {
   return new Response(JSON.stringify(data, null, 2), {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
-      ...corsHeaders()
+      ...corsHeaders(request)
     }
   });
 }
@@ -51,11 +69,22 @@ async function parseBody(request) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const respond = (data, status = 200) => json(data, status, request);
+
+    if (!browserOriginAllowed(request)) {
+      return respond(
+        {
+          ok: false,
+          error: "Browser origin is not allowed."
+        },
+        403
+      );
+    }
 
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
-        headers: corsHeaders()
+        headers: corsHeaders(request)
       });
     }
 
@@ -65,7 +94,7 @@ export default {
           .prepare("SELECT 1 AS ok")
           .first();
 
-        return json({
+        return respond({
           ok: true,
           service: "dissertation-study-api",
           database: databaseCheck?.ok === 1,
@@ -74,7 +103,7 @@ export default {
           authConfigured: Boolean(env.ACCESS_CODE_PEPPER)
         });
       } catch {
-        return json(
+        return respond(
           {
             ok: false,
             service: "dissertation-study-api",
@@ -96,9 +125,9 @@ export default {
           ? "training"
           : "aqg";
         const result = await validateAccessCode(env, body, app);
-        return json(result.body, result.status);
+        return respond(result.body, result.status);
       } catch {
-        return json(
+        return respond(
           {
             ok: false,
             valid: false,
@@ -118,9 +147,9 @@ export default {
         const body = await parseBody(request);
         const app = url.pathname.includes("/training/") ? "training" : "aqg";
         const result = await createSessionId(env, body, app);
-        return json(result.body, result.status);
+        return respond(result.body, result.status);
       } catch {
-        return json({ ok: false, error: "Session allocation failed", code: "SERVER_ERROR", retryable: true }, 500);
+        return respond({ ok: false, error: "Session allocation failed", code: "SERVER_ERROR", retryable: true }, 500);
       }
     }
 
@@ -147,9 +176,9 @@ export default {
       try {
         const body = await parseBody(request);
         const result = await loadTrainingContent(env, body, request.url);
-        return json(result.body, result.status);
+        return respond(result.body, result.status);
       } catch {
-        return json(
+        return respond(
           {
             ok: false,
             error: "Training content load failed",
@@ -169,9 +198,9 @@ export default {
       try {
         const body = await parseBody(request);
         const result = await submitTrainingSession(env, body);
-        return json(result.body, result.status);
+        return respond(result.body, result.status);
       } catch {
-        return json(
+        return respond(
           {
             ok: false,
             error: "Training session submission failed",
@@ -191,9 +220,9 @@ export default {
       try {
         const body = await parseBody(request);
         const result = await getLatestTrainingLiveSession(env, body);
-        return json(result.body, result.status);
+        return respond(result.body, result.status);
       } catch {
-        return json(
+        return respond(
           {
             ok: false,
             error: "Training session recovery failed",
@@ -213,9 +242,9 @@ export default {
       try {
         const body = await parseBody(request);
         const result = await saveTrainingLiveSession(env, body);
-        return json(result.body, result.status);
+        return respond(result.body, result.status);
       } catch {
-        return json(
+        return respond(
           {
             ok: false,
             error: "Training session save failed",
@@ -235,9 +264,9 @@ export default {
       try {
         const body = await parseBody(request);
         const result = await createContextId(env, body);
-        return json(result.body, result.status);
+        return respond(result.body, result.status);
       } catch {
-        return json(
+        return respond(
           {
             ok: false,
             error: "Context allocation failed",
@@ -257,9 +286,9 @@ export default {
       try {
         const body = await parseBody(request);
         const result = await saveAqgLiveSession(env, body);
-        return json(result.body, result.status);
+        return respond(result.body, result.status);
       } catch {
-        return json(
+        return respond(
           {
             ok: false,
             error: "Session save failed",
@@ -278,9 +307,9 @@ export default {
       try {
         const body = await parseBody(request);
         const result = await submitAqgSession(env, body);
-        return json(result.body, result.status);
+        return respond(result.body, result.status);
       } catch {
-        return json(
+        return respond(
           {
             ok: false,
             error: "Session submission failed",
@@ -300,9 +329,9 @@ export default {
       try {
         const body = await parseBody(request);
         const result = await uploadAqgAudio(env, body);
-        return json(result.body, result.status);
+        return respond(result.body, result.status);
       } catch {
-        return json(
+        return respond(
           {
             ok: false,
             error: "Audio upload failed",
@@ -336,9 +365,9 @@ export default {
           );
         }
 
-        return json(result.body, result.status);
+        return respond(result.body, result.status);
       } catch {
-        return json(
+        return respond(
           {
             ok: false,
             error: "Training event append failed",
@@ -368,9 +397,9 @@ export default {
           );
         }
 
-        return json(result.body, result.status);
+        return respond(result.body, result.status);
       } catch {
-        return json(
+        return respond(
           {
             ok: false,
             error: "Training feedback save failed",
@@ -400,9 +429,9 @@ export default {
           );
         }
 
-        return json(result.body, result.status);
+        return respond(result.body, result.status);
       } catch {
-        return json(
+        return respond(
           {
             ok: false,
             error: "Feedback save failed",
@@ -422,9 +451,9 @@ export default {
       try {
         const body = await parseBody(request);
         const result = await getLatestAqgSubmittedSettings(env, body);
-        return json(result.body, result.status);
+        return respond(result.body, result.status);
       } catch {
-        return json(
+        return respond(
           {
             ok: false,
             error: "Submitted settings lookup failed",
@@ -444,9 +473,9 @@ export default {
       try {
         const body = await parseBody(request);
         const result = await getLatestAqgLiveSession(env, body);
-        return json(result.body, result.status);
+        return respond(result.body, result.status);
       } catch {
-        return json(
+        return respond(
           {
             ok: false,
             error: "Live session recovery failed",
@@ -458,7 +487,7 @@ export default {
       }
     }
 
-    return json(
+    return respond(
       {
         ok: false,
         error: "Not found"
