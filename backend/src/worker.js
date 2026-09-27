@@ -1,6 +1,6 @@
 import { validateAccessCode } from "./auth.js";
 import { createSessionId } from "./sessions.js";
-import { saveAqgLiveSession } from "./aqg-save.js";
+import { saveAqgLiveSession, getLatestAqgLiveSession } from "./aqg-save.js";
 
 function corsHeaders() {
   return {
@@ -132,6 +132,27 @@ export default {
           {
             ok: false,
             error: "Session save failed",
+            code: "SERVER_ERROR",
+            retryable: true
+          },
+          500
+        );
+      }
+    }
+
+    if (
+      request.method === "POST" &&
+      url.pathname === "/v1/aqg/latest-live-session"
+    ) {
+      try {
+        const body = await parseBody(request);
+        const result = await getLatestAqgLiveSession(env, body);
+        return json(result.body, result.status);
+      } catch {
+        return json(
+          {
+            ok: false,
+            error: "Live session recovery failed",
             code: "SERVER_ERROR",
             retryable: true
           },
