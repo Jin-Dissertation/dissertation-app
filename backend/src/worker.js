@@ -1,5 +1,6 @@
 import { validateAccessCode } from "./auth.js";
 import { createSessionId } from "./sessions.js";
+import { saveAqgLiveSession } from "./aqg-save.js";
 
 function corsHeaders() {
   return {
@@ -115,6 +116,27 @@ export default {
         return json(result.body, result.status);
       } catch {
         return json({ ok: false, error: "Session allocation failed", code: "SERVER_ERROR", retryable: true }, 500);
+      }
+    }
+
+    if (
+      request.method === "POST" &&
+      url.pathname === "/v1/aqg/save-session"
+    ) {
+      try {
+        const body = await parseBody(request);
+        const result = await saveAqgLiveSession(env, body);
+        return json(result.body, result.status);
+      } catch {
+        return json(
+          {
+            ok: false,
+            error: "Session save failed",
+            code: "SERVER_ERROR",
+            retryable: true
+          },
+          500
+        );
       }
     }
 
