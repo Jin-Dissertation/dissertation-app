@@ -4630,8 +4630,9 @@ async function submitTrainingFeedback() {
   const feedbackSource = isMobileLikeViewport() ? 'mobile_drawer' : 'desktop_modal';
 
   try {
-    const result = await postToAppsScript(API_URL, {
-      action: 'sendFeedbackAlert',
+    const feedbackId = createRequestId('training-feedback');
+    const result = await postToAppsScript(`${WORKER_API_URL}/v1/training/feedback`, {
+      feedback_id: feedbackId,
 
       participant_code: participantCode,
       participantCode: participantCode,
