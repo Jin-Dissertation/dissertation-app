@@ -6434,7 +6434,7 @@ const PROMPT_META = [
   }
 }
 
-async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {}) {
+async function sendFeedbackAlert({ textFeedback = "" } = {}) {
   const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
   const sessionId = (localStorage.getItem(KEYS.sessionId) || "").trim();
 
@@ -6442,22 +6442,19 @@ async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {})
     return { ok: false, error: "No access code found." };
   }
 
+  const feedbackId = "aqg-feedback-" + crypto.randomUUID();
+
   try {
-    const response = await fetch(AQG_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        action: "sendFeedbackAlert",
+    return await postToAppsScript(
+      `${WORKER_API_URL}/v1/aqg/feedback`,
+      {
+        feedback_id: feedbackId,
         user_id: accessCode,
         session_id: sessionId,
-        text_feedback: textFeedback,
-        audio_file_url: audioFeedback
-      }),
-      redirect: "follow"
-    });
-
-    const text = await response.text();
-    return JSON.parse(text);
+        text_feedback: textFeedback
+      },
+      { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS }
+    );
   } catch (err) {
     return { ok: false, error: String(err?.message || err || "unknown_error") };
   }
