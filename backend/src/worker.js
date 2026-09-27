@@ -1,4 +1,5 @@
 import { validateAccessCode } from "./auth.js";
+import { createSessionId } from "./sessions.js";
 
 function corsHeaders() {
   return {
@@ -31,6 +32,11 @@ async function parseBody(request) {
   const text = await request.text();
 
   if (!text) return {};
+
+  if (text.trim().startsWith("{")) {
+    const body = JSON.parse(text);
+    return body && typeof body === "object" && !Array.isArray(body) ? body : {};
+  }
 
   const params = new URLSearchParams(text);
   return Object.fromEntries(params.entries());
@@ -94,6 +100,21 @@ export default {
           },
           500
         );
+      }
+    }
+
+    if (
+      request.method === "POST" &&
+      (url.pathname === "/v1/aqg/create-session" ||
+        url.pathname === "/v1/training/create-session")
+    ) {
+      try {
+        const body = await parseBody(request);
+        const app = url.pathname.includes("/training/") ? "training" : "aqg";
+        const result = await createSessionId(env, body, app);
+        return json(result.body, result.status);
+      } catch {
+        return json({ ok: false, error: "Session allocation failed", code: "SERVER_ERROR", retryable: true }, 500);
       }
     }
 
