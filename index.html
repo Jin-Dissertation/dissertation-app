@@ -4257,6 +4257,28 @@ const PROMPT_META = [
       const closeTimestamp = new Date().toISOString();
       const suppressResetCloseEvent = options?.suppressResetCloseEvent === true;
 
+      // Persist the reset/close event while the old session is still current.
+      // After clearSessionData() a new session is allocated, so delaying this
+      // event until later would incorrectly attach it to the new session.
+      if (!suppressResetCloseEvent && closedSessionId) {
+        appendServerEvent(
+          "session_closed",
+          "btnResetConfirm",
+          "Session closed by reset.",
+          {
+            SessionCloseType: "reset",
+            SessionCloseAt: closeTimestamp,
+            session_id: closedSessionId,
+            context_id: closedContextId || ""
+          }
+        );
+        try {
+          await liveSaveChain;
+        } catch (err) {
+          console.warn("Reset close event could not be persisted before starting the new session.", err);
+        }
+      }
+
       saveCurrentSettingsAsPrevious();
       clearSessionData();
 
@@ -4348,24 +4370,6 @@ const PROMPT_META = [
         previousSessionCleared: true
       });
 
-      if (!suppressResetCloseEvent) {
-        appendServerEvent(
-          "session_closed",
-          "btnResetConfirm",
-          "Session closed by reset.",
-          {
-            SessionCloseType: "reset",
-            SessionCloseAt: closeTimestamp,
-            session_id: closedSessionId || "",
-            context_id: closedContextId || ""
-          },
-          {
-            accessCode,
-            sessionId: closedSessionId,
-            contextId: closedContextId
-          }
-        );
-      }
       queueLiveSessionUpdate("in_progress", 0);
     }
 
