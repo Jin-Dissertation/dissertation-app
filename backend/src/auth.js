@@ -217,26 +217,106 @@ export async function validateAccessCode(env, input, app) {
 }
 
 
-export async function authorizeAccessCode(env, input, app) {
-  const validation = await validateAccessCode(env, input, app);
+async function lookupAccessCode(env, code, app) {
+  const codeHash = await hmacHex(
+    env.ACCESS_CODE_PEPPER,
+    `access:${code}`
+  );
 
-  if (validation.body?.valid === true && validation.body?.participant_id) {
+  const row = await env.STUDY_DB
+    .prepare(
+      `SELECT participant_id, active, allow_aqg, allow_training
+       FROM access_codes
+       WHERE code_hash = ?1`
+    )
+    .bind(codeHash)
+    .first();
+
+  if (
+    !row ||
+    Number(row.active) !== 1 ||
+    (app === "aqg" && Number(row.allow_aqg) !== 1) ||
+    (app === "training" && Number(row.allow_training) !== 1)
+  ) {
+    return null;
+  }
+
+  return row;
+}
+
+export async function authorizeAccessCode(env, input, app) {
+  if (app !== "aqg" && app !== "training") {
     return {
-      ok: true,
-      participantId: String(validation.body.participant_id)
+      ok: false,
+      status: 400,
+      body: {
+        ok: false,
+        error: "Invalid app",
+        code: "INVALID_REQUEST",
+        retryable: false
+      }
+    };
+  }
+
+  const identifierKeys = [
+    "user_id",
+    "userId",
+    "participant_code",
+    "participantCode",
+    "accessCode",
+    "access_code",
+    "code"
+  ];
+
+  const supplied = identifierKeys
+    .filter((key) => input[key] !== undefined && input[key] !== null && String(input[key]).trim() !== "")
+    .map((key) => normalizeCode(input[key]));
+
+  const code = supplied[0] || "";
+
+  if (!code) {
+    return {
+      ok: false,
+      status: 401,
+      body: {
+        ok: false,
+        error: "Please sign in with an active participant code.",
+        code: "UNAUTHORIZED",
+        retryable: false
+      }
+    };
+  }
+
+  if (code.length > 256 || supplied.some((value) => value !== code)) {
+    return {
+      ok: false,
+      status: 401,
+      body: {
+        ok: false,
+        error: "Participant identifiers do not match.",
+        code: "UNAUTHORIZED",
+        retryable: false
+      }
+    };
+  }
+
+  const row = await lookupAccessCode(env, code, app);
+
+  if (!row) {
+    return {
+      ok: false,
+      status: 401,
+      body: {
+        ok: false,
+        error: "Please sign in with an active participant code.",
+        code: "UNAUTHORIZED",
+        retryable: false
+      }
     };
   }
 
   return {
-    ok: false,
-    status: validation.status === 400 ? 400 : 401,
-    body: {
-      ok: false,
-      error: validation.body?.error || "Unauthorized",
-      code: validation.body?.locked ? "RATE_LIMITED" : "UNAUTHORIZED",
-      retryable: false,
-      locked: Boolean(validation.body?.locked),
-      retryAfterSeconds: Number(validation.body?.retryAfterSeconds || 0)
-    }
+    ok: true,
+    participantId: String(row.participant_id)
   };
 }
