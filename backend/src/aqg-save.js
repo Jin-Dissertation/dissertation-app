@@ -294,6 +294,22 @@ export async function saveAqgLiveSession(env, input) {
 
   const currentRevision = Number(previous?.revision || 0);
 
+  // Mirror the original Apps Script retry behavior: if this exact save ID
+  // is already the session's most recently committed save, acknowledge the
+  // retry instead of attempting to advance the revision again.
+  if (previous?.last_save_id === requestId) {
+    return {
+      status: 200,
+      body: {
+        ok: true,
+        updated: true,
+        inserted: false,
+        revision: currentRevision,
+        duplicate: true
+      }
+    };
+  }
+
   if (previous?.status === "submitted") {
     return {
       status: 409,
