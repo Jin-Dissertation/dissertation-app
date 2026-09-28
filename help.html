@@ -413,8 +413,7 @@
   </div>
 
   <script>
-    const FAQ_API_URL = "https://script.google.com/macros/s/AKfycbwvsWkIL7gCqt5dLy9Fu8MoEcwJue8BaA4pFOkW2Ug0sFucRq1IR3uekb6NTjm5Auo1/exec";
-    const FAQ_MODE = "participant";
+    const FAQ_DATA_URL = "./faq.json";
     const BACK_TO_APP_URL = "https://jin-dissertation.github.io/dissertation-app/";
     const HELP_VARIANT_LABEL = "Participant Help / FAQ";
 
@@ -660,10 +659,7 @@
       emptyStateEl.style.display = "none";
 
       try {
-        const faqUrl = new URL(FAQ_API_URL);
-        faqUrl.searchParams.set("mode", FAQ_MODE);
-
-        const response = await fetch(faqUrl.toString(), {
+        const response = await fetch(FAQ_DATA_URL, {
           method: "GET",
           cache: "no-store"
         });
@@ -678,7 +674,7 @@
         allFaqItems = items;
 
         if (!items.length) {
-          setStatus("No help items were found in the Google Sheet.");
+          setStatus("No help items were found.");
           updateCountBadge(0, 0);
           lastUpdatedTextEl.textContent = `Last refreshed: ${new Date().toLocaleString()}`;
           return;
