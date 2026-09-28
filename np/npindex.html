@@ -3320,12 +3320,7 @@ details.band[open] > summary {
 
     const WORKER_API_URL = "https://dissertation-study-api.professor-jin.workers.dev";
 
-    const ACCESS_VERIFY_URL = "https://script.google.com/macros/s/AKfycbxL2vkcsWNQVRDug2rnZU01eQesd4S7QXY-3Qtm7ZeWgzTNw7jjvdYxT-DzMjD9gMTj/exec";
 
-    // Unified Apps Script backend endpoint for AQG (remaining legacy calls).
-    const AQG_API_URL = "https://script.google.com/macros/s/AKfycbxL2vkcsWNQVRDug2rnZU01eQesd4S7QXY-3Qtm7ZeWgzTNw7jjvdYxT-DzMjD9gMTj/exec";
-    const REQUEST_TIMEOUT_MS = 15000;
-    const LIVE_UPDATE_DEBOUNCE_MS = 400;
     const ACTIVE_IDLE_CAP_MS = 180000;
 
     let remoteConfig = {
@@ -3599,108 +3594,17 @@ const PROMPT_META = [
       return "";
     }
 
-    async function postToAppsScript(url, payload, options = {}) {
-      const retries = Number.isInteger(options.retries) ? options.retries : 1;
-      const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : REQUEST_TIMEOUT_MS;
-      let lastError = null;
-
-      for (let attempt = 0; attempt <= retries; attempt++) {
-        const controller = new AbortController();
-        const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
-
-        try {
-          const response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(payload),
-            redirect: "follow",
-            signal: controller.signal
-          });
-
-          const text = await response.text();
-          let data = null;
-          try {
-            data = JSON.parse(text);
-          } catch (_) {
-            throw new Error(`Invalid JSON response from server (HTTP ${response.status})`);
-          }
-
-          if (!response.ok) throw new Error(data?.error || `HTTP ${response.status}`);
-          if (!data || data.ok === false) throw new Error(data?.error || "unknown_error");
-          return data;
-        } catch (err) {
-          lastError = err?.name === "AbortError"
-            ? new Error(`Request timed out after ${Math.round(timeoutMs / 1000)} seconds.`)
-            : err;
-          if (attempt >= retries) break;
-          await new Promise((resolve) => window.setTimeout(resolve, 400 * (attempt + 1)));
-        } finally {
-          window.clearTimeout(timeoutId);
-        }
-      }
-
-      throw lastError || new Error("Request failed.");
-    }
-
-
-
-    async function postAqgAction(action, payload = {}) {
-      return postToAppsScript(
-        AQG_API_URL,
-        { action, ...payload },
-        { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS }
-      );
-    }
-
     async function requestNewSessionId() {
-      if (IS_NONPARTICIPANT) {
-        const localSessionId = generateLocalSessionId();
-        localStorage.setItem(KEYS.sessionId, localSessionId);
-        localStorage.removeItem(KEYS.contextId);
-        return localSessionId;
-      }
-
-      const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
-      if (!accessCode) throw new Error("No access code found.");
-
-      const data = await postAqgAction("createSessionId", {
-        user_id: accessCode
-      });
-
-      if (!data?.ok || !data.session_id) {
-        throw new Error("Could not create session ID.");
-      }
-
-      localStorage.setItem(KEYS.sessionId, data.session_id);
+      const localSessionId = generateLocalSessionId();
+      localStorage.setItem(KEYS.sessionId, localSessionId);
       localStorage.removeItem(KEYS.contextId);
-      return data.session_id;
+      return localSessionId;
     }
 
     async function requestNewContextId() {
-      if (IS_NONPARTICIPANT) {
-        const localContextId = generateLocalContextId();
-        localStorage.setItem(KEYS.contextId, localContextId);
-        return localContextId;
-      }
-
-      const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
-      const sessionId = (localStorage.getItem(KEYS.sessionId) || "").trim();
-
-      if (!accessCode || !sessionId) {
-        throw new Error("Missing access code or session ID.");
-      }
-
-      const data = await postAqgAction("createContextId", {
-        user_id: accessCode,
-        session_id: sessionId
-      });
-
-      if (!data?.ok || !data.context_id) {
-        throw new Error("Could not create context ID.");
-      }
-
-      localStorage.setItem(KEYS.contextId, data.context_id);
-      return data.context_id;
+      const localContextId = generateLocalContextId();
+      localStorage.setItem(KEYS.contextId, localContextId);
+      return localContextId;
     }
 
     function buildContextDetailText(ctx = getContext()) {
@@ -3711,44 +3615,8 @@ const PROMPT_META = [
       return `Course: ${course}. Content: ${area}. Questions: ${questionCount}. Additional instructions: ${notes}`;
     }
 
-    function appendServerEvent(eventType, buttonId = "", detailText = "", detailJson = {}, overrides = {}) {
-      if (IS_NONPARTICIPANT) return;
-      const accessCode = String(
-        overrides.accessCode ?? localStorage.getItem(KEYS.accessCode) ?? ""
-      ).trim();
-
-      const sessionId = String(
-        overrides.sessionId ?? localStorage.getItem(KEYS.sessionId) ?? ""
-      ).trim();
-
-      const contextId = String(
-        overrides.contextId ?? localStorage.getItem(KEYS.contextId) ?? ""
-      ).trim();
-      const deviceLabel = String(
-        overrides.deviceLabel ?? getCompactDeviceLabel()
-      ).trim();
-
-      if (!accessCode || !sessionId || !eventType) return;
-
-      fetch(AQG_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "appendEvent",
-          user_id: accessCode,
-          session_id: sessionId,
-          context_id: contextId,
-          device_label: deviceLabel,
-          event_type: eventType,
-          button_id: buttonId,
-          detail_text: detailText,
-          detail_json: detailJson,
-          timestamp: new Date().toISOString()
-        }),
-        keepalive: true
-      }).catch((err) => {
-        console.warn("appendEvent failed", err);
-      });
+    function appendServerEvent() {
+      return;
     }
 
     function appendNpButtonPress(buttonId = "") {
@@ -4288,61 +4156,16 @@ const PROMPT_META = [
       }
     }
 
-    async function sendLiveSessionUpdate(statusOverride = "in_progress") {
-      if (IS_NONPARTICIPANT) return { ok: true, skipped: true };
-      const payload = buildLiveSessionSnapshot(statusOverride);
-
-      try {
-        const response = await fetch(AQG_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload),
-          keepalive: true
-        });
-
-        const text = await response.text();
-        let data = null;
-
-        try {
-          data = JSON.parse(text);
-        } catch (err) {
-          console.warn("Live session update returned non-JSON response", text);
-          return;
-        }
-
-        if (!response.ok || data?.ok === false) {
-          console.warn("Live session update failed", {
-            status: response.status,
-            payload,
-            response: data
-          });
-          return;
-        }
-
-        console.log("Live session update ok", data);
-      } catch (err) {
-        console.warn("Live session update network error", err, payload);
-      }
+    async function sendLiveSessionUpdate() {
+      return { ok: true, skipped: true };
     }
 
-    function queueLiveSessionUpdate(statusOverride = "in_progress", delay = LIVE_UPDATE_DEBOUNCE_MS) {
-      if (IS_NONPARTICIPANT) return;
-      cancelQueuedLiveSessionUpdate();
-      if (statusOverride !== "in_progress" || delay <= 0) {
-        sendLiveSessionUpdate(statusOverride);
-        return;
-      }
-      liveUpdateTimer = window.setTimeout(() => {
-        liveUpdateTimer = null;
-        sendLiveSessionUpdate(statusOverride);
-      }, delay);
+    function queueLiveSessionUpdate() {
+      return;
     }
 
-    async function syncLiveSessionUpdate(statusOverride = "in_progress") {
-      if (IS_NONPARTICIPANT) return { ok: true, skipped: true };
-      cancelQueuedLiveSessionUpdate();
-      const payload = buildLiveSessionSnapshot(statusOverride);
-      return postToAppsScript(AQG_API_URL, payload, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
+    async function syncLiveSessionUpdate() {
+      return { ok: true, skipped: true };
     }
 
     function logEvent(type, data = {}) {
@@ -5596,123 +5419,8 @@ const PROMPT_META = [
       });
     }
 
-    // Upload flow (Apps Script action=uploadAudio).
-    function uploadAudioWithProgress(payload, onProgress) {
-      return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", AQG_API_URL, true);
-        xhr.setRequestHeader("Content-Type", "application/json");
-
-        xhr.upload.onprogress = (event) => {
-          if (!event.lengthComputable || typeof onProgress !== "function") return;
-          onProgress(event.loaded, event.total);
-        };
-
-        xhr.onload = () => {
-          resolve({ status: xhr.status, ok: xhr.status >= 200 && xhr.status < 300, text: xhr.responseText || "" });
-        };
-        xhr.onerror = () => reject(new Error("Network error during audio upload."));
-        xhr.send(JSON.stringify(payload));
-      });
-    }
-
     async function submitAudioRecording() {
-      if (!audioBlob || audioUploadInProgress || audioSubmitted) return;
-
-      const accessCode = localStorage.getItem(KEYS.accessCode) || "participant";
-      const sessionId = localStorage.getItem(KEYS.sessionId) || "session";
-      const safeUser = sanitizeFilenamePart(accessCode);
-      const safeSession = sanitizeFilenamePart(sessionId);
-      // filename format: username_YYMMDD_sessionID.ext
-      const ext = (audioBlob.type || "").includes("ogg") ? "ogg" : "webm";
-      const filename = `${safeUser}_${getYYMMDD()}_${safeSession}.${ext}`;
-
-      try {
-        audioUploadInProgress = true;
-        getAudioRecorderViews().forEach((view) => {
-          if (view.submitBtn) view.submitBtn.disabled = true;
-        });
-        setAudioUploadButtonState("uploading", "Preparing audio…");
-        await sleep(120);
-
-        setAudioUploadButtonState("uploading", "Encoding audio…");
-        const audioBase64 = await blobToBase64(audioBlob);
-        setAudioUploadButtonState("uploading", "Uploading… 0%");
-
-        const body = new URLSearchParams({
-          action: "uploadAudio",
-          accessCode,
-          session_id: sessionId,
-          filename,
-          mimeType: audioBlob.type || `audio/${ext}`,
-          audioBase64
-        });
-
-        const fetchResponse = await fetch(AQG_API_URL, {
-          method: "POST",
-          body
-        });
-        const response = {
-          status: fetchResponse.status,
-          ok: fetchResponse.ok,
-          text: await fetchResponse.text()
-        };
-
-        setAudioUploadButtonState("uploading", "Processing…");
-        const text = response.text;
-        let data = {};
-        try { data = JSON.parse(text); } catch { data = { raw: text }; }
-
-        if (!response.ok || data.ok === false) {
-          throw new Error(data.error || `Upload failed (${response.status})`);
-        }
-
-        uploadedAudioInfo = {
-          audioFilename: data.filename || filename,
-          audioFileId: data.fileId || data.audioFileId || "",
-          audioFileUrl: "",
-          audioMimeType: audioBlob.type || `audio/${ext}`,
-          audioDuration: audioDuration
-        };
-
-        audioSubmitted = true;
-        markInteraction();
-        logEvent("audio_uploaded", { source: "submit_audio_button" });
-        appendServerEvent(
-          "audio_uploaded",
-          "btnAudioSubmit",
-          uploadedAudioInfo?.audioFilename || "",
-          {
-            audio_duration: uploadedAudioInfo?.audioDuration || "",
-            audio_filename: uploadedAudioInfo?.audioFilename || "",
-            audio_file_id: uploadedAudioInfo?.audioFileId || ""
-          }
-        );
-        queueLiveSessionUpdate("in_progress");
-        setAudioUploadButtonState("success", "Uploaded");
-        updateAudioRecorderUI();
-        toast("Audio submitted ✅");
-        setPersistentFeedbackStatus("Audio feedback saved.");
-        await sleep(1000);
-        clearAudioRecorderState();
-        updateAudioRecorderUI();
-        showSidebarStatusMessage("sidebarAudioFeedbackStatus", "", { clearAfterMs: 0 });
-        return { ok: true };
-      } catch (err) {
-        console.error("Audio upload failed", err);
-        setAudioUploadButtonState("error", "Upload failed");
-        toast("Audio upload failed. Please try again.");
-        showSidebarStatusMessage("sidebarAudioFeedbackStatus", "Audio upload failed. Please try again.", { isError: true });
-        await sleep(2000);
-        if (!audioSubmitted) {
-          resetAudioUploadButton();
-          updateAudioRecorderUI();
-        }
-        return { ok: false };
-      } finally {
-        audioUploadInProgress = false;
-        updateAudioRecorderUI();
-      }
+      return { ok: true, skipped: true };
     }
 
     async function initializeAudioFeedbackUI() {
@@ -6519,123 +6227,6 @@ const PROMPT_META = [
 
 
     // -----------------------------
-    // Access verification
-    // -----------------------------
-    async function verifyAccessCode() {
-      const verifyBtn = $("btnVerifyAccess");
-      if (verifyBtn?.dataset.verifying === "true") return false;
-
-      const code = normalizeCode($("accessCodeInput").value);
-      if (!code) {
-        setLockedState(true, "Please enter your participant code.");
-        return false;
-      }
-
-      const originalBtnText = verifyBtn?.textContent || "Continue";
-      if (verifyBtn) {
-        verifyBtn.dataset.verifying = "true";
-        verifyBtn.disabled = true;
-        verifyBtn.textContent = "Verifying...";
-      }
-
-      let validationResult;
-      try {
-        validationResult = await validateAccessCodeWithBackend(code);
-      } catch (err) {
-        setLockedState(true, "Couldn't verify your code right now — please check your connection and try again.");
-        logEvent("access_verification_error", { code_entered: code, error: String(err && err.message ? err.message : err) });
-        if (verifyBtn) {
-          verifyBtn.dataset.verifying = "false";
-          verifyBtn.disabled = false;
-          verifyBtn.textContent = originalBtnText;
-        }
-        return false;
-      }
-
-      const { response, data } = validationResult;
-      if (response.ok && data && data.ok === true && data.valid === false && data.locked === true) {
-        const retryAfterSeconds = Number(data.retryAfterSeconds) || 0;
-        const waitMessage = retryAfterSeconds > 0
-          ? (retryAfterSeconds >= 60
-              ? `Too many failed attempts. Please wait ${Math.ceil(retryAfterSeconds / 60)} minute${Math.ceil(retryAfterSeconds / 60) === 1 ? "" : "s"} and try again.`
-              : `Too many failed attempts. Please wait ${retryAfterSeconds} seconds and try again.`)
-          : "Too many failed attempts. Please wait and try again.";
-        setLockedState(true, waitMessage);
-        logEvent("access_locked_out", { code_entered: code, retryAfterSeconds });
-        if (verifyBtn) {
-          verifyBtn.dataset.verifying = "false";
-          verifyBtn.disabled = false;
-          verifyBtn.textContent = originalBtnText;
-        }
-        return false;
-      }
-
-      const isValidCode = response.ok && data && data.ok === true && data.valid === true;
-      if (!isValidCode) {
-        setLockedState(true, "Participant code not recognized. Please contact the researcher at tjin@crimson.ua.edu if you think something is wrong.");
-        logEvent("access_denied", { code_entered: code });
-        if (verifyBtn) {
-          verifyBtn.dataset.verifying = "false";
-          verifyBtn.disabled = false;
-          verifyBtn.textContent = originalBtnText;
-        }
-        return false;
-      }
-
-      localStorage.setItem(KEYS.accessVerified, "true");
-      localStorage.setItem(KEYS.accessCode, code);
-
-      const latestLiveSession = await fetchLatestLiveSession();
-      const restored = latestLiveSession?.ok === true && latestLiveSession?.found === true
-        ? await restoreLiveSessionFromServer(latestLiveSession)
-        : false;
-
-      if (!restored) {
-        // Start timestamp is the first step at sign-in (your request)
-        if (!localStorage.getItem(KEYS.sessionStartTime)) {
-          localStorage.setItem(KEYS.sessionStartTime, nowIso());
-        }
-
-        // Create a session id at sign-in (so it exists for starter prompt + logs)
-        if (!localStorage.getItem(KEYS.sessionId)) {
-          await requestNewSessionId();
-        }
-
-        // Initialize stage
-        if (!localStorage.getItem(KEYS.stage)) {
-          localStorage.setItem(KEYS.stage, "setup");
-        }
-      }
-
-      // Initialize events container if missing
-      if (!localStorage.getItem(KEYS.events)) {
-        saveJSON(KEYS.events, []);
-      }
-
-      setLockedState(false);
-      initializeSessionTimerIfNeeded();
-      startSessionTimerLoop();
-      if ($("topUser")) $("topUser").textContent = code || "User";
-      markInteraction();
-      logEvent("access_verified", { accessCode: code });
-      queueLiveSessionUpdate("in_progress", 0);
-      appendServerEvent(
-        "session_started",
-        "btnVerifyAccess",
-        "Participant code verified."
-      );
-      toast("Access verified ✅");
-
-      applyStageUI();
-      if (verifyBtn) {
-        verifyBtn.dataset.verifying = "false";
-        verifyBtn.disabled = false;
-        verifyBtn.textContent = originalBtnText;
-      }
-      return true;
-    }
-
-    // -----------------------------
     // Submit / JSON
     // -----------------------------
     function buildSessionRecord() {
@@ -6713,38 +6304,9 @@ const PROMPT_META = [
     }
 
     async function submitSession() {
-      if (IS_NONPARTICIPANT) {
-        localStorage.setItem(KEYS.submissionStatus, "success");
-        localStorage.setItem(KEYS.submissionCompletedAt, nowIso());
-        return { ok: true, localOnly: true };
-      }
-      if (submitInFlight) return { ok: false, error: "submit_in_flight" };
-      submitInFlight = true;
-      localStorage.setItem(KEYS.submitClicked, "true");
-      markInteraction();
-      const payload = buildSessionRecord();
-
-      try {
-        const data = await postToAppsScript(AQG_API_URL, payload, { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS });
-        const success = !!(data?.ok || data?.duplicate);
-        if (!success) throw new Error(data?.error || "unknown_error");
-        localStorage.setItem(KEYS.submissionStatus, "success");
-        localStorage.setItem(KEYS.submissionCompletedAt, nowIso());
-        localStorage.removeItem(KEYS.submissionError);
-        if (data.fileName) localStorage.setItem(KEYS.appsScriptResponseFileName, data.fileName);
-        if (data.fileId) localStorage.setItem(KEYS.appsScriptResponseFileId, data.fileId);
-        logEvent("session_submitted", { ok: true, duplicate: !!data.duplicate, fileName: data.fileName || "" });
-        return { ok: true, data };
-      } catch (err) {
-        localStorage.setItem(KEYS.submissionStatus, "failed");
-        localStorage.setItem(KEYS.submissionError, String(err?.message || err || "unknown_error"));
-        logEvent("session_submit_failed", { error: String(err?.message || err || "unknown_error") });
-        queueLiveSessionUpdate("in_progress", 250);
-        offerSubmissionDownload(payload);
-        return { ok: false, error: err };
-      } finally {
-        submitInFlight = false;
-      }
+      localStorage.setItem(KEYS.submissionStatus, "success");
+      localStorage.setItem(KEYS.submissionCompletedAt, nowIso());
+      return { ok: true, localOnly: true };
     }
 
     function getShortSessionSuffix(sessionId) {
@@ -6769,20 +6331,6 @@ const PROMPT_META = [
       const shortSession = getShortSessionSuffix(record?.session_id);
       const revisedSuffix = revised ? "_REVISED" : "";
       return `${participant}_${datePart}_${shortSession}${revisedSuffix}.json`.replace(/[^\w.-]/g, "_");
-    }
-
-    async function validateAccessCodeWithBackend(code) {
-      const response = await fetch(ACCESS_VERIFY_URL, {
-        method: "POST",
-        body: new URLSearchParams({
-          action: "validateCode",
-          code,
-          client_key: getOrCreateClientKey()
-        })
-      });
-
-      const data = await response.json();
-      return { response, data };
     }
 
     // =================================================================
@@ -6892,149 +6440,50 @@ const PROMPT_META = [
     }
 
     function initAccessGate() {
-      if (IS_NONPARTICIPANT) {
-        const endedFlag = sessionStorage.getItem("dissertation.ended");
-        if (endedFlag === "true") {
-          sessionStorage.removeItem("dissertation.ended");
-          toast("Session complete. A new session is ready.", { duration: 4000 });
-        }
-        setLockedState(true);
-        $("btnOpenTool")?.addEventListener("click", async () => {
-          const ready = await ensureRemoteConfigReadyForLogin();
-          if (!ready) return;
-          await initializeNonparticipantSession();
-          trackNpButtonPress("btnOpenTool");
-          setLockedState(false);
-          syncStarterPromptCopiedState();
-          updateStarterCopyAvailability();
-          updateProceedToPromptsAvailability();
-          applyStageUI();
-        });
-        if ($("timerNoticeClose")) {
-          $("timerNoticeClose").addEventListener("click", () => hideTimerNotice());
-        }
-        lockableSummary($("sumPrompts"), () => !isPromptsUnlocked(), "bandSetup",
-          "Making questions is locked until you copy the starter prompt and click Proceed.");
-        lockableSummary($("sumFinalize"), () => !isFinalizeUnlocked(), "bandPrompts",
-          "Finalize is locked until you click “I’m done making questions.”");
-        return false;
-      }
-
-      const verified = localStorage.getItem(KEYS.accessVerified) === "true";
       const endedFlag = sessionStorage.getItem("dissertation.ended");
       if (endedFlag === "true") {
         sessionStorage.removeItem("dissertation.ended");
-        toast("Session complete — thank you! Your session has been submitted.", { duration: 5000 });
+        toast("Session complete. A new session is ready.", { duration: 4000 });
       }
-      if (verified) {
-        setLockedState(false);
-        initializeSessionTimerIfNeeded();
-      } else {
-        setLockedState(true);
-      }
-      requestAnimationFrame(() => {
-        if ($("accessGate")?.style.display !== "none") {
-          $("accessCodeInput")?.focus();
-        }
-      });
-      $("accessForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
+
+      setLockedState(true);
+
+      $("btnOpenTool")?.addEventListener("click", async () => {
         const ready = await ensureRemoteConfigReadyForLogin();
         if (!ready) return;
-        await verifyAccessCode();
+
+        await initializeNonparticipantSession();
+        trackNpButtonPress("btnOpenTool");
+        setLockedState(false);
+        syncStarterPromptCopiedState();
+        updateStarterCopyAvailability();
+        updateProceedToPromptsAvailability();
+        applyStageUI();
       });
+
       if ($("timerNoticeClose")) {
         $("timerNoticeClose").addEventListener("click", () => hideTimerNotice());
       }
-      lockableSummary($("sumPrompts"), () => !isPromptsUnlocked(), "bandSetup",
-        "Making questions is locked until you copy the starter prompt and click Proceed.");
-      lockableSummary($("sumFinalize"), () => !isFinalizeUnlocked(), "bandPrompts",
-        "Finalize is locked until you click “I’m done making questions.”");
-      return verified;
+
+      lockableSummary(
+        $("sumPrompts"),
+        () => !isPromptsUnlocked(),
+        "bandSetup",
+        "Making questions is locked until you copy the starter prompt and click Proceed."
+      );
+
+      lockableSummary(
+        $("sumFinalize"),
+        () => !isFinalizeUnlocked(),
+        "bandPrompts",
+        "Finalize is locked until you click “I’m done making questions.”"
+      );
+
+      return false;
     }
 
-    async function fetchLatestSubmittedSettings() {
-  const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
-  const userId = accessCode;
-
-  if (!userId) {
-    return { ok: false, found: false };
-  }
-
-  try {
-    const response = await fetch(AQG_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        action: "getLatestSubmittedSettings",
-        user_id: userId
-      }),
-      redirect: "follow"
-    });
-
-    const text = await response.text();
-    return JSON.parse(text);
-  } catch (err) {
-    return { ok: false, found: false, error: String(err?.message || err || "unknown_error") };
-  }
-}
-
-    async function fetchLatestLiveSession() {
-  const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
-  const userId = accessCode;
-
-  if (!userId) {
-    return { ok: false, found: false };
-  }
-
-  try {
-    const response = await fetch(AQG_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        action: "getLatestLiveSession",
-        user_id: userId
-      }),
-      redirect: "follow"
-    });
-
-    const text = await response.text();
-    return JSON.parse(text);
-  } catch (err) {
-    return { ok: false, found: false, error: String(err?.message || err || "unknown_error") };
-  }
-}
-
-async function sendFeedbackAlert({ textFeedback = "", audioFeedback = "" } = {}) {
-  if (IS_NONPARTICIPANT) {
-    return { ok: true, skipped: true };
-  }
-  const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
-  const sessionId = (localStorage.getItem(KEYS.sessionId) || "").trim();
-
-  if (!accessCode) {
-    return { ok: false, error: "No access code found." };
-  }
-
-  try {
-    const response = await fetch(AQG_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        action: "sendFeedbackAlert",
-        user_id: accessCode,
-        session_id: sessionId,
-        text_feedback: textFeedback,
-        audio_file_url: audioFeedback
-      }),
-      redirect: "follow"
-    });
-
-    const text = await response.text();
-    return JSON.parse(text);
-  } catch (err) {
-    return { ok: false, error: String(err?.message || err || "unknown_error") };
-  }
+async function sendFeedbackAlert() {
+  return { ok: true, skipped: true };
 }
 
     function applyContextSettingsToFields({ course, area, questionCount, notes }, options = {}) {
