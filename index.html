@@ -2910,10 +2910,6 @@
 
     const WORKER_API_URL = "https://dissertation-study-api.professor-jin.workers.dev";
 
-    // Legacy Apps Script endpoint retained temporarily while remaining AQG calls
-    // are migrated incrementally to Cloudflare.
-    const ACCESS_VERIFY_URL = "https://script.google.com/macros/s/AKfycbxL2vkcsWNQVRDug2rnZU01eQesd4S7QXY-3Qtm7ZeWgzTNw7jjvdYxT-DzMjD9gMTj/exec";
-    const AQG_API_URL = "https://script.google.com/macros/s/AKfycbxL2vkcsWNQVRDug2rnZU01eQesd4S7QXY-3Qtm7ZeWgzTNw7jjvdYxT-DzMjD9gMTj/exec";
     const REQUEST_TIMEOUT_MS = 15000;
     const LIVE_UPDATE_DEBOUNCE_MS = 400;
     const ACTIVE_IDLE_CAP_MS = 180000;
@@ -3148,14 +3144,6 @@ const PROMPT_META = [
     }
 
 
-
-    async function postAqgAction(action, payload = {}) {
-      return postToAppsScript(
-        AQG_API_URL,
-        { action, ...payload },
-        { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS }
-      );
-    }
 
     async function requestNewSessionId() {
       const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
@@ -5017,26 +5005,6 @@ const PROMPT_META = [
         };
         reader.onerror = reject;
         reader.readAsDataURL(blob);
-      });
-    }
-
-    // Upload flow (Apps Script action=uploadAudio).
-    function uploadAudioWithProgress(payload, onProgress) {
-      return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", AQG_API_URL, true);
-        xhr.setRequestHeader("Content-Type", "application/json");
-
-        xhr.upload.onprogress = (event) => {
-          if (!event.lengthComputable || typeof onProgress !== "function") return;
-          onProgress(event.loaded, event.total);
-        };
-
-        xhr.onload = () => {
-          resolve({ status: xhr.status, ok: xhr.status >= 200 && xhr.status < 300, text: xhr.responseText || "" });
-        };
-        xhr.onerror = () => reject(new Error("Network error during audio upload."));
-        xhr.send(JSON.stringify(payload));
       });
     }
 
