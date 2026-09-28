@@ -3318,9 +3318,11 @@ details.band[open] > summary {
     // Config
     // -----------------------------
 
+    const WORKER_API_URL = "https://dissertation-study-api.professor-jin.workers.dev";
+
     const ACCESS_VERIFY_URL = "https://script.google.com/macros/s/AKfycbxL2vkcsWNQVRDug2rnZU01eQesd4S7QXY-3Qtm7ZeWgzTNw7jjvdYxT-DzMjD9gMTj/exec";
 
-    // Unified Apps Script backend endpoint for AQG (config + live updates + final submit).
+    // Unified Apps Script backend endpoint for AQG (remaining legacy calls).
     const AQG_API_URL = "https://script.google.com/macros/s/AKfycbxL2vkcsWNQVRDug2rnZU01eQesd4S7QXY-3Qtm7ZeWgzTNw7jjvdYxT-DzMjD9gMTj/exec";
     const REQUEST_TIMEOUT_MS = 15000;
     const LIVE_UPDATE_DEBOUNCE_MS = 400;
@@ -3750,26 +3752,13 @@ const PROMPT_META = [
     }
 
     function appendNpButtonPress(buttonId = "") {
-      if (!IS_NONPARTICIPANT) return;
+      if (!IS_NONPARTICIPANT || !buttonId) return;
 
-      const sessionId = String(localStorage.getItem(KEYS.sessionId) || "").trim();
-      const contextId = String(localStorage.getItem(KEYS.contextId) || "").trim();
-
-      if (!sessionId || !buttonId) return;
-
-      fetch(AQG_API_URL, {
+      fetch(`${WORKER_API_URL}/v1/nonparticipant/button-press`, {
         method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "appendNpButtonPress",
-          timestamp: nowIso(),
-          session_id: sessionId,
-          context_id: contextId,
-          button_id: buttonId,
-          active_seconds: computeActiveSeconds(interactionTimes),
-          device_os: getOsLabel(),
-          device_type: getDeviceType(),
-          viewport_bucket: getViewportBucket()
+          button_id: buttonId
         }),
         keepalive: true
       }).catch((err) => {

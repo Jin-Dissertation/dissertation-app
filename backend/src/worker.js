@@ -6,6 +6,7 @@ import { uploadAqgAudio } from "./audio.js";
 import { saveTrainingLiveSession, getLatestTrainingLiveSession, submitTrainingSession, appendTrainingEvent } from "./training-save.js";
 import { loadTrainingContent, getTrainingMedia } from "./training-content.js";
 import { deliverNotification, flushPendingNotifications } from "./notifications.js";
+import { incrementNonparticipantButtonCount } from "./nonparticipant.js";
 
 const ALLOWED_BROWSER_ORIGINS = new Set([
   "https://jin-dissertation.github.io",
@@ -108,6 +109,27 @@ export default {
             ok: false,
             service: "dissertation-study-api",
             error: "Health check failed"
+          },
+          500
+        );
+      }
+    }
+
+    if (
+      request.method === "POST" &&
+      url.pathname === "/v1/nonparticipant/button-press"
+    ) {
+      try {
+        const body = await parseBody(request);
+        const result = await incrementNonparticipantButtonCount(env, body);
+        return respond(result.body, result.status);
+      } catch {
+        return respond(
+          {
+            ok: false,
+            error: "Non-participant button count update failed",
+            code: "SERVER_ERROR",
+            retryable: true
           },
           500
         );
