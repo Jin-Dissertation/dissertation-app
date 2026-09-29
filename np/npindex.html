@@ -3626,6 +3626,7 @@ const PROMPT_META = [
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          request_id: crypto.randomUUID(),
           button_id: buttonId
         }),
         keepalive: true

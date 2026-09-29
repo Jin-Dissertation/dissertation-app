@@ -7,6 +7,7 @@ import { saveTrainingLiveSession, getLatestTrainingLiveSession, submitTrainingSe
 import { loadTrainingContent, getTrainingMedia } from "./training-content.js";
 import { deliverNotification, flushPendingNotifications } from "./notifications.js";
 import { incrementNonparticipantButtonCount } from "./nonparticipant.js";
+import { handleReporting } from "./reporting.js";
 
 const ALLOWED_BROWSER_ORIGINS = new Set([
   "https://jin-dissertation.github.io",
@@ -71,6 +72,10 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const respond = (data, status = 200) => json(data, status, request);
+
+    if (url.pathname === "/v1/reporting" || url.pathname.startsWith("/v1/reporting/")) {
+      return handleReporting(request, env);
+    }
 
     if (!browserOriginAllowed(request)) {
       return respond(
