@@ -2405,6 +2405,10 @@
             <div id="contextSubband" class="subBand hidden" style="margin-top:10px;">
               <h4 class="subBandTitle">B. Question context</h4>
               <div class="row" style="margin:10px 0 0;">
+                <button class="btn" id="btnSkipContext" type="button" aria-describedby="skipContextHint" disabled>Skip contextual details</button>
+              </div>
+              <p id="skipContextHint" class="muted small" style="margin:8px 0 0;">Unlock all prompts without filling in context or copying a starter prompt.</p>
+              <div class="row" style="margin:10px 0 0;">
                 <button class="btn" id="btnLoadPreviousSettings" type="button">Load previous settings</button>
               </div>
               <p id="loadPreviousSettingsMsg" class="muted small" style="display:none; margin:8px 0 0;"></p>
@@ -2481,6 +2485,11 @@
               </div>
               <div id="setupSamplePromptList" class="setupPromptList promptListCompact"></div>
             </div>
+
+            <div class="row" style="margin-top:16px;">
+              <button class="btn" id="btnShowFirstQuestion" type="button" aria-describedby="firstQuestionHint" disabled>Show first question</button>
+            </div>
+            <p id="firstQuestionHint" class="muted small" style="margin:8px 0 0;">Copy this request and paste it into your AI chat when you are ready to start.</p>
 
             <div class="row bandActionRow stageNavRow" id="setupProceedRow" hidden style="display:none;">
               <div class="stageActionWrap">
@@ -2983,6 +2992,8 @@ const PROMPT_META = [
     description: "Analyze the distribution of Bloom’s taxonomy levels."
   }
 ];
+    // Generic for every AI product; deliberately independent of prompt configuration.
+    const FIRST_QUESTION_PROMPT = "I am done setting up questions, please show me the first question";
     const SETUP_SAMPLE_PROMPT_IDS = ["sample_copy_style", "sample_new_version", "sample_supplement", "sample_practice"];
 
     const STORAGE_PREFIX = "dissertation.participant";
@@ -3011,6 +3022,7 @@ const PROMPT_META = [
       context: `${STORAGE_PREFIX}.context`,
       starterCopied: `${STORAGE_PREFIX}.starterCopied`,
       starterCopiedSetupSignature: `${STORAGE_PREFIX}.starterCopiedSetupSignature`,
+      contextSkipped: `${STORAGE_PREFIX}.contextSkipped`,
       stage: `${STORAGE_PREFIX}.stage`,
       events: `${STORAGE_PREFIX}.events`,
       finalPrompt: `${STORAGE_PREFIX}.finalPrompt`,
@@ -3523,7 +3535,7 @@ const PROMPT_META = [
       const starterCard = $("starterCopyCard");
       if (!starterCard) return;
 
-      const canCopy = isSetupComplete();
+      const canCopy = isProductSelected() && hasRequiredContextFields();
       starterCard.classList.toggle("is-disabled", !canCopy);
       starterCard.setAttribute("aria-disabled", String(!canCopy));
     }
@@ -3536,8 +3548,20 @@ const PROMPT_META = [
       syncStarterPromptCopiedState();
 
       const setupComplete = isSetupComplete();
-      const canProceed = setupComplete && hasCurrentStarterPromptCopy();
+      const canProceed = setupComplete && (hasSkippedContext() || hasCurrentStarterPromptCopy());
       const showProceedRow = setupComplete;
+      const skipButton = $("btnSkipContext");
+      if (skipButton) skipButton.disabled = isTrainingMode || !isProductSelected() || hasSkippedContext();
+      const skipHint = $("skipContextHint");
+      if (skipHint) {
+        skipHint.textContent = isTrainingMode
+          ? "Disabled during training so you can experience the full setup process."
+          : hasSkippedContext()
+            ? "All prompts are unlocked. You can still add context and copy a starter prompt here."
+            : "Unlock all prompts without filling in context or copying a starter prompt.";
+      }
+      const firstQuestionButton = $("btnShowFirstQuestion");
+      if (firstQuestionButton) firstQuestionButton.disabled = !canProceed;
 
       if (row) {
         if (showProceedRow) {
@@ -3756,6 +3780,7 @@ const PROMPT_META = [
         progress_json: {
           stage,
           starterPromptCopied: localStorage.getItem(KEYS.starterCopied) === "true",
+          contextSkipped: hasSkippedContext(),
           finalPromptCopied: localStorage.getItem(KEYS.finalPromptCopied) === "true",
           finalizeVisited: localStorage.getItem(KEYS.finalizeVisited) === "true",
           interactionTimes: Array.isArray(interactionTimes) ? interactionTimes.slice(-1) : [],
@@ -5352,19 +5377,29 @@ const PROMPT_META = [
       return !!model && !!ctx.course.trim() && !!ctx.area.trim();
     }
 
+    function isProductSelected() {
+      return localStorage.getItem(KEYS.productVersionConfirmed) === "true" &&
+        !!normalizeLlmProduct(localStorage.getItem(KEYS.llmProduct) || "");
+    }
+
+    function hasSkippedContext() {
+      // A saved regular-mode choice must never bypass the training setup gate.
+      return !isTrainingMode && localStorage.getItem(KEYS.contextSkipped) === "true";
+    }
+
     function isSetupComplete() {
-      const isConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true";
-      return isConfirmed && hasRequiredContextFields();
+      return isProductSelected() && (hasSkippedContext() || hasRequiredContextFields());
     }
 
     function isPromptsUnlocked() {
       const stage = getStage();
-      const copied = starterPromptCopied;
-      return (stage === "prompts" || stage === "finalize") && isSetupComplete() && copied;
+      const skipped = hasSkippedContext();
+      return (skipped || stage === "prompts" || stage === "finalize") &&
+        isSetupComplete() && (skipped || hasCurrentStarterPromptCopy());
     }
 
     function isFinalizeUnlocked() {
-      return getStage() === "finalize" && isPromptsUnlocked();
+      return (hasSkippedContext() || getStage() === "finalize") && isPromptsUnlocked();
     }
 
     function lockableSummary(summaryEl, isLockedFn, openBandId, lockMsg) {
@@ -5451,8 +5486,8 @@ const PROMPT_META = [
       if ($("starterCopyPreview")) $("starterCopyPreview").textContent = buildStarterPrompt();
       if ($("finalCopyPreview")) {
         $("finalCopyPreview").textContent =
-          stage === "finalize" && finalizeUnlocked
-            ? (localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt())
+          finalizeUnlocked
+            ? buildFinalPrompt()
             : getSafeStoredFinalPrompt();
       }
       updateStarterCopyAvailability();
@@ -5690,7 +5725,7 @@ const PROMPT_META = [
       if (!box) return;
 
       const hasStarterCopy = syncStarterPromptCopiedState();
-      const shouldShow = hasStarterCopy && setupSamplePromptCount > 0;
+      const shouldShow = (hasSkippedContext() || hasStarterCopy) && setupSamplePromptCount > 0;
 
       box.hidden = !shouldShow;
       box.classList.toggle("is-visible", shouldShow);
@@ -6078,6 +6113,7 @@ const PROMPT_META = [
         progress_json: {
           stage: getStage(),
           starterPromptCopied: localStorage.getItem(KEYS.starterCopied) === "true",
+          contextSkipped: hasSkippedContext(),
           finalPromptCopied: localStorage.getItem(KEYS.finalPromptCopied) === "true",
           finalizeVisited: localStorage.getItem(KEYS.finalizeVisited) === "true",
           interactionTimes: Array.isArray(interactionTimes) ? interactionTimes.slice(-1) : [],
@@ -6385,6 +6421,10 @@ const PROMPT_META = [
         await loadRemoteConfig();
         appBootLoading = false;
         appBootReady = true;
+        // Hydrated sessions may render before this async configuration arrives.
+        renderPromptList();
+        renderSetupSamplePromptBox();
+        applyStageUI();
       } catch (err) {
         console.error("Remote config failed to load", err);
         appBootLoading = false;
@@ -6561,12 +6601,13 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
       const starterCopied = toBooleanString(
         progress.starterPromptCopied ?? progress.starterCopied
       );
+      const contextSkipped = !isTrainingMode && toBooleanString(progress.contextSkipped);
       const finalPromptCopied = toBooleanString(progress.finalPromptCopied);
       const finalizeVisited = toBooleanString(progress.finalizeVisited);
       const explicitStage = String(progress.currentStage || progress.stage || "").trim();
       const inferredStage = finalizeVisited || finalPromptCopied
         ? "finalize"
-        : (starterCopied ? "prompts" : "setup");
+        : (starterCopied || contextSkipped ? "prompts" : "setup");
       const restoredStage = explicitStage
         ? coerceStageForRestore(explicitStage)
         : coerceStageForRestore(inferredStage);
@@ -6599,6 +6640,7 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
       localStorage.removeItem(KEYS.llmMismatchDescription);
       localStorage.setItem(KEYS.productVersionConfirmed, restoredProduct ? "true" : "false");
       localStorage.setItem(KEYS.starterCopied, starterCopied ? "true" : "false");
+      localStorage.setItem(KEYS.contextSkipped, contextSkipped ? "true" : "false");
       localStorage.setItem(KEYS.finalPromptCopied, finalPromptCopied ? "true" : "false");
       localStorage.setItem(KEYS.finalizeVisited, finalizeVisited ? "true" : "false");
       saveJSON(KEYS.events, restoredEvents);
@@ -6696,6 +6738,7 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
     // Init
     // -----------------------------
     async function init() {
+      if (isTrainingMode) localStorage.removeItem(KEYS.contextSkipped);
       initBootAndConfig();
       const alreadyVerified = initAccessGate();
 
@@ -6904,6 +6947,7 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
             logEvent("starter_copied", {});
             queueLiveSessionUpdate("in_progress");
             starterPromptCopied = true;
+            localStorage.removeItem(KEYS.contextSkipped);
             localStorage.setItem(KEYS.starterCopied, "true");
             localStorage.setItem(KEYS.starterCopiedSetupSignature, getStarterSetupSignature());
             updateConditionalTrainingTips();
@@ -6915,7 +6959,7 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
             $("setupMsg").innerHTML = `
               <strong>You’ve copied the first prompt.</strong> The next step is to paste it into your AI product.<br><br>
               The AI will not start by writing questions right away; it will first show you an initial plan. If you want, you can type instructions to change that initial plan.<br><br>
-              After that, ask the AI for the first question and click <strong>Proceed to 2) Making questions</strong>.
+              After that, use <strong>Show first question</strong> to copy a request for the AI, then click <strong>Proceed to 2) Making questions</strong>.
             `;
             $("setupMsg").style.display = "block";
 
@@ -6953,14 +6997,51 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
       // Register copy handler for document-level delegation (defined at module scope).
       _copyCardHandlers["starterCopyCard"] = copyStarterPrompt;
 
+      // In the optional skip flow, all bands are available immediately. Keep
+      // navigation, session recovery, and finalize-visited tracking in sync.
+      for (const [bandId, stage] of [["bandSetup", "setup"], ["bandPrompts", "prompts"], ["bandFinalize", "finalize"]]) {
+        $(bandId).addEventListener("toggle", () => {
+          if ($(bandId).open && hasSkippedContext() && isSetupComplete() && getStage() !== stage) {
+            setStage(stage);
+          }
+        });
+      }
+
+      $("btnSkipContext").addEventListener("click", () => {
+        if (isTrainingMode || !isProductSelected() || hasSkippedContext()) return;
+        localStorage.setItem(KEYS.contextSkipped, "true");
+        markInteraction();
+        logEvent("context_skipped");
+        appendServerEvent("context_skipped", "btnSkipContext", "Unlocked prompts without requiring contextual details.");
+        applyStageUI();
+        queueLiveSessionUpdate("in_progress");
+        toast("All prompts unlocked. You can continue without filling in context.");
+      });
+
+      $("btnShowFirstQuestion").addEventListener("click", async () => {
+        if (!isSetupComplete() || (!hasSkippedContext() && !hasCurrentStarterPromptCopy())) return;
+        const promptTitle = "Show first question";
+        const ok = await copyToClipboard(FIRST_QUESTION_PROMPT, promptTitle, {
+          kind: "first_question_prompt", promptId: "first_question", promptTitle
+        });
+        // Track each enabled press, including a failed automatic copy.
+        const eventType = ok ? "first_question_prompt_copied" : "first_question_copy_failed";
+        markInteraction();
+        logEvent(eventType);
+        appendServerEvent(eventType, "btnShowFirstQuestion", FIRST_QUESTION_PROMPT, {
+          prompt_id: "first_question", prompt_title: promptTitle, copy_succeeded: ok
+        });
+        queueLiveSessionUpdate("in_progress");
+      });
+
       $("btnGoPrompts").addEventListener("click", () => {
         markInteraction();
         logEvent("go_prompts_clicked");
-        if (!isStarterSetupValid()) {
+        if (!hasSkippedContext() && !isStarterSetupValid()) {
           showExistingErrorToast("Please complete the required setup fields before copying the starter prompt.");
           return;
         }
-        if (!hasCurrentStarterPromptCopy()) {
+        if (!hasSkippedContext() && !hasCurrentStarterPromptCopy()) {
           showExistingErrorToast("Please copy or re-copy the starter prompt before clicking Proceed to 2) Making questions.");
           return;
         }

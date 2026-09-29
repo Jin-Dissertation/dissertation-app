@@ -45,6 +45,34 @@ Audio object keys, filenames, MIME types, and durations are metadata only. This 
 does **not** download private R2 audio, grant bucket access, or copy recordings to
 OneDrive. An approved media-copy/retention workflow remains a separate activation task.
 
+## AQG shortcut tracking
+
+Both participant and nonparticipant pages include these fixed button IDs. No sheet
+row or model-specific configuration is needed for either button.
+
+| Button ID | Participant event | Nonparticipant measure |
+| --- | --- | --- |
+| `btnSkipContext` | `context_skipped` | One cumulative count per enabled press |
+| `btnShowFirstQuestion` | `first_question_prompt_copied`, or `first_question_copy_failed` if automatic copying fails | One cumulative count per enabled press, including failed automatic copies |
+
+The first-question event includes `prompt_id: "first_question"`, the prompt title,
+and a `copy_succeeded` boolean in `detail_json`. Its hard-coded text is identical for
+ChatGPT, Gemini, Copilot, and Other AI:
+
+> I am done setting up questions, please show me the first question
+
+These events use the existing revision-safe AQG save path and appear in `aqg_events`;
+anonymous counts appear in `nonparticipant_button_counts`. The existing capture
+triggers and Excel importer require no schema change. Disabled buttons do not count.
+
+Skipping requires an AI-product selection and unlocks the sample, making-questions,
+and final prompts without required context or a starter-prompt copy. The starter
+prompt itself still needs course/topic. The separate `contextSkipped` recovery flag
+does not falsely mark a starter copy. It survives regular-mode recovery and clears on
+reset or a successful starter copy. Training Mode ignores/removes this flag and keeps
+the skip button visibly disabled with the full-setup explanation. The first-question
+button is at the end of Band 1, enabled after skipping or copying the current starter.
+
 ## Atomic capture and revisions
 
 `0003_reporting_mirror.sql` creates the feed generation, adds `record_json` to

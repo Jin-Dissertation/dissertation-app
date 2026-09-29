@@ -5,6 +5,7 @@
   "scripts": {
     "check": "node scripts/validate.mjs",
     "test": "node --test --test-concurrency=1 test/*.test.mjs",
+    "test:ui": "node --test --test-concurrency=1 test/aqg-browser.mjs",
     "validate": "npm run check && npm test && wrangler deploy --dry-run --outdir .wrangler/reporting-dry-run",
     "deploy": "wrangler deploy",
     "preview": "wrangler preview"
@@ -12,6 +13,7 @@
   "devDependencies": {
     "esbuild": "0.28.1",
     "miniflare": "5.20260925.0-alpha",
+    "playwright": "1.62.1",
     "wrangler": "^4.135.0"
   }
 }
