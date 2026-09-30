@@ -184,6 +184,24 @@ for (const np of [false, true]) {
     const { page } = f;
     const prefix = np ? "dissertation.np" : "dissertation.participant";
     await f.open(np);
+
+    // Participant sign-in queues a durable session_started event. Let that
+    // save finish before navigating to Training Mode so the old document
+    // cannot race the newly loaded page and create an artificial revision
+    // conflict.
+    if (!np) {
+      await eventually(async () => {
+        const pending = await page.evaluate(key => {
+          try {
+            return JSON.parse(localStorage.getItem(key) || "[]").length;
+          } catch {
+            return -1;
+          }
+        }, prefix + ".pendingServerEvents");
+        return pending === 0;
+      }, "participant startup save did not settle before training reload");
+    }
+
     await page.evaluate(key => localStorage.setItem(key, "true"), prefix + ".contextSkipped");
     await f.open(np, true);
     await page.locator('.modelOption[data-model="ChatGPT"]').click();

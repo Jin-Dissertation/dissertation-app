@@ -2486,10 +2486,10 @@
               <div id="setupSamplePromptList" class="setupPromptList promptListCompact"></div>
             </div>
 
-            <div class="row" style="margin-top:16px;">
+            <div class="row" id="firstQuestionRow" hidden style="margin-top:16px; display:none;">
               <button class="btn" id="btnShowFirstQuestion" type="button" aria-describedby="firstQuestionHint" disabled>Show first question</button>
             </div>
-            <p id="firstQuestionHint" class="muted small" style="margin:8px 0 0;">Copy this request and paste it into your AI chat when you are ready to start.</p>
+            <p id="firstQuestionHint" class="muted small" hidden style="margin:8px 0 0; display:none;">Copy this request and paste it into your AI chat when you are ready to start.</p>
 
             <div class="row bandActionRow stageNavRow" id="setupProceedRow" hidden style="display:none;">
               <div class="stageActionWrap">
@@ -2545,8 +2545,7 @@
                   </div>
 
                   <div class="promptSection section-review promptReviewBlock">
-                    <h4 class="promptSectionTitle">Review Questions</h4>
-                    <div id="promptGroupReview" class="promptListSingle"></div>
+                    <div id="promptGroupReview" class="promptListCompact"></div>
                   </div>
                 </div>
 
@@ -2962,6 +2961,12 @@ const PROMPT_META = [
     description: "Show all questions generated so far."
   },
   {
+    id: "instructions_reminder",
+    group: "Pause and Audit",
+    title: "Instructions Reminder",
+    description: "Restate the original starter instructions and continue the current question set."
+  },
+  {
     id: "rebalance_content",
     group: "Pause and Audit",
     title: "Topic Coverage Audit",
@@ -3093,6 +3098,10 @@ const PROMPT_META = [
     }
 
     function getPromptText(promptId) {
+      if (promptId === "instructions_reminder") {
+        return buildInstructionsReminderPrompt();
+      }
+
       const prompt = getPromptDefinition(promptId);
       if (prompt?.prompt_body) return prompt.prompt_body;
 
@@ -3561,7 +3570,20 @@ const PROMPT_META = [
             : "Unlock all prompts without filling in context or copying a starter prompt.";
       }
       const firstQuestionButton = $("btnShowFirstQuestion");
+      const firstQuestionRow = $("firstQuestionRow");
+      const firstQuestionHint = $("firstQuestionHint");
+
       if (firstQuestionButton) firstQuestionButton.disabled = !canProceed;
+
+      if (firstQuestionRow) {
+        firstQuestionRow.hidden = !canProceed;
+        firstQuestionRow.style.display = canProceed ? "" : "none";
+      }
+
+      if (firstQuestionHint) {
+        firstQuestionHint.hidden = !canProceed;
+        firstQuestionHint.style.display = canProceed ? "" : "none";
+      }
 
       if (row) {
         if (showProceedRow) {
@@ -3590,6 +3612,7 @@ const PROMPT_META = [
       if (proceedBtn) delete proceedBtn.dataset.pulseShown;
       updateProceedToPromptsAvailability();
       updateSetupSamplePromptVisibility();
+      renderPromptList();
       const copiedTip = $("starterCopiedTrainingTip");
       if (copiedTip) {
         copiedTip.hidden = true;
@@ -4418,6 +4441,29 @@ const PROMPT_META = [
     .replaceAll("{{QUESTION_COUNT}}", ctx.questionCount || "10")
     .replaceAll("{{NOTES_LINE}}", notesLine);
 }
+
+    function buildInstructionsReminderPrompt() {
+      const starterPrompt = buildStarterPrompt().trim();
+      const paragraphs = starterPrompt.split(/\n\s*\n/);
+
+      // The final paragraph of the starter prompt is a one-time instruction
+      // to create the initial planning table. Do not send the AI back to that step.
+      const finalParagraph = (paragraphs[paragraphs.length - 1] || "").trim();
+      if (
+        /^For now\b/i.test(finalParagraph) &&
+        /(table|plan)/i.test(finalParagraph)
+      ) {
+        paragraphs.pop();
+      }
+
+      const persistentInstructions = paragraphs.join("\n\n").trim();
+      const ctx = getContext();
+      const questionCount = ctx.questionCount || "10";
+
+      return `Remember how the starter prompt at the beginning of this conversation instructed you to create ${questionCount} questions and follow the parameters below. Continue following all of these instructions for the remaining questions. Continue from where we left off; do not restart the question set, return to the initial planning-table step, or repeat questions that have already been accepted.
+
+${persistentInstructions}`;
+    }
 
     function buildFinalPrompt() {
       return getPromptText("final_prompt");
@@ -5846,7 +5892,7 @@ const PROMPT_META = [
         {
           group: "Review Questions",
           container: $("promptGroupReview"),
-          items: ["pause_review"]
+          items: hasCurrentStarterPromptCopy() ? ["pause_review", "instructions_reminder"] : ["pause_review"]
         }
       ];
 
@@ -6950,6 +6996,7 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
             localStorage.removeItem(KEYS.contextSkipped);
             localStorage.setItem(KEYS.starterCopied, "true");
             localStorage.setItem(KEYS.starterCopiedSetupSignature, getStarterSetupSignature());
+            renderPromptList();
             updateConditionalTrainingTips();
             saveCurrentSettingsAsPrevious();
 
