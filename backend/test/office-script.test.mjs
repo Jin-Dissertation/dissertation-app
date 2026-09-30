@@ -123,3 +123,354 @@ test("actual local Worker feed can populate and increment the workbook importer"
   assert.equal(rows[0][5], 3);
   assert.equal(state.last_sequence, m.body.latest_sequence);
 });
+
+function archivedRecord(datasetName, recordId, overrides = {}, revision = 1, hashChar = "a") {
+  const dataset = REPORTING_DATASETS.find(item => item.name === datasetName);
+  const record = Object.fromEntries(
+    dataset.columns.map(column => [
+      column,
+      column === dataset.key ? recordId : null
+    ])
+  );
+
+  Object.assign(record, overrides);
+
+  return {
+    record_id: recordId,
+    revision,
+    record_sha256: hashChar.repeat(64),
+    archive_token: `archive-token-synthetic-${recordId}`,
+    record
+  };
+}
+
+function archivePayload(
+  entries,
+  {
+    exportId = "synthetic-archive-export-1",
+    generation = "c".repeat(32),
+    through = 20,
+    generatedAt = "2026-09-30T18:00:00.000Z"
+  } = {}
+) {
+  const datasets = REPORTING_DATASETS.map(dataset => {
+    const records = entries
+      .filter(entry => entry.dataset === dataset.name)
+      .map(entry => entry.record);
+
+    return {
+      name: dataset.name,
+      key: dataset.key,
+      columns: dataset.columns,
+      record_count: records.length,
+      records
+    };
+  });
+
+  return {
+    format: "dissertation_reporting_archive_export",
+    format_version: 1,
+    protocol_version: 1,
+    export_id: exportId,
+    generated_at: generatedAt,
+    feed_generation: generation,
+    through_sequence: through,
+    total_records: entries.length,
+    datasets
+  };
+}
+
+test("Office script: archive import writes master tables and returns verified receipt", () => {
+  const workbook = new Workbook();
+
+  const archive = archivePayload([
+    {
+      dataset: "aqg_feedback",
+      record: archivedRecord(
+        "aqg_feedback",
+        "archive-feedback-1",
+        {
+          feedback_id: "archive-feedback-1",
+          participant_id: "TEST001",
+          text_feedback: "Synthetic archived feedback"
+        }
+      )
+    },
+    {
+      dataset: "nonparticipant_button_counts",
+      record: archivedRecord(
+        "nonparticipant_button_counts",
+        "archive-button-1",
+        {
+          press_count: 7,
+          updated_at: "2026-09-30T17:00:00.000Z"
+        },
+        2,
+        "b"
+      )
+    }
+  ]);
+
+  const receipt = run(workbook, "archive_import", archive);
+
+  assert.equal(receipt.format, "dissertation_reporting_archive_receipt");
+  assert.equal(receipt.export_id, archive.export_id);
+  assert.equal(receipt.feed_generation, archive.feed_generation);
+  assert.equal(receipt.through_sequence, 20);
+  assert.equal(receipt.verified_records.length, 2);
+
+  assert.equal(
+    workbook.getTable("tbl_aqg_feedback").rows.length,
+    1
+  );
+
+  assert.equal(
+    workbook.getTable("tbl_nonparticipant_button_counts").rows.length,
+    1
+  );
+
+  assert.equal(
+    workbook.getTable("archive_verified_records").rows.length,
+    2
+  );
+
+  assert.equal(
+    workbook.getTable("archive_import_log").rows.length,
+    1
+  );
+
+  assert.equal(
+    workbook.getTable("mirror_sync_state"),
+    undefined
+  );
+});
+
+test("Office script: archive import preserves literal formulas and full long text", () => {
+  const workbook = new Workbook();
+
+  const longText =
+    "=" +
+    "x".repeat(30000) +
+    "😀" +
+    "y".repeat(31000);
+
+  const archive = archivePayload([
+    {
+      dataset: "aqg_feedback",
+      record: archivedRecord(
+        "aqg_feedback",
+        "archive-long",
+        {
+          feedback_id: "archive-long",
+          participant_id: "TEST001",
+          text_feedback: longText,
+          audio_original_filename: "=HYPERLINK(\"https://invalid\")"
+        }
+      )
+    }
+  ]);
+
+  const receipt = run(workbook, "archive_import", archive);
+
+  assert.equal(receipt.verified_records.length, 1);
+  assert.deepEqual(workbook.formulas, []);
+
+  const chunks = workbook.getTable("mirror_text_chunks");
+  assert.equal(
+    chunks.rows.map(row => row[5]).join(""),
+    longText
+  );
+
+  assert.ok(
+    chunks.rows.every(row => String(row[5]).length <= 30000)
+  );
+});
+
+test("Office script: interrupted archive import produces no completed log and replays safely", () => {
+  const workbook = new Workbook();
+
+  const archive = archivePayload([
+    {
+      dataset: "aqg_feedback",
+      record: archivedRecord(
+        "aqg_feedback",
+        "archive-replay",
+        {
+          feedback_id: "archive-replay",
+          participant_id: "TEST001",
+          text_feedback: "Replay safety"
+        }
+      )
+    }
+  ]);
+
+  workbook.failWrite = name => {
+    if (name === "archive_import_log") {
+      throw new Error("Synthetic archive completion failure");
+    }
+  };
+
+  assert.throws(
+    () => run(workbook, "archive_import", archive),
+    /completion failure/
+  );
+
+  assert.equal(
+    workbook.getTable("archive_import_log").rows.length,
+    0
+  );
+
+  workbook.failWrite = null;
+
+  const receipt = run(workbook, "archive_import", archive);
+
+  assert.equal(receipt.verified_records.length, 1);
+  assert.equal(
+    workbook.getTable("tbl_aqg_feedback").rows.length,
+    1
+  );
+  assert.equal(
+    workbook.getTable("archive_verified_records").rows.length,
+    1
+  );
+  assert.equal(
+    workbook.getTable("archive_import_log").rows.length,
+    1
+  );
+});
+
+test("Office script: later archive can update master across feed generations without deleting older master rows", () => {
+  const workbook = new Workbook();
+
+  const first = archivePayload([
+    {
+      dataset: "aqg_feedback",
+      record: archivedRecord(
+        "aqg_feedback",
+        "archive-existing",
+        {
+          feedback_id: "archive-existing",
+          participant_id: "TEST001",
+          text_feedback: "First version"
+        }
+      )
+    },
+    {
+      dataset: "aqg_feedback",
+      record: archivedRecord(
+        "aqg_feedback",
+        "archive-preserved",
+        {
+          feedback_id: "archive-preserved",
+          participant_id: "TEST001",
+          text_feedback: "Must remain in master"
+        },
+        1,
+        "b"
+      )
+    }
+  ]);
+
+  run(workbook, "archive_import", first);
+
+  const second = archivePayload(
+    [
+      {
+        dataset: "aqg_feedback",
+        record: archivedRecord(
+          "aqg_feedback",
+          "archive-existing",
+          {
+            feedback_id: "archive-existing",
+            participant_id: "TEST001",
+            text_feedback: "Second version"
+          },
+          1,
+          "c"
+        )
+      }
+    ],
+    {
+      exportId: "synthetic-archive-export-2",
+      generation: "d".repeat(32),
+      through: 4,
+      generatedAt: "2026-09-30T19:00:00.000Z"
+    }
+  );
+
+  run(workbook, "archive_import", second);
+
+  const table = workbook.getTable("tbl_aqg_feedback");
+
+  assert.equal(table.rows.length, 2);
+
+  const idColumn = table.headers.indexOf("record_id");
+  const textColumn = table.headers.indexOf("text_feedback");
+
+  const existing = table.rows.find(
+    row => row[idColumn] === "archive-existing"
+  );
+
+  const preserved = table.rows.find(
+    row => row[idColumn] === "archive-preserved"
+  );
+
+  assert.equal(existing[textColumn], "Second version");
+  assert.equal(preserved[textColumn], "Must remain in master");
+
+  assert.equal(
+    workbook.getTable("archive_import_log").rows.length,
+    2
+  );
+});
+
+test("Office script: archive import rejects an older completed checkpoint", () => {
+  const workbook = new Workbook();
+
+  const newer = archivePayload(
+    [{
+      dataset: "nonparticipant_button_counts",
+      record: archivedRecord(
+        "nonparticipant_button_counts",
+        "archive-count",
+        { press_count: 10, updated_at: "newer" }
+      )
+    }],
+    {
+      exportId: "newer-export",
+      through: 30,
+      generatedAt: "2026-09-30T20:00:00.000Z"
+    }
+  );
+
+  run(workbook, "archive_import", newer);
+
+  const older = archivePayload(
+    [{
+      dataset: "nonparticipant_button_counts",
+      record: archivedRecord(
+        "nonparticipant_button_counts",
+        "archive-count",
+        { press_count: 5, updated_at: "older" }
+      )
+    }],
+    {
+      exportId: "older-export",
+      through: 20,
+      generatedAt: "2026-09-30T21:00:00.000Z"
+    }
+  );
+
+  assert.throws(
+    () => run(workbook, "archive_import", older),
+    /checkpoint is older/
+  );
+
+  const table =
+    workbook.getTable("tbl_nonparticipant_button_counts");
+
+  const pressCountIndex =
+    table.headers.indexOf("press_count");
+
+  assert.equal(table.rows[0][pressCountIndex], 10);
+});

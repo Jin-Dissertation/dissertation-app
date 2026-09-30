@@ -18,6 +18,39 @@ interface Page {
 }
 interface SyncState { initialized: boolean; feed_generation: string; last_sequence: number; protocol_version: number; }
 
+interface ArchiveRecord {
+  record_id: string;
+  revision: number;
+  record_sha256: string;
+  archive_token: string;
+  record: { [key: string]: ResearchValue };
+}
+interface ArchiveDataset {
+  name: string;
+  key: string;
+  columns: string[];
+  record_count: number;
+  records: ArchiveRecord[];
+}
+interface ArchiveExport {
+  format: string;
+  format_version: number;
+  protocol_version: number;
+  export_id: string;
+  generated_at: string;
+  feed_generation: string;
+  through_sequence: number;
+  total_records: number;
+  datasets: ArchiveDataset[];
+}
+interface ArchiveReceiptRecord {
+  dataset: string;
+  record_id: string;
+  revision: number;
+  record_sha256: string;
+  archive_token: string;
+}
+
 const DATASETS: DatasetSpec[] = [
   {
     "name": "aqg_submissions",
@@ -178,6 +211,16 @@ const DATASETS: DatasetSpec[] = [
 const META = ["mirror_record_id", "mirror_revision", "mirror_sequence", "mirror_deleted"];
 const STATE_HEADERS = ["feed_generation", "last_sequence", "protocol_version", "last_synced_at"];
 const CHUNK_HEADERS = ["dataset", "record_id", "revision", "field", "part", "text"];
+const ARCHIVE_VERIFY_HEADERS = [
+  "export_id", "feed_generation", "through_sequence", "dataset",
+  "record_id", "revision", "record_sha256", "archive_token", "verified_at"
+];
+const ARCHIVE_LOG_HEADERS = [
+  "export_id", "feed_generation", "through_sequence", "generated_at",
+  "total_records", "verified_records", "imported_at"
+];
+const ARCHIVE_EXPORT_FORMAT = "dissertation_reporting_archive_export";
+const ARCHIVE_RECEIPT_FORMAT = "dissertation_reporting_archive_receipt";
 
 function main(workbook: ExcelScript.Workbook, action: string = "status", payloadJson: string = ""): string {
   const state = readState(workbook);
@@ -200,7 +243,12 @@ function main(workbook: ExcelScript.Workbook, action: string = "status", payload
     table.addRows(-1, [[manifest.feed_generation, 0, 1, new Date().toISOString()]]);
     return JSON.stringify(readState(workbook));
   }
-  if (action !== "apply") throw new Error("Expected status, initialize, or apply");
+  if (action === "archive_import") {
+    const archive = JSON.parse(payloadJson) as ArchiveExport;
+    return JSON.stringify(importArchive(workbook, archive));
+  }
+
+  if (action !== "apply") throw new Error("Expected status, initialize, archive_import, or apply");
   if (!state.initialized) throw new Error("Initialize a blank workbook with the manifest first");
   const page = JSON.parse(payloadJson) as Page;
   validatePage(page, state);
@@ -244,6 +292,412 @@ function main(workbook: ExcelScript.Workbook, action: string = "status", payload
   requiredTable(workbook, "mirror_sync_state", STATE_HEADERS).getRangeBetweenHeaderAndTotal().getRow(0)
     .setValues([[state.feed_generation, page.next_after, 1, new Date().toISOString()]]);
   return JSON.stringify(readState(workbook));
+}
+
+function importArchive(workbook: ExcelScript.Workbook, archive: ArchiveExport): object {
+  validateArchiveExport(archive);
+
+  // Archive mode can use a blank workbook or the reporting tables created by
+  // the existing importer. It never advances mirror_sync_state.
+  const tables = DATASETS.map(dataset =>
+    ensureTable(workbook, "tbl_" + dataset.name, dataset.name, dataset.columns)
+  );
+  const chunks = ensureTable(workbook, "mirror_text_chunks", "mirror_text_chunks", CHUNK_HEADERS);
+  const verifiedTable = ensureTable(
+    workbook,
+    "archive_verified_records",
+    "archive_verified_records",
+    ARCHIVE_VERIFY_HEADERS
+  );
+  const logTable = ensureTable(
+    workbook,
+    "archive_import_log",
+    "archive_import_log",
+    ARCHIVE_LOG_HEADERS
+  );
+
+  rejectOlderArchive(logTable, archive);
+
+  const verifiedAt = new Date().toISOString();
+  const receiptRecords: ArchiveReceiptRecord[] = [];
+
+  for (let datasetIndex = 0; datasetIndex < archive.datasets.length; datasetIndex++) {
+    const archiveDataset = archive.datasets[datasetIndex];
+    const dataset = DATASETS[datasetIndex];
+    const table = tables[datasetIndex];
+
+    for (const archived of archiveDataset.records) {
+      writeArchiveRecord(
+        table,
+        chunks,
+        dataset,
+        archived
+      );
+
+      // Critical safety check: read the values back out of the workbook after
+      // writing. A receipt is issued only if the persisted master row matches
+      // the archive payload exactly.
+      verifyArchiveRecord(
+        table,
+        chunks,
+        dataset,
+        archived
+      );
+
+      upsertArchiveVerification(
+        verifiedTable,
+        archive,
+        dataset.name,
+        archived,
+        verifiedAt
+      );
+
+      receiptRecords.push({
+        dataset: dataset.name,
+        record_id: archived.record_id,
+        revision: archived.revision,
+        record_sha256: archived.record_sha256,
+        archive_token: archived.archive_token
+      });
+    }
+  }
+
+  if (receiptRecords.length !== archive.total_records) {
+    throw new Error("Archive verification count does not match export");
+  }
+
+  // Completion marker is deliberately the final workbook write. If any record
+  // import or read-back fails, there is no completed archive_import_log row
+  // and no successful receipt returned to the caller.
+  upsertArchiveLog(logTable, archive, receiptRecords.length, verifiedAt);
+
+  return {
+    format: ARCHIVE_RECEIPT_FORMAT,
+    format_version: 1,
+    export_id: archive.export_id,
+    feed_generation: archive.feed_generation,
+    through_sequence: archive.through_sequence,
+    verified_at: verifiedAt,
+    verified_records: receiptRecords
+  };
+}
+
+function validateArchiveExport(archive: ArchiveExport): void {
+  if (!archive || archive.format !== ARCHIVE_EXPORT_FORMAT ||
+      archive.format_version !== 1 || archive.protocol_version !== 1) {
+    throw new Error("Unsupported archive export");
+  }
+
+  if (typeof archive.export_id !== "string" || !archive.export_id ||
+      archive.export_id.length > 200) {
+    throw new Error("Invalid archive export ID");
+  }
+
+  if (!/^[a-f0-9]{32}$/.test(archive.feed_generation) ||
+      !Number.isSafeInteger(archive.through_sequence) ||
+      archive.through_sequence < 0 ||
+      !Number.isSafeInteger(archive.total_records) ||
+      archive.total_records < 0 ||
+      typeof archive.generated_at !== "string" ||
+      Number.isNaN(Date.parse(archive.generated_at))) {
+    throw new Error("Invalid archive checkpoint");
+  }
+
+  if (!Array.isArray(archive.datasets) ||
+      archive.datasets.length !== DATASETS.length) {
+    throw new Error("Invalid archive dataset contract");
+  }
+
+  const seen = new Set<string>();
+  let total = 0;
+
+  for (let i = 0; i < DATASETS.length; i++) {
+    const expected = DATASETS[i];
+    const actual = archive.datasets[i];
+
+    if (!actual ||
+        actual.name !== expected.name ||
+        actual.key !== expected.key ||
+        JSON.stringify(actual.columns) !== JSON.stringify(expected.columns) ||
+        !Array.isArray(actual.records) ||
+        !Number.isSafeInteger(actual.record_count) ||
+        actual.record_count !== actual.records.length) {
+      throw new Error("Archive dataset contract mismatch");
+    }
+
+    for (const archived of actual.records) {
+      if (!archived ||
+          typeof archived.record_id !== "string" ||
+          !archived.record_id ||
+          archived.record_id.length > 1000 ||
+          !Number.isSafeInteger(archived.revision) ||
+          archived.revision < 1 ||
+          !/^[a-f0-9]{64}$/.test(archived.record_sha256) ||
+          !/^[A-Za-z0-9_-]{20,200}$/.test(archived.archive_token) ||
+          !archived.record ||
+          archived.record[expected.key] !== archived.record_id ||
+          JSON.stringify(Object.keys(archived.record).sort()) !==
+            JSON.stringify(expected.columns.slice().sort())) {
+        throw new Error("Invalid archive record");
+      }
+
+      const unique = actual.name + "\u0000" + archived.record_id;
+      if (seen.has(unique)) throw new Error("Duplicate archive record");
+      seen.add(unique);
+
+      for (const column of expected.columns) {
+        const value = archived.record[column];
+        if (value !== null &&
+            typeof value !== "string" &&
+            typeof value !== "number" &&
+            typeof value !== "boolean") {
+          throw new Error("Invalid archive cell value");
+        }
+        if (typeof value === "number" && !Number.isFinite(value)) {
+          throw new Error("Invalid archive number");
+        }
+      }
+
+      total++;
+    }
+  }
+
+  if (total !== archive.total_records) {
+    throw new Error("Archive total record count mismatch");
+  }
+}
+
+function rejectOlderArchive(table: ExcelScript.Table, archive: ArchiveExport): void {
+  if (!table.getRowCount()) return;
+
+  const rows = table.getRangeBetweenHeaderAndTotal().getValues();
+
+  for (const row of rows) {
+    if (String(row[0]) === archive.export_id) return;
+  }
+
+  let latestGenerated = "";
+  let sameGenerationThrough = -1;
+
+  for (const row of rows) {
+    const generatedAt = String(row[3] || "");
+    if (generatedAt > latestGenerated) latestGenerated = generatedAt;
+
+    if (String(row[1]) === archive.feed_generation) {
+      sameGenerationThrough = Math.max(
+        sameGenerationThrough,
+        Number(row[2])
+      );
+    }
+  }
+
+  if (latestGenerated && archive.generated_at < latestGenerated) {
+    throw new Error("Archive is older than the latest completed import");
+  }
+
+  if (sameGenerationThrough > archive.through_sequence) {
+    throw new Error("Archive checkpoint is older than this generation's completed import");
+  }
+}
+
+function writeArchiveRecord(
+  table: ExcelScript.Table,
+  chunks: ExcelScript.Table,
+  dataset: DatasetSpec,
+  archived: ArchiveRecord
+): void {
+  const keys = columnValues(table, dataset.key);
+  const rowIndex = keys.findIndex(
+    value => String(value) === archived.record_id
+  );
+
+  removeChunks(chunks, dataset.name, archived.record_id);
+
+  const row: Cell[] = [];
+
+  for (const column of dataset.columns) {
+    const value = archived.record[column];
+
+    if (typeof value === "string" && value.length > 30000) {
+      const pieces = splitText(value);
+
+      chunks.addRows(
+        -1,
+        pieces.map((piece, index) => [
+          dataset.name,
+          safeText(archived.record_id),
+          archived.revision,
+          column,
+          index + 1,
+          safeText(piece)
+        ])
+      );
+
+      row.push(
+        `[Long text: ${value.length} characters; see mirror_text_chunks / ${column}]`
+      );
+    } else {
+      row.push(
+        value === null
+          ? ""
+          : typeof value === "string"
+            ? safeText(value)
+            : value
+      );
+    }
+  }
+
+  if (rowIndex < 0) {
+    table.addRows(-1, [row]);
+  } else {
+    table
+      .getRangeBetweenHeaderAndTotal()
+      .getRow(rowIndex)
+      .setValues([row]);
+  }
+}
+
+function verifyArchiveRecord(
+  table: ExcelScript.Table,
+  chunks: ExcelScript.Table,
+  dataset: DatasetSpec,
+  archived: ArchiveRecord
+): void {
+  const keys = columnValues(table, dataset.key);
+  const rowIndex = keys.findIndex(
+    value => String(value) === archived.record_id
+  );
+
+  if (rowIndex < 0) {
+    throw new Error("Imported archive row is missing");
+  }
+
+  const row = table
+    .getRangeBetweenHeaderAndTotal()
+    .getRow(rowIndex)
+    .getValues()[0];
+
+  const keyIndex = dataset.columns.indexOf(dataset.key);
+
+  if (
+    keyIndex < 0 ||
+    String(row[keyIndex]) !== archived.record_id
+  ) {
+    throw new Error("Imported archive key did not persist correctly");
+  }
+
+  for (let i = 0; i < dataset.columns.length; i++) {
+    const column = dataset.columns[i];
+    const expected = archived.record[column];
+
+    if (typeof expected === "string" && expected.length > 30000) {
+      const restored = readChunkedValue(
+        chunks,
+        dataset.name,
+        archived.record_id,
+        archived.revision,
+        column
+      );
+
+      if (restored !== expected) {
+        throw new Error("Imported long text did not persist correctly");
+      }
+
+      continue;
+    }
+
+    const actual = row[i];
+
+    if (expected === null) {
+      if (actual !== "") {
+        throw new Error("Imported null value did not persist correctly");
+      }
+    } else if (actual !== expected) {
+      throw new Error("Imported archive value did not persist correctly");
+    }
+  }
+}
+
+function readChunkedValue(
+  table: ExcelScript.Table,
+  dataset: string,
+  recordId: string,
+  revision: number,
+  field: string
+): string {
+  if (!table.getRowCount()) return "";
+
+  const rows = table.getRangeBetweenHeaderAndTotal().getValues()
+    .filter(row =>
+      String(row[0]) === dataset &&
+      String(row[1]) === recordId &&
+      Number(row[2]) === revision &&
+      String(row[3]) === field
+    )
+    .sort((a, b) => Number(a[4]) - Number(b[4]));
+
+  return rows.map(row => String(row[5])).join("");
+}
+
+function upsertArchiveVerification(
+  table: ExcelScript.Table,
+  archive: ArchiveExport,
+  dataset: string,
+  archived: ArchiveRecord,
+  verifiedAt: string
+): void {
+  const rows = table.getRowCount()
+    ? table.getRangeBetweenHeaderAndTotal().getValues()
+    : [];
+
+  const rowIndex = rows.findIndex(row =>
+    String(row[0]) === archive.export_id &&
+    String(row[3]) === dataset &&
+    String(row[4]) === archived.record_id
+  );
+
+  const row: Cell[] = [
+    safeText(archive.export_id),
+    archive.feed_generation,
+    archive.through_sequence,
+    dataset,
+    safeText(archived.record_id),
+    archived.revision,
+    archived.record_sha256,
+    archived.archive_token,
+    verifiedAt
+  ];
+
+  if (rowIndex < 0) table.addRows(-1, [row]);
+  else table.getRangeBetweenHeaderAndTotal().getRow(rowIndex).setValues([row]);
+}
+
+function upsertArchiveLog(
+  table: ExcelScript.Table,
+  archive: ArchiveExport,
+  verifiedRecords: number,
+  importedAt: string
+): void {
+  const rows = table.getRowCount()
+    ? table.getRangeBetweenHeaderAndTotal().getValues()
+    : [];
+
+  const rowIndex = rows.findIndex(
+    row => String(row[0]) === archive.export_id
+  );
+
+  const row: Cell[] = [
+    safeText(archive.export_id),
+    archive.feed_generation,
+    archive.through_sequence,
+    archive.generated_at,
+    archive.total_records,
+    verifiedRecords,
+    importedAt
+  ];
+
+  if (rowIndex < 0) table.addRows(-1, [row]);
+  else table.getRangeBetweenHeaderAndTotal().getRow(rowIndex).setValues([row]);
 }
 
 function readState(workbook: ExcelScript.Workbook): SyncState {

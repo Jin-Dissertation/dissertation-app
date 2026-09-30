@@ -40,10 +40,13 @@ class Table {
   getRangeBetweenHeaderAndTotal() {
     return {
       getValues: () => structuredClone(this.rows),
-      getRow: index => ({ setValues: values => {
-        this.workbook.write(this.name, "setValues");
-        this.rows[index] = values[0].map(v => this.workbook.cell(v));
-      } })
+      getRow: index => ({
+        getValues: () => [structuredClone(this.rows[index])],
+        setValues: values => {
+          this.workbook.write(this.name, "setValues");
+          this.rows[index] = values[0].map(v => this.workbook.cell(v));
+        }
+      })
     };
   }
   getColumnByName(name) {
