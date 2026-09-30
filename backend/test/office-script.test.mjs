@@ -474,3 +474,63 @@ test("Office script: archive import rejects an older completed checkpoint", () =
 
   assert.equal(table.rows[0][pressCountIndex], 10);
 });
+
+test("Office script: archive import converts existing header-only master worksheets into tables", () => {
+  const workbook = new Workbook();
+
+  for (const dataset of REPORTING_DATASETS) {
+    const sheet = workbook.addWorksheet(dataset.name);
+    sheet
+      .getRangeByIndexes(0, 0, 1, dataset.columns.length)
+      .setValues([dataset.columns]);
+  }
+
+  const archive = archivePayload([
+    {
+      dataset: "aqg_feedback",
+      record: archivedRecord(
+        "aqg_feedback",
+        "existing-template-record",
+        {
+          feedback_id: "existing-template-record",
+          participant_id: "TEST001",
+          text_feedback: "Imported into existing workbook template"
+        }
+      )
+    }
+  ]);
+
+  const receipt = run(workbook, "archive_import", archive);
+
+  assert.equal(receipt.verified_records.length, 1);
+
+  assert.ok(workbook.getTable("tbl_aqg_submissions"));
+  assert.ok(workbook.getTable("tbl_aqg_events"));
+  assert.ok(workbook.getTable("tbl_aqg_feedback"));
+  assert.ok(workbook.getTable("tbl_training_submissions"));
+  assert.ok(workbook.getTable("tbl_training_submission_items"));
+  assert.ok(workbook.getTable("tbl_training_events"));
+  assert.ok(workbook.getTable("tbl_training_feedback"));
+  assert.ok(workbook.getTable("tbl_nonparticipant_button_counts"));
+
+  assert.equal(
+    workbook.getTable("tbl_aqg_feedback").rows.length,
+    1
+  );
+});
+
+test("Office script: archive import refuses an existing worksheet with incorrect headers", () => {
+  const workbook = new Workbook();
+
+  const sheet = workbook.addWorksheet("aqg_submissions");
+  sheet
+    .getRangeByIndexes(0, 0, 1, 1)
+    .setValues([["wrong_header"]]);
+
+  const archive = archivePayload([]);
+
+  assert.throws(
+    () => run(workbook, "archive_import", archive),
+    /headers do not match/
+  );
+});

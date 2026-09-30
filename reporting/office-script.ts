@@ -724,13 +724,42 @@ function requiredTable(workbook: ExcelScript.Workbook, name: string, headers: st
 
 function ensureTable(workbook: ExcelScript.Workbook, name: string, sheetName: string, headers: string[]): ExcelScript.Table {
   const existing = workbook.getTable(name);
-  if (existing) { assertHeaders(existing, headers); return existing; }
-  if (workbook.getWorksheet(sheetName)) throw new Error("Existing worksheet without expected table: " + sheetName);
+  if (existing) {
+    assertHeaders(existing, headers);
+    return existing;
+  }
+
+  const existingSheet = workbook.getWorksheet(sheetName);
+
+  if (existingSheet) {
+    const headerRange = existingSheet.getRangeByIndexes(
+      0,
+      0,
+      1,
+      headers.length
+    );
+
+    const actualHeaders = headerRange.getValues()[0];
+
+    if (JSON.stringify(actualHeaders) !== JSON.stringify(headers)) {
+      throw new Error(
+        "Existing worksheet headers do not match expected reporting columns: " +
+        sheetName
+      );
+    }
+
+    const table = existingSheet.addTable(headerRange, true);
+    table.setName(name);
+    return table;
+  }
+
   const sheet = workbook.addWorksheet(sheetName);
   const range = sheet.getRangeByIndexes(0, 0, 1, headers.length);
   range.setValues([headers]);
+
   const table = sheet.addTable(range, true);
   table.setName(name);
+
   return table;
 }
 

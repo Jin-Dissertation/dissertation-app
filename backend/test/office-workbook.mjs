@@ -8,13 +8,30 @@ export class Workbook {
   getTable(name) { return this.tables.get(name); }
   getWorksheet(name) { return this.sheets.get(name); }
   addWorksheet(name) {
+    const ranges = new Map();
+
     const sheet = {
-      getRangeByIndexes: () => {
-        const range = { values: [], setValues: values => { range.values = values; } };
-        return range;
+      getRangeByIndexes: (row, column, rowCount, columnCount) => {
+        const key = `${row}:${column}:${rowCount}:${columnCount}`;
+
+        if (!ranges.has(key)) {
+          const range = {
+            values: [],
+            getValues: () => structuredClone(range.values),
+            setValues: values => {
+              range.values = structuredClone(values);
+            }
+          };
+
+          ranges.set(key, range);
+        }
+
+        return ranges.get(key);
       },
+
       addTable: range => new Table(this, range.values[0])
     };
+
     this.sheets.set(name, sheet);
     return sheet;
   }
