@@ -43,6 +43,9 @@ export class Workbook {
     if (value.length > 32767) throw new Error("Excel cell limit");
     if (value.startsWith("'")) return value.slice(1);
     if (/^[\s\u0000-\u001f]*[=+\-@]/.test(value)) this.formulas.push(value);
+    // Approximate Excel's coercion of numeric-looking text when it is not
+    // explicitly written as literal text.
+    if (/^-?(?:\d+|\d*\.\d+)$/.test(value)) return Number(value);
     return value;
   }
 }

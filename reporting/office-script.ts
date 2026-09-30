@@ -779,9 +779,10 @@ function removeChunks(table: ExcelScript.Table, dataset: string, recordId: strin
 }
 
 function safeText(value: string): string {
-  // Excel interprets formula-like strings passed to setValues/addRows. An Excel
-  // apostrophe escapes them as literal text; escape a leading apostrophe too.
-  return /^[\s\u0000-\u001f]*[=+\-@']/.test(value) ? "'" + value : value;
+  // Force every non-empty archive string to be stored as literal Excel text.
+  // This prevents Excel from changing values such as "12" into the number 12,
+  // interpreting dates, or treating formula-like strings as formulas.
+  return value === "" ? "" : "'" + value;
 }
 
 function splitText(value: string): string[] {

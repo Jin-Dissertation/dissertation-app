@@ -286,6 +286,49 @@ test("Office script: archive import preserves literal formulas and full long tex
   );
 });
 
+test("Office script: archive import preserves numeric-looking strings as text", () => {
+  const workbook = new Workbook();
+
+  const archive = archivePayload([
+    {
+      dataset: "aqg_submissions",
+      record: archivedRecord(
+        "aqg_submissions",
+        "archive-numeric-submission",
+        {
+          participant_id: "TEST001",
+          desired_questions: "12"
+        }
+      )
+    },
+    {
+      dataset: "training_submission_items",
+      record: archivedRecord(
+        "training_submission_items",
+        "archive-numeric-response",
+        {
+          participant_id: "TEST001",
+          response_text: "0"
+        }
+      )
+    }
+  ]);
+
+  const receipt = run(workbook, "archive_import", archive);
+
+  assert.equal(receipt.verified_records.length, 2);
+
+  const submissions = workbook.getTable("tbl_aqg_submissions");
+  const desiredIndex = submissions.headers.indexOf("desired_questions");
+  assert.equal(submissions.rows[0][desiredIndex], "12");
+  assert.equal(typeof submissions.rows[0][desiredIndex], "string");
+
+  const items = workbook.getTable("tbl_training_submission_items");
+  const responseIndex = items.headers.indexOf("response_text");
+  assert.equal(items.rows[0][responseIndex], "0");
+  assert.equal(typeof items.rows[0][responseIndex], "string");
+});
+
 test("Office script: interrupted archive import produces no completed log and replays safely", () => {
   const workbook = new Workbook();
 
