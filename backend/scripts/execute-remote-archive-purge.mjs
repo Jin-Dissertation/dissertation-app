@@ -68,18 +68,10 @@ async function remotePlan({ archiveExport, receipt, backendDirectory }) {
     verifiedRecords: verified.verified_records
   });
 
-  const snapshotSqlPath = resolve(
-    tmpdir(),
-    `dissertation-archive-snapshot-${randomUUID()}.sql`
-  );
+  const wranglerResults = [];
 
-  await writeFile(snapshotSqlPath, query.sql, { mode: 0o600 });
-  await chmod(snapshotSqlPath, 0o600);
-
-  let stdout;
-
-  try {
-    ({ stdout } = await execFileAsync(
+  for (const statement of query.statements) {
+    const { stdout } = await execFileAsync(
       "npx",
       [
         "--yes",
@@ -89,21 +81,29 @@ async function remotePlan({ archiveExport, receipt, backendDirectory }) {
         "dissertation-study-data",
         "--remote",
         "--json",
-        "--file",
-        snapshotSqlPath
+        "--command",
+        statement.sql
       ],
       {
         cwd: backendDirectory,
         maxBuffer: 64 * 1024 * 1024
       }
-    ));
-  } finally {
-    await unlink(snapshotSqlPath).catch(() => {});
+    );
+
+    const parsed = parseWranglerJsonOutput(stdout);
+
+    if (!Array.isArray(parsed) || parsed.length !== 1) {
+      throw new Error(
+        "Wrangler returned an unexpected result count for a snapshot SELECT."
+      );
+    }
+
+    wranglerResults.push(parsed[0]);
   }
 
   const snapshot = parseWranglerArchiveSnapshot({
     query,
-    wranglerResults: parseWranglerJsonOutput(stdout)
+    wranglerResults
   });
 
   return buildArchivePurgePlan({
