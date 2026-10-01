@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="A self-contained, prompt-based tool for faculty using AI to draft and refine multiple-choice questions." />
+  <title>AI-Assisted Question Writing Tool</title>
+  <style>
+    :root {
+      --bg: #f6f3ea;
+      --card: #fffdf8;
+      --card-strong: #ffffff;
+      --text: #17332f;
+      --muted: #60736e;
+      --border: #d7dfda;
+      --accent: #0f766e;
+      --accent-dark: #0b5f59;
+      --accent-soft: #dff5f1;
+      --gold: #b77912;
+      --gold-soft: #fff2cd;
+      --danger: #a63d40;
+      --shadow: 0 8px 24px rgba(34, 62, 56, 0.08);
+      --radius: 16px;
+      --max: 1240px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(15,118,110,.08), transparent 34rem),
+        radial-gradient(circle at top right, rgba(183,121,18,.08), transparent 30rem),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    button, input, textarea, select { font: inherit; }
+    button { color: inherit; }
+
+    .page {
+      width: min(calc(100% - 28px), var(--max));
+      margin: 0 auto;
+      padding: 24px 0 38px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .heroCard {
+      background: rgba(255,253,248,.92);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+    .eyebrow {
+      color: var(--accent);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(1.75rem, 4vw, 2.65rem);
+      line-height: 1.05;
+      letter-spacing: -.035em;
+    }
+    .subtitle {
+      margin: 10px 0 0;
+      color: var(--muted);
+      max-width: 760px;
+      font-size: 1rem;
+    }
+    .privacyLine {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      font-size: .84rem;
+      font-weight: 700;
+    }
+    .studyInvite {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border: 1px solid #e8d39c;
+      border-radius: 14px;
+      background: #fff8e7;
+      color: #654b1f;
+      font-size: .9rem;
+    }
+    .studyInvite a {
+      color: #7a5010;
+      font-weight: 800;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+    @media (min-width: 1040px) {
+      .workspace { grid-template-columns: minmax(0, 1fr) 300px; }
+      .sidePanel { position: sticky; top: 16px; }
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255,253,248,.95);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel + .panel { margin-top: 14px; }
+
+    details.stage > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 15px 17px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: #fffdf8;
+      border-bottom: 1px solid transparent;
+    }
+    details.stage > summary::-webkit-details-marker { display: none; }
+    details.stage[open] > summary {
+      background: #f3faf8;
+      border-bottom-color: var(--border);
+    }
+    .stageHeading {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      min-width: 0;
+    }
+    .stageNumber {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--accent);
+      color: white;
+      font-weight: 800;
+      flex: 0 0 auto;
+    }
+    .stageTitle { font-weight: 800; }
+    .stageTag {
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #eef2ef;
+      color: var(--muted);
+      font-size: .74rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .stageTag.ready {
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+    }
+    .stageTag.locked {
+      background: var(--gold-soft);
+      color: #7a5010;
+    }
+    .stageBody { padding: 18px; }
+
+    .subsection + .subsection { margin-top: 20px; }
+    .subsectionTitle {
+      margin: 0 0 8px;
+      font-size: .95rem;
+      font-weight: 800;
+    }
+    .sectionHelp {
+      margin: -2px 0 12px;
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    .contextGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (min-width: 760px) {
+      .contextGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    .contextCard {
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fbfcf9;
+      min-height: 146px;
+      padding: 12px 10px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-align: center;
+      transition: .16s ease;
+    }
+    .contextCard:hover {
+      transform: translateY(-2px);
+      border-color: #8bb9b2;
+      box-shadow: 0 6px 16px rgba(15,118,110,.09);
+    }
+    .contextCard.selected {
+      border: 2px solid var(--accent);
+      background: var(--accent-soft);
+      box-shadow: 0 0 0 3px rgba(15,118,110,.08);
+    }
+    .contextIcon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #eef4f1;
+      border: 1px solid #d8e4df;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      position: relative;
+      color: var(--accent-dark);
+      font-size: .8rem;
+      font-weight: 900;
+      letter-spacing: .04em;
+    }
+    .contextIcon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .contextIcon.has-image .contextFallback { display: none; }
+    .contextLabel { font-weight: 800; font-size: .9rem; }
+    .contextMini { color: var(--muted); font-size: .74rem; line-height: 1.25; }
+
+    .tip {
+      margin-top: 12px;
+      border-left: 4px solid var(--gold);
+      background: #fff9e9;
+      border-radius: 0 10px 10px 0;
+      padding: 10px 12px;
+      color: #675128;
+      font-size: .84rem;
+    }
+    .tip strong { color: #513b12; }
+
+    .fields {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 720px) {
+      .fields.two { grid-template-columns: 1fr 1fr; }
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: .8rem;
+      font-weight: 700;
+    }
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 11px;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+    }
+    input:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(15,118,110,.10);
+    }
+    textarea { min-height: 82px; resize: vertical; }
+
+    .row {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .row.spread { justify-content: space-between; }
+
+    .btn {
+      min-height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 13px;
+      background: #f8fbf9;
+      cursor: pointer;
+      font-weight: 700;
+      transition: .15s ease;
+    }
+    .btn:hover:not(:disabled) {
+      border-color: #8bb9b2;
+      background: #f1faf7;
+      box-shadow: 0 3px 8px rgba(15,118,110,.08);
+    }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn.primary:hover:not(:disabled) {
+      background: var(--accent-dark);
+      border-color: var(--accent-dark);
+    }
+    .btn.gold {
+      background: var(--gold-soft);
+      border-color: #e5c26d;
+      color: #70480b;
+    }
+    .btn:disabled {
+      opacity: .48;
+      cursor: not-allowed;
+    }
+
+    .statusText {
+      color: var(--muted);
+      font-size: .8rem;
+      margin: 8px 0 0;
+    }
+
+    .copyCard {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      overflow: hidden;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+    .copyCard:hover {
+      border-color: #98bcb6;
+      box-shadow: 0 4px 12px rgba(15,118,110,.08);
+    }
+    .copyCard + .copyCard { margin-top: 8px; }
+    .copyCardHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 11px 12px;
+    }
+    .copyCardTitleWrap { min-width: 0; }
+    .copyCardTitle {
+      font-weight: 800;
+      font-size: .9rem;
+    }
+    .copyCardDesc {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: .76rem;
+    }
+    .chevron {
+      border: 0;
+      background: transparent;
+      font-size: 1.35rem;
+      cursor: pointer;
+      color: var(--muted);
+      transition: transform .16s ease;
+      padding: 3px 8px;
+    }
+    .copyCard.expanded .chevron { transform: rotate(90deg); }
+    .copyCardBody {
+      display: none;
+      border-top: 1px solid var(--border);
+      padding: 10px 12px 12px;
+      background: #fafcfb;
+    }
+    .copyCard.expanded .copyCardBody { display: block; }
+    .copyCardBody pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font: inherit;
+      font-size: .8rem;
+      color: #42534f;
+    }
+    .copyHint {
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    .promptColumns {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    @media (min-width: 820px) {
+      .promptColumns { grid-template-columns: 1fr 1fr; }
+    }
+    .promptGroup {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fcfdfb;
+    }
+    .promptGroup h3 {
+      margin: 0 0 9px;
+      font-size: .92rem;
+    }
+
+    .lockNotice {
+      border: 1px dashed #c9b46f;
+      border-radius: 12px;
+      padding: 12px;
+      background: #fffbef;
+      color: #6f5a23;
+      font-size: .86rem;
+    }
+
+    .sidePanel {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255,253,248,.96);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .sideHeader {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--border);
+      background: #f7faf8;
+    }
+    .sideHeader h2 {
+      font-size: .92rem;
+      margin: 0;
+    }
+    .sideBody { padding: 12px; }
+    .recentLabel {
+      color: var(--muted);
+      font-size: .74rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 5px;
+    }
+    #recentTitle {
+      font-size: .85rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    #recentText {
+      max-height: 360px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #42534f;
+      font-size: .76rem;
+      cursor: pointer;
+    }
+    #recentText.empty {
+      color: #8a9793;
+      cursor: default;
+    }
+    .sideNote {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: .74rem;
+    }
+
+    .footer {
+      margin-top: 18px;
+      padding: 10px 3px;
+      color: var(--muted);
+      font-size: .76rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      transform: translate(-50%, 12px);
+      background: #183f3a;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.16);
+      opacity: 0;
+      pointer-events: none;
+      transition: .18s ease;
+      z-index: 1000;
+      font-size: .86rem;
+      font-weight: 700;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <!--
+    Optional teaching-context images.
+    The page works without these files. If you add any of them later, the
+    matching card will automatically display the image instead of fallback text:
+
+      faculty/images/nursing.png
+      faculty/images/physical-therapy.png
+      faculty/images/other-health-professions.png
+      faculty/images/general-education.png
+  -->
+
+  <main class="page">
+    <section class="hero">
+      <div class="heroCard">
+        <div class="eyebrow">Faculty tool</div>
+        <h1>AI-Assisted Question Writing Tool</h1>
+        <p class="subtitle">
+          Build, refine, audit, and finalize multiple-choice questions using prompts you can copy into the AI tool of your choice.
+        </p>
+        <div class="privacyLine">No login · No data collection · No backend connection</div>
+
+        <div class="studyInvite">
+          <strong>Nursing faculty:</strong> This tool grew out of a dissertation study on AI-assisted question generation in nursing education.
+          If you are interested in participating in that study, email
+          <a href="mailto:tjin@crimson.ua.edu">tjin@crimson.ua.edu</a>.
+        </div>
+      </div>
+    </section>
+
+    <div class="workspace">
+      <div>
+        <section class="panel">
+          <details class="stage" id="stageSetup" open>
+            <summary>
+              <div class="stageHeading">
+                <span class="stageNumber">1</span>
+                <span class="stageTitle">Set up</span>
+              </div>
+              <span class="stageTag" id="setupTag">In progress</span>
+            </summary>
+
+            <div class="stageBody">
+              <div class="subsection">
+                <h2 class="subsectionTitle">A. Teaching context</h2>
+                <p class="sectionHelp">Choose the option that best matches your teaching. This changes a few prompts so the question guidance fits your field.</p>
+
+                <div class="contextGrid" id="contextGrid">
+                  <button class="contextCard selected" type="button" data-context="nursing" aria-pressed="true">
+                    <span class="contextIcon">
+                      <img src="images/nursing.png" alt="" onload="this.parentElement.classList.add('has-image')" onerror="this.remove()" />
+                      <span class="contextFallback">RN</span>
+                    </span>
+                    <span class="contextLabel">Nursing</span>
+                    <span class="contextMini">Nursing practice and NCLEX-aware guidance</span>
+                  </button>
+
+                  <button class="contextCard" type="button" data-context="pt" aria-pressed="false">
+                    <span class="contextIcon">
+                      <img src="images/physical-therapy.png" alt="" onload="this.parentElement.classList.add('has-image')" onerror="this.remove()" />
+                      <span class="contextFallback">PT</span>
+                    </span>
+                    <span class="contextLabel">Physical Therapy</span>
+                    <span class="contextMini">PT practice and NPTE-aware guidance</span>
+                  </button>
+
+                  <button class="contextCard" type="button" data-context="health" aria-pressed="false">
+                    <span class="contextIcon">
+                      <img src="images/other-health-professions.png" alt="" onload="this.parentElement.classList.add('has-image')" onerror="this.remove()" />
+                      <span class="contextFallback">HP</span>
+                    </span>
+                    <span class="contextLabel">Other Health Professions</span>
+                    <span class="contextMini">Adapts to the profession you describe</span>
+                  </button>
+
+                  <button class="contextCard" type="button" data-context="general" aria-pressed="false">
+                    <span class="contextIcon">
+                      <img src="images/general-education.png" alt="" onload="this.parentElement.classList.add('has-image')" onerror="this.remove()" />
+                      <span class="contextFallback">EDU</span>
+                    </span>
+                    <span class="contextLabel">General Education</span>
+                    <span class="contextMini">Discipline-neutral question guidance</span>
+                  </button>
+                </div>
+
+                <div class="tip">
+                  <strong>Tip:</strong> The four modes use the same basic workflow. Nursing and Physical Therapy use more specific professional language; the broader modes ask the AI to infer appropriate expectations from the course and program you describe.
+                </div>
+              </div>
+
+              <div class="subsection">
+                <div class="row spread">
+                  <div>
+                    <h2 class="subsectionTitle">B. Question context</h2>
+                    <p class="sectionHelp">Give the AI enough context to understand who the learners are and what the questions should cover.</p>
+                  </div>
+                  <button class="btn gold" id="skipContextBtn" type="button">Skip contextual details</button>
+                </div>
+
+                <div class="fields two">
+                  <div>
+                    <label for="courseContext">Course or program context</label>
+                    <input id="courseContext" placeholder="e.g., first-semester health assessment; second-year DPT musculoskeletal course" />
+                  </div>
+                  <div>
+                    <label for="contentArea">Content area</label>
+                    <input id="contentArea" placeholder="e.g., heart sounds; gait analysis; cellular respiration" />
+                  </div>
+                  <div>
+                    <label for="questionCount">Desired number of questions</label>
+                    <input id="questionCount" type="number" min="1" max="100" value="10" />
+                  </div>
+                  <div>
+                    <label for="notes">Additional parameters (optional)</label>
+                    <input id="notes" placeholder="e.g., higher difficulty, for a practice quiz" />
+                  </div>
+                </div>
+
+                <p class="statusText" id="contextStatus">Complete the first two fields to build a tailored starter prompt, or skip context to browse the prompt library immediately.</p>
+
+                <div id="starterArea" class="hidden" style="margin-top:12px;">
+                  <div class="copyCard" id="starterCard" tabindex="0" role="button">
+                    <div class="copyCardHeader">
+                      <div class="copyCardTitleWrap">
+                        <div class="copyCardTitle">Copy starter prompt</div>
+                        <div class="copyCardDesc">Paste this into your AI tool to establish the question-writing workflow.</div>
+                      </div>
+                      <span class="copyHint">Click to copy</span>
+                      <button class="chevron" type="button" aria-label="Show prompt details">›</button>
+                    </div>
+                    <div class="copyCardBody"><pre id="starterPreview"></pre></div>
+                  </div>
+
+                  <div class="tip" id="starterTip">
+                    <strong>Tip:</strong> After you paste the starter prompt, review the AI's proposed question plan before asking it to begin. The plan is often the easiest place to redirect topic coverage before individual questions are written.
+                  </div>
+
+                  <div class="row" style="margin-top:12px;">
+                    <button class="btn" id="firstQuestionBtn" type="button" disabled>Show first question</button>
+                    <button class="btn primary" id="proceedBtn" type="button" disabled>Proceed to 2) Make questions</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <section class="panel">
+          <details class="stage" id="stagePrompts">
+            <summary>
+              <div class="stageHeading">
+                <span class="stageNumber">2</span>
+                <span class="stageTitle">Make questions</span>
+              </div>
+              <span class="stageTag locked" id="promptsTag">Locked</span>
+            </summary>
+
+            <div class="stageBody">
+              <div class="lockNotice" id="promptsLock">
+                Finish setup by copying the starter prompt, or choose <strong>Skip contextual details</strong>, then proceed to unlock the prompt library.
+              </div>
+
+              <div id="promptsContent" class="hidden">
+                <div class="tip" style="margin-top:0; margin-bottom:14px;">
+                  <strong>Tip:</strong> You do not need to use every prompt. Treat these as shortcuts for common moves: accepting a question, generating alternatives, refining options, or checking the balance of the set.
+                </div>
+
+                <div class="promptColumns">
+                  <div class="promptGroup">
+                    <h3>Work from existing questions</h3>
+                    <div id="groupExisting"></div>
+                  </div>
+
+                  <div class="promptGroup">
+                    <h3>Accept or replace</h3>
+                    <div id="groupAccept"></div>
+                  </div>
+
+                  <div class="promptGroup">
+                    <h3>Refine options</h3>
+                    <div id="groupRefine"></div>
+                  </div>
+
+                  <div class="promptGroup">
+                    <h3>Question set audits</h3>
+                    <div id="groupAudit"></div>
+                  </div>
+
+                  <div class="promptGroup">
+                    <h3>Review questions</h3>
+                    <div id="groupReview"></div>
+                  </div>
+                </div>
+
+                <div class="row" style="margin-top:16px;">
+                  <button class="btn primary" id="doneBtn" type="button">I'm done making questions ↓</button>
+                </div>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <section class="panel">
+          <details class="stage" id="stageFinalize">
+            <summary>
+              <div class="stageHeading">
+                <span class="stageNumber">3</span>
+                <span class="stageTitle">Finalize</span>
+              </div>
+              <span class="stageTag locked" id="finalizeTag">Locked</span>
+            </summary>
+
+            <div class="stageBody">
+              <div class="lockNotice" id="finalizeLock">
+                When you are finished making questions, use the button at the end of Step 2 to open the finalization prompt.
+              </div>
+
+              <div id="finalizeContent" class="hidden">
+                <div class="tip" style="margin-top:0; margin-bottom:12px;">
+                  <strong>Tip:</strong> The final prompt asks the AI to display only the questions you accepted. Review the finished set for content accuracy, alignment, and item quality before using it with learners.
+                </div>
+
+                <div class="copyCard" id="finalCard" tabindex="0" role="button">
+                  <div class="copyCardHeader">
+                    <div class="copyCardTitleWrap">
+                      <div class="copyCardTitle">Copy final prompt</div>
+                      <div class="copyCardDesc">Collect the accepted questions into one clean final set.</div>
+                    </div>
+                    <span class="copyHint">Click to copy</span>
+                    <button class="chevron" type="button" aria-label="Show prompt details">›</button>
+                  </div>
+                  <div class="copyCardBody"><pre id="finalPreview"></pre></div>
+                </div>
+
+                <div class="row" style="margin-top:12px;">
+                  <button class="btn" id="backBtn" type="button">← Back to making questions</button>
+                </div>
+              </div>
+            </div>
+          </details>
+        </section>
+      </div>
+
+      <aside class="sidePanel">
+        <div class="sideHeader"><h2>Most recently copied</h2></div>
+        <div class="sideBody">
+          <div class="recentLabel">Prompt</div>
+          <div id="recentTitle">Nothing copied yet</div>
+          <div id="recentText" class="empty">Copied prompts will appear here so you can review or re-copy them during your session.</div>
+          <div class="sideNote">This history exists only in this open page. It is not sent anywhere or saved after you close or refresh the page.</div>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="footer">
+      <span>Developed by Taemin Jin</span>
+      <span>AI-Assisted Question Writing Tool</span>
+    </footer>
+  </main>
+
+  <div class="toast" id="toast">Copied</div>
+
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+
+      const state = {
+        context: "nursing",
+        skipped: false,
+        starterCopied: false,
+        promptsUnlocked: false,
+        finalUnlocked: false,
+        lastCopiedText: "",
+        lastCopiedTitle: ""
+      };
+
+      const sharedPrompts = {
+        match_style: {
+          title: "Match question style",
+          description: "Use sample questions as a model for the style of new questions.",
+          text: `I’m going to give you some sample questions. I want you to study them carefully so you can match their characteristics as closely as possible.
+
+I will paste the sample questions below.`
+        },
+        new_versions: {
+          title: "Create new versions",
+          description: "Create meaningfully different versions of existing questions.",
+          text: `I’m going to give you some sample questions. I want you to create new versions of these questions on the same topics. Keep the intended concept and approximate cognitive level, but change the wording, scenario details, and answer options enough that the new questions are meaningfully different.
+
+I will paste the sample questions below.`
+        },
+        supplement: {
+          title: "Supplement question set",
+          description: "Add new questions that broaden coverage without repeating the samples.",
+          text: `I’m going to give you some sample questions. I want you to supplement them with additional questions on the same subject matter without overlapping in content. Use the samples to infer the scope, level, style, and priorities of the set, then generate new questions that complement it without repeating the same concepts, scenarios, or answer logic. The new questions should broaden coverage while still fitting naturally alongside the existing ones.
+
+I will paste the sample questions below.`
+        },
+        accept: {
+          title: "Accept and continue",
+          description: "Add the current question to the working set and move on.",
+          text: "This question is acceptable. Please add it to the working list of questions and proceed to the next one."
+        },
+        refine_correct: {
+          title: "Refine correct answer",
+          description: "Generate alternate versions of the correct answer.",
+          text: "Rewrite the correct answer in five different ways, making sure each is similar in length and complexity to the distractors. Number each option clearly (1–5) so it is easy to reference which version should be kept."
+        },
+        refine_distractors: {
+          title: "Refine distractors",
+          description: "Generate a larger set of plausible, similarly constructed distractors.",
+          text: "I want to improve the distractors for this question. If any of the 3 original distractors are obviously different in length or complexity from the correct answer, please revise them so they better match the correct answer. List those 3 distractors, then add 10 additional plausible distractors that are similar in length and complexity to the correct answer. Present all distractors as a single numbered list (1–13) so I can easily indicate which ones I would like to keep."
+        },
+        topic_audit: {
+          title: "Topic coverage audit",
+          description: "Identify overrepresented and unrepresented subtopics.",
+          text: "Pause and audit my current MCQ set based on how the questions are balanced between potential subtopics. Break down my content area into subtopics, indicate how many questions so far come from each, and then give me a list of 10 subtopics that currently have zero questions, so I can choose from them to rebalance."
+        },
+        difficulty_audit: {
+          title: "Difficulty audit",
+          description: "Estimate the distribution of easy, moderate, and hard questions.",
+          text: "Pause and audit my current MCQ set for difficulty. For each question, classify it as Easy, Moderate, or Hard based on the cognitive demand, length/complexity of the stem, and the subtlety of the distractors. Show me the counts and percentages in each category. Then, recommend how I could adjust or add questions to create a more balanced mix."
+        },
+        blooms_audit: {
+          title: "Bloom’s level audit",
+          description: "Review the set for balance across Bloom’s taxonomy.",
+          text: "Pause and audit my current MCQ set for Bloom’s taxonomy alignment. For each question, assign the primary level (Remember, Understand, Apply, Analyze, Evaluate, or Create). Show me the counts and percentages in each category. Then, suggest underrepresented levels and give me ideas for how to add or revise questions to cover them."
+        },
+        review: {
+          title: "Review questions",
+          description: "Show all questions generated so far in a compact list.",
+          text: "Pause and show all questions generated so far in this session. Display them in a compact list with a numbered title, the question stem on the next line, and the answer options listed below using capital letters (A–D). Place the correct answer first and bold it."
+        },
+        final: {
+          title: "Final prompt",
+          description: "Show only the accepted and finalized questions.",
+          text: `Show all questions that have been accepted and finalized in this session. Do not include any question that was just generated for consideration but has not yet been accepted or added to the set.
+
+Display the questions in a list with:
+
+A short title
+
+The question stem on the next line
+
+The answer options listed below using capital letters (A–D)
+
+Place the correct answer first and bold it.`
+        }
+      };
+
+      const contextPrompts = {
+        nursing: {
+          starterIntro: "I am a nursing school instructor and would like your help writing multiple-choice questions for my class.",
+          relevance: "Try to create a question set that reflects the concepts within the content area that are most relevant to the course, nursing practice, and NCLEX when appropriate, and follows best practices for writing high-quality multiple-choice questions.",
+          alternatives: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment), then add two questions that address a different aspect of the same subtopic. Number each question clearly (1–5) before the question name so it is easy to reference which version should be kept.`,
+          breadth: `Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
+
+Core: The most common, obvious, first-line, or "go-to" fact or intervention.
+
+Peripheral: A less obvious but still clinically important area.
+
+Provide the results in a table with the following columns and content:
+
+1. # -- Question Number
+2. Focus -- Core or Peripheral
+3. Topic Covered -- 2–4 word description
+4. Suggestion -- If the question is core, suggest one peripheral angle within the same content area that has not yet been tested.`,
+          questionType: "Pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive tasks (e.g., prioritization/triage; delegation/scope; assessment findings & interpretation; interventions/management; questioning/clarifying orders; patient/caregiver teaching; pharmacology & medication safety; ethical/legal; health promotion & risk reduction; procedures/skills & equipment). Report counts for each category, and give me ideas for how I can rebalance the types of questions."
+        },
+
+        pt: {
+          starterIntro: "I am a physical therapy instructor and would like your help writing multiple-choice questions for my class.",
+          relevance: "Try to create a question set that reflects the concepts within the content area that are most relevant to the course, physical therapy practice, and the NPTE when appropriate, and follows best practices for writing high-quality multiple-choice questions.",
+          alternatives: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types (e.g., examination/evaluation; interpretation of findings; clinical reasoning; screening/referral; intervention selection or progression; movement analysis; safety/contraindications; patient/client education; procedures, equipment, or assistive devices; professional/ethical practice), then add two questions that address a different aspect of the same subtopic. Number each question clearly (1–5) before the question name so it is easy to reference which version should be kept.`,
+          breadth: `Pause and audit my current MCQ set for breadth within the content area. For each question, classify it as focusing on either:
+
+Core: A common, foundational, first-line, or "go-to" concept, examination approach, clinical decision, or intervention.
+
+Peripheral: A less obvious but still important aspect of physical therapy knowledge or practice.
+
+Provide the results in a table with the following columns and content:
+
+1. # -- Question Number
+2. Focus -- Core or Peripheral
+3. Topic Covered -- 2–4 word description
+4. Suggestion -- If the question is core, suggest one peripheral angle within the same content area that has not yet been tested.`,
+          questionType: "Pause and audit my current MCQ set for balance by question type. Categorize each item based on cognitive or professional tasks relevant to physical therapy (e.g., examination/evaluation; interpretation of findings; clinical reasoning; screening/referral; intervention selection or progression; movement analysis; safety/contraindications; patient/client education; procedures, equipment, or assistive devices; professional/ethical practice). Report counts for each category, and give me ideas for how I can rebalance the types of questions."
+        },
+
+        health: {
+          starterIntro: "I teach in a health professions program and would like your help writing multiple-choice questions for my class.",
+          relevance: "Use the course and program context I provide to infer the appropriate profession, learner level, terminology, professional expectations, and—when relevant—licensing or certification standards. Try to create a question set that reflects the concepts within the content area that are most relevant to the course and professional practice, and follows best practices for writing high-quality multiple-choice questions.",
+          alternatives: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types of questions or professional tasks appropriate to the health profession and learner context I described. Consider areas such as assessment/evaluation, interpretation, decision-making, intervention/management, safety, communication/education, procedures/skills, or professional/ethical practice when relevant, but adapt the categories to the profession rather than forcing these examples. Then add two questions that address a different aspect of the same subtopic. Number each question clearly (1–5) before the question name so it is easy to reference which version should be kept.`,
+          breadth: `Pause and audit my current MCQ set for breadth within the content area. Based on the health profession, course, and learner context I provided, define what "core" and "peripheral" knowledge or professional application would reasonably mean in this setting. Then classify each question as Core or Peripheral.
+
+Provide the results in a table with the following columns and content:
+
+1. # -- Question Number
+2. Focus -- Core or Peripheral
+3. Topic Covered -- 2–4 word description
+4. Suggestion -- If the question is core, suggest one worthwhile peripheral angle within the same content area that has not yet been tested.`,
+          questionType: "Pause and audit my current MCQ set for balance by question type. Based on the health profession, program, course, and learner context I provided, first identify a practical set of question-type categories that reflects the major cognitive and professional tasks students in this field are expected to perform. Then categorize each current question using those categories, report the number of questions in each category, identify types that appear overrepresented or underrepresented, and give me ideas for how I could rebalance the set."
+        },
+
+        general: {
+          starterIntro: "I am an instructor and would like your help writing multiple-choice questions for my class.",
+          relevance: "Use the course and program context I provide to infer the appropriate discipline, learner level, terminology, and academic or professional expectations. Try to create a question set that reflects the concepts within the content area that are most relevant to the course and discipline, and follows best practices for writing high-quality multiple-choice questions.",
+          alternatives: `Write five possible replacements for this question. Begin with one question aiming for the same parameters but different, then add two questions on the same subtopic but using different types of questions or cognitive tasks appropriate to the discipline and learner context I described. Consider areas such as conceptual understanding, interpretation, application/problem solving, comparison, analysis, evaluation, process/procedure, or scenario-based decision-making when relevant, but adapt the categories to the discipline rather than forcing these examples. Then add two questions that address a different aspect of the same subtopic. Number each question clearly (1–5) before the question name so it is easy to reference which version should be kept.`,
+          breadth: `Pause and audit my current MCQ set for breadth within the content area. Based on the course, discipline, and learner context I provided, define what "core" and "peripheral" content would reasonably mean in this setting. Then classify each question as Core or Peripheral.
+
+Provide the results in a table with the following columns and content:
+
+1. # -- Question Number
+2. Focus -- Core or Peripheral
+3. Topic Covered -- 2–4 word description
+4. Suggestion -- If the question is core, suggest one worthwhile peripheral angle within the same content area that has not yet been tested.`,
+          questionType: "Pause and audit my current MCQ set for balance by question type. Based on the course, discipline, and learner context I provided, first identify a practical set of question-type categories that reflects the major kinds of knowledge, reasoning, application, interpretation, analysis, decision-making, or other cognitive tasks students in this field are expected to perform. Then categorize each current question using those categories, report the number of questions in each category, identify types that appear overrepresented or underrepresented, and give me ideas for how I could rebalance the set."
+        }
+      };
+
+      const promptMeta = {
+        match_style: ["Match question style", "Use sample questions as a model for the style of new questions."],
+        new_versions: ["Create new versions", "Create meaningfully different versions of existing questions."],
+        supplement: ["Supplement question set", "Add questions that broaden coverage without repeating the samples."],
+        accept: ["Accept and continue", "Keep the current question and move on."],
+        alternatives: ["Generate alternatives", "Generate five possible replacements from different angles."],
+        refine_correct: ["Refine correct answer", "Generate alternate versions of the correct answer."],
+        refine_distractors: ["Refine distractors", "Generate a broader set of plausible distractors."],
+        topic_audit: ["Topic coverage audit", "Check balance across subtopics."],
+        breadth_audit: ["Breadth audit", "Check whether the set overemphasizes only the most obvious material."],
+        question_type: ["Question type audit", "Check the variety of cognitive or professional tasks being tested."],
+        difficulty_audit: ["Difficulty audit", "Estimate the balance of easy, moderate, and hard questions."],
+        blooms_audit: ["Bloom’s level audit", "Review the set across Bloom’s taxonomy."],
+        review: ["Review questions", "Show all questions generated so far."],
+        reminder: ["Instructions reminder", "Restate the original starter instructions and continue the current set."]
+      };
+
+      function getContext() {
+        return {
+          course: $("courseContext").value.trim(),
+          area: $("contentArea").value.trim(),
+          count: ($("questionCount").value || "10").trim() || "10",
+          notes: $("notes").value.trim()
+        };
+      }
+
+      function buildStarterPrompt() {
+        const ctx = getContext();
+        const mode = contextPrompts[state.context];
+        const notesLine = ctx.notes || "";
+        return `${mode.starterIntro} Consider the following:
+
+1. Class Context: ${ctx.course}
+
+2. Content Area: ${ctx.area}
+
+3. Desired Number of Questions: ${ctx.count}
+
+4. Additional parameters to consider (if blank, ignore): ${notesLine}
+
+I may also provide documents to guide question creation. Use them as a general reference, but do not rely on them exclusively. ${mode.relevance}
+
+When outputting the questions, do not use any interactive widgets, quizzes, or UI tools. Whenever a question is output, I want it presented strictly in text form and in the following order (do not include the labels in your output):
+
+Question Name
+
+Question Stem
+
+A. The correct answer.
+
+B. The first distractor.
+
+C. The second distractor.
+
+D. The third distractor.
+
+You will create 1 question at a time. Pause after each one so I can give feedback on the overall question set or on the individual question just generated. Based on my response, make adjustments or continue, until I have reached the goal number of questions.
+
+For now, respond with a table that outlines the plan for all of the questions with these headings: #; subtopic; key concept. I will let you know if I would like any adjustments.`;
+      }
+
+      function buildReminderPrompt() {
+        const starter = buildStarterPrompt();
+        const finalInstruction = "\n\nFor now, respond with a table that outlines the plan for all of the questions with these headings: #; subtopic; key concept. I will let you know if I would like any adjustments.";
+        const persistent = starter.endsWith(finalInstruction)
+          ? starter.slice(0, -finalInstruction.length)
+          : starter;
+
+        return `Remember how the starter prompt at the beginning of this conversation instructed you to create ${getContext().count} questions and follow the parameters below. Continue following all of these instructions for the remaining questions. Continue from where we left off; do not restart the question set, return to the initial planning-table step, or repeat questions that have already been accepted.
+
+${persistent}`;
+      }
+
+      function getPromptText(id) {
+        if (sharedPrompts[id]) return sharedPrompts[id].text;
+        if (id === "alternatives") return contextPrompts[state.context].alternatives;
+        if (id === "breadth_audit") return contextPrompts[state.context].breadth;
+        if (id === "question_type") return contextPrompts[state.context].questionType;
+        if (id === "reminder") return buildReminderPrompt();
+        return "";
+      }
+
+      function makePromptCard(id) {
+        const [title, desc] = promptMeta[id];
+        const card = document.createElement("div");
+        card.className = "copyCard";
+        card.tabIndex = 0;
+        card.setAttribute("role", "button");
+        card.dataset.promptId = id;
+
+        const header = document.createElement("div");
+        header.className = "copyCardHeader";
+
+        const wrap = document.createElement("div");
+        wrap.className = "copyCardTitleWrap";
+        wrap.innerHTML = '<div class="copyCardTitle"></div><div class="copyCardDesc"></div>';
+        wrap.querySelector(".copyCardTitle").textContent = title;
+        wrap.querySelector(".copyCardDesc").textContent = desc;
+
+        const hint = document.createElement("span");
+        hint.className = "copyHint";
+        hint.textContent = "Click to copy";
+
+        const chevron = document.createElement("button");
+        chevron.className = "chevron";
+        chevron.type = "button";
+        chevron.setAttribute("aria-label", "Show prompt details");
+        chevron.textContent = "›";
+
+        const body = document.createElement("div");
+        body.className = "copyCardBody";
+        const pre = document.createElement("pre");
+        pre.textContent = getPromptText(id);
+        body.appendChild(pre);
+
+        header.append(wrap, hint, chevron);
+        card.append(header, body);
+
+        card.addEventListener("click", async (event) => {
+          if (event.target.closest(".chevron")) return;
+          await copyPrompt(title, getPromptText(id));
+        });
+
+        card.addEventListener("keydown", async (event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          if (event.target.closest(".chevron")) return;
+          event.preventDefault();
+          await copyPrompt(title, getPromptText(id));
+        });
+
+        chevron.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          card.classList.toggle("expanded");
+          pre.textContent = getPromptText(id);
+        });
+
+        return card;
+      }
+
+      function renderPromptLibrary() {
+        $("groupExisting").replaceChildren(
+          makePromptCard("match_style"),
+          makePromptCard("new_versions"),
+          makePromptCard("supplement")
+        );
+        $("groupAccept").replaceChildren(
+          makePromptCard("accept"),
+          makePromptCard("alternatives")
+        );
+        $("groupRefine").replaceChildren(
+          makePromptCard("refine_correct"),
+          makePromptCard("refine_distractors")
+        );
+        $("groupAudit").replaceChildren(
+          makePromptCard("topic_audit"),
+          makePromptCard("breadth_audit"),
+          makePromptCard("question_type"),
+          makePromptCard("difficulty_audit"),
+          makePromptCard("blooms_audit")
+        );
+
+        const reviewCards = [makePromptCard("review")];
+        if (state.starterCopied) reviewCards.push(makePromptCard("reminder"));
+        $("groupReview").replaceChildren(...reviewCards);
+      }
+
+      async function writeClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(text);
+            return true;
+          } catch (_) {}
+        }
+
+        const area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "");
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        let ok = false;
+        try { ok = document.execCommand("copy"); } catch (_) {}
+        area.remove();
+        return ok;
+      }
+
+      async function copyPrompt(title, text) {
+        if (!text) return;
+        const ok = await writeClipboard(text);
+        state.lastCopiedText = text;
+        state.lastCopiedTitle = title;
+        renderRecent();
+        showToast(ok ? "Copied to clipboard" : "Prompt selected — copy from the preview panel");
+      }
+
+      function renderRecent() {
+        const title = $("recentTitle");
+        const text = $("recentText");
+        if (!state.lastCopiedText) {
+          title.textContent = "Nothing copied yet";
+          text.textContent = "Copied prompts will appear here so you can review or re-copy them during your session.";
+          text.classList.add("empty");
+          return;
+        }
+        title.textContent = state.lastCopiedTitle;
+        text.textContent = state.lastCopiedText;
+        text.classList.remove("empty");
+      }
+
+      let toastTimer = null;
+      function showToast(message) {
+        const toast = $("toast");
+        toast.textContent = message;
+        toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 1800);
+      }
+
+      function refreshSetup() {
+        const ctx = getContext();
+        const hasContext = Boolean(ctx.course && ctx.area);
+        const canStart = hasContext || state.skipped;
+
+        $("starterArea").classList.toggle("hidden", !canStart);
+        $("starterPreview").textContent = buildStarterPrompt();
+
+        if (state.skipped) {
+          $("contextStatus").textContent = "Context was skipped. The full prompt library can be opened without a starter prompt.";
+          $("skipContextBtn").textContent = "Context skipped";
+          $("skipContextBtn").disabled = true;
+        } else if (hasContext) {
+          $("contextStatus").textContent = "Your starter prompt is ready. Copy it before proceeding, or use the skip option if you only want the prompt library.";
+        } else {
+          $("contextStatus").textContent = "Complete the first two fields to build a tailored starter prompt, or skip context to browse the prompt library immediately.";
+        }
+
+        $("firstQuestionBtn").disabled = !(state.starterCopied || state.skipped);
+        $("proceedBtn").disabled = !(state.starterCopied || state.skipped);
+
+        if (state.starterCopied || state.skipped) {
+          $("setupTag").textContent = "Ready";
+          $("setupTag").classList.add("ready");
+        } else {
+          $("setupTag").textContent = "In progress";
+          $("setupTag").classList.remove("ready");
+        }
+
+        renderPromptLibrary();
+      }
+
+      function unlockPrompts() {
+        state.promptsUnlocked = true;
+        $("promptsLock").classList.add("hidden");
+        $("promptsContent").classList.remove("hidden");
+        $("promptsTag").textContent = "Ready";
+        $("promptsTag").className = "stageTag ready";
+        $("stagePrompts").open = true;
+        $("stageSetup").open = false;
+        $("stagePrompts").scrollIntoView({ behavior: "smooth", block: "start" });
+        renderPromptLibrary();
+      }
+
+      function unlockFinalize() {
+        state.finalUnlocked = true;
+        $("finalizeLock").classList.add("hidden");
+        $("finalizeContent").classList.remove("hidden");
+        $("finalizeTag").textContent = "Ready";
+        $("finalizeTag").className = "stageTag ready";
+        $("finalPreview").textContent = sharedPrompts.final.text;
+        $("stageFinalize").open = true;
+        $("stagePrompts").open = false;
+        $("stageFinalize").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      document.querySelectorAll(".contextCard").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.context = button.dataset.context;
+          state.starterCopied = false;
+          document.querySelectorAll(".contextCard").forEach((item) => {
+            const selected = item === button;
+            item.classList.toggle("selected", selected);
+            item.setAttribute("aria-pressed", String(selected));
+          });
+          refreshSetup();
+          showToast("Teaching context updated");
+        });
+      });
+
+      ["courseContext", "contentArea", "questionCount", "notes"].forEach((id) => {
+        $(id).addEventListener("input", () => {
+          state.starterCopied = false;
+          refreshSetup();
+        });
+      });
+
+      $("skipContextBtn").addEventListener("click", () => {
+        state.skipped = true;
+        state.starterCopied = false;
+        refreshSetup();
+      });
+
+      $("starterCard").addEventListener("click", async (event) => {
+        if (event.target.closest(".chevron")) return;
+        const text = buildStarterPrompt();
+        await copyPrompt("Starter prompt", text);
+        state.starterCopied = true;
+        state.skipped = false;
+        refreshSetup();
+      });
+
+      $("starterCard").addEventListener("keydown", async (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        if (event.target.closest(".chevron")) return;
+        event.preventDefault();
+        const text = buildStarterPrompt();
+        await copyPrompt("Starter prompt", text);
+        state.starterCopied = true;
+        state.skipped = false;
+        refreshSetup();
+      });
+
+      $("starterCard").querySelector(".chevron").addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        $("starterCard").classList.toggle("expanded");
+        $("starterPreview").textContent = buildStarterPrompt();
+      });
+
+      $("firstQuestionBtn").addEventListener("click", () => {
+        copyPrompt("Show first question", "I am done setting up questions, please show me the first question");
+      });
+
+      $("proceedBtn").addEventListener("click", unlockPrompts);
+      $("doneBtn").addEventListener("click", unlockFinalize);
+
+      $("backBtn").addEventListener("click", () => {
+        $("stageFinalize").open = false;
+        $("stagePrompts").open = true;
+        $("stagePrompts").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+
+      $("finalCard").addEventListener("click", async (event) => {
+        if (event.target.closest(".chevron")) return;
+        await copyPrompt("Final prompt", sharedPrompts.final.text);
+      });
+
+      $("finalCard").addEventListener("keydown", async (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        if (event.target.closest(".chevron")) return;
+        event.preventDefault();
+        await copyPrompt("Final prompt", sharedPrompts.final.text);
+      });
+
+      $("finalCard").querySelector(".chevron").addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        $("finalCard").classList.toggle("expanded");
+      });
+
+      $("recentText").addEventListener("click", async () => {
+        if (!state.lastCopiedText) return;
+        const ok = await writeClipboard(state.lastCopiedText);
+        showToast(ok ? "Copied again" : "Select the text and copy manually");
+      });
+
+      renderPromptLibrary();
+      $("finalPreview").textContent = sharedPrompts.final.text;
+      refreshSetup();
+      renderRecent();
+    })();
+  </script>
+</body>
+</html>
