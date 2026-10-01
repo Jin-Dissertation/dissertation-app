@@ -1,11 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { transform } from "esbuild";
 import vm from "node:vm";
 import { Workbook } from "./office-workbook.mjs";
 import { fixture } from "./fixture.mjs";
 import { REPORTING_DATASETS } from "../src/reporting-contract.js";
+import { stableStringify } from "../src/archive-export.js";
 
 const source = await readFile(new URL("../../reporting/office-script.ts", import.meta.url), "utf8");
 const js = (await transform(source, { loader: "ts" })).code;
@@ -124,7 +126,7 @@ test("actual local Worker feed can populate and increment the workbook importer"
   assert.equal(state.last_sequence, m.body.latest_sequence);
 });
 
-function archivedRecord(datasetName, recordId, overrides = {}, revision = 1, hashChar = "a") {
+function archivedRecord(datasetName, recordId, overrides = {}, revision = 1) {
   const dataset = REPORTING_DATASETS.find(item => item.name === datasetName);
   const record = Object.fromEntries(
     dataset.columns.map(column => [
@@ -135,10 +137,14 @@ function archivedRecord(datasetName, recordId, overrides = {}, revision = 1, has
 
   Object.assign(record, overrides);
 
+  const recordSha256 = createHash("sha256")
+    .update(stableStringify(record), "utf8")
+    .digest("hex");
+
   return {
     record_id: recordId,
     revision,
-    record_sha256: hashChar.repeat(64),
+    record_sha256: recordSha256,
     archive_token: `archive-token-synthetic-${recordId}`,
     record
   };
@@ -205,8 +211,7 @@ test("Office script: archive import writes master tables and returns verified re
           press_count: 7,
           updated_at: "2026-09-30T17:00:00.000Z"
         },
-        2,
-        "b"
+        2
       )
     }
   ]);
@@ -329,6 +334,44 @@ test("Office script: archive import preserves numeric-looking strings as text", 
   assert.equal(typeof items.rows[0][responseIndex], "string");
 });
 
+test("Office script: archive import rejects payload tampering against the exported hash", () => {
+  const workbook = new Workbook();
+
+  const archived = archivedRecord(
+    "aqg_feedback",
+    "archive-tamper-test",
+    {
+      feedback_id: "archive-tamper-test",
+      participant_id: "TEST001",
+      text_feedback: "Original archived value"
+    }
+  );
+
+  const originalHash = archived.record_sha256;
+
+  // Simulate alteration of the archive after Cloudflare created its hash.
+  archived.record.text_feedback = "Tampered after export";
+
+  assert.equal(archived.record_sha256, originalHash);
+
+  const archive = archivePayload([
+    {
+      dataset: "aqg_feedback",
+      record: archived
+    }
+  ]);
+
+  assert.throws(
+    () => run(workbook, "archive_import", archive),
+    /hash does not match persisted workbook data/
+  );
+
+  assert.equal(
+    workbook.getTable("archive_import_log").rows.length,
+    0
+  );
+});
+
 test("Office script: interrupted archive import produces no completed log and replays safely", () => {
   const workbook = new Workbook();
 
@@ -408,8 +451,7 @@ test("Office script: later archive can update master across feed generations wit
           participant_id: "TEST001",
           text_feedback: "Must remain in master"
         },
-        1,
-        "b"
+        1
       )
     }
   ]);
@@ -428,8 +470,7 @@ test("Office script: later archive can update master across feed generations wit
             participant_id: "TEST001",
             text_feedback: "Second version"
           },
-          1,
-          "c"
+          1
         )
       }
     ],
