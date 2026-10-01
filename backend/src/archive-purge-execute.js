@@ -273,6 +273,7 @@ export function buildGuardedArchivePurgeSql({
 
   return {
     sql: statements.join("\n\n") + "\n",
+    statements: [...statements],
     delete_count: targetRecords.length,
     retained_count: retainedRecords.length,
     retained_datasets: [...ARCHIVE_PURGE_RETAIN_DATASETS],
