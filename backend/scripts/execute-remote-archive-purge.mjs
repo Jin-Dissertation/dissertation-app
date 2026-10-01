@@ -17,6 +17,30 @@ import { buildGuardedArchivePurgeSql } from "../src/archive-purge-execute.js";
 
 const execFileAsync = promisify(execFile);
 
+function parseWranglerJsonOutput(stdout) {
+  const text = String(stdout ?? "");
+  const lines = text.split(/\\r?\\n/);
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trimStart();
+
+    if (!trimmed.startsWith("[") && !trimmed.startsWith("{")) {
+      continue;
+    }
+
+    const candidate = lines.slice(i).join("\\n").trim();
+
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      // Wrangler can print progress text before --json output when --file is used.
+      // Keep scanning for the actual JSON payload rather than trusting stdout as pure JSON.
+    }
+  }
+
+  throw new Error("Wrangler did not return a parseable JSON payload.");
+}
+
 function argument(name) {
   const index = process.argv.indexOf(name);
   if (index === -1) return null;
@@ -79,7 +103,7 @@ async function remotePlan({ archiveExport, receipt, backendDirectory }) {
 
   const snapshot = parseWranglerArchiveSnapshot({
     query,
-    wranglerResults: JSON.parse(stdout)
+    wranglerResults: parseWranglerJsonOutput(stdout)
   });
 
   return buildArchivePurgePlan({
@@ -216,7 +240,7 @@ async function main() {
     }
   );
 
-  const verification = JSON.parse(verificationStdout);
+  const verification = parseWranglerJsonOutput(verificationStdout);
   const newGeneration =
     String(verification?.[0]?.results?.[0]?.feed_generation || "");
   const oldRows =
