@@ -44,24 +44,38 @@ async function remotePlan({ archiveExport, receipt, backendDirectory }) {
     verifiedRecords: verified.verified_records
   });
 
-  const { stdout } = await execFileAsync(
-    "npx",
-    [
-      "--yes",
-      "wrangler@4.145.0",
-      "d1",
-      "execute",
-      "dissertation-study-data",
-      "--remote",
-      "--json",
-      "--command",
-      query.sql
-    ],
-    {
-      cwd: backendDirectory,
-      maxBuffer: 64 * 1024 * 1024
-    }
+  const snapshotSqlPath = resolve(
+    tmpdir(),
+    `dissertation-archive-snapshot-${randomUUID()}.sql`
   );
+
+  await writeFile(snapshotSqlPath, query.sql, { mode: 0o600 });
+  await chmod(snapshotSqlPath, 0o600);
+
+  let stdout;
+
+  try {
+    ({ stdout } = await execFileAsync(
+      "npx",
+      [
+        "--yes",
+        "wrangler@4.145.0",
+        "d1",
+        "execute",
+        "dissertation-study-data",
+        "--remote",
+        "--json",
+        "--file",
+        snapshotSqlPath
+      ],
+      {
+        cwd: backendDirectory,
+        maxBuffer: 64 * 1024 * 1024
+      }
+    ));
+  } finally {
+    await unlink(snapshotSqlPath).catch(() => {});
+  }
 
   const snapshot = parseWranglerArchiveSnapshot({
     query,
