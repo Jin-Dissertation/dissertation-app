@@ -8,3 +8,5 @@ node_modules/
 
 # Local dissertation reporting exports
 backend/private-reporting-exports/
+
+backend/private-d1-backups/
