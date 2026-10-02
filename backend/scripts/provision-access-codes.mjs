@@ -40,8 +40,7 @@ async function provision(participantCode) {
     },
     body: JSON.stringify({
       entries: [{
-        participant_id: participantCode,
-        code: participantCode,
+        participant_code: participantCode,
         active: true,
         allow_aqg: true,
         allow_training: true
