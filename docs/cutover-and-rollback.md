@@ -51,6 +51,11 @@ Completed synthetic validation:
    D1 counts for live-session, submission, feedback, and pending-notification references.
    Exactly one eligible synthetic key was deleted, and a subsequent remote read confirmed
    that the key no longer existed.
+10. Remote notification delivery was revalidated with fresh synthetic AQG feedback sent
+    to the deployed Worker using the intended GitHub Pages Origin header. The Worker
+    queued the notification and the outbox reached `sent` on the first attempt with
+    a populated `sent_at` value and no error. This validates the current backend relay
+    path but does not replace the final browser-based frontend smoke test.
 
 The UA tenant does not provide the originally planned Power Automate HTTP action without
 Premium licensing, so the currently validated workflow begins with a secure archive
@@ -86,7 +91,7 @@ retain legacy Apps Script URLs and are outside this migration task. They are not
 - [ ] Production participant-code provisioning is handled securely outside chat.
 - [ ] All current frontend paths pass syntax/JSON/dependency checks; training media resolves.
 - [ ] AQG and training access, saves, resume, final submissions, feedback, audio, and
-  notification delivery work from the intended Pages origin in a synthetic smoke test.
+  notification delivery work together from the intended Pages origin in a browser-based synthetic smoke test. (Backend relay itself has been remotely validated.)
 - [x] Synthetic event/record counts reconciled across D1, archive export, UA workbook receipt, and post-purge state.
 - [ ] Ongoing reporting/audio archive cadence, ownership, and approved retention schedule documented for production operation.
 - [ ] UA failure/retry behavior has been exercised sufficiently for the final production procedure (the validated archive path is replay-safe in tests, but a full tenant failure simulation remains pending).
