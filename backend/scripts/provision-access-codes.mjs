@@ -22,8 +22,7 @@ async function hiddenQuestion(label) {
   process.stdout.write(label);
   try {
     execFileSync("stty", ["-echo"], { stdio: ["inherit", "ignore", "inherit"] });
-    const answer = await rl.question("");
-    return answer;
+    return await rl.question("");
   } finally {
     try {
       execFileSync("stty", ["echo"], { stdio: ["inherit", "ignore", "inherit"] });
@@ -32,7 +31,7 @@ async function hiddenQuestion(label) {
   }
 }
 
-async function provision(participantId, code) {
+async function provision(participantCode) {
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
@@ -41,8 +40,8 @@ async function provision(participantId, code) {
     },
     body: JSON.stringify({
       entries: [{
-        participant_id: participantId,
-        code,
+        participant_id: participantCode,
+        code: participantCode,
         active: true,
         allow_aqg: true,
         allow_training: true
@@ -61,25 +60,25 @@ async function provision(participantId, code) {
 
 try {
   console.log("Secure participant-code provisioning");
+  console.log("Each participant uses one participant code for both access and deidentified study identification.");
   console.log("Codes are hidden while typed and are never written by this script.\n");
 
   while (true) {
-    const participantId = (await rl.question("Participant ID (blank to finish): ")).trim();
-    if (!participantId) break;
+    const first = (await hiddenQuestion("Participant code (blank to finish): ")).trim();
+    if (!first) break;
 
-    const first = (await hiddenQuestion("Access code: ")).trim();
-    const second = (await hiddenQuestion("Re-enter access code: ")).trim();
+    const second = (await hiddenQuestion("Re-enter participant code: ")).trim();
 
-    if (!first || first !== second) {
+    if (first !== second) {
       console.log("Codes did not match; nothing was sent.\n");
       continue;
     }
 
     try {
-      const result = await provision(participantId, first);
-      console.log("Provisioned:", result.participant_ids.join(", "), "\n");
+      const result = await provision(first);
+      console.log("Provisioned 1 participant code.\n");
     } catch (error) {
-      console.error("Provisioning failed for", participantId + ":", error.message, "\n");
+      console.error("Provisioning failed:", error.message, "\n");
     }
   }
 } finally {
