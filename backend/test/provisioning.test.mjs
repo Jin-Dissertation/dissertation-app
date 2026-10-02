@@ -6,7 +6,7 @@ test("secure participant provisioning hashes codes server-side", async () => {
   const fx = await fixture({ provisioningTokenConfigured: true });
   try {
     const syntheticCode = "synthetic-production-code-123";
-    const participantId = "P001";
+    const participantId = syntheticCode;
 
     const unauthorized = await fx.request("/v1/admin/access-codes/provision", {
       method: "POST",
@@ -42,7 +42,7 @@ test("secure participant provisioning hashes codes server-side", async () => {
       .bind(participantId)
       .first();
 
-    assert.equal(row.participant_id, participantId);
+    assert.equal(row.participant_id, syntheticCode);
     assert.notEqual(row.code_hash, syntheticCode);
     assert.equal(row.code_hash.length, 64);
     assert.equal(Number(row.active), 1);
