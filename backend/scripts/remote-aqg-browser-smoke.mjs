@@ -313,6 +313,10 @@ async function main() {
     await page.locator("#sumFinalize").click();
     await page.locator("#finalCopyCard").waitFor({ state: "visible" });
     await page.locator("#finalCopyTitle").click();
+    await eventually(
+      async () => !(await page.locator("#llmResponse").isDisabled()),
+      "Final-response field did not unlock after final prompt copy"
+    );
     await page.locator("#llmResponse").fill(
       "Synthetic remote browser smoke-test question output only. No participant data."
     );
@@ -356,6 +360,7 @@ async function main() {
     assert.ok(audioObjectKey, "Audio upload did not return an object key");
 
     // End the same synthetic session so the final submission path is exercised.
+    await page.locator("#btnEndSession").waitFor({ state: "visible" });
     await page.locator("#btnEndSession").click();
     await page.locator("#modalEnd").waitFor({ state: "visible" });
     await page.locator("#chkEndPrivacy").check();
