@@ -372,10 +372,31 @@ unchanged current R2 bytes, and zero current D1 operational references before an
 object can be eligible for deletion. A D1 reporting receipt must never be used as
 authorization to delete an R2 object.
 
-Before production use, document the operating cadence/owner and the study's approved
-retention schedule for archived audio. The validated tooling proves safe transfer and
-exact-object cleanup behavior; it does not by itself define how long real recordings
-must be retained.
+### Production operating cadence
+
+During active data collection, the researcher will review the migration reporting state
+once per week. If new study activity exists, the researcher will:
+
+1. Export the new D1 reporting archive.
+2. Upload the unopened archive to UA OneDrive and wait for the verified reporting receipt.
+3. Export any R2 audio referenced by that reporting archive.
+4. Upload the unopened audio bundle and manifest to UA OneDrive, download the bundle
+   back, and verify the round trip before storing the verified audio receipt.
+5. Use the guarded preview and explicit-confirmation tools to purge only the exact
+   Cloudflare D1/R2 copies that have been independently verified in UA OneDrive.
+
+If there has been no new activity since the prior review, no archive or purge action is
+required. The same archive/verification/purge review will be performed once more at the
+end of data collection.
+
+The researcher is the operating owner for this workflow. UA OneDrive is the durable
+research-data destination; Cloudflare is temporary operational storage. The verified
+archive/receipt records must be retained according to the study's approved IRB and
+University of Alabama retention requirements. The migration documentation intentionally
+does not invent a retention interval that is not established by those approved sources.
+
+The validated tooling proves safe transfer and exact-object cleanup behavior; it does not
+by itself define how long real recordings or other research records must be retained.
 
 To suspend reporting, stop the UA flow and remove/rotate the reporting secret. Existing
 participant saves can continue capturing changes for later catch-up. Reverting the
