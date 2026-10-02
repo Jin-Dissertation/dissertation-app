@@ -90,29 +90,29 @@ export async function handleProvisioning(request, env) {
         throw new Error("Invalid entry");
       }
 
-      const participantId = normalizeParticipantId(entry.participant_id);
-      const code = normalizeAccessCode(entry.code);
+      const participantCode = normalizeAccessCode(entry.participant_code);
 
-      if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(participantId)) {
-        throw new Error("Invalid participant id");
+      if (
+        participantCode.length < 6 ||
+        participantCode.length > 64 ||
+        !/^[a-z0-9][a-z0-9._-]*$/.test(participantCode)
+      ) {
+        throw new Error("Invalid participant code");
       }
-      if (code.length < 6 || code.length > 128) {
-        throw new Error("Invalid code");
-      }
-      if (seenParticipants.has(participantId)) {
-        throw new Error("Duplicate participant id");
+      if (seenParticipants.has(participantCode)) {
+        throw new Error("Duplicate participant code");
       }
 
-      const codeHash = await hashAccessCode(env, code);
+      const codeHash = await hashAccessCode(env, participantCode);
       if (seenHashes.has(codeHash)) {
-        throw new Error("Duplicate code");
+        throw new Error("Duplicate participant code");
       }
 
-      seenParticipants.add(participantId);
+      seenParticipants.add(participantCode);
       seenHashes.add(codeHash);
 
       prepared.push({
-        participantId,
+        participantId: participantCode,
         codeHash,
         active: booleanFlag(entry.active, 1),
         allowAqg: booleanFlag(entry.allow_aqg, 1),
@@ -151,8 +151,7 @@ export async function handleProvisioning(request, env) {
 
     return reply({
       ok: true,
-      provisioned: prepared.length,
-      participant_ids: prepared.map((entry) => entry.participantId)
+      provisioned: prepared.length
     });
   } catch {
     return error("PROVISIONING_FAILED", 409);
