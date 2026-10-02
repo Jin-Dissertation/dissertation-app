@@ -91,10 +91,9 @@ Premium licensing, so the currently validated workflow begins with a secure arch
 export and OneDrive upload. The reporting pull API remains available for a future
 institution-approved scheduler.
 
-Still required before production cutover: document the ongoing operational cadence/owner
-and approved retention schedule for reporting and audio archives, reconcile any new
-production edits from `main`, record the final release/rollback anchors, and obtain
-Taemin's separate explicit approval. The full UA tenant failure/retry simulation was
+Still required before production cutover: reconcile any new production edits from
+`main`, record the final release/rollback anchors, securely provision production
+participant codes, and obtain Taemin's separate explicit approval. The full UA tenant failure/retry simulation was
 deliberately deferred after repeated successful archive/receipt/replay-safe cycles; it
 remains an unexercised scenario rather than a validated result.
 
@@ -124,7 +123,7 @@ retain legacy Apps Script URLs and are outside this migration task. They are not
 - [x] Branch-local real-browser AQG and training smoke tests passed against the deployed migration Worker, including AQG audio and notification delivery; the actual Pages Origin header was separately validated against the Worker.
 - [ ] Post-cutover live GitHub Pages browser smoke test completed from the deployed production origin.
 - [x] Synthetic event/record counts reconciled across D1, archive export, UA workbook receipt, and post-purge state.
-- [ ] Ongoing reporting/audio archive cadence, ownership, and approved retention schedule documented for production operation.
+- [x] Ongoing reporting/audio archive cadence and ownership documented for production operation; retention follows the study's approved IRB/UA requirements rather than an invented interval.
 - [ ] Full UA tenant failure/retry simulation completed. This was deliberately deferred after repeated successful replay-safe archive cycles and is not claimed as validated.
 - [ ] Main/branch differences reviewed against the then-current main, with no pilot edits lost.
 - [ ] Exact final pre-cutover Git commit, Pages artifact, Worker version, D1 backup, and
