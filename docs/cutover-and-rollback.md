@@ -54,8 +54,37 @@ Completed synthetic validation:
 10. Remote notification delivery was revalidated with fresh synthetic AQG feedback sent
     to the deployed Worker using the intended GitHub Pages Origin header. The Worker
     queued the notification and the outbox reached `sent` on the first attempt with
-    a populated `sent_at` value and no error. This validates the current backend relay
-    path but does not replace the final browser-based frontend smoke test.
+    a populated `sent_at` value and no error.
+11. A real-Chromium AQG smoke test ran the branch-local frontend on loopback against the
+    deployed migration Worker. Access/fresh session, skip-context, first-question prompt,
+    quick feedback plus notification delivery, fake-microphone audio upload with remote
+    R2 readback, final submission, and D1 persistence all passed.
+12. The corresponding AQG reporting archive completed the UA OneDrive receipt flow and
+    guarded purge: 25 verified records were reconciled, 17 study rows were deleted, and
+    8 cumulative nonparticipant counters were retained. Its browser-smoke audio object
+    completed the separate OneDrive audio round trip and guarded R2 deletion, followed
+    by an independent absence check.
+13. A real-Chromium training smoke test ran the branch-local training frontend against
+    the deployed migration Worker. Access/content load, Save and Exit, server-side
+    resume, feedback plus notification delivery, final submission transport, and D1
+    persistence passed. Final completion was triggered programmatically after the
+    resume check, so this is not a card-by-card instructional-content test.
+14. The training reporting archive then completed the UA OneDrive receipt flow and
+    guarded purge: 39 verified records were reconciled, 31 study rows were deleted, and
+    the same 8 cumulative nonparticipant counters were retained.
+15. Two older synthetic AQG audio objects referenced by the authoritative reporting
+    archive were recovered from R2, archived together, uploaded/downloaded through UA
+    OneDrive, verified byte-for-byte, then deleted by the guarded R2 purge after the
+    single stale live-session blocker was removed. Independent reads confirmed both
+    keys no longer exist.
+16. Synthetic operational cleanup removed 159 TEST001 live-session/live-item/context/
+    latest-settings/sent-notification rows after the reporting and audio archives were
+    verified. The synthetic access code, AQG/training participant counters, and
+    idempotency request receipts remain intentionally available for any final validation.
+
+These browser smokes used a branch-local loopback origin, not the live GitHub Pages
+site. Separately, the deployed Worker has been exercised with the actual GitHub Pages
+Origin header. A live Pages browser check remains a post-cutover verification step.
 
 The UA tenant does not provide the originally planned Power Automate HTTP action without
 Premium licensing, so the currently validated workflow begins with a secure archive
@@ -63,9 +92,11 @@ export and OneDrive upload. The reporting pull API remains available for a futur
 institution-approved scheduler.
 
 Still required before production cutover: document the ongoing operational cadence/owner
-and approved retention schedule for reporting and audio archives, complete the final
-intended-origin frontend smoke test (including notifications and audio), reconcile any
-new production edits, and obtain Taemin's separate explicit approval.
+and approved retention schedule for reporting and audio archives, reconcile any new
+production edits from `main`, record the final release/rollback anchors, and obtain
+Taemin's separate explicit approval. The full UA tenant failure/retry simulation was
+deliberately deferred after repeated successful archive/receipt/replay-safe cycles; it
+remains an unexercised scenario rather than a validated result.
 
 ## Resources that must remain active
 
@@ -87,14 +118,14 @@ retain legacy Apps Script URLs and are outside this migration task. They are not
 - [x] Reporting Worker/migration and UA archive/receipt ingestion tested with synthetic data.
 - [x] UA OneDrive/Excel reporting destination and file-trigger archive flow validated with synthetic data.
 - [x] Private R2 audio export, UA OneDrive round-trip verification, separate receipt, and guarded exact-object cleanup tested with synthetic data.
-- [ ] Remote synthetic participant data and audio cleaned up without touching study rows.
+- [x] Synthetic reporting rows, live/session state, sent notifications, and archived R2 audio cleaned up after verified transfer; minimal TEST001 credential/counter/idempotency fixtures remain intentionally available.
 - [ ] Production participant-code provisioning is handled securely outside chat.
 - [ ] All current frontend paths pass syntax/JSON/dependency checks; training media resolves.
-- [ ] AQG and training access, saves, resume, final submissions, feedback, audio, and
-  notification delivery work together from the intended Pages origin in a browser-based synthetic smoke test. (Backend relay itself has been remotely validated.)
+- [x] Branch-local real-browser AQG and training smoke tests passed against the deployed migration Worker, including AQG audio and notification delivery; the actual Pages Origin header was separately validated against the Worker.
+- [ ] Post-cutover live GitHub Pages browser smoke test completed from the deployed production origin.
 - [x] Synthetic event/record counts reconciled across D1, archive export, UA workbook receipt, and post-purge state.
 - [ ] Ongoing reporting/audio archive cadence, ownership, and approved retention schedule documented for production operation.
-- [ ] UA failure/retry behavior has been exercised sufficiently for the final production procedure (the validated archive path is replay-safe in tests, but a full tenant failure simulation remains pending).
+- [ ] Full UA tenant failure/retry simulation completed. This was deliberately deferred after repeated successful replay-safe archive cycles and is not claimed as validated.
 - [ ] Main/branch differences reviewed against the then-current main, with no pilot edits lost.
 - [ ] Exact final pre-cutover Git commit, Pages artifact, Worker version, D1 backup, and
   rollback owner/window recorded.
