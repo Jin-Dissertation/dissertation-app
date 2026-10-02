@@ -3,7 +3,7 @@
 Validation updated: 2026-10-01 America/Los_Angeles (2026-10-02 UTC).
 Branch: `cloudflare-migration`.
 Starting migration commit: `7c0586d0ed269112985ce0f996f1dd9152921562`.
-Pre-documentation validation checkpoint: `2fb4304f0ee4bbb2dbed18469c79630a8e29788e`.
+Pre-documentation validation checkpoint: `069e2311d4fe7f6eecba44490c48086058382c97`.
 
 ## Verified locally
 
@@ -17,7 +17,7 @@ Pre-documentation validation checkpoint: `2fb4304f0ee4bbb2dbed18469c79630a8e2978
 | Full migration diff vs current `origin/main` | PASS; current main is an ancestor |
 | `npx wrangler deploy --dry-run` | PASS; no deployment performed |
 | Wrangler local migration application | PASS, all three SQL migrations including trigger bodies; temporary database removed |
-| Reporting / backend tests | 42 PASS, 0 failures at the 2026-10-01 checkpoint |
+| Reporting / backend tests | 51 PASS, 0 failures after reporting + audio archive/purge safeguards |
 | AQG browser tests | 7 PASS, 0 failures; real headless Chromium, local Worker/D1/R2 |
 | AQG visual inspection | PASS, desktop setup and mobile Training Mode; optional external font CSS suppressed |
 | D1/R2 testing | Actual Worker route handlers in local workerd/Miniflare, disposable database/buckets |
@@ -26,6 +26,8 @@ Pre-documentation validation checkpoint: `2fb4304f0ee4bbb2dbed18469c79630a8e2978
 | Remote reporting Worker / D1 | PASS with synthetic data; reporting migration active on the migration Worker/D1 without changing production GitHub Pages |
 | UA OneDrive / Power Automate archive flow | PASS; file-trigger flow imports archives, creates verified receipts, and moves the original archive to Processed with its original filename |
 | Guarded archive purge | PASS remotely; exact receipt/hash/revision checks, cumulative NP counters retained, feed rotated, old generation removed |
+| Private R2 audio archive | PASS remotely with synthetic audio; exact referenced-object export, SHA-256 manifest, UA OneDrive round-trip verification, and separate verified audio receipt |
+| Guarded R2 audio purge | PASS remotely with one synthetic object; current R2 hash/size and D1 operational references revalidated before exact-object deletion; post-delete read confirmed the key no longer existed |
 
 ## Synthetic coverage
 
@@ -62,6 +64,14 @@ Pre-documentation validation checkpoint: `2fb4304f0ee4bbb2dbed18469c79630a8e2978
     buttons require the current starter copy, and editing context requires recopying.
 16. Server recovery of a regular skipped session, mobile layout, keyboard activation,
     and refresh of prompt/sample content after asynchronous configuration loading.
+17. Private R2 audio archive contract: reporting-archive references are deduplicated,
+    object keys are restricted to the expected AQG namespace, every referenced object
+    must be present exactly once, and manifests/receipts bind bundle hash, object hash,
+    byte length, and a separate random audio archive token.
+18. Guarded audio purge planning: deletion eligibility requires an exact verified audio
+    receipt, unchanged current R2 bytes, and zero current references from AQG live sessions,
+    submissions, feedback, or pending notification payloads. Hash/reference mismatches
+    block deletion.
 
 The local harness used only `TEST001`, explicitly synthetic field values, and randomly
 generated local-only test credentials. It did not access deployed resources. The later
@@ -119,12 +129,24 @@ The UA tenant did not provide the originally planned Premium HTTP action, so the
 validated flow is file-triggered after a secure archive export rather than a scheduled
 Power Automate HTTP pull. Production GitHub Pages were not changed.
 
+Private R2 audio was also validated separately with synthetic data only. A synthetic
+recording was written to the remote `dissertation-study-audio` bucket, downloaded
+through the new exact-reference exporter, hashed, packaged with a private manifest,
+uploaded to `/AQG Dissertation/Audio Archives`, downloaded back from UA OneDrive,
+and independently verified byte-for-byte. A separate verified audio receipt was saved
+to `/AQG Dissertation/Verified Audio Receipts`. The guarded audio purge then
+revalidated the receipt, current R2 object SHA-256/byte length, and read-only D1
+operational-reference counts immediately before deleting exactly that one synthetic
+object. A final remote read returned "The specified key does not exist," confirming
+the deletion. The D1 reporting receipt was never accepted as audio-deletion authority.
+
 ## Not yet validated / still unfinished
 
-- Private R2 recording transfer to institutional storage and coordinated audio retention/purge.
 - Remote notification-delivery behavior as part of a full intended-origin frontend smoke test.
 - Production cutover and live GitHub Pages-origin smoke tests: explicitly not authorized.
-- Final operational cadence/ownership review for ongoing reporting exports after cutover.
+- Final operational cadence/ownership and retention schedule for ongoing reporting
+  exports and private audio archives after cutover.
+- Full UA tenant failure/retry procedure for the ongoing operational workflow.
 
 The local and remote synthetic tests establish the reporting/archive behavior; they do
 not authorize a production release. See [reporting-mirror.md](reporting-mirror.md) for
