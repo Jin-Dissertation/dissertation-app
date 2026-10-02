@@ -293,14 +293,41 @@ The validated synthetic workflow is:
    and the exact deletion count. The complete plan is rebuilt immediately before
    deletion; any changed bytes or current D1 reference blocks deletion.
 
-Remote synthetic validation completed one full audio cycle: one synthetic R2 object
-was exported, uploaded to UA OneDrive, downloaded back, verified byte-for-byte, then
-revalidated against current R2 and D1 state and deleted by exact key. A final remote
-R2 read confirmed the key no longer existed.
+Remote synthetic validation has completed multiple full audio cycles. A browser-smoke
+recording and, later, two older synthetic AQG audio objects were exported from exact
+reporting-archive references, uploaded to UA OneDrive, downloaded back, and verified
+byte-for-byte. Guarded purge revalidated each receipt, the current R2 bytes, and D1
+operational references immediately before deletion. Independent remote reads then
+confirmed the deleted keys no longer existed. One older object was initially blocked
+by a stale synthetic live-session reference; deletion remained refused until that exact
+operational row was deliberately removed.
 
 The private audio receipt is independent of the reporting receipt. Neither receipt is
 interchangeable with the other, and a D1 archive receipt is never sufficient evidence
 for deleting an R2 object.
+
+### Browser smoke and synthetic cleanup status
+
+Pre-cutover real-browser smoke tests now cover both major frontends using the
+`cloudflare-migration` branch served on loopback while talking to the deployed
+migration Worker. AQG passed access/session creation, skip-context, first-question
+prompt, feedback/notification, fake-microphone audio upload and R2 readback, final
+submission, and D1 persistence. Training passed access/content load, Save and Exit,
+server-side resume, feedback/notification, final submission transport, and D1
+persistence. Training completion was triggered programmatically after the resume
+check, so that run is not a card-by-card instructional-content test.
+
+The actual GitHub Pages Origin header has been separately validated against the deployed
+Worker. No production Pages cutover has occurred, so an actual live-Pages browser smoke
+remains a post-cutover verification rather than a pre-cutover result.
+
+After verified UA archive/receipt cycles, synthetic reporting rows were purged while
+retaining the 8 cumulative nonparticipant counters. Synthetic live/session state, sent
+notifications, and archived R2 audio were also cleaned up. The TEST001 access code,
+AQG/training participant counters, and request idempotency receipts remain intentionally
+available for any final synthetic validation. A full UA tenant failure/retry simulation
+was deliberately deferred; the archive path has been replay-safe in successful cycles,
+but that separate failure scenario is not claimed as tested.
 
 ### Original direct-pull design
 
