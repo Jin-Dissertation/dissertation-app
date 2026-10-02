@@ -317,6 +317,13 @@ async function main() {
       async () => !(await page.locator("#llmResponse").isDisabled()),
       "Final-response field did not unlock after final prompt copy"
     );
+
+    // The optional question-set textarea lives inside a collapsed <details>.
+    // Open it exactly as a participant would before trying to type.
+    if (!(await page.locator("#finalModelOutputSection").getAttribute("open"))) {
+      await page.locator("#finalModelOutputSection > summary").click();
+    }
+    await page.locator("#llmResponse").waitFor({ state: "visible" });
     await page.locator("#llmResponse").fill(
       "Synthetic remote browser smoke-test question output only. No participant data."
     );
