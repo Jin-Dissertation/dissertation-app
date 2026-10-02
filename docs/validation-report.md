@@ -28,6 +28,7 @@ Pre-documentation validation checkpoint: `069e2311d4fe7f6eecba44490c48086058382c
 | Guarded archive purge | PASS remotely; exact receipt/hash/revision checks, cumulative NP counters retained, feed rotated, old generation removed |
 | Private R2 audio archive | PASS remotely with synthetic audio; exact referenced-object export, SHA-256 manifest, UA OneDrive round-trip verification, and separate verified audio receipt |
 | Guarded R2 audio purge | PASS remotely with one synthetic object; current R2 hash/size and D1 operational references revalidated before exact-object deletion; post-delete read confirmed the key no longer existed |
+| Remote notification relay | PASS with fresh synthetic AQG feedback through the deployed Worker using the intended GitHub Pages Origin header; outbox reached `sent`, attempt count 1, `sent_at` populated, `last_error` null |
 
 ## Synthetic coverage
 
@@ -142,7 +143,7 @@ the deletion. The D1 reporting receipt was never accepted as audio-deletion auth
 
 ## Not yet validated / still unfinished
 
-- Remote notification-delivery behavior as part of a full intended-origin frontend smoke test.
+- Full browser-based intended-origin frontend smoke test from the migration frontend, including access, saves/resume, submission, audio, feedback, and notification behavior together.
 - Production cutover and live GitHub Pages-origin smoke tests: explicitly not authorized.
 - Final operational cadence/ownership and retention schedule for ongoing reporting
   exports and private audio archives after cutover.
