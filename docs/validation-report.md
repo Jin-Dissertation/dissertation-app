@@ -1,8 +1,9 @@
 # Reporting migration validation
 
-Validation date: 2026-09-29 (UTC and America/Los_Angeles).
+Validation updated: 2026-10-01 America/Los_Angeles (2026-10-02 UTC).
 Branch: `cloudflare-migration`.
 Starting migration commit: `7c0586d0ed269112985ce0f996f1dd9152921562`.
+Pre-documentation validation checkpoint: `2fb4304f0ee4bbb2dbed18469c79630a8e29788e`.
 
 ## Verified locally
 
@@ -16,12 +17,15 @@ Starting migration commit: `7c0586d0ed269112985ce0f996f1dd9152921562`.
 | Full migration diff vs current `origin/main` | PASS; current main is an ancestor |
 | `npx wrangler deploy --dry-run` | PASS; no deployment performed |
 | Wrangler local migration application | PASS, all three SQL migrations including trigger bodies; temporary database removed |
-| Reporting / backend tests | 13 PASS, 0 failures |
+| Reporting / backend tests | 42 PASS, 0 failures at the 2026-10-01 checkpoint |
 | AQG browser tests | 7 PASS, 0 failures; real headless Chromium, local Worker/D1/R2 |
 | AQG visual inspection | PASS, desktop setup and mobile Training Mode; optional external font CSS suppressed |
 | D1/R2 testing | Actual Worker route handlers in local workerd/Miniflare, disposable database/buckets |
 | Synthetic cleanup | Test runtime disposed and temporary D1/R2 directories removed |
-| Workbook behavior | Tested in a purpose-built Excel API model; actual UA tenant still pending |
+| Workbook behavior | PASS in the model and in the actual UA Excel/Office Scripts tenant with synthetic archives |
+| Remote reporting Worker / D1 | PASS with synthetic data; reporting migration active on the migration Worker/D1 without changing production GitHub Pages |
+| UA OneDrive / Power Automate archive flow | PASS; file-trigger flow imports archives, creates verified receipts, and moves the original archive to Processed with its original filename |
+| Guarded archive purge | PASS remotely; exact receipt/hash/revision checks, cumulative NP counters retained, feed rotated, old generation removed |
 
 ## Synthetic coverage
 
@@ -59,11 +63,12 @@ Starting migration commit: `7c0586d0ed269112985ce0f996f1dd9152921562`.
 16. Server recovery of a regular skipped session, mobile layout, keyboard activation,
     and refresh of prompt/sample content after asynchronous configuration loading.
 
-Only `TEST001`, explicitly synthetic field values, and randomly generated local-only
-test credentials were used. No deployed database, real participant records, account
-credentials, or live production Pages were accessed for these tests. Synthetic audio
-was a small artificial byte string, not a human recording. The harness blocks external
-Worker fetches and has no notification-relay credentials.
+The local harness used only `TEST001`, explicitly synthetic field values, and randomly
+generated local-only test credentials. It did not access deployed resources. The later
+remote validation also used only synthetic/test records; no real participant records
+were used for the archive, receipt, purge, or post-purge checks. Synthetic audio in the
+local harness was a small artificial byte string, not a human recording. The harness
+blocks external Worker fetches and has no notification-relay credentials.
 
 Browser requests to the configured deployed Worker hostname are intercepted and
 dispatched to the local test Worker. No request reaches that deployment. Optional
@@ -88,14 +93,40 @@ can be used by setting `BROWSER_EXECUTABLE_PATH`. `UI_SCREENSHOT_DIR` optionally
 local QA images. The browser harness is the isolated local test entry point: serving
 the HTML alone retains its configured deployed Worker URL.
 
-## Not yet validated
+## Remote / UA validation completed
 
-- Remote Cloudflare migration application and deployment: CLI authentication is absent.
-- Actual UA Power Automate license, HTTP connector policy, Excel/Office Scripts access.
-- UA workbook/OneDrive permissions, secure flow history, real Excel rendering, and scheduled runs.
-- Private R2 recording transfer to institutional storage and coordinated retention/purge.
-- Production cutover and live-origin smoke tests: explicitly not authorized.
+The reporting migration was applied to the migration D1/Worker and exercised with
+synthetic data only. A UA OneDrive/Excel archive flow was then validated end to end:
 
-The local tests establish code behavior; they do not claim a completed institutional
-connection or production release. See [reporting-mirror.md](reporting-mirror.md) for the
-tenant smoke test and [cutover-and-rollback.md](cutover-and-rollback.md) for release gates.
+- a full D1 recovery backup was created and copied to the restricted UA OneDrive backup folder;
+- reporting archives were exported with a pinned generation/checkpoint and uploaded to
+  `Incoming Reporting Exports`;
+- Power Automate invoked the Office Script `archive_import` action, which wrote and
+  read back master rows before issuing a verified receipt;
+- the receipt was stored separately in `Verified Reporting Receipts`, while the
+  original archive moved to `Processed Reporting Exports`;
+- guarded purge previews matched the verified archives exactly;
+- remote guarded purges deleted only verified study rows, retained cumulative
+  `nonparticipant_button_counts`, rotated the feed generation, and removed the old
+  generation without touching R2 or operational/live-session tables;
+- a new synthetic AQG event was created after the first purge, appeared in the new
+  reporting generation, was archived through UA, and was then safely purged through
+  the same verified cycle;
+- final remote state was 0 rows in the seven study-data reporting tables, 8 retained
+  cumulative nonparticipant counters, and 8 matching rows in the current mirror generation.
+
+The UA tenant did not provide the originally planned Premium HTTP action, so the
+validated flow is file-triggered after a secure archive export rather than a scheduled
+Power Automate HTTP pull. Production GitHub Pages were not changed.
+
+## Not yet validated / still unfinished
+
+- Private R2 recording transfer to institutional storage and coordinated audio retention/purge.
+- Remote notification-delivery behavior as part of a full intended-origin frontend smoke test.
+- Production cutover and live GitHub Pages-origin smoke tests: explicitly not authorized.
+- Final operational cadence/ownership review for ongoing reporting exports after cutover.
+
+The local and remote synthetic tests establish the reporting/archive behavior; they do
+not authorize a production release. See [reporting-mirror.md](reporting-mirror.md) for
+the validated UA archive workflow and [cutover-and-rollback.md](cutover-and-rollback.md)
+for the remaining release gates.
