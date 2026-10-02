@@ -8,6 +8,7 @@ import { loadTrainingContent, getTrainingMedia } from "./training-content.js";
 import { deliverNotification, flushPendingNotifications } from "./notifications.js";
 import { incrementNonparticipantButtonCount } from "./nonparticipant.js";
 import { handleReporting } from "./reporting.js";
+import { handleProvisioning } from "./provisioning.js";
 
 const ALLOWED_BROWSER_ORIGINS = new Set([
   "https://jin-dissertation.github.io",
@@ -75,6 +76,10 @@ export default {
 
     if (url.pathname === "/v1/reporting" || url.pathname.startsWith("/v1/reporting/")) {
       return handleReporting(request, env);
+    }
+
+    if (url.pathname === "/v1/admin/access-codes/provision") {
+      return handleProvisioning(request, env);
     }
 
     if (!browserOriginAllowed(request)) {
