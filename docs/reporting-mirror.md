@@ -24,10 +24,14 @@ Validated UA folders and workbook:
 - `/AQG Dissertation/Processed Reporting Exports`
 - `/AQG Dissertation/Verified Reporting Receipts`
 - `/AQG Dissertation/D1 Recovery Backups`
+- `/AQG Dissertation/Audio Archives`
+- `/AQG Dissertation/Verified Audio Receipts`
 - `/AQG Dissertation/UA_OneDrive_Reporting_Mirror.xlsx`
 
-The current flow is intentionally single-writer (trigger concurrency 1). R2 audio is
-not part of this archive/purge authorization and remains a separate unfinished workflow.
+The current reporting flow is intentionally single-writer (trigger concurrency 1). R2 audio is
+not part of this archive/purge authorization. It now uses a separate, independently
+verified archive/receipt/purge workflow so a D1 reporting receipt can never authorize
+an R2 deletion.
 
 ## Captured datasets
 
@@ -55,8 +59,10 @@ text is preserved. This is not a general de-identification service: authorized r
 exports still contain participant IDs and submitted research content.
 
 Audio object keys, filenames, MIME types, and durations are metadata only. This API
-does **not** download private R2 audio, grant bucket access, or copy recordings to
-OneDrive. An approved media-copy/retention workflow remains a separate activation task.
+does **not** download private R2 audio or grant bucket access. Private recordings are
+handled by a separate archive tool that reads only audio keys referenced by a reporting
+archive, downloads those exact R2 objects, computes SHA-256 and byte length, and packages
+them with a private manifest for transfer to UA OneDrive.
 
 ## AQG shortcut tracking
 
@@ -254,6 +260,48 @@ second created one new synthetic AQG event after rotation, archived it through t
 flow, verified a 9-record receipt (1 event + 8 counters), purged only that event, and
 ended with 0 study-data rows plus the same 8 counters in the new generation.
 
+### Validated private R2 audio archive flow
+
+Private audio uses a deliberately separate authorization chain from D1 reporting.
+The validated synthetic workflow is:
+
+1. Start from a private reporting archive and collect only nonblank
+   `audio_object_key` values from `aqg_submissions` and `aqg_feedback`.
+   Duplicate references to the same R2 key collapse to one archive object.
+2. `node scripts/export-audio-archive.mjs --reporting-archive <file>` downloads
+   each exact referenced key from the private `dissertation-study-audio` bucket.
+   The exporter rejects keys outside the expected `aqg/<participant>/<session>/<file>`
+   namespace.
+3. The exporter computes each object's SHA-256 and byte length, creates a private
+   per-object archive token, writes an internal manifest, and packages the manifest
+   plus audio files into a `.tar.gz` bundle. An external manifest records the bundle
+   SHA-256. No R2 object is modified or deleted by export.
+4. Upload the unopened bundle and external manifest to
+   `/AQG Dissertation/Audio Archives`.
+5. Download the bundle back from UA OneDrive and run
+   `node scripts/verify-audio-archive.mjs --manifest <manifest> --retrieved-bundle <bundle>`.
+   Verification requires the returned bundle SHA-256, internal manifest, individual
+   object hashes, and byte lengths to match before a separate verified audio receipt
+   is issued.
+6. Store that private receipt in
+   `/AQG Dissertation/Verified Audio Receipts`.
+7. `node scripts/execute-remote-audio-purge.mjs` defaults to preview-only. It
+   validates the audio receipt, re-downloads current R2 bytes to recheck hash/size,
+   and runs SELECT-only D1 checks for current references in `aqg_live_sessions`,
+   `aqg_submissions`, `aqg_feedback`, and unsent `notification_outbox` payloads.
+8. Destructive mode additionally requires `--execute`, the exact audio export ID,
+   and the exact deletion count. The complete plan is rebuilt immediately before
+   deletion; any changed bytes or current D1 reference blocks deletion.
+
+Remote synthetic validation completed one full audio cycle: one synthetic R2 object
+was exported, uploaded to UA OneDrive, downloaded back, verified byte-for-byte, then
+revalidated against current R2 and D1 state and deleted by exact key. A final remote
+R2 read confirmed the key no longer existed.
+
+The private audio receipt is independent of the reporting receipt. Neither receipt is
+interchangeable with the other, and a D1 archive receipt is never sufficient evidence
+for deleting an R2 object.
+
 ### Original direct-pull design
 
 The authenticated `GET /v1/reporting/manifest` and `GET /v1/reporting/changes`
@@ -290,10 +338,17 @@ counters; deleting them would allow later lower counts to overwrite historical t
 After a successful study-row purge, the feed is rotated/reseeded and the old generation
 is removed so the UA archive remains historical rather than receiving purge tombstones.
 
-This authorization does **not** extend to private R2 recordings. R2 transfer, durable
-institutional verification, and any later audio deletion require a separate workflow
-and retention decision. A D1 receipt must never be used as authorization to delete an
-R2 object.
+Private R2 recording transfer and guarded cleanup are now implemented and validated
+remotely with synthetic data. The audio workflow remains separate from reporting:
+it requires a private audio manifest, a OneDrive round-trip verification receipt,
+unchanged current R2 bytes, and zero current D1 operational references before an
+object can be eligible for deletion. A D1 reporting receipt must never be used as
+authorization to delete an R2 object.
+
+Before production use, document the operating cadence/owner and the study's approved
+retention schedule for archived audio. The validated tooling proves safe transfer and
+exact-object cleanup behavior; it does not by itself define how long real recordings
+must be retained.
 
 To suspend reporting, stop the UA flow and remove/rotate the reporting secret. Existing
 participant saves can continue capturing changes for later catch-up. Reverting the
