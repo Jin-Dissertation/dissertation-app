@@ -10,3 +10,5 @@ node_modules/
 backend/private-reporting-exports/
 
 backend/private-d1-backups/
+
+backend/private-audio-archives/
