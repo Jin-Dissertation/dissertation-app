@@ -10,7 +10,7 @@ test("secure participant provisioning hashes codes server-side", async () => {
 
     const unauthorized = await fx.request("/v1/admin/access-codes/provision", {
       method: "POST",
-      body: { entries: [{ participant_id: participantId, code: syntheticCode }] }
+      body: { entries: [{ participant_code: syntheticCode }] }
     });
     assert.equal(unauthorized.status, 401);
 
@@ -20,20 +20,19 @@ test("secure participant provisioning hashes codes server-side", async () => {
         authorization: "Bearer " + fx.provisioningToken,
         origin: "https://jin-dissertation.github.io"
       },
-      body: { entries: [{ participant_id: participantId, code: syntheticCode }] }
+      body: { entries: [{ participant_code: syntheticCode }] }
     });
     assert.equal(browserBlocked.status, 403);
 
     const provisioned = await fx.request("/v1/admin/access-codes/provision", {
       method: "POST",
       headers: { authorization: "Bearer " + fx.provisioningToken },
-      body: { entries: [{ participant_id: participantId, code: syntheticCode }] }
+      body: { entries: [{ participant_code: syntheticCode }] }
     });
     assert.equal(provisioned.status, 200);
     assert.deepEqual(provisioned.body, {
       ok: true,
-      provisioned: 1,
-      participant_ids: [participantId]
+      provisioned: 1
     });
     assert.equal(JSON.stringify(provisioned.body).includes(syntheticCode), false);
 
