@@ -3,8 +3,12 @@ const LOCKOUT_MS = 2 * 60 * 1000;
 
 const encoder = new TextEncoder();
 
-function normalizeCode(value) {
+export function normalizeAccessCode(value) {
   return String(value ?? "").trim().toLowerCase();
+}
+
+function normalizeCode(value) {
+  return normalizeAccessCode(value);
 }
 
 function normalizeClientKey(value) {
@@ -37,6 +41,12 @@ async function hmacHex(secret, value) {
   );
 
   return toHex(signature);
+}
+
+export async function hashAccessCode(env, value) {
+  const code = normalizeAccessCode(value);
+  if (!code) throw new Error("Missing access code");
+  return hmacHex(env.ACCESS_CODE_PEPPER, `access:${code}`);
 }
 
 async function getFailureState(db, clientKeyHash) {
