@@ -42,14 +42,23 @@ Completed synthetic validation:
 7. A post-purge synthetic AQG event successfully entered the new generation, completed
    the same UA archive/receipt cycle, and was safely purged. Final D1 reporting state
    returned to 0 study rows plus 8 retained cumulative counters.
+8. Private R2 audio archival was validated separately with a synthetic recording:
+   exact referenced-object export, per-object SHA-256/byte length, private manifest,
+   UA OneDrive upload/download round trip, independent byte-for-byte verification,
+   and a separate verified audio receipt.
+9. Guarded R2 cleanup was then validated against that synthetic object. Immediately
+   before deletion, the tool revalidated the receipt, current R2 bytes, and SELECT-only
+   D1 counts for live-session, submission, feedback, and pending-notification references.
+   Exactly one eligible synthetic key was deleted, and a subsequent remote read confirmed
+   that the key no longer existed.
 
 The UA tenant does not provide the originally planned Power Automate HTTP action without
 Premium licensing, so the currently validated workflow begins with a secure archive
 export and OneDrive upload. The reporting pull API remains available for a future
 institution-approved scheduler.
 
-Still required before production cutover: resolve private R2 audio transfer/retention,
-decide the ongoing operational cadence/owner for archive exports, complete the final
+Still required before production cutover: document the ongoing operational cadence/owner
+and approved retention schedule for reporting and audio archives, complete the final
 intended-origin frontend smoke test (including notifications and audio), reconcile any
 new production edits, and obtain Taemin's separate explicit approval.
 
@@ -72,13 +81,14 @@ retain legacy Apps Script URLs and are outside this migration task. They are not
 - [ ] Taemin confirms the pilot workflow is finished and explicitly approves cutover.
 - [x] Reporting Worker/migration and UA archive/receipt ingestion tested with synthetic data.
 - [x] UA OneDrive/Excel reporting destination and file-trigger archive flow validated with synthetic data.
-- [ ] Required private audio transfer/retention arrangements resolved and tested.
+- [x] Private R2 audio export, UA OneDrive round-trip verification, separate receipt, and guarded exact-object cleanup tested with synthetic data.
 - [ ] Remote synthetic participant data and audio cleaned up without touching study rows.
 - [ ] Production participant-code provisioning is handled securely outside chat.
 - [ ] All current frontend paths pass syntax/JSON/dependency checks; training media resolves.
 - [ ] AQG and training access, saves, resume, final submissions, feedback, audio, and
   notification delivery work from the intended Pages origin in a synthetic smoke test.
 - [x] Synthetic event/record counts reconciled across D1, archive export, UA workbook receipt, and post-purge state.
+- [ ] Ongoing reporting/audio archive cadence, ownership, and approved retention schedule documented for production operation.
 - [ ] UA failure/retry behavior has been exercised sufficiently for the final production procedure (the validated archive path is replay-safe in tests, but a full tenant failure simulation remains pending).
 - [ ] Main/branch differences reviewed against the then-current main, with no pilot edits lost.
 - [ ] Exact final pre-cutover Git commit, Pages artifact, Worker version, D1 backup, and
