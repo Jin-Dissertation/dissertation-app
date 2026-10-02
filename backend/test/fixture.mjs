@@ -6,10 +6,11 @@ import { join } from "node:path";
 import { randomBytes, createHmac } from "node:crypto";
 import { migrationStatements } from "../scripts/reporting-schema.mjs";
 
-export async function fixture({ beforeMirror, tokenConfigured = true } = {}) {
+export async function fixture({ beforeMirror, tokenConfigured = true, provisioningTokenConfigured = false } = {}) {
   const directory = await mkdtemp(join(tmpdir(), "dissertation-synthetic-"));
   const token = randomBytes(32).toString("hex");
   const pepper = randomBytes(32).toString("hex");
+  const provisioningToken = randomBytes(32).toString("hex");
   const code = "synthetic-" + randomBytes(12).toString("hex");
   const bundle = await build({ entryPoints: [new URL("../src/worker.js", import.meta.url).pathname], bundle: true, format: "esm", write: false, platform: "browser" });
   const mf = new Miniflare(convertV4MiniflareOptions({
@@ -17,7 +18,11 @@ export async function fixture({ beforeMirror, tokenConfigured = true } = {}) {
     compatibilityDate: "2026-09-26",
     d1Databases: ["STUDY_DB"], d1Persist: join(directory, "d1"),
     r2Buckets: ["STUDY_AUDIO", "TRAINING_MEDIA"], r2Persist: join(directory, "r2"),
-    bindings: { ACCESS_CODE_PEPPER: pepper, ...(tokenConfigured ? { REPORTING_EXPORT_TOKEN: token } : {}) },
+    bindings: {
+      ACCESS_CODE_PEPPER: pepper,
+      ...(tokenConfigured ? { REPORTING_EXPORT_TOKEN: token } : {}),
+      ...(provisioningTokenConfigured ? { PARTICIPANT_PROVISIONING_TOKEN: provisioningToken } : {})
+    },
     // Any attempted external request fails; notification relay credentials absent.
     outboundService: () => new Response("Synthetic tests forbid external requests", { status: 502 }),
     log: new Log(LogLevel.ERROR)
@@ -41,7 +46,7 @@ export async function fixture({ beforeMirror, tokenConfigured = true } = {}) {
       return { status: response.status, headers: response.headers, body: await response.json() };
     };
     return {
-      db, mf, code, token, request,
+      db, mf, code, token, provisioningToken, request,
       post: (path, body) => request(path, { method: "POST", body: { code, ...body } }),
       report: (path, options = {}) => request("/v1/reporting/" + path, { ...options, headers: { authorization: "Bearer " + token, ...options.headers } }),
       count: async () => (await db.prepare("SELECT COUNT(*) AS n FROM mirror_changes").first()).n,
