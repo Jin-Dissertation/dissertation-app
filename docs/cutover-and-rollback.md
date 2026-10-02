@@ -17,37 +17,41 @@ These are identifiers, not credentials. Recheck branch heads and the exact deplo
 versions when scheduling cutover; do not assume today's main or rollback tag is the
 final pre-cutover version.
 
-## Reporting activation before production cutover
+## Reporting/archive status before production cutover
 
-Cloudflare is unauthenticated in the current Work terminal. UA account entitlements,
-workbook connections, and secret storage have not been configured. Complete these
-steps through the authorized account session; never send credentials through chat.
+The migration Worker/D1 reporting path and UA archive/receipt workflow have now been
+validated remotely with synthetic data while production GitHub Pages remained on the
+existing system. This is **not** a production cutover.
 
-1. Sign in to Cloudflare on the administrator's workstation using `npx wrangler login`.
-2. Fetch and check out only `cloudflare-migration`. Confirm a clean tree and run
-   `npm ci && npm run validate` from `backend/`.
-3. Confirm the target Worker/D1 are the migration infrastructure, that no live pilot
-   page has been redirected to them, and that current scheduled notification settings
-   are preserved. Record a database backup and existing Worker version.
-4. Apply the additive schema with
-   `npx wrangler d1 migrations apply dissertation-study-data --remote`.
-   Review pending migration names first. Do not reapply the first two migrations to
-   an already initialized database or execute trigger fragments separately.
-5. Configure `REPORTING_EXPORT_TOKEN` using
-   `npx wrangler secret put REPORTING_EXPORT_TOKEN`, entering the generated secret
-   only into the secure prompt. Preserve existing access/notification secrets.
-6. Run `npx wrangler deploy` from this branch's `backend/`. This updates the migration
-   Worker; it does not change GitHub Pages. Do not run this against a different target.
-7. Configure a separate synthetic UA workbook/archive and the flow described in
-   [reporting-mirror.md](reporting-mirror.md). Complete the tenant smoke tests.
-8. For a remote synthetic test, use a dedicated test participant and randomized request
-   IDs created securely on the administrator's machine. Exercise the existing routes,
-   inspect only those synthetic IDs, and verify D1/changes/Excel/OneDrive results.
-   Remove only the test rows, receipts, and test R2 objects. Deletions must be consumed
-   if the test mirror is retained. Never run broad DELETE statements against remote D1.
+Completed synthetic validation:
 
-Remote deployment and synthetic testing above are **pending**, not reported as passed.
-The installed UA automation mechanism is a genuine external-account decision.
+1. Migration `0003_reporting_mirror.sql` is present remotely and the authenticated
+   reporting API is reachable on the migration Worker.
+2. A full D1 recovery backup was created before destructive testing and copied to the
+   restricted UA OneDrive `D1 Recovery Backups` folder.
+3. Private archive exports were imported into
+   `UA_OneDrive_Reporting_Mirror.xlsx` through a file-trigger Power Automate flow.
+4. The Office Script `archive_import` path issued verified receipts only after row
+   write/readback and SHA-256 verification.
+5. The flow stores receipts in `Verified Reporting Receipts` and moves original
+   archives to `Processed Reporting Exports` under their original filenames.
+6. Guarded D1 purge previews and executions were validated remotely. Exact archived
+   study rows were deleted only after receipt/current-state revalidation; cumulative
+   nonparticipant counters were retained; the feed rotated; old-generation mirror rows
+   were removed; operational/live-session tables and R2 were untouched.
+7. A post-purge synthetic AQG event successfully entered the new generation, completed
+   the same UA archive/receipt cycle, and was safely purged. Final D1 reporting state
+   returned to 0 study rows plus 8 retained cumulative counters.
+
+The UA tenant does not provide the originally planned Power Automate HTTP action without
+Premium licensing, so the currently validated workflow begins with a secure archive
+export and OneDrive upload. The reporting pull API remains available for a future
+institution-approved scheduler.
+
+Still required before production cutover: resolve private R2 audio transfer/retention,
+decide the ongoing operational cadence/owner for archive exports, complete the final
+intended-origin frontend smoke test (including notifications and audio), reconcile any
+new production edits, and obtain Taemin's separate explicit approval.
 
 ## Resources that must remain active
 
@@ -66,16 +70,16 @@ retain legacy Apps Script URLs and are outside this migration task. They are not
 ## Final readiness checklist
 
 - [ ] Taemin confirms the pilot workflow is finished and explicitly approves cutover.
-- [ ] Reporting Worker/migration and UA scheduled ingestion tested with synthetic data.
-- [ ] Separate production reporting destination initialized and permissions verified.
+- [x] Reporting Worker/migration and UA archive/receipt ingestion tested with synthetic data.
+- [x] UA OneDrive/Excel reporting destination and file-trigger archive flow validated with synthetic data.
 - [ ] Required private audio transfer/retention arrangements resolved and tested.
 - [ ] Remote synthetic participant data and audio cleaned up without touching study rows.
 - [ ] Production participant-code provisioning is handled securely outside chat.
 - [ ] All current frontend paths pass syntax/JSON/dependency checks; training media resolves.
 - [ ] AQG and training access, saves, resume, final submissions, feedback, audio, and
   notification delivery work from the intended Pages origin in a synthetic smoke test.
-- [ ] Both event and record counts reconcile across D1, export pages, and UA destinations.
-- [ ] UA flow failures/retries/duplicate pages have been exercised in the actual tenant.
+- [x] Synthetic event/record counts reconciled across D1, archive export, UA workbook receipt, and post-purge state.
+- [ ] UA failure/retry behavior has been exercised sufficiently for the final production procedure (the validated archive path is replay-safe in tests, but a full tenant failure simulation remains pending).
 - [ ] Main/branch differences reviewed against the then-current main, with no pilot edits lost.
 - [ ] Exact final pre-cutover Git commit, Pages artifact, Worker version, D1 backup, and
   rollback owner/window recorded.
