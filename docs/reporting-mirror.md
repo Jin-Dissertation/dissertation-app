@@ -2,19 +2,32 @@
 
 ## Status and boundary
 
-Implemented and tested on `cloudflare-migration`. **Not deployed or connected to UA yet.**
-The existing pilot's GitHub Pages site, Google Apps Script deployments, and Google
-Sheets remain active. Production cutover requires Taemin's explicit approval.
+Implemented and remotely validated on `cloudflare-migration` with **synthetic data only**.
+The reporting migration is active on the migration Worker/D1 and the UA OneDrive/Excel
+archive path has been tested end to end. **Production cutover is still not authorized.**
+The existing pilot's GitHub Pages site, Google Apps Script deployments, Google Sheets,
+and production `main` remain untouched.
 
-The Worker exposes a pull API. A UA-controlled flow reads it, archives the returned
-JSON in UA OneDrive, then calls `reporting/office-script.ts` to update Excel. Cloudflare
-receives no Microsoft permissions. The script has no network calls or credentials.
+The Worker still exposes the authenticated pull API, but UA's Power Automate environment
+did not provide the HTTP action without a Premium license. The validated UA workflow
+therefore uses a secure archive export followed by a OneDrive file-trigger flow:
 
-Activation needs an authenticated Cloudflare administrator and confirmation that the
-UA account can use a scheduled Power Automate flow with an HTTP action, OneDrive for
-Business, and Excel Online (Business)'s **Run script** action. UA licensing and connector
-policies have not been verified. If unavailable, keep this API contract and use an
-institution-approved scheduled process; do not provision a personal Microsoft app.
+`Cloudflare reporting API → private archive export → UA OneDrive Incoming → Power Automate → Office Script archive_import → verified receipt → guarded D1 purge`.
+
+Cloudflare receives no Microsoft permissions. The Office Script makes no network calls
+and stores no Cloudflare credential. The reporting credential remains separate from
+participant access codes and is used only by the export client.
+
+Validated UA folders and workbook:
+
+- `/AQG Dissertation/Incoming Reporting Exports`
+- `/AQG Dissertation/Processed Reporting Exports`
+- `/AQG Dissertation/Verified Reporting Receipts`
+- `/AQG Dissertation/D1 Recovery Backups`
+- `/AQG Dissertation/UA_OneDrive_Reporting_Mirror.xlsx`
+
+The current flow is intentionally single-writer (trigger concurrency 1). R2 audio is
+not part of this archive/purge authorization and remains a separate unfinished workflow.
 
 ## Captured datasets
 
@@ -168,6 +181,7 @@ Its `main` parameters are `action` and `payloadJson`, and it returns JSON text.
 | `status` | Empty | Initialization status, generation, protocol, last sequence |
 | `initialize` | Manifest response JSON | Creates eight data tables, text-chunk table, sync-state table |
 | `apply` | Change-page response JSON | Updates rows/chunks; returns the persisted checkpoint |
+| `archive_import` | Complete archive-export JSON | Upserts master `tbl_<dataset>` tables, verifies persisted rows by SHA-256/readback, logs completion, and returns a verified receipt |
 
 Each data table has the projected research fields plus `mirror_record_id`,
 `mirror_revision`, `mirror_sequence`, and `mirror_deleted`. Filter out rows where
@@ -185,61 +199,68 @@ The importer checks its fixed schema, cursor order, and generation before writin
 Missing/renamed reporting tables stop the import instead of silently losing prior rows.
 Keep analysis, formulas, and annotations on separate worksheets.
 
-### Suggested UA Power Automate flow
+### Validated UA Power Automate archive flow
 
-This is a configuration recipe, not a falsely preconnected/importable flow package.
-Connection IDs, tenant policy, secret storage, workbook location, and licensing must
-come from the UA account.
+The originally proposed scheduled HTTP pull was not used because the UA tenant's HTTP
+action requires Premium licensing. The pull API remains available, but the validated
+institutional workflow is file-triggered:
 
-1. Use **Recurrence**, initially every 30 minutes. Set trigger concurrency to **1**.
-   Use one flow writer for this workbook and no parallel branches that edit it.
-2. Obtain the reporting secret from the UA-approved secret facility. Enable secure
-   inputs/outputs on every action that handles the credential or research payload,
-   including HTTP, JSON archive, and Run script actions. Restrict flow ownership.
-3. Use an HTTP GET action for the manifest, passing the Authorization header. Treat
-   the returned dataset contract/protocol as fixed version 1.
-4. Use Excel Online (Business) **Run script**, `action = status`. To interpret its
-   JSON-text return, use `json(outputs('Read_sync_state')?['body/result'])` with the
-   actual action name. If uninitialized, run `initialize` with
-   `string(body('Get_manifest'))` against the intended blank workbook.
-5. If the workbook generation differs from the manifest, terminate without resetting
-   anything. Otherwise set `after` from its checkpoint and `through` from the manifest.
-6. Loop sequentially, at most **10 pages per run**, requesting `limit=25`. Construct
-   the changes URL from the documented query fields. An illustrative expression is:
+1. From an authenticated Codespace/admin environment, create a private archive with
+   `node scripts/export-reporting-archive.mjs`. The archive pins its feed generation
+   and through-sequence and contains per-record revision, SHA-256, and a random archive
+   token. Keep the archive private and do not paste its contents into chat.
+2. Upload the unopened archive JSON to
+   `/AQG Dissertation/Incoming Reporting Exports`.
+3. Power Automate's OneDrive for Business **When a file is created** trigger runs with
+   concurrency set to 1, then **Get file content** reads the original archive.
+4. A Compose action converts the OneDrive content with
+   `base64ToString(body('Get_file_content')?['$content'])`.
+5. Excel Online (Business) **Run script** calls the dissertation Office Script with
+   `action = archive_import` and the Compose output as `payloadJson`.
+6. The Office Script validates the archive contract, writes each master row, reads the
+   persisted values back, verifies SHA-256, writes archive verification/log tables, and
+   returns a receipt only after the entire archive is successfully verified.
+7. OneDrive **Create file** writes that returned JSON to
+   `Verified Reporting Receipts`, named
+   `verified-receipt-<export_id>-<timestamp>.json`.
+8. OneDrive **Move or rename a file** moves the *original trigger file identifier* to
+   `Processed Reporting Exports` and uses the trigger's original **File name** as the
+   destination filename. Do not use the receipt Create-file `Name` token here.
 
-   ```text
-   concat(variables('ApiBase'), '/v1/reporting/changes?generation=',
-     variables('Generation'), '&after=', string(variables('After')),
-     '&through=', string(variables('Through')), '&limit=25')
-   ```
+This exact filename distinction was tested after correcting an initial configuration
+error that renamed the processed archive to the receipt filename.
 
-7. Archive the exact HTTP response body under a restricted folder such as
-   `Dissertation/Reporting/<generation>/pages/<after>-<next_after>.json`. Use a
-   deterministic name: Get file metadata by path, create only if absent, otherwise
-   update the existing file with the identical replayed page. Only a confirmed 404
-   should take the create branch; other storage errors stop the run.
-8. Once the archive action succeeds, run `apply` with `string(body('Get_changes'))`.
-   Update the flow's temporary `After` variable from the script's returned
-   `last_sequence`. Stop when `has_more` is false or the page cap is reached.
-9. Configure failure handling that preserves the checkpoint and reports only generic
-   status/correlation metadata to an authorized operator. Do not send study responses,
-   page bodies, or credentials in notifications.
+### Validated receipt and guarded-purge behavior
 
-Office Scripts cannot call external APIs when run by Power Automate; that is why the
-HTTP action is separate. Microsoft documents a 120-second Run script timeout and
-1,600 calls/user/day. The page cap and initial interval leave room for bounded catch-up;
-measure actual performance with synthetic data in the UA tenant before adjusting.
+A downloaded verified receipt may be supplied to the local purge tooling without
+opening or pasting its contents. The default command is preview-only. Destructive mode
+requires `--execute`, the exact export ID, and the exact expected deletion count.
 
-### Required tenant smoke test (pending)
+The guarded purge:
 
-- Run initialization and two synthetic pages in a separate UA test workbook/archive.
-- Replay a page; confirm row and button-count totals stay unchanged.
-- Test a field beginning `=`, a 61,000-character response, and an emoji at a chunk
-  boundary; verify literal display and full reconstruction.
-- Simulate an archive failure and a Run script failure; verify the saved cursor.
-- Confirm connector permissions, secure run history, and scheduled execution.
-- Remove the synthetic test workbook/archive or retain only as explicitly labeled test
-  fixtures. Do not substitute real participants to validate the connection.
+- revalidates export/receipt generation, revision, hash, archive token, latest mirror
+  revision/operation, and exact source-row values immediately before execution;
+- refuses the whole purge if any non-retained target is no longer exact;
+- never treats `nonparticipant_button_counts` as purgeable study rows because those
+  are cumulative counters whose historical value must not be reset;
+- deletes only exact verified study records, rotates the reporting feed generation,
+  reseeds the new generation from current retained records, and removes the old
+  generation so archive deletions do not propagate back into the UA master workbook;
+- does not touch R2 audio or operational/live-session/authentication tables.
+
+Remote synthetic validation completed two successful cycles: the first archived and
+purged the existing synthetic study rows while retaining 8 cumulative counters; the
+second created one new synthetic AQG event after rotation, archived it through the UA
+flow, verified a 9-record receipt (1 event + 8 counters), purged only that event, and
+ended with 0 study-data rows plus the same 8 counters in the new generation.
+
+### Original direct-pull design
+
+The authenticated `GET /v1/reporting/manifest` and `GET /v1/reporting/changes`
+endpoints and the Office Script `status`, `initialize`, and `apply` actions remain
+implemented and tested. They support a future institution-approved scheduled pull
+mechanism if one becomes available. They are **not** the currently validated UA
+Power Automate path and must not be described as active automation.
 
 ## Restore, reseed, retention, and rollback
 
@@ -257,11 +278,22 @@ and snapshots the current eight source tables. Existing changes are retained. Do
 execute its statements individually or edit/reapply migration 0003. Back up/preserve
 the previous workbook, then initialize a new destination after reconciliation.
 
-No automated source-data, feed, receipt, or R2 deletion is implemented. **Do not delete
-source rows merely to reclaim temporary Cloudflare storage:** explicit deletes emit
-tombstones, and the archive still contains earlier snapshots. Retention, withdrawal,
-archival purge, and media transfer need a coordinated policy and verified durable
-copies. Resetting a generation is not a deletion/withdrawal mechanism.
+Verified archive-based source cleanup is now implemented for the eight reporting
+datasets, but it is deliberately conservative. A receipt alone is insufficient:
+the purge tool independently revalidates the current feed generation, latest mirror
+revision/operation, source revision, exact projected source values, SHA-256, and archive
+token immediately before deletion. It defaults to preview-only and requires explicit
+execution confirmations.
+
+`nonparticipant_button_counts` are retained by policy because they are cumulative
+counters; deleting them would allow later lower counts to overwrite historical totals.
+After a successful study-row purge, the feed is rotated/reseeded and the old generation
+is removed so the UA archive remains historical rather than receiving purge tombstones.
+
+This authorization does **not** extend to private R2 recordings. R2 transfer, durable
+institutional verification, and any later audio deletion require a separate workflow
+and retention decision. A D1 receipt must never be used as authorization to delete an
+R2 object.
 
 To suspend reporting, stop the UA flow and remove/rotate the reporting secret. Existing
 participant saves can continue capturing changes for later catch-up. Reverting the
