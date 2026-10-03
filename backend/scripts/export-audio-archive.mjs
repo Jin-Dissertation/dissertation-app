@@ -1,3 +1,14 @@
+/*
+ * OPERATOR GUIDE — EXPORT PRIVATE R2 AUDIO
+ *
+ * Start with an exact reporting archive. This script finds the R2 audio keys
+ * referenced by that archive, downloads those exact private objects, hashes
+ * them, and builds the private audio bundle + manifest.
+ *
+ * Exporting is non-destructive. R2 deletion is a later, separate guarded step
+ * after the OneDrive download-back verification receipt exists.
+ */
+
 import {
   chmod,
   mkdir,
