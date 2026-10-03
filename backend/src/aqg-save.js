@@ -1,3 +1,20 @@
+/*
+ * MAINTAINER GUIDE — AQG SESSION PERSISTENCE
+ *
+ * This is the durable-save engine for the question-generation app.
+ *
+ * Browser localStorage is a convenience/recovery layer. D1 is the operational
+ * study-data copy. Important defensive mechanisms here are:
+ *   • participant-code authorization;
+ *   • request receipts so retries are idempotent;
+ *   • revision/base_revision checks to prevent stale overwrites;
+ *   • live-session rows for Save & Exit / recovery;
+ *   • final submitted rows for completed sessions.
+ *
+ * The receipt/revision code protects data when a participant refreshes, loses
+ * connectivity, or a browser retries a request.
+ */
+
 import { authorizeAccessCode } from "./auth.js";
 
 const encoder = new TextEncoder();
