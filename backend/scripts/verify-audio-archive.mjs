@@ -1,3 +1,14 @@
+/*
+ * OPERATOR GUIDE — VERIFY AUDIO AFTER ONEDRIVE ROUND TRIP
+ *
+ * Run this against the manifest created during audio export and the bundle that
+ * has been downloaded back from UA OneDrive. Verification checks the package
+ * identity plus hashes/byte lengths before creating the verified audio receipt.
+ *
+ * Do not use the original local bundle as the "retrieved" bundle; the purpose
+ * is to prove the UA-stored copy can be retrieved intact.
+ */
+
 import {
   chmod,
   mkdtemp,
