@@ -1,3 +1,14 @@
+/*
+ * MAINTAINER GUIDE — PARTICIPANT FEEDBACK
+ *
+ * This module validates and stores AQG/training feedback in D1. When feedback
+ * should alert the researcher, it also creates the notification-outbox work
+ * that notifications.js later delivers.
+ *
+ * The study record should not depend on whether the external notification relay
+ * happens to be available at that moment.
+ */
+
 import { authorizeAccessCode } from "./auth.js";
 
 function firstText(input, keys) {
