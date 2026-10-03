@@ -1,3 +1,13 @@
+/*
+ * OPERATOR GUIDE — GUARDED R2 AUDIO CLEANUP
+ *
+ * Preview mode revalidates the verified audio receipt, the current R2 bytes,
+ * and current D1 references. Destructive mode requires explicit confirmation.
+ *
+ * A reporting receipt alone is never enough to delete audio. Audio has its own
+ * independent archive/verification/receipt chain.
+ */
+
 import {
   mkdtemp,
   readFile,
