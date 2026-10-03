@@ -1,4 +1,19 @@
 <!DOCTYPE html>
+<!--
+  MAINTAINER GUIDE — PROFESSIONAL-DEVELOPMENT / TRAINING MODULE
+
+  This is the participant training experience. It verifies the participant
+  code, loads training content/media through the Worker, records progress and
+  events to D1, supports Save & Exit / resume, collects feedback, and records
+  completion.
+
+  Browser localStorage helps recover the participant's place. D1 is the
+  operational study-data copy. Protected media is delivered through the
+  TRAINING_MEDIA R2 binding.
+
+  If save/submission behavior changes here, keep the endpoint contract aligned
+  with backend/src/worker.js and backend/src/training-save.js.
+-->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -1582,9 +1597,24 @@
 </div>
 
 <script>
+/*
+ * JAVASCRIPT MAINTAINER MAP
+ *
+ * Main responsibilities:
+ *   • participant access;
+ *   • session creation/resume;
+ *   • card/content/media rendering;
+ *   • interaction and knowledge-check events;
+ *   • resumable live saves;
+ *   • feedback and final completion.
+ *
+ * Network retries are expected. Backend request receipts/revisions prevent
+ * repeated requests from silently duplicating study data.
+ */
 // ─────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────
+// Durable training data flows through this Cloudflare Worker.
 const WORKER_API_URL = 'https://dissertation-study-api.professor-jin.workers.dev';
 const APP_VERSION = '2026-04-27-strict-a';
 const CONTENT_VERSION = '2026-04-27-strict-content-a';
