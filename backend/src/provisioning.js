@@ -1,3 +1,21 @@
+/*
+ * MAINTAINER GUIDE — PARTICIPANT-CODE ADMINISTRATION
+ *
+ * This server-to-server administrative endpoint adds/reactivates or deactivates
+ * participant codes. It is intentionally DISABLED unless the temporary
+ * PARTICIPANT_PROVISIONING_TOKEN Worker secret exists.
+ *
+ * Current study workflow:
+ *   participant code entered by participant
+ *      → normalized here
+ *      → same value used as deidentified participant_id
+ *      → only HMAC(code) stored for authentication lookup
+ *
+ * Normal operation should leave PARTICIPANT_PROVISIONING_TOKEN deleted.
+ * Responses deliberately never echo participant codes. Deactivation blocks
+ * future access but does not delete prior research records.
+ */
+
 import { hashAccessCode, normalizeAccessCode } from "./auth.js";
 
 const encoder = new TextEncoder();
