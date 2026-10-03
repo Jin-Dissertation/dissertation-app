@@ -1,3 +1,14 @@
+/*
+ * MAINTAINER GUIDE — TRAINING CONTENT AND MEDIA
+ *
+ * This module serves structured training content and retrieves protected media
+ * from the TRAINING_MEDIA R2 binding. Participant access is checked before
+ * protected resources are returned.
+ *
+ * The browser handles presentation/navigation; this module is the Cloudflare
+ * content boundary.
+ */
+
 import { authorizeAccessCode } from "./auth.js";
 
 const CURRENT_TRAINING_CONTENT_VERSION = "2026-04-27-strict-content-a";
