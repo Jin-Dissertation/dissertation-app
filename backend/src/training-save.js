@@ -1,3 +1,15 @@
+/*
+ * MAINTAINER GUIDE — TRAINING MODULE PERSISTENCE
+ *
+ * This is the durable-save engine for the professional-development module.
+ * It stores resumable live state, training events/knowledge-check activity,
+ * and final completion data in D1.
+ *
+ * Participant authorization, request receipts, and revision checks keep
+ * browser/network retries from duplicating records or overwriting newer work.
+ * localStorage helps the participant recover, but D1 is the operational copy.
+ */
+
 import { authorizeAccessCode } from "./auth.js";
 
 const MAX_PAYLOAD_CHARS = 450000;
