@@ -1,3 +1,14 @@
+/*
+ * MAINTAINER GUIDE — SESSION AND CONTEXT IDENTIFIERS
+ *
+ * AQG/training sessions use server-issued identifiers that remain stable when a
+ * browser retries the same request. Request receipts prevent duplicate session
+ * or context allocation.
+ *
+ * session_id = the broader participant work session.
+ * context_id = one AQG setup context within a session.
+ */
+
 import { authorizeAccessCode } from "./auth.js";
 
 const encoder = new TextEncoder();
