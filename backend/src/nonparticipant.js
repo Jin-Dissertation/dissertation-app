@@ -1,3 +1,13 @@
+/*
+ * MAINTAINER GUIDE — NON-PARTICIPANT AGGREGATE COUNTERS
+ *
+ * The public/non-participant tool does not create participant study sessions.
+ * This module maintains the intentionally limited cumulative button-use counts.
+ *
+ * These counters are retained across reporting purge cycles and are not treated
+ * like participant-level study records.
+ */
+
 function cleanButtonId(value) {
   return String(value ?? "").trim();
 }
