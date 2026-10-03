@@ -1,3 +1,17 @@
+/*
+ * MAINTAINER GUIDE — PARTICIPANT AUTHENTICATION
+ *
+ * Participants have one deidentified participant code. That code identifies
+ * their study records conceptually, while D1 authentication stores only an
+ * HMAC-SHA256 hash of the code.
+ *
+ * ACCESS_CODE_PEPPER is a Cloudflare Worker secret. Never put its value in Git,
+ * browser JavaScript, logs, screenshots, chat, or D1. Replacing it invalidates
+ * existing participant-code hashes.
+ *
+ * This module also tracks failed attempts and temporary lockouts.
+ */
+
 const MAX_FAILED_ATTEMPTS = 10;
 const LOCKOUT_MS = 2 * 60 * 1000;
 
@@ -43,6 +57,8 @@ async function hmacHex(secret, value) {
   return toHex(signature);
 }
 
+// Convert a participant-entered code into the irreversible lookup value
+// stored in access_codes. Plaintext codes are not stored by this function.
 export async function hashAccessCode(env, value) {
   const code = normalizeAccessCode(value);
   if (!code) throw new Error("Missing access code");
@@ -67,6 +83,8 @@ async function clearFailureState(db, clientKeyHash) {
     .run();
 }
 
+// Lockout bookkeeping is keyed by a hashed browser/client key, not by a
+// plaintext participant code.
 async function recordFailure(db, clientKeyHash, nowMs) {
   const current = await getFailureState(db, clientKeyHash);
 
