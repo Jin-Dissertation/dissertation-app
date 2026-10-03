@@ -1,3 +1,13 @@
+/*
+ * MAINTAINER GUIDE — NOTIFICATION OUTBOX + RETRIES
+ *
+ * Study feedback can create rows in notification_outbox. This module sends
+ * those queued notifications through the configured relay.
+ *
+ * Failed delivery leaves the row pending; worker.js scheduled() retries it.
+ * This prevents a temporary relay outage from losing the notification.
+ */
+
 function relayErrorMessage(value) {
   const text = String(value || "").trim();
   return text ? text.slice(0, 1000) : "Notification delivery failed.";
