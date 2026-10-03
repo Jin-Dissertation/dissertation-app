@@ -1,3 +1,17 @@
+/*
+ * MAINTAINER GUIDE — READ-ONLY REPORTING FEED
+ *
+ * This protected server-to-server endpoint is the Cloudflare side of the
+ * UA OneDrive/Excel archive workflow.
+ *
+ * REPORTING_EXPORT_TOKEN authenticates the reporting client. The endpoint
+ * reads the mirror feed in bounded pages and never accepts participant-browser
+ * authentication. Structured detail JSON is scrubbed for credential-like keys.
+ *
+ * Keep this endpoint read-only. Deletion belongs only in the guarded purge
+ * tools after a verified UA archive receipt exists.
+ */
+
 import { REPORTING_DATASETS, REPORTING_PROTOCOL_VERSION } from "./reporting-contract.js";
 
 const encoder = new TextEncoder();
