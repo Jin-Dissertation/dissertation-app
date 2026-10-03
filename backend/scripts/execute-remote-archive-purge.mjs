@@ -1,3 +1,14 @@
+/*
+ * OPERATOR GUIDE — GUARDED D1 CLEANUP
+ *
+ * This script is intentionally conservative. Preview mode revalidates the UA
+ * reporting receipt against the current remote D1/feed state. Destructive mode
+ * additionally requires explicit --execute and exact confirmation values.
+ *
+ * If anything has changed since export, the purge refuses to proceed rather
+ * than deleting a record that is no longer proven to match the verified copy.
+ */
+
 import { readFile, writeFile, chmod, unlink } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
