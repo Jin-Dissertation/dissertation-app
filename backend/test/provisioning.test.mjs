@@ -59,6 +59,24 @@ test("secure participant provisioning hashes codes server-side", async () => {
     assert.equal(validated.body.valid, true);
     assert.equal(validated.body.participant_id, participantId);
 
+    const deactivated = await fx.request("/v1/admin/access-codes/provision", {
+      method: "POST",
+      headers: { authorization: "Bearer " + fx.provisioningToken },
+      body: { entries: [{ participant_code: syntheticCode, active: false }] }
+    });
+    assert.equal(deactivated.status, 200);
+    assert.deepEqual(deactivated.body, { ok: true, provisioned: 1 });
+
+    const blockedAfterDeactivation = await fx.request("/v1/aqg/validate-code", {
+      method: "POST",
+      body: {
+        code: syntheticCode,
+        client_key: "synthetic-provisioning-test-deactivated"
+      }
+    });
+    assert.equal(blockedAfterDeactivation.status, 403);
+    assert.equal(blockedAfterDeactivation.body.valid, false);
+
     const retained = await fx.db
       .prepare("SELECT COUNT(*) AS n FROM access_codes WHERE participant_id = 'TEST001'")
       .first();
