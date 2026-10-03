@@ -1,3 +1,15 @@
+/*
+ * OPERATOR GUIDE — EXPORT STRUCTURED STUDY DATA
+ *
+ * This script reads the protected reporting feed and creates one private JSON
+ * archive pinned to an exact feed generation/checkpoint. It does not delete
+ * anything from D1.
+ *
+ * The archive is what gets uploaded, unopened/unmodified, to the UA OneDrive
+ * Incoming Reporting Exports folder for Power Automate + Office Script import.
+ * The reporting credential itself is not stored in the archive.
+ */
+
 import { readFile, mkdir, writeFile, chmod } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fetchReportingArchive } from "../src/archive-client.js";
