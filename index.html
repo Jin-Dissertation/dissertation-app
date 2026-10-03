@@ -1,4 +1,25 @@
 <!DOCTYPE html>
+<!--
+  MAINTAINER GUIDE — STUDY PARTICIPANT AQG FRONTEND
+
+  This is the main GitHub Pages participant application. It is intentionally a
+  large self-contained HTML/CSS/JavaScript file.
+
+  Mental model:
+    1. HTML = what the participant sees.
+    2. CSS = layout/appearance.
+    3. JavaScript = access gate, workflow, prompt construction, browser recovery,
+       event logging, Worker saves, feedback, audio, and final submission.
+    4. Cloudflare Worker/D1/R2 = security + operational study storage.
+    5. UA OneDrive/Excel = verified institutional archive.
+
+  localStorage is useful for navigation/recovery, but it is not the durable
+  research archive. Never move Worker secrets or private R2 access into this
+  browser file.
+
+  Training Mode intentionally disables "Skip contextual details." The
+  "Show first question" prompt is generic/hard-coded and its use is logged.
+-->
 <html lang="en">
 <head>
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -2916,6 +2937,21 @@
     // Config
     // -----------------------------
 
+    /*
+     * JAVASCRIPT MAINTAINER MAP
+     *
+     * The script below has six big jobs:
+     *   • participant access + AI product selection;
+     *   • local browser/recovery state;
+     *   • setup → making questions → finalize workflow;
+     *   • serialized live saves using request IDs + revisions;
+     *   • feedback/audio/final submission;
+     *   • restoration of the latest saved Worker state.
+     *
+     * The Worker is the security and durable-data boundary.
+     */
+
+    // One backend origin handles every AQG API call.
     const WORKER_API_URL = "https://dissertation-study-api.professor-jin.workers.dev";
 
     const REQUEST_TIMEOUT_MS = 15000;
@@ -2998,6 +3034,8 @@ const PROMPT_META = [
   }
 ];
     // Generic for every AI product; deliberately independent of prompt configuration.
+    // Deliberately model-agnostic and hard-coded: no spreadsheet/config row is
+    // needed for this generic request.
     const FIRST_QUESTION_PROMPT = "I am done setting up questions, please show me the first question";
     const SETUP_SAMPLE_PROMPT_IDS = ["sample_copy_style", "sample_new_version", "sample_supplement", "sample_practice"];
 
