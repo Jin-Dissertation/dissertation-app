@@ -1,3 +1,15 @@
+/*
+ * MAINTAINER GUIDE — PRIVATE AQG AUDIO
+ *
+ * This module authorizes the participant, confirms the session belongs to
+ * them, validates audio type/size, and stores the recording in the private
+ * STUDY_AUDIO R2 bucket.
+ *
+ * R2 audio is archived and verified separately from structured D1 reporting.
+ * Do not make the bucket public or delete objects outside the guarded
+ * archive/receipt workflow.
+ */
+
 import { authorizeAccessCode } from "./auth.js";
 import { saveAqgFeedback } from "./feedback.js";
 
