@@ -1,3 +1,21 @@
+/*
+ * MAINTAINER GUIDE — CLOUDFLARE WORKER ENTRY POINT
+ *
+ * Think of this file as the traffic director for the dissertation backend.
+ * GitHub Pages sends HTTPS requests here; this file decides which specialized
+ * module should handle each request.
+ *
+ * Main boundaries:
+ *   • /v1/reporting/* = protected server-to-server UA reporting/archive feed.
+ *   • /v1/admin/access-codes/provision = temporary administrative provisioning.
+ *   • /v1/aqg/* = participant question-generation app.
+ *   • /v1/training/* = participant professional-development module.
+ *   • scheduled() = automatic retry of queued notifications.
+ *
+ * This file should mostly route/orchestrate. Research-data rules belong in the
+ * specialized modules so they can be tested separately.
+ */
+
 import { validateAccessCode } from "./auth.js";
 import { createSessionId, createContextId } from "./sessions.js";
 import { saveAqgLiveSession, getLatestAqgLiveSession, submitAqgSession, getLatestAqgSubmittedSettings } from "./aqg-save.js";
@@ -74,14 +92,22 @@ export default {
     const url = new URL(request.url);
     const respond = (data, status = 200) => json(data, status, request);
 
+    // SERVER-TO-SERVER ZONE.
+    // Reporting uses its own bearer token and intentionally bypasses participant
+    // browser CORS/auth. Normal participant codes cannot access this feed.
     if (url.pathname === "/v1/reporting" || url.pathname.startsWith("/v1/reporting/")) {
       return handleReporting(request, env);
     }
 
+    // ADMIN ZONE.
+    // Normally disabled because PARTICIPANT_PROVISIONING_TOKEN should normally
+    // not exist. Create that secret only while maintaining participant codes.
     if (url.pathname === "/v1/admin/access-codes/provision") {
       return handleProvisioning(request, env);
     }
 
+    // PARTICIPANT-BROWSER ZONE starts here. Production GitHub Pages plus local
+    // development origins are allowed; unexpected browser origins are rejected.
     if (!browserOriginAllowed(request)) {
       return respond(
         {
@@ -528,6 +554,8 @@ export default {
     );
   },
 
+  // Cloudflare cron entry point. Retries queued notifications only; it does
+  // not automatically archive or purge research data.
   async scheduled(_event, env, ctx) {
     ctx.waitUntil(flushPendingNotifications(env, 10));
   }
