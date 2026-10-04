@@ -1,0 +1,5066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI-Assisted MCQ Development — Training Module</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet" />
+  <style>
+    /* ── RESET & VARIABLES ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * { overflow-wrap: break-word; }
+
+    :root {
+      --navy:       #10213d;
+      --navy-mid:   #1a3560;
+      --cream:      #edf4ff;
+      --cream-dark: #dbe9ff;
+      --gold:       #2f6edc;
+      --gold-lt:    #4d87f0;
+      --green:      #166534;
+      --green-lt:   #dcfce7;
+      --red:        #991b1b;
+      --red-lt:     #fef2f2;
+      --muted:      #5f718f;
+      --rule:       #c8d8f0;
+      --white:      #ffffff;
+      --serif:      'Playfair Display', Georgia, serif;
+      --sans:       'Source Sans 3', 'Gill Sans', Optima, sans-serif;
+      --radius:     10px;
+      --shadow:     0 4px 10px rgba(16,33,61,0.05);
+    }
+
+    html { font-size: 17px; scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      font-weight: 300;
+      background: var(--cream);
+      color: var(--navy);
+      line-height: 1.7;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      min-height: 44px;
+      font-size: 16px;
+    }
+
+    /* ── PROGRESS BAR ── */
+    #progress-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--cream-dark);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-2px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    body.training-mode #progress-bar {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    #progress-fill {
+      height: 100%;
+      background: var(--gold);
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+
+    /* ── SECTION COUNTER ── */
+    #section-counter {
+      position: fixed;
+      top: 12px; right: 18px;
+      font-family: var(--sans);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--cream);
+      padding: 4px 10px;
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      z-index: 200;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    body.training-mode #section-counter {
+      visibility: visible;
+    }
+
+    /* ── PAGE SHELL ── */
+    #app {
+      max-width: 760px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 28px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── ACCESS GATE ── */
+    #gate {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 28px;
+      text-align: center;
+    }
+
+    .gate-eyebrow {
+      font-family: var(--sans);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    .gate-title {
+      font-family: var(--serif);
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.2;
+      margin-bottom: 12px;
+      max-width: 520px;
+    }
+
+    .gate-sub {
+  max-width: 420px;
+  margin-bottom: 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-style: normal;
+  color: var(--navy);
+}
+
+.gate-irb {
+  max-width: 540px;
+  margin-bottom: 30px;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.gate-irb a {
+  color: var(--navy);
+  font-weight: 400;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.gate-irb a:hover {
+  color: var(--gold);
+}
+
+    .gate-form {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .gate-input {
+      font-family: var(--sans);
+      font-size: 1rem;
+      font-weight: 400;
+      padding: 12px 18px;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--white);
+      color: var(--navy);
+      width: 220px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .gate-input:focus { border-color: var(--gold); }
+
+    .gate-input::placeholder { color: #aaa; font-style: italic; }
+
+    .gate-btn {
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 12px 24px;
+      background: var(--navy);
+      color: var(--cream);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .gate-btn {
+      position: relative;
+      min-width: 92px;
+    }
+
+    .gate-btn:disabled {
+      background: #8ea0bf;
+      cursor: wait;
+      opacity: 1;
+    }
+
+    .gate-btn.is-loading {
+      pointer-events: none;
+    }
+
+    .gate-btn-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gate-btn.is-loading .gate-btn-label::after {
+      content: '';
+      display: inline-block;
+      width: 1.1em;
+      text-align: left;
+      margin-left: 0.15em;
+      animation: gateDots 1s steps(4, end) infinite;
+    }
+
+    @keyframes gateDots {
+      0%   { content: ''; }
+      25%  { content: '.'; }
+      50%  { content: '..'; }
+      75%  { content: '...'; }
+      100% { content: ''; }
+    }
+
+    .gate-btn:hover { background: var(--navy-mid); }
+
+    .gate-error {
+      margin-top: 14px;
+      font-size: 0.85rem;
+      color: var(--red);
+      min-height: 1.2em;
+    }
+
+    /* ── LOADING ── */
+    #loading {
+      flex: 1;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .spinner {
+      width: 32px; height: 32px;
+      border: 2px solid var(--rule);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-style: italic;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── TRAINING SHELL ── */
+    #training { display: none; }
+
+    /* ── MODULE HEADER ── */
+    .module-header {
+      padding: 36px 0 28px;
+      border-bottom: 1px solid var(--rule);
+      margin-bottom: 0;
+    }
+
+    .module-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .module-title {
+      font-family: var(--serif);
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-weight: 700;
+      color: var(--navy);
+      margin-top: 6px;
+      line-height: 1.2;
+    }
+
+    .module-header-bar {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .module-header-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .module-participant {
+      display: inline-block;
+      margin-top: 0;
+      font-size: 0.74rem;
+      color: var(--muted);
+      background: var(--cream-dark);
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--rule);
+    }
+
+    .overall-progress {
+      margin-top: 0;
+      display: inline-flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 0.74rem;
+      color: var(--muted);
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
+
+    .action-btn-quiet {
+      padding: 9px 16px;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      min-height: 40px;
+    }
+
+    .section-accordion {
+      margin-top: 18px;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--white);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .section-accordion.locked { opacity: 0.7; }
+
+    .section-toggle {
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: var(--cream-dark);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .section-toggle:disabled { cursor: not-allowed; }
+
+    .section-title-wrap { display: flex; align-items: center; gap: 10px; }
+    .section-status { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+    .section-chevron { font-size: 0.9rem; color: var(--muted); }
+
+    .section-accordion.collapsed .section-content { display: none; }
+    .section-accordion.collapsed .section-chevron { transform: rotate(-90deg); }
+    .section-content { padding: 0 16px 18px; }
+
+    /* ── SECTION BLOCK ── */
+    .section-block {
+      margin-top: 48px;
+      display: none;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      pointer-events: none;
+    }
+
+    .section-block.revealed {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-num {
+      font-family: var(--serif);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.06em;
+    }
+
+    .section-rule {
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    .section-type-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 2px 8px;
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+    }
+
+    /* ── VIDEO BLOCK ── */
+    .video-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .video-wrapper {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      background: #000;
+    }
+
+    .video-wrapper iframe,
+    .video-wrapper video {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: none;
+      background: #000;
+    }
+
+    .video-footer {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-top: 1px solid var(--rule);
+    }
+
+    .video-footer-label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* ── QUIZ BLOCK ── */
+    .quiz-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .quiz-header {
+      padding: 16px 22px 12px;
+      border-bottom: 1px solid var(--rule);
+      background: var(--cream-dark);
+    }
+
+    .quiz-header-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 2px;
+    }
+
+    .quiz-header-sub {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    /* ── QUESTION ── */
+    .question-block {
+      padding: 24px 22px;
+      border-bottom: 1px solid var(--rule);
+      display: none;
+    }
+
+    .question-block.active { display: block; }
+    .question-block.answered { display: block; }
+
+    .question-progress {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .question-stem {
+      font-family: var(--serif);
+      font-size: 1.05rem;
+      font-weight: 500;
+      line-height: 1.5;
+      color: var(--navy);
+      margin-bottom: 20px;
+    }
+
+    /* ── OPTIONS ── */
+    .options-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .option-btn {
+      width: 100%;
+      text-align: left;
+      padding: 12px 16px;
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      font-family: var(--sans);
+      font-size: 0.92rem;
+      font-weight: 300;
+      color: var(--navy);
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      transition: background 0.15s, border-color 0.15s;
+      line-height: 1.5;
+    }
+
+    .option-btn:hover:not(:disabled) {
+      background: var(--cream);
+      border-color: var(--gold);
+    }
+
+    .option-letter {
+      flex: 0 0 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 1px solid var(--rule);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-top: 1px;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .option-btn:hover:not(:disabled) .option-letter {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--white);
+    }
+
+    /* Correct state */
+    .option-btn.correct {
+      background: var(--green-lt);
+      border-color: var(--green);
+      cursor: default;
+    }
+
+    .option-btn.correct .option-letter {
+      background: var(--green);
+      border-color: var(--green);
+      color: var(--white);
+    }
+
+    /* Incorrect state */
+    .option-btn.incorrect {
+      background: var(--red-lt);
+      border-color: var(--red);
+      cursor: default;
+    }
+
+    .option-btn.incorrect .option-letter {
+      background: var(--red);
+      border-color: var(--red);
+      color: var(--white);
+    }
+
+    /* Dimmed (other options after answering) */
+    .option-btn.dimmed {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    /* IDK option */
+    .option-btn.idk-option {
+      border-style: dashed;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .option-btn.idk-option .option-letter {
+      font-style: normal;
+    }
+
+    .option-btn:disabled { cursor: default; }
+
+    .option-btn.selected {
+      background: var(--cream-dark);
+      border-color: var(--gold);
+    }
+
+    .option-btn.missed-correct {
+      background: var(--green-lt);
+      border-color: var(--green);
+      border-style: dashed;
+    }
+
+    .fitb-blank {
+      display: inline-block;
+      min-width: 8.5em;
+      text-align: center;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .fitb-input-row {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .essay-input {
+      width: 100%;
+      min-height: 160px;
+      resize: vertical;
+      padding: 12px 14px;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      line-height: 1.55;
+      color: var(--navy);
+      background: var(--white);
+    }
+
+
+    /* ── FEEDBACK ── */
+    .feedback-box {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      line-height: 1.65;
+      display: none;
+    }
+
+    .feedback-box.show { display: block; }
+
+    .feedback-box.correct-fb {
+      background: var(--green-lt);
+      border: 1px solid var(--green);
+      color: #14532d;
+    }
+
+    .feedback-box.incorrect-fb {
+      background: var(--red-lt);
+      border: 1px solid #d97777;
+      color: var(--red);
+    }
+
+    .feedback-label {
+      font-weight: 600;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .feedback-actions {
+      margin-top: 14px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .feedback-next-btn {
+      font-family: var(--sans);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 9px 18px;
+      background: var(--navy);
+      color: var(--cream);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.2s;
+      display: none;
+    }
+
+    .feedback-next-btn.show { display: inline-block; }
+    .feedback-next-btn:hover { background: var(--navy-mid); }
+
+    /* ── QUIZ COMPLETE ── */
+    .quiz-complete {
+      padding: 22px 22px;
+      display: none;
+      align-items: center;
+      gap: 14px;
+      background: var(--green-lt);
+      border-top: 1px solid var(--green);
+    }
+
+    .quiz-complete.show { display: flex; }
+
+    .quiz-complete-icon {
+      font-size: 1.4rem;
+      flex: 0 0 auto;
+    }
+
+    .quiz-complete-text {
+      flex: 1;
+    }
+
+    .quiz-complete-text strong {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--green);
+      margin-bottom: 2px;
+    }
+
+    .quiz-complete-text span {
+      font-size: 0.82rem;
+      color: var(--green);
+      opacity: 0.8;
+    }
+
+    /* ── ACTION BUTTON (Done Watching / Continue) ── */
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 11px 22px;
+      background: var(--navy);
+      color: var(--cream);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .action-btn:hover { background: var(--navy-mid); transform: translateY(-1px); }
+    .action-btn:active { transform: translateY(0); }
+
+    .action-btn svg { flex: 0 0 14px; }
+
+    .action-btn.secondary {
+      background: transparent;
+      border: 1px solid var(--navy);
+      color: var(--navy);
+    }
+
+    .action-btn.secondary:hover {
+      background: var(--navy);
+      color: var(--cream);
+    }
+
+    .action-btn.is-disabled,
+    .action-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .action-btn.secondary.is-disabled,
+    .action-btn.secondary:disabled {
+      background: transparent;
+      color: var(--muted);
+      border-color: var(--rule);
+    }
+
+    /* ── CONTINUE ROW ── */
+    .continue-row {
+      margin-top: 20px;
+      justify-content: flex-end;
+      display: none;
+    }
+
+    .continue-row.show { display: flex; }
+
+    /* ── COMPLETION SCREEN ── */
+    #completion {
+      display: none;
+      padding: 72px 0 56px;
+      text-align: center;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .completion-icon {
+      font-size: 3rem;
+      margin-bottom: 18px;
+      color: var(--navy);
+    }
+
+    .completion-title {
+      font-family: var(--serif);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 14px;
+    }
+
+    .completion-sub,
+    .completion-note,
+    .completion-contact {
+      max-width: 560px;
+      margin-left: auto;
+      margin-right: auto;
+      color: var(--muted);
+      font-size: 0.96rem;
+      line-height: 1.75;
+    }
+
+    .completion-sub {
+      margin-bottom: 10px;
+      font-style: italic;
+    }
+
+    .completion-note {
+      margin-bottom: 10px;
+    }
+
+    .completion-contact a {
+      color: var(--navy);
+      text-decoration: underline;
+    }
+
+
+    .page-footer {
+      text-align: center;
+      padding: 12px 24px 24px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: var(--sans);
+      flex-shrink: 0;
+    }
+
+    .page-footer a {
+      color: inherit;
+      text-decoration: underline;
+    }
+
+    .page-footer a:hover {
+      opacity: 0.85;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── TEXT BLOCK ── */
+    .text-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      padding: 28px 30px;
+      box-shadow: var(--shadow);
+    }
+
+    .content-header {
+      font-family: var(--serif);
+      font-size: clamp(1.1rem, 3vw, 1.4rem);
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.3;
+      margin-bottom: 14px;
+    }
+
+    .content-body {
+      font-size: 0.95rem;
+      color: var(--navy);
+      line-height: 1.75;
+      max-width: 100%;
+    }
+
+    .content-body p {
+      margin: 0 0 1em 0;
+    }
+
+    .content-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    .content-body ul {
+      margin: 0.7em 0 0.7em 1.6em;
+      padding-left: 0.2em;
+      list-style-position: outside;
+    }
+
+    .content-body li {
+      margin: 0.2em 0;
+      padding-left: 0.15em;
+    }
+
+    /* ── TEXT + IMAGE BLOCK ── */
+    .text-image-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .text-image-inner {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .text-image-text {
+      padding: 28px 28px;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .text-image-img {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 20px;
+      background: var(--cream-dark);
+    }
+
+    .text-image-img img {
+      width: 100%;
+      max-width: 620px;      /* keeps landscape images readable, not oversized on wide screens */
+      max-height: 460px;     /* taller cap than before, since image now has full-width room */
+      object-fit: contain;
+      border-radius: 6px;
+      cursor: zoom-in;
+      transition: opacity 0.15s;
+    }
+
+    .text-image-img img:hover { opacity: 0.88; }
+
+    /* ── QUESTION + IMAGE BLOCK ── */
+    .question-image-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .question-image-inner {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      align-items: start;
+    }
+
+    .question-image-question {
+      padding: 24px 22px;
+      border-right: 1px solid var(--rule);
+    }
+
+    .question-image-aside {
+      background: var(--cream-dark);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 18px;
+    }
+
+    .question-image-aside img {
+      max-width: 100%;
+      object-fit: contain;
+      border-radius: 6px;
+      cursor: zoom-in;
+      transition: opacity 0.15s;
+    }
+
+    .question-image-aside img:hover { opacity: 0.88; }
+
+    /* ── CATEGORIZE BLOCK ── */
+    .categorize-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .categorize-helper {
+      margin-top: 8px;
+      margin-bottom: 14px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .categorize-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .categorize-pool,
+    .categorize-zone {
+      background: var(--cream);
+      border: 1px dashed var(--rule);
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 120px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .categorize-pool-title,
+    .categorize-zone-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .categorize-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-content: flex-start;
+      min-height: 58px;
+    }
+
+    .categorize-item {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--rule);
+      background: var(--white);
+      color: var(--navy);
+      font-size: 0.84rem;
+      line-height: 1.2;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .categorize-item.selected {
+      border-color: var(--gold);
+      background: var(--cream-dark);
+      box-shadow: 0 0 0 1px rgba(47,110,220,0.18);
+    }
+
+    .categorize-item.correct {
+      border-color: var(--green);
+      background: var(--green-lt);
+      color: var(--green);
+    }
+
+    .categorize-item.incorrect {
+      border-color: var(--red);
+      background: var(--red-lt);
+      color: var(--red);
+    }
+
+    .categorize-controls {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .categorize-mobile-hint {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      min-height: 1.25em;
+    }
+
+    .categorize-drop-target-active {
+      border-color: var(--gold);
+      background: var(--cream-dark);
+    }
+
+    /* ── RESUME MODAL ── */
+    #resume-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9500;
+      background: rgba(16, 33, 61, 0.55);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .resume-modal-card {
+      width: min(100%, 460px);
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 36px rgba(16, 33, 61, 0.2);
+      padding: 24px;
+    }
+
+    .resume-modal-card h2 {
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      line-height: 1.2;
+      margin-bottom: 10px;
+      color: var(--navy);
+    }
+
+    .resume-modal-card p {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .resume-modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    /* ── FEEDBACK MODAL / MOBILE DRAWER ── */
+    #feedback-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9600;
+      background: rgba(16, 33, 61, 0.55);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .feedback-modal-card {
+      width: min(100%, 560px);
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 36px rgba(16, 33, 61, 0.2);
+      padding: 22px 22px 18px;
+    }
+
+    .feedback-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .feedback-modal-header h2 {
+      font-family: var(--serif);
+      font-size: 1.3rem;
+      line-height: 1.2;
+      color: var(--navy);
+    }
+
+    #feedback-modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.6rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 4px 6px;
+      min-height: auto;
+    }
+
+    .feedback-modal-sub {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .feedback-textarea {
+      width: 100%;
+      min-height: 140px;
+      resize: vertical;
+      padding: 12px 14px;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--white);
+      color: var(--navy);
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      line-height: 1.55;
+      outline: none;
+    }
+
+    .feedback-textarea:focus {
+      border-color: var(--gold);
+    }
+
+    .feedback-status {
+      min-height: 1.25em;
+      margin-top: 10px;
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+
+    .feedback-status.is-error {
+      color: var(--red);
+    }
+
+    .feedback-status.is-success {
+      color: var(--green);
+    }
+
+    .feedback-modal-actions {
+      margin-top: 14px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* ── IMAGE LIGHTBOX ── */
+    #img-lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(10, 20, 40, 0.88);
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+      padding: 24px;
+      animation: fadeIn 0.18s ease;
+    }
+
+    #img-lightbox.open { display: flex; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    #img-lightbox img {
+      max-width: min(92vw, 900px);
+      max-height: 88vh;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+      cursor: zoom-out;
+    }
+
+    #img-lightbox-close {
+      position: absolute;
+      top: 16px; right: 20px;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.8rem;
+      line-height: 1;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.15s;
+      padding: 4px 8px;
+    }
+
+    #img-lightbox-close:hover { opacity: 1; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 800px) {
+      /* Page shell */
+      #app { padding: 0 16px; }
+
+      /* Gate screen — cut the dead space */
+      #gate { padding: 72px 20px 40px; }
+      .gate-form { flex-direction: column; align-items: stretch; width: 100%; max-width: 340px; }
+      .gate-input { width: 100%; }
+      .gate-btn   { width: 100%; }
+
+      /* Video footer */
+      .video-footer { flex-direction: column; align-items: flex-start; }
+
+      /* Two-column reading + question layouts → single column */
+      .text-image-inner,
+      .question-image-inner { grid-template-columns: 1fr; }
+      .text-image-text  { border-right: none; border-bottom: 1px solid var(--rule); }
+      .question-image-question { border-right: none; }
+      .content-body ul { margin-left: 1.3em; }
+
+      /* On mobile, show the image ABOVE the question so the stem
+         ("look at the image on the right") still makes sense */
+      .question-image-inner { display: flex; flex-direction: column; }
+      .question-image-aside { order: -1; border-bottom: 1px solid var(--rule); }
+      .categorize-layout { grid-template-columns: 1fr; }
+
+      /* Cards — tighter padding */
+      .text-card          { padding: 20px; }
+      .text-image-text    { padding: 20px; }
+      .question-image-question { padding: 20px; }
+
+      /* Option buttons — bigger touch targets */
+      .option-btn { padding: 14px 16px; font-size: 0.95rem; }
+
+      /* Action buttons — full width */
+      .continue-row { justify-content: stretch; }
+      .feedback-actions { justify-content: flex-end; }
+      .continue-row .action-btn,
+      .video-footer  .action-btn { width: 100%; justify-content: center; }
+      .module-header-bar {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .module-header-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      #btn-save-exit { width: 100%; justify-content: center; }
+
+      #feedback-modal {
+        align-items: flex-end;
+        padding: 0;
+      }
+
+      .feedback-modal-card {
+        width: 100%;
+        max-width: none;
+        border-radius: 18px 18px 0 0;
+        padding: 18px 16px 16px;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+        box-shadow: 0 -10px 30px rgba(16, 33, 61, 0.18);
+      }
+
+      .feedback-textarea {
+        min-height: 120px;
+      }
+
+      .feedback-modal-actions {
+        flex-direction: column-reverse;
+      }
+
+      .feedback-modal-actions .action-btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      /* Lightbox close — bigger tap target */
+      #img-lightbox-close { font-size: 2.4rem; top: 8px; right: 10px; padding: 8px 14px; }
+
+      #progress-bar { display: none; }
+
+      body.training-mode #section-counter {
+        top: auto;
+        bottom: 12px;
+        right: 12px;
+        font-size: 0.64rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        padding: 0;
+        width: 58px;
+        height: 58px;
+        opacity: 0.88;
+        border: none;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--navy);
+        background:
+          conic-gradient(var(--gold) var(--mobile-progress-angle, 0deg), rgba(200, 216, 240, 0.65) 0);
+        box-shadow: 0 5px 16px rgba(16,33,61,0.12);
+      }
+
+      body.training-mode #section-counter::before {
+        content: '';
+        position: absolute;
+        inset: 4px;
+        border-radius: 50%;
+        background: rgba(237, 244, 255, 0.96);
+        box-shadow: inset 0 0 0 1px rgba(200, 216, 240, 0.9);
+      }
+
+      body.training-mode #section-counter span {
+        position: relative;
+        z-index: 1;
+        line-height: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div id="progress-bar"><div id="progress-fill"></div></div>
+<div id="section-counter"></div>
+
+<div id="app">
+
+  <!-- ACCESS GATE -->
+<div id="gate">
+  <p class="gate-eyebrow">Professional Development Module</p>
+
+  <h1 class="gate-title">
+    AI-Assisted MCQ Development for Nursing Education
+  </h1>
+
+  <p class="gate-irb">
+    This module is part of a research study conducted by Taemin Jin and approved
+    by the University of Alabama Institutional Review Board (IRB #26-07-9875).
+    Questions about the study may be directed to
+    <a href="mailto:tjin@crimson.ua.edu">tjin@crimson.ua.edu</a>.
+  </p>
+
+  <p class="gate-sub">
+    Enter your participant code to begin the training session.
+  </p>
+
+  <form class="gate-form" id="gate-form">
+    <input
+      class="gate-input"
+      id="code-input"
+      type="text"
+      placeholder="your-code"
+      autocomplete="off"
+      autocapitalize="none"
+      autocorrect="off"
+      spellcheck="false"
+      inputmode="text"
+      enterkeyhint="go"
+      aria-label="Participant code"
+    />
+
+    <button class="gate-btn" id="gate-submit-btn" type="submit">
+      <span class="gate-btn-label">Begin</span>
+    </button>
+  </form>
+
+  <p class="gate-error" id="gate-error"></p>
+</div>
+
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p class="loading-text">Loading training content…</p>
+  </div>
+
+  <!-- TRAINING CONTENT -->
+  <div id="training">
+    <header class="module-header">
+      <p class="module-label">Professional Development Module</p>
+      <h1 class="module-title">AI-Assisted MCQ Development<br>for Nursing Education</h1>
+
+      <div class="module-header-bar">
+        <div class="module-header-meta">
+          <button class="action-btn secondary action-btn-quiet" id="btn-report-issue" type="button">
+            Report issue
+          </button>
+          <div class="overall-progress" id="overall-progress">
+            <span id="overall-total">Sections: 0</span>
+            <span id="overall-current">Current: —</span>
+            <span id="overall-completed">Completed: 0</span>
+          </div>
+        </div>
+
+        <button class="action-btn secondary action-btn-quiet" id="btn-save-exit" type="button">
+          Save and exit
+        </button>
+      </div>
+    </header>
+    <div id="sections-container"></div>
+    <div id="completion">
+      <div class="completion-icon">✓</div>
+      <h2 class="completion-title">Training Complete</h2>
+      <p class="completion-sub">Thank you for completing this module.</p>
+      <p class="completion-note">Saving your session. Please keep this window open until saving is confirmed.</p>
+      <p id="submit-status" role="status" aria-live="polite"></p>
+      <button class="action-btn" id="btn-submit-final" type="button">Save session</button>
+      <p class="completion-contact">If you have any remaining questions, please contact <a href="mailto:tjin@crimson.ua.edu">tjin@crimson.ua.edu</a>.</p>
+    </div>
+  </div>
+
+  <footer class="page-footer">
+    <a href="about.html">About / FAQ</a>
+    <span aria-hidden="true"> · </span>
+    Last updated: <span id="last-updated"></span>
+  </footer>
+</div>
+
+<!-- RESUME MODAL -->
+<div id="resume-modal" role="dialog" aria-modal="true" aria-label="Resume previous training session">
+  <div class="resume-modal-card">
+    <h2>Resume training?</h2>
+    <p>You have a training session in progress. Continue where you left off or start over from the beginning.</p>
+    <div class="resume-modal-actions">
+      <button class="action-btn" id="resume-continue-btn" type="button">Continue where I left off</button>
+      <button class="action-btn secondary" id="resume-startover-btn" type="button">Start over</button>
+    </div>
+  </div>
+</div>
+
+<!-- FEEDBACK MODAL / MOBILE DRAWER -->
+<div id="feedback-modal" role="dialog" aria-modal="true" aria-labelledby="feedback-modal-title">
+  <div class="feedback-modal-card">
+    <div class="feedback-modal-header">
+      <h2 id="feedback-modal-title">Report an issue</h2>
+      <button id="feedback-modal-close" type="button" aria-label="Close">×</button>
+    </div>
+
+    <p class="feedback-modal-sub">
+      Something broken or confusing? Send a quick note. Your session and card information will be included automatically.
+    </p>
+
+    <textarea
+      id="feedback-textarea"
+      class="feedback-textarea"
+      placeholder="What happened?"
+      maxlength="2000"
+      aria-label="Feedback message"></textarea>
+
+    <p id="feedback-status" class="feedback-status" aria-live="polite"></p>
+
+    <div class="feedback-modal-actions">
+      <button class="action-btn secondary" id="feedback-cancel-btn" type="button">Cancel</button>
+      <button class="action-btn" id="feedback-submit-btn" type="button">Send feedback</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMAGE LIGHTBOX -->
+<div id="img-lightbox" role="dialog" aria-modal="true" aria-label="Image zoom">
+  <button id="img-lightbox-close" aria-label="Close">&times;</button>
+  <img id="img-lightbox-img" src="" alt="" />
+</div>
+
+<script src="./video-hosting.js"></script>
+<script>
+// Study reliability helpers, 2026-09-24. No external JavaScript dependencies.
+function studyOperationId() {
+  return window.crypto?.randomUUID?.() || ('req_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2));
+}
+
+async function studyPost(url, payload, options = {}) {
+  const body = JSON.stringify({ ...payload, request_id: payload.request_id || studyOperationId() });
+  const retries = options.retries ?? 1;
+  const timeoutMs = options.timeoutMs ?? 25000;
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body, redirect: 'follow', signal: controller.signal });
+      const raw = await response.text();
+      let data;
+      try { data = JSON.parse(raw); } catch (_) { throw new Error('The server did not return a confirmation. Please try again.'); }
+      if (!response.ok || !data || data.ok === false) {
+        const error = new Error(data?.error || `The server returned HTTP ${response.status}.`);
+        error.code = data?.code || '';
+        error.retryable = data?.retryable ?? (response.status === 429 || response.status >= 500);
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      lastError = error?.name === 'AbortError' ? new Error('Saving timed out. Your pending work will be retried.') : error;
+      if (lastError.retryable === false || attempt === retries) break;
+    } finally { clearTimeout(timeout); }
+    await new Promise(resolve => setTimeout(resolve, 700 * (2 ** attempt) + Math.random() * 350));
+  }
+  throw lastError;
+}
+
+class StudySaveQueue {
+  constructor({ name, url, snapshot, onStatus = () => {} }) {
+    this.name = name; this.url = url; this.snapshot = snapshot; this.onStatus = onStatus;
+    this.prefix = `study.pending.v1.${name}.`;
+    this.timer = null; this.running = null; this.key = ''; this.closed = false;
+    window.addEventListener('online', () => { if (this.pending()) { this.failures = 0; this.schedule(0); } });
+    window.addEventListener('beforeunload', event => {
+      if (this.pending()) { event.preventDefault(); event.returnValue = ''; }
+    });
+  }
+  static clone(value) { return JSON.parse(JSON.stringify(value)); }
+  read(key) {
+    try {
+      const data = JSON.parse(localStorage.getItem(key) || 'null');
+      if (!data) return null;
+      if (data.expiresAt < Date.now()) { localStorage.removeItem(key); return null; }
+      return data;
+    } catch (_) { return null; }
+  }
+  findRecovery(user) {
+    const prefix = this.prefix + encodeURIComponent(user) + '.';
+    let latest = null;
+    try {
+      for (const key of Object.keys(localStorage)) {
+        if (!key.startsWith(prefix)) continue;
+        const data = this.read(key);
+        if (data && (!latest || data.savedAt > latest.savedAt)) latest = data;
+      }
+    } catch (_) {}
+    return latest;
+  }
+  start(user, session, revision = 0) {
+    if (this.running) throw new Error('Please wait for the current save to finish.');
+    clearTimeout(this.timer); this.timer = null;
+    this.user = user; this.session = session;
+    this.key = this.prefix + encodeURIComponent(user) + '.' + encodeURIComponent(session);
+    const saved = this.read(this.key);
+    this.revision = saved ? Number(saved.revision || 0) : Number(revision || 0);
+    this.events = saved?.events || []; this.draft = saved?.draft || null;
+    this.inflight = saved?.inflight || null; this.generation = saved?.generation || 0;
+    this.closed = false; this.failures = 0; this.firstDirtyAt = 0; this.error = null; this.blocked = false;
+    this.identityError = null; this.storageError = null; this.rejectedDraft = saved?.rejectedDraft || null;
+    if (this.rejectedDraft) {
+      this.identityError = Object.assign(new Error('This draft was stopped because the participant or session changed in another window. Download a backup, then load the saved version.'), {code:'SESSION_CHANGED',retryable:false});
+      this.blocked = true; this.status('error',this.identityError);
+    } else this.status(this.pending() ? 'pending' : 'saved');
+    return saved?.draft || saved?.inflight?.payload || null;
+  }
+  pending() { return !!(this.key && !this.closed && (this.draft || this.inflight || this.events?.length || this.rejectedDraft)); }
+  status(kind, error = null) {
+    this.error = error;
+    if (this.storageError && ['pending','saving'].includes(kind)) this.onStatus('storage', this.storageError);
+    else this.onStatus(kind, error);
+  }
+  assertIdentity(payload) {
+    const user = String(this.user || '').trim().toLowerCase();
+    const aliases = ['user_id','userId','participant_code','participantCode','accessCode','access_code','code'];
+    if (!aliases.some(key => payload[key]) || aliases.some(key => payload[key] && String(payload[key]).trim().toLowerCase() !== user) ||
+        String(payload.session_id || payload.sessionId || '') !== String(this.session)) {
+      throw Object.assign(new Error('The participant or session changed in another window. Download a backup, close this window, and reopen the app before continuing.'), { code:'SESSION_CHANGED', retryable:false });
+    }
+  }
+  captureSnapshot(payload) {
+    const copy = StudySaveQueue.clone(payload);
+    try { this.assertIdentity(copy); }
+    catch (error) {
+      this.rejectedDraft = copy; this.identityError = error; this.blocked = true;
+      clearTimeout(this.timer); this.timer = null; this.persist(); this.status('error',error);
+      throw error;
+    }
+    return copy;
+  }
+  backup() {
+    return { user:this.user, session:this.session, revision:this.revision, draft:this.draft,
+      inflight:this.inflight, events:this.events || [], rejectedDraft:this.rejectedDraft };
+  }
+  discardPendingAndReload() {
+    if (this.running || !this.key) return;
+    if (!window.confirm('Load the version saved on the server? This removes the unconfirmed draft on this device. Download a backup first if you want to keep those changes.')) return;
+    try { localStorage.removeItem(this.key); }
+    catch (_) { this.status('error',new Error('The browser could not clear this draft. Download a backup and contact the researcher.')); return; }
+    clearTimeout(this.timer); this.key = ''; window.location.reload();
+  }
+  persist() {
+    if (!this.key) return;
+    try {
+      if (!this.pending()) { localStorage.removeItem(this.key); return; }
+      localStorage.setItem(this.key, JSON.stringify({ user: this.user, session: this.session,
+        savedAt: Date.now(), expiresAt: Date.now() + 7 * 86400000, revision: this.revision,
+        draft: this.draft, inflight: this.inflight, events: this.events, generation: this.generation,
+        rejectedDraft: this.rejectedDraft }));
+      this.storageError = null;
+    } catch (_) {
+      this.storageError = new Error('Browser recovery storage is unavailable. Keep this page open until saving is confirmed.');
+      this.onStatus('storage', this.storageError);
+    }
+  }
+  changed(delay = 4000) {
+    if (!this.key || this.closed || this.draft?.action === 'submitSession' || this.inflight?.payload?.action === 'submitSession') return;
+    if (this.identityError) return;
+    try { this.draft = this.captureSnapshot(this.snapshot()); } catch (_) { return; }
+    this.generation++; this.persist();
+    if (!this.blocked) this.status('pending');
+    this.schedule(delay);
+  }
+  addEvent(event) {
+    if (!this.key || this.closed || this.draft?.action === 'submitSession' || this.inflight?.payload?.action === 'submitSession') return;
+    if (this.identityError) return;
+    try { this.captureSnapshot(this.snapshot()); } catch (_) { return; }
+    this.events.push({ ...StudySaveQueue.clone(event), event_id: event.event_id || studyOperationId() });
+    this.changed();
+  }
+  schedule(delay = 4000) {
+    clearTimeout(this.timer);
+    if (!this.pending() || this.running || this.blocked) return;
+    if (!this.firstDirtyAt) this.firstDirtyAt = Date.now();
+    const wait = Math.max(0, Math.min(delay, 10000 - (Date.now() - this.firstDirtyAt)));
+    this.timer = setTimeout(() => { this.timer = null; this.flush().catch(() => {}); }, wait);
+  }
+  makeInflight() {
+    let size = 0;
+    const batch = [];
+    for (const event of this.events) {
+      const eventSize = JSON.stringify(event).length;
+      if (batch.length && (batch.length >= 80 || size + eventSize > 32000)) break;
+      batch.push(event); size += eventSize;
+    }
+    const payload = StudySaveQueue.clone(this.draft || this.snapshot());
+    this.assertIdentity(payload);
+    if (payload.action === 'submitSession' && batch.length < this.events.length) {
+      payload.action = 'updateLiveSession'; payload.status = 'in_progress';
+    }
+    payload.request_id = studyOperationId(); payload.base_revision = this.revision;
+    payload.batch_events = batch;
+    this.inflight = { payload, generation: this.generation, eventIds: batch.map(e => e.event_id) };
+    this.persist();
+  }
+  async flush() {
+    clearTimeout(this.timer); this.timer = null;
+    if (this.running) return this.running;
+    if (this.identityError) throw this.identityError;
+    if (!this.pending()) return { ok: true, revision: this.revision, duplicate: this.closed };
+    const task = async () => {
+      let result = { ok: true, revision: this.revision };
+      while (this.pending()) {
+        if (!this.inflight) this.makeInflight();
+        const sent = this.inflight;
+        this.assertIdentity(sent.payload);
+        this.status('saving');
+        result = await studyPost(this.url, sent.payload);
+        if (!Number.isInteger(result.revision)) throw Object.assign(new Error('The backend needs the matching reliability update before this page can save.'), { retryable: false });
+        this.revision = result.revision;
+        const acknowledged = new Set(sent.eventIds);
+        this.events = this.events.filter(event => !acknowledged.has(event.event_id));
+        const submitted = sent.payload.action === 'submitSession';
+        if (submitted || (sent.generation === this.generation && this.draft?.action !== 'submitSession')) this.draft = null;
+        this.inflight = null; this.failures = 0; this.firstDirtyAt = 0; this.blocked = false;
+        if (this.identityError) { this.persist(); throw this.identityError; }
+        if (submitted) this.closed = true;
+        this.persist();
+      }
+      this.status(this.closed ? 'submitted' : 'saved');
+      return result;
+    };
+    this.running = task();
+    try { return await this.running; }
+    catch (error) {
+      this.failures++; this.blocked = error.retryable === false; this.persist(); this.status('error', error);
+      if (error.retryable !== false && this.failures <= 5) {
+        const delay = Math.min(60000, 2000 * (2 ** this.failures)) + Math.random() * 500;
+        this.timer = setTimeout(() => { this.timer = null; this.flush().catch(() => {}); }, delay);
+      }
+      throw error;
+    } finally { this.running = null; }
+  }
+  async submit(payload) {
+    if (this.running) await this.running;
+    if (this.closed) return { ok: true, duplicate: true, revision: this.revision };
+    if (this.identityError) throw this.identityError;
+    this.draft = this.captureSnapshot(payload); this.draft.action = 'submitSession';
+    this.generation++; this.persist();
+    return this.flush();
+  }
+  detach() {
+    clearTimeout(this.timer); this.timer = null;
+    this.persist(); this.key = ''; this.onStatus('hidden');
+  }
+}
+
+function studyShowSaveStatus(kind, error, retry, download, reloadSaved) {
+  let box = document.getElementById('study-save-status');
+  if (!box) {
+    box = document.createElement('div'); box.id = 'study-save-status';
+    box.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:1100;max-width:min(420px,calc(100vw - 24px));padding:8px 12px;border:1px solid #b7c8c5;border-radius:8px;background:#fff;color:#173b34;font:14px/1.4 system-ui;box-shadow:0 2px 8px #0002;';
+    box.innerHTML = '<span role="status" aria-live="polite"></span><button type="button" style="margin-left:8px">Retry save</button><button type="button" style="margin-left:8px">Download backup</button><button type="button" style="margin-left:8px">Load saved version</button>';
+    document.body.appendChild(box);
+  }
+  box.hidden = kind === 'hidden';
+  const message = kind === 'saved' ? 'Saved' : kind === 'submitted' ? 'Submitted' : kind === 'saving' ? 'Saving…' : kind === 'pending' ? 'Changes waiting to save' : (error?.message || 'Not saved yet. Please keep this page open and retry.');
+  const label = box.querySelector('span'); if (label.textContent !== message) label.textContent = message;
+  const buttons = box.querySelectorAll('button');
+  buttons[0].hidden = buttons[1].hidden = !['error', 'storage'].includes(kind);
+  buttons[0].onclick = () => retry().catch(() => {});
+  buttons[1].onclick = download;
+  buttons[2].hidden = !reloadSaved || kind !== 'error' || !['REVISION_CONFLICT','SESSION_CHANGED','SESSION_CLOSED'].includes(error?.code);
+  buttons[2].onclick = reloadSaved;
+}
+
+function studyDownloadBackup(filename, payload) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
+  const link = document.createElement('a'); link.href = url; link.download = filename;
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url),1000);
+}
+
+
+// ─────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────
+const API_URL = 'https://script.google.com/macros/s/AKfycbwsRmerE4CnZIIQ7F65yBo123VPl0oXyEhtJHZPuWhc5FElSKaJj5HSc-PegJIv5-u52g/exec';
+const APP_VERSION = '2026-09-24-reliability-1';
+const CONTENT_VERSION = '2026-04-27-strict-content-a';
+const STORAGE_KEY = `training_progress_${APP_VERSION}_${CONTENT_VERSION}`;
+const LEGACY_STORAGE_KEYS = ['training_progress_v1'];
+const REQUEST_TIMEOUT_MS = 25000;
+const LIVE_UPDATE_DEBOUNCE_MS = 4000;
+const EVENT_BUFFER_LIMIT = 120;
+const CLIENT_KEY_STORAGE_KEY = 'training_client_key_v1';
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let participantCode = '';
+let sessionId       = '';
+let sessionStart    = null;
+let events          = [];
+let totalQuestions  = 0;
+let correctFirst    = 0;
+let totalSlots      = 0;
+let revealedSlots   = 0;
+let completedSlots  = new Set();
+let trainingActive  = false;
+let completionReached = false;
+let hasSuccessfulSubmission = false;
+let quizStates = {};
+let progressionSectionIndex = 0;
+let allSections = [];
+let interactionTimes = [];
+let activeMsBase = 0;
+let cardTimingState = {};
+let liveUpdateTimer = null;
+let trainingContentFingerprint = '';
+let trainingContentVersion = CONTENT_VERSION;
+const trainingSaveQueue = new StudySaveQueue({name:'training',url:API_URL,snapshot:() => buildLiveSessionSnapshot(),
+  onStatus:(kind,error) => studyShowSaveStatus(kind,error,() => trainingSaveQueue.flush(),() => studyDownloadBackup('training-session-backup.json',trainingSaveQueue.backup()),() => trainingSaveQueue.discardPendingAndReload())});
+async function loadTrainingContent() {
+  const controller = new AbortController(); const timer = setTimeout(() => controller.abort(),25000);
+  try {
+    const response = await fetch('./training-content.v1.json',{cache:'no-cache',signal:controller.signal});
+    if (!response.ok) throw new Error('The training content file could not be loaded.');
+    const data = await response.json();
+    if (!data.ok || !Array.isArray(data.rows) || !data.content_fingerprint) throw new Error('The training content file is invalid.');
+    trainingContentFingerprint = data.content_fingerprint;
+    trainingContentVersion = data.content_version || CONTENT_VERSION;
+    return data;
+  } finally { clearTimeout(timer); }
+}
+function isTrainingMilestoneReached() {
+  const index = allSections.flatMap(section => section.cards).findIndex(card => card.cardId === 'video-wrapup');
+  return index >= 0 && (revealedSlots >= index + 1 || completedSlots.has(index));
+}
+function snapshotCardTiming() {
+  const result = {};
+  Object.keys(cardTimingState).forEach(key => { const item = cardTimingState[key]; result[key] = {totalMs:getCardMs(key),enteredAt:null,completed:!!item.completed}; });
+  return result;
+}
+let completionLogged = false;
+let submitInFlight = false;
+let sectionState = [];
+let trainingSessionSeq = 0;
+window.trainingSessionSeq = trainingSessionSeq;
+
+// ─────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────
+const $  = id => document.getElementById(id);
+const now = () => new Date().toISOString();
+
+function getOrCreateClientKey() {
+  try {
+    let key = localStorage.getItem(CLIENT_KEY_STORAGE_KEY);
+    if (key) return key;
+
+    if (window.crypto?.randomUUID) {
+      key = window.crypto.randomUUID();
+    } else {
+      key = 'ck_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+
+    localStorage.setItem(CLIENT_KEY_STORAGE_KEY, key);
+    return key;
+  } catch (_) {
+    return 'ck_fallback_' + Math.random().toString(36).slice(2);
+  }
+}
+
+function setTrainingMode(isTraining) {
+  document.body.classList.toggle('training-mode', !!isTraining);
+}
+
+let setGateLoading = null;
+
+function returnToGate() {
+  $('training').style.display = 'none';
+  $('loading').style.display = 'none';
+  $('completion').style.display = 'none';
+  $('gate').style.display = 'flex';
+  setTrainingMode(false);
+
+  if (typeof setGateLoading === 'function') {
+    setGateLoading(false);
+  }
+
+  const codeInput = $('code-input');
+  const gateError = $('gate-error');
+  if (gateError) gateError.textContent = '';
+  if (codeInput) {
+    codeInput.value = participantCode || '';
+    requestAnimationFrame(() => {
+      codeInput.focus({ preventScroll: true });
+      codeInput.select();
+    });
+  }
+}
+
+async function createSessionIdFromBackend(code) {
+  const data = await postToAppsScript(API_URL, {
+    action: 'createSessionId',
+    participant_code: code,
+    user_id: code
+  });
+
+  if (!data?.ok || !data?.session_id) {
+    throw new Error(data?.error || 'Could not create a session ID.');
+  }
+
+  return {
+    sessionId: String(data.session_id),
+    sessionSeq: Number(data.session_seq || 0)
+  };
+}
+
+function shouldPersistEvent(type) {
+  const t = String(type || '').trim();
+  if (!t) return false;
+
+  // Drop passive visibility events to keep the payload small.
+  if (/_visible$/i.test(t)) return false;
+
+  return true;
+}
+
+function getSubmissionEvents() {
+  return Array.isArray(events) ? events.slice(-EVENT_BUFFER_LIMIT) : [];
+}
+
+function logEvent(type, data = {}) {
+  const entry = {
+    t: now(),
+    type,
+    participant: participantCode,
+    session: sessionId,
+    app_version: APP_VERSION,
+    ...data
+  };
+
+  if (!shouldPersistEvent(type)) return entry;
+
+  events.push(entry);
+
+  if (events.length > EVENT_BUFFER_LIMIT) {
+    events = events.slice(-EVENT_BUFFER_LIMIT);
+  }
+
+  if (trainingSaveQueue.key && !hasSuccessfulSubmission) trainingSaveQueue.addEvent({event_type:type,timestamp:entry.t,
+    card_index:Number.isInteger(data.sectionIndex) ? data.sectionIndex + 1 : getCurrentCardNumber(),detail_json:data,device_label:getCompactDeviceLabel()});
+  return entry;
+}
+
+function appendTrainingEvent(eventType,data = {},options = {}) {
+  if (!participantCode || !sessionId || hasSuccessfulSubmission) return Promise.resolve(null);
+  trainingSaveQueue.addEvent({event_type:eventType,timestamp:now(),device_label:getCompactDeviceLabel(),card_index:getCurrentCardNumber(),...data});
+  return options.awaitResponse ? trainingSaveQueue.flush() : Promise.resolve(null);
+}
+
+function markInteraction(ts = Date.now()) {
+  const currentTs = Number(ts);
+  if (!Number.isFinite(currentTs)) return;
+
+  if (Array.isArray(interactionTimes) && interactionTimes.length > 0) {
+    const prev = Number(interactionTimes[interactionTimes.length - 1]);
+    if (Number.isFinite(prev) && currentTs > prev) {
+      activeMsBase += Math.min(currentTs - prev, 60000);
+    }
+  }
+
+  interactionTimes = [currentTs];
+}
+
+function computeActiveSeconds(times = interactionTimes, baseMs = activeMsBase) {
+  let totalMs = Number.isFinite(Number(baseMs)) ? Number(baseMs) : 0;
+
+  if (Array.isArray(times) && times.length >= 2) {
+    for (let i = 1; i < times.length; i++) {
+      const prev = Number(times[i - 1]);
+      const curr = Number(times[i]);
+      if (!Number.isFinite(prev) || !Number.isFinite(curr) || curr <= prev) continue;
+
+      const gap = curr - prev;
+      totalMs += Math.min(gap, 60000);
+    }
+  }
+
+  return Math.round(totalMs / 1000);
+}
+
+
+function ensureCardTimingEntry(cardIndex) {
+  if (!cardTimingState[cardIndex]) {
+    cardTimingState[cardIndex] = {
+      enteredAt: null,
+      totalMs: 0,
+      completed: false
+    };
+  }
+  return cardTimingState[cardIndex];
+}
+
+function markCardEntered(cardIndex) {
+  const entry = ensureCardTimingEntry(cardIndex);
+  if (entry.completed) return;
+  if (!entry.enteredAt) entry.enteredAt = Date.now();
+}
+
+function markCardPaused(cardIndex) {
+  const entry = ensureCardTimingEntry(cardIndex);
+  if (!entry.enteredAt) return;
+  const delta = Date.now() - entry.enteredAt;
+  if (delta > 0) entry.totalMs += delta;
+  entry.enteredAt = null;
+}
+
+function markCardCompleted(cardIndex) {
+  const entry = ensureCardTimingEntry(cardIndex);
+  if (entry.completed) return;
+  markCardPaused(cardIndex);
+  entry.completed = true;
+}
+
+function getCardMs(cardIndex) {
+  const entry = ensureCardTimingEntry(cardIndex);
+  let total = entry.totalMs || 0;
+  if (entry.enteredAt) {
+    const delta = Date.now() - entry.enteredAt;
+    if (delta > 0) total += delta;
+  }
+  return Math.max(0, Math.round(total));
+}
+
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function formatDuration(ms) {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const h = Math.floor(m / 60);
+  if (h > 0) return `${h}h ${m % 60}m`;
+  if (m > 0) return `${m}m ${s % 60}s`;
+  return `${s}s`;
+}
+
+function getDeviceType() {
+  const width = Math.max(window.innerWidth || 0, document.documentElement?.clientWidth || 0, screen?.width || 0);
+  const ua = navigator.userAgent || '';
+  const touchCapable = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+  const isTablet =
+    /iPad|Tablet|PlayBook|Silk/i.test(ua) ||
+    (/Android/i.test(ua) && !/Mobile/i.test(ua)) ||
+    (touchCapable && width >= 768 && width <= 1100);
+
+  if (isTablet) return 'tablet';
+  if (width <= 767) return 'mobile';
+  return 'desktop';
+}
+
+function getOsLabel() {
+  const ua = navigator.userAgent || '';
+  const platform = navigator.platform || '';
+
+  if (/Android/i.test(ua)) return 'Android';
+  if (/iPhone|iPad|iPod/i.test(ua)) return 'iOS';
+  if (/Mac/i.test(platform) || /Mac OS X/i.test(ua)) return 'macOS';
+  if (/Win/i.test(platform) || /Windows/i.test(ua)) return 'Windows';
+  if (/Linux/i.test(platform) || /Linux/i.test(ua)) return 'Linux';
+  if (/CrOS/i.test(ua)) return 'ChromeOS';
+  return 'Unknown';
+}
+
+function getViewportWidth() {
+  return Math.max(window.innerWidth || 0, document.documentElement?.clientWidth || 0, screen?.width || 0);
+}
+
+function getCompactDeviceLabel() {
+  return `${getDeviceType()} ${getOsLabel()} ${getViewportWidth()}`.trim();
+}
+
+function isMobileLikeViewport() {
+  return window.matchMedia('(max-width: 800px)').matches;
+}
+
+function pickBodyText(item) {
+  const desktopBody = String(item?.body || '');
+  const mobileBody = String(item?.body_mobile || '').trim();
+  if (isMobileLikeViewport() && mobileBody) return mobileBody;
+  return desktopBody;
+}
+
+function normalizeQuestionType(value) {
+  const type = String(value || '').trim().toLowerCase();
+  const allowed = ['text', 'text_image', 'video', 'sba', 'sata', 'fitb', 'categorization', 'matching', 'essay'];
+  if (!type) return '';
+  if (!allowed.includes(type)) {
+    throw new Error(`Unsupported strict content type: ${type}`);
+  }
+  return type;
+}
+
+function hasSinglePipe(value) {
+  return /(^|[^|])\|([^|]|$)/.test(String(value || ''));
+}
+
+function splitOptionBlob(value) {
+  const raw = String(value || '').replace(/\r\n?/g, '\n').trim();
+  if (!raw) return [];
+  if (hasSinglePipe(raw)) {
+    throw new Error('SBA/SATA option blobs must use ||. Single | is only allowed inside FITB correct_blob.');
+  }
+  return raw
+    .split(/\s*\|\|\s*/g)
+    .map(part => part.trim())
+    .filter(Boolean);
+}
+
+function splitPipeBlob(value) {
+  return splitOptionBlob(value);
+}
+
+function parseSettings(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return {};
+  if (/^\d+$/.test(raw)) return { word_limit_max: Number(raw) };
+  const out = {};
+  raw.split('||').map(s => s.trim()).filter(Boolean).forEach(part => {
+    const idx = part.indexOf('=');
+    if (idx === -1) out[part] = true;
+    else out[part.slice(0, idx).trim()] = part.slice(idx + 1).trim();
+  });
+  return out;
+}
+
+function normalizeGradedText(v) {
+  return String(v || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function isCategorizeNA(v) {
+  const s = String(v || '').trim().toLowerCase();
+  return s === 'n/a' || s === 'na';
+}
+
+function parseCategorizeMappings(blob, type = 'categorization') {
+  const questionType = normalizeQuestionType(type || 'categorization');
+  const raw = String(blob || '').replace(/\r\n?/g, '\n').trim();
+  if (!raw) return [];
+  if (raw.includes('---')) throw new Error('Old delimiter --- is not supported. Use ::.');
+  if (raw.includes('||') || hasSinglePipe(raw)) throw new Error('Categorization/matching mappings must use one :: pair per line.');
+
+  return raw
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map((entry, index) => {
+      const pieces = entry.split('::');
+      if (pieces.length !== 2) throw new Error(`Mapping line ${index + 1} must contain exactly one :: divider.`);
+      const leftRaw = pieces[0].trim();
+      const rightRaw = pieces[1].trim();
+      if (!leftRaw || !rightRaw) throw new Error(`Mapping line ${index + 1} has a blank side. Use N/A intentionally.`);
+      if (isCategorizeNA(leftRaw) && isCategorizeNA(rightRaw)) throw new Error(`Mapping line ${index + 1} cannot be N/A::N/A.`);
+
+      const left = isCategorizeNA(leftRaw) ? '' : leftRaw;
+      const right = isCategorizeNA(rightRaw) ? '' : rightRaw;
+
+      if (questionType === 'matching') {
+        if (!right) throw new Error(`Matching line ${index + 1} uses Item::N/A. Use N/A::Distractor Match for an unmatched right-side option.`);
+        return { item: left, category: right, rawItem: leftRaw, rawCategory: rightRaw };
+      }
+
+      if (questionType === 'categorization') {
+        return { item: right, category: left, rawItem: rightRaw, rawCategory: leftRaw };
+      }
+
+      throw new Error(`Unsupported mapping type: ${questionType}`);
+    });
+}
+
+function getCategorizeMappingsAndCategories(blob, type = 'categorization') {
+  const mappings = parseCategorizeMappings(blob, type);
+  const seenCategories = new Set();
+  const seenItems = new Set();
+  const categories = [];
+  const items = [];
+
+  mappings.forEach(mapping => {
+    if (mapping.item) {
+      const itemKey = normalizeGradedText(mapping.item);
+      if (!seenItems.has(itemKey)) {
+        seenItems.add(itemKey);
+        items.push(mapping.item);
+      }
+    }
+
+    if (mapping.category) {
+      const categoryKey = normalizeGradedText(mapping.category);
+      if (!seenCategories.has(categoryKey)) {
+        seenCategories.add(categoryKey);
+        categories.push(mapping.category);
+      }
+    }
+  });
+
+  return { mappings, categories, items };
+}
+
+function parseFitbCorrectGroups(raw) {
+  const value = String(raw || '').replace(/\r\n?/g, '\n').trim();
+  if (!value) return [];
+  return value
+    .split(/\s*\|\|\s*/g)
+    .map(group => group.split('|').map(answer => answer.trim()).filter(Boolean))
+    .filter(group => group.length > 0);
+}
+
+function buildFITBStemHtml(rawStem) {
+  const source = String(rawStem || '');
+  const blankHtml = '<span class="fitb-blank" aria-label="blank">_____________________</span>';
+  return html(source).replace(/`([^`]+)`/g, blankHtml);
+}
+
+function isFitbAnswerCorrect(userAnswer, acceptedAnswers) {
+  const userNorm = normalizeGradedText(userAnswer);
+  return Array.isArray(acceptedAnswers) && acceptedAnswers.some(answer => normalizeGradedText(answer) === userNorm);
+}
+
+function html(v) {
+  return String(v || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatBodyText(raw) {
+  const normalized = String(raw || '').replace(/\r\n?/g, '\n').trim();
+  if (!normalized) return '';
+
+  // NOTE: runs on already-escaped text (html() has been applied upstream),
+  // so URLs contain no raw < > " that could break out of the attribute.
+  const linkify = text => text.replace(
+    /(https?:\/\/[^\s<]+[^\s<.,;:!?)\]"'])/g,
+    '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
+
+  const applyInlineFormatting = text => linkify(
+    text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+  );
+
+  const blocks = normalized.split(/\n\s*\n/);
+  const htmlParts = [];
+
+  blocks.forEach(block => {
+    const lines = block.split('\n').filter(line => line.trim() !== '');
+    let i = 0;
+    while (i < lines.length) {
+      const current = lines[i].trim();
+      if (current.startsWith('-- ')) {
+        const listItems = [];
+        while (i < lines.length && lines[i].trim().startsWith('-- ')) {
+          const itemText = lines[i].trim().slice(3);
+          listItems.push(`<li>${applyInlineFormatting(html(itemText))}</li>`);
+          i++;
+        }
+        htmlParts.push(`<ul>${listItems.join('')}</ul>`);
+      } else {
+        const paragraphLines = [];
+        while (i < lines.length && !lines[i].trim().startsWith('-- ')) {
+          paragraphLines.push(applyInlineFormatting(html(lines[i].trim())));
+          i++;
+        }
+        htmlParts.push(`<p>${paragraphLines.join('<br />')}</p>`);
+      }
+    }
+  });
+
+  return htmlParts.join('');
+}
+
+// Determine how a video_name value should be played:
+//   { kind: 'iframe', src }  -> embedded player (YouTube / Vimeo)
+//   { kind: 'file',   src }  -> HTML5 <video> (direct .mp4/.webm, local or remote)
+// Backward compatible: plain filenames still resolve to videos/<name>.
+function getVideoEmbedInfo(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return null;
+  const settings = window.STUDY_VIDEO_HOSTING;
+  if (!settings || !['youtube','cloudflare'].includes(settings.provider)) return {kind:'unavailable',error:'Video hosting has not been configured. Please contact the researcher.'};
+  let url;
+  try { url = new URL(value); } catch (_) {}
+  let youtubeId = '';
+  if (url && ['youtube.com','www.youtube.com','m.youtube.com','youtu.be','www.youtu.be','www.youtube-nocookie.com'].includes(url.hostname.toLowerCase())) {
+    youtubeId = url.hostname.endsWith('youtu.be') ? url.pathname.split('/')[1] : (url.searchParams.get('v') || url.pathname.match(/^\/(?:embed|shorts)\/([^/]+)/)?.[1] || '');
+    if (!/^[A-Za-z0-9_-]{11}$/.test(youtubeId)) return {kind:'unavailable',error:'This video link is invalid. Please contact the researcher.'};
+  }
+  if (youtubeId && settings.provider === 'cloudflare') {
+    const replacement = settings.cloudflareByYouTubeId?.[youtubeId];
+    if (!replacement) return {kind:'unavailable',error:'This study video is not available yet. Please contact the researcher.'};
+    try {
+      const player = new URL(replacement);
+      if (player.protocol !== 'https:' || !(player.hostname.endsWith('.cloudflarestream.com') || player.hostname === 'iframe.videodelivery.net')) throw new Error();
+      player.searchParams.delete('ad-url');
+      return {kind:'iframe',provider:'cloudflare',src:player.toString()};
+    } catch (_) { return {kind:'unavailable',error:'This study video needs a valid Cloudflare player link. Please contact the researcher.'}; }
+  }
+  if (youtubeId) return {kind:'iframe',provider:'youtube',src:`https://www.youtube.com/embed/${youtubeId}?rel=0&enablejsapi=1`};
+  if (url && (url.hostname.endsWith('.cloudflarestream.com') || url.hostname === 'iframe.videodelivery.net')) {
+    url.searchParams.delete('ad-url'); return {kind:'iframe',provider:'cloudflare',src:url.toString()};
+  }
+  if (url && /(^|\.)vimeo\.com$/i.test(url.hostname)) {
+    const id = url.pathname.match(/(?:\/video)?\/(\d+)/)?.[1];
+    if (id) return {kind:'iframe',provider:'vimeo',src:`https://player.vimeo.com/video/${id}`};
+  }
+  if (url && !['https:','http:'].includes(url.protocol)) return null;
+  return {kind:'file',provider:'file',src:url || value.startsWith('/') || value.includes('/') ? value : `videos/${value}`};
+}
+
+// Legacy helper kept so getCaptionSourceUrl and any other callers still work.
+// Returns a source string only for direct files; empty for embeds.
+function getVideoSourceUrl(raw) {
+  const info = getVideoEmbedInfo(raw);
+  if (!info) return '';
+  return info.kind === 'file' ? info.src : '';
+}
+
+function getVideoMimeType(url) {
+  const clean = String(url || '').split('?')[0].toLowerCase();
+  if (clean.endsWith('.webm')) return 'video/webm';
+  if (clean.endsWith('.ogg') || clean.endsWith('.ogv')) return 'video/ogg';
+  return 'video/mp4';
+}
+
+function getCaptionSourceUrl(raw) {
+  const videoSrc = getVideoSourceUrl(raw);
+  if (!videoSrc) return '';
+
+  const parts = String(videoSrc).split('?');
+  const path = parts[0];
+  const query = parts.length > 1 ? `?${parts.slice(1).join('?')}` : '';
+
+  const captionPath = path.replace(/\.[^./]+$/, '.vtt');
+  if (captionPath === path) return '';
+
+  return `${captionPath}${query}`;
+}
+
+function scrollToEl(el, offset = 80) {
+  const top = el.getBoundingClientRect().top + window.scrollY - offset;
+  window.scrollTo({ top, behavior: 'smooth' });
+}
+
+function getPreferredImageUrl(item) {
+  const desktopUrl = String(
+    item.imageUrl ||
+    item.mediaUrl ||
+    item.media_url ||
+    ''
+  ).trim();
+
+  const mobileOverride = String(
+    item.mobileImageUrl ||
+    item.mobile_image_url ||
+    ''
+  ).trim();
+
+  const isMobile = window.matchMedia('(max-width: 800px)').matches;
+
+  return (isMobile && mobileOverride) ? mobileOverride : desktopUrl;
+}
+
+async function postToAppsScript(url, payload, options = {}) { return studyPost(url, payload, options); }
+
+async function loadServerSavedProgress(code) {
+  const data = await postToAppsScript(API_URL, {
+    action: 'getLatestLiveSession',
+    participant_code: code,
+    user_id: code
+  });
+
+  if (!data || data.ok !== true || !data.found || !data.progress) return null;
+
+  const progress = data.progress;
+  const session = data.session || {};
+
+  return {
+    ...progress,
+    participantCode: progress.participantCode || code,
+    sessionId: progress.sessionId || session.session_id || '',
+    sessionStart: progress.sessionStart || session.session_start || '',
+    _source: 'server',
+    _revision: Number(session.revision || 0),
+    contentVersion: progress.contentVersion || session.content_version || '',
+    _savedAt: session.progress_saved_at || session.last_activity_at || ''
+  };
+}
+
+function updateProgress() {
+  const pct = totalSlots > 0 ? Math.round((completedSlots.size / totalSlots) * 100) : 0;
+  $('progress-fill').style.width = pct + '%';
+
+  const counter = $('section-counter');
+  counter.innerHTML = `<span>${completedSlots.size} / ${totalSlots}</span>`;
+  counter.style.setProperty('--mobile-progress-angle', `${Math.max(0, Math.min(100, pct)) * 3.6}deg`);
+  counter.style.opacity = totalSlots > 0 ? '1' : '0';
+
+  const completedSections = allSections.filter(sec => sec.completed).length;
+  $('overall-total').textContent = `Sections: ${allSections.length}`;
+  $('overall-current').textContent = `Current: ${Math.min(progressionSectionIndex + 1, allSections.length)} / ${allSections.length}`;
+  $('overall-completed').textContent = `Completed: ${completedSections}`;
+}
+
+function setSaveExitEnabled(isEnabled) {
+  const btn = $('btn-save-exit');
+  if (!btn) return;
+
+  btn.disabled = !isEnabled;
+  btn.setAttribute('aria-disabled', String(!isEnabled));
+  btn.classList.toggle('is-disabled', !isEnabled);
+
+  if (!isEnabled) {
+    btn.textContent = 'Save and exit';
+  }
+}
+
+function refreshSaveExitAvailability() {
+  const shouldEnable = !completionReached && !hasSuccessfulSubmission;
+  setSaveExitEnabled(shouldEnable);
+}
+
+function shouldWarnBeforeUnload() { return trainingSaveQueue.pending() || (trainingActive && !hasSuccessfulSubmission); }
+
+
+// ─────────────────────────────────────────────
+// PROGRESS PERSISTENCE
+// Confirmed progress is held by the server. A temporary browser outbox retains unacknowledged saves.
+// ─────────────────────────────────────────────
+function saveProgress() { if (trainingActive && participantCode && sessionId && !hasSuccessfulSubmission) trainingSaveQueue.changed(); }
+
+function loadSavedProgress() { return null; }
+
+function clearSavedProgress() {
+  [...LEGACY_STORAGE_KEYS, STORAGE_KEY].forEach(key => {
+    try { localStorage.removeItem(key); } catch (_) {}
+  });
+}
+
+function applySavedProgress(saved) {
+  participantCode = saved.participantCode || saved.participant_code || participantCode;
+  sessionId = saved.sessionId || saved.session_id || sessionId;
+  sessionStart = saved.sessionStart || saved.session_start || sessionStart;
+  trainingSessionSeq = Number(saved.sessionSeq || saved.session_seq || trainingSessionSeq || 0);
+  window.trainingSessionSeq = trainingSessionSeq;
+  totalQuestions = saved.totalQuestions || 0;
+  correctFirst = saved.correctFirst || 0;
+  events = Array.isArray(saved.events) ? saved.events : [];
+  completionReached = !!saved.completionReached;
+  hasSuccessfulSubmission = !!saved.hasSuccessfulSubmission;
+  completionLogged = !!saved.completionReached;
+  submitInFlight = false;
+  if (saved.contentFingerprint && saved.contentFingerprint !== trainingContentFingerprint) throw new Error('The module content has changed since this session was saved. Choose Start over, or contact the researcher to recover the earlier version.');
+  quizStates = saved.quizStates && typeof saved.quizStates === 'object' ? saved.quizStates : {};
+  interactionTimes = [];
+  activeMsBase = Number.isFinite(Number(saved.activeMsBase)) ? Number(saved.activeMsBase) : 0;
+  cardTimingState = saved.cardTimingState && typeof saved.cardTimingState === 'object'
+    ? saved.cardTimingState
+    : {};
+  Object.values(cardTimingState).forEach(entry => { entry.enteredAt = null; });
+}
+
+function isResumableSavedState(saved) {
+  return !!(
+    saved &&
+    saved.participantCode &&
+    saved.revealedSlots > 1 &&
+    saved.hasSuccessfulSubmission !== true
+  );
+}
+
+function askResumeChoice() {
+  return new Promise(resolve => {
+    const modal = $('resume-modal');
+    const continueBtn = $('resume-continue-btn');
+    const startOverBtn = $('resume-startover-btn');
+
+    const finish = choice => {
+      continueBtn.removeEventListener('click', onContinue);
+      startOverBtn.removeEventListener('click', onStartOver);
+      modal.style.display = 'none';
+      resolve(choice);
+    };
+
+    const onContinue = () => finish('continue');
+    const onStartOver = () => finish('startover');
+
+    continueBtn.addEventListener('click', onContinue);
+    startOverBtn.addEventListener('click', onStartOver);
+    modal.style.display = 'flex';
+    continueBtn.focus();
+  });
+}
+
+// ─────────────────────────────────────────────
+// BUILD CONTENT STRUCTURE FROM TRAINING ROWS
+// ─────────────────────────────────────────────
+// SECTION GROUPING: sections are inferred from first appearance in the sheet,
+// and cards within each section follow row order.
+function firstFilled(...values) {
+  for (const value of values) {
+    if (value != null && String(value).trim() !== '') return String(value).trim();
+  }
+  return '';
+}
+
+function splitPipeBlob(value) {
+  return splitOptionBlob(value);
+}
+
+function buildStructure(rows) {
+  const normalized = rows
+    .map((r, idx) => ({
+      ...r,
+      section_id: (r.section_id || 'training').trim() || 'training',
+      section_title: (r.section_title || 'Training').trim() || 'Training',
+      _rowIndex: idx
+    }))
+    .filter(r => r.type);
+
+  const sections = [];
+  const sectionMap = new Map();
+
+  normalized.forEach(row => {
+    const key = row.section_id || row.section_title;
+    if (!sectionMap.has(key)) {
+      const section = {
+        id: row.section_id,
+        title: row.section_title,
+        order: sections.length + 1,
+        rows: []
+      };
+      sectionMap.set(key, section);
+      sections.push(section);
+    }
+    sectionMap.get(key).rows.push(row);
+  });
+
+  const structured = sections.map(section => ({
+    ...section,
+    cards: buildCardsForSection(section.rows)
+  }));
+
+  return flattenMultiQuestionCards(structured);
+}
+
+
+function buildCardsForSection(rows) {
+  const cards = [];
+  let slotCounter = 1;
+
+  rows.forEach(row => {
+    const type = normalizeQuestionType(row.type || '');
+    if (!type) return;
+
+    if (type === 'video') {
+      cards.push({
+        type: 'video',
+        slot: slotCounter++,
+        videoName: row.video_name
+      });
+      return;
+    }
+
+    if (type === 'text') {
+      cards.push({
+        type: 'text',
+        slot: slotCounter++,
+        header: row.header,
+        body: row.body,
+        body_mobile: row.body_mobile
+      });
+      return;
+    }
+
+    if (type === 'text_image') {
+      cards.push({
+        type: 'text_image',
+        slot: slotCounter++,
+        header: row.header,
+        body: row.body,
+        body_mobile: row.body_mobile,
+        imageUrl: row.media_url,
+        mobileImageUrl: row.mobile_image_url
+      });
+      return;
+    }
+
+    if (type === 'sba') {
+      cards.push({
+        type: 'sba',
+        slot: slotCounter++,
+        stem: row.stem,
+        correct: row.correct_blob,
+        distractors: splitOptionBlob(row.distractors_blob),
+        feedback: row.feedback,
+        showIdk: String(row.show_idk || '').toLowerCase() === 'yes',
+        imageUrl: row.media_url,
+        mobileImageUrl: row.mobile_image_url,
+        settings: parseSettings(row.settings)
+      });
+      return;
+    }
+
+    if (type === 'sata') {
+      cards.push({
+        type: 'sata',
+        slot: slotCounter++,
+        stem: row.stem,
+        correctAnswers: splitOptionBlob(row.correct_blob),
+        distractors: splitOptionBlob(row.distractors_blob),
+        feedback: row.feedback,
+        imageUrl: row.media_url,
+        mobileImageUrl: row.mobile_image_url,
+        settings: parseSettings(row.settings)
+      });
+      return;
+    }
+
+    if (type === 'fitb') {
+      cards.push({
+        type: 'fitb',
+        slot: slotCounter++,
+        stem: row.stem,
+        answerGroups: parseFitbCorrectGroups(row.correct_blob),
+        feedback: row.feedback,
+        imageUrl: row.media_url,
+        mobileImageUrl: row.mobile_image_url,
+        settings: parseSettings(row.settings)
+      });
+      return;
+    }
+
+    if (type === 'categorization' || type === 'matching') {
+      cards.push({
+        type,
+        slot: slotCounter++,
+        header: row.header,
+        body: row.body,
+        body_mobile: row.body_mobile,
+        stem: row.stem,
+        feedback: row.feedback,
+        settings: parseSettings(row.settings),
+        correctBlob: row.correct_blob
+      });
+      return;
+    }
+
+    if (type === 'essay') {
+      cards.push({
+        type: 'essay',
+        slot: slotCounter++,
+        header: row.header,
+        body: row.body,
+        body_mobile: row.body_mobile,
+        stem: row.stem,
+        feedback: row.feedback,
+        settings: parseSettings(row.settings)
+      });
+      return;
+    }
+  });
+
+  cards.forEach((card,index) => { card.cardId = rows[index]?.card_id || ''; });
+  return cards;
+}
+
+function flattenMultiQuestionCards(structure) {
+  return structure;
+}
+
+// ─────────────────────────────────────────────
+// RENDER INCOMPLETE CARD
+// ─────────────────────────────────────────────
+function renderIncompleteCard(item, cardIndex, onComplete, message = 'This card data is incomplete.') {
+  const sectionIndex = cardIndex;
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Card ${cardIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Needs Attention</span>
+    </div>
+    <div class="text-card">
+      <h2 class="content-header">Card setup issue</h2>
+      <div class="content-body"><p>${html(message)}</p></div>
+    </div>
+    <div class="continue-row show">
+      <button class="action-btn continue-btn">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  block.querySelector('.continue-btn').addEventListener('click', () => {
+    logEvent('incomplete_card_continued', { slot: item.slot, sectionIndex, message });
+    onComplete();
+  });
+
+  return block;
+}
+
+// ─────────────────────────────────────────────
+// RENDER VIDEO BLOCK
+// ─────────────────────────────────────────────
+function renderVideoBlock(item, cardIndex, onComplete, onContinue = onComplete) {
+  const block = document.createElement('div'); block.className = 'section-block'; block.id = `section-${cardIndex}`;
+  const info = getVideoEmbedInfo(item.videoName);
+  if (!info || info.kind === 'unavailable') {
+    block.innerHTML = `<div class="video-card"><p role="alert">${html(info?.error || 'This video is unavailable. Please contact the researcher.')}</p></div>`;
+    return block;
+  }
+  const iframe = info.kind === 'iframe';
+  const captions = iframe ? '' : getCaptionSourceUrl(item.videoName);
+  block.innerHTML = `<div class="section-label"><span class="section-num">Card ${cardIndex+1}</span><div class="section-rule"></div><span class="section-type-badge">Video</span></div>
+    <div class="video-card"><div class="video-wrapper">${iframe ?
+      '<iframe title="Training video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>' :
+      `<video controls playsinline preload="metadata"${captions ? ' crossorigin="anonymous"' : ''}><source type="${html(getVideoMimeType(info.src))}">${captions ? `<track kind="subtitles" srclang="en" label="English" src="${html(captions)}" default>` : ''}</video>`}
+    </div><div class="video-footer"><span class="video-footer-label">Watch the video above, then click when you're done.</span>
+    <button class="action-btn video-done-btn" type="button">Done watching</button></div>
+    <p class="video-error" role="status" hidden>Playback could not be loaded. <button class="video-retry" type="button">Retry video</button></p></div>`;
+  const player = block.querySelector(iframe ? 'iframe' : 'video');
+  let firstVisible = null, loaded = false;
+  function loadPlayer() {
+    if (iframe) player.src = info.src;
+    else { player.querySelector('source').src = info.src; player.load(); }
+    loaded = true;
+  }
+  const observer = new IntersectionObserver(entries => {
+    if (entries.some(entry => entry.isIntersecting)) {
+      if (firstVisible === null) firstVisible = Date.now();
+      if (!loaded) loadPlayer();
+    }
+  },{threshold:0.15});
+  observer.observe(block);
+  player.addEventListener('error',() => { block.querySelector('.video-error').hidden = false; });
+  block.querySelector('track')?.addEventListener('error',event => event.target.remove());
+  block.querySelector('.video-retry').addEventListener('click',() => { loadPlayer(); block.querySelector('.video-error').hidden = true; });
+  block.querySelector('.video-done-btn').addEventListener('click',() => {
+    markInteraction();
+    logEvent('video_completed',{slot:item.slot,sectionIndex:cardIndex,card_id:item.cardId || '',video_name:item.videoName,
+      video_provider:info.provider,completion_method:'self_reported',card_visible_elapsed_ms:firstVisible === null ? null : Date.now()-firstVisible,
+      video_current_time:iframe ? null : Math.round(player.currentTime*1000),video_duration_ms:!iframe && Number.isFinite(player.duration) ? Math.round(player.duration*1000) : null});
+    if (iframe && loaded) player.src = info.src; // Reload without autoplay to stop audio after Done watching.
+    else if (!iframe) player.pause();
+    onContinue();
+  });
+  return block;
+}
+
+// ─────────────────────────────────────────────
+// RENDER TEXT BLOCK  (header + body)
+// ─────────────────────────────────────────────
+function renderTextBlock(item, cardIndex, onComplete, onContinue = onComplete) {
+  const sectionIndex = cardIndex;
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+  const headerHtml = item.header ? `<h2 class="content-header">${html(item.header)}</h2>` : '';
+  const bodyHtml = formatBodyText(pickBodyText(item));
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Card ${cardIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Reading</span>
+    </div>
+    <div class="text-card">
+      ${headerHtml}
+      ${bodyHtml ? `<div class="content-body">${bodyHtml}</div>` : ''}
+    </div>
+    <div class="continue-row show">
+      <button class="action-btn continue-btn">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) {
+      logEvent('text_visible', { slot: item.slot, sectionIndex });
+      observer.disconnect();
+    }
+  }, { threshold: 0.3 });
+  observer.observe(block);
+
+  block.querySelector('.continue-btn').addEventListener('click', () => {
+    logEvent('text_continued', { slot: item.slot, sectionIndex });
+    onContinue();
+  });
+
+  return block;
+}
+
+// ─────────────────────────────────────────────
+// RENDER TEXT + IMAGE BLOCK  (header + body left, image right)
+// ─────────────────────────────────────────────
+function renderTextImageBlock(item, cardIndex, onComplete, onContinue = onComplete) {
+  const sectionIndex = cardIndex;
+  const imageUrl = getPreferredImageUrl(item);
+  if (!imageUrl) {
+    return renderIncompleteCard(item, cardIndex, onComplete, 'Text + image card is missing an image URL.');
+  }
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+  const headerHtml = item.header ? `<h2 class="content-header">${html(item.header)}</h2>` : '';
+  const bodyHtml = formatBodyText(pickBodyText(item));
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Card ${cardIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Reading</span>
+    </div>
+    <div class="text-image-card">
+      <div class="text-image-inner">
+        <div class="text-image-text">
+          ${headerHtml}
+          ${bodyHtml ? `<div class="content-body">${bodyHtml}</div>` : ''}
+        </div>
+        <div class="text-image-img">
+          <img src="${html(imageUrl)}" alt="" />
+        </div>
+      </div>
+    </div>
+    <div class="continue-row show">
+      <button class="action-btn continue-btn">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) {
+      logEvent('text_image_visible', { slot: item.slot, sectionIndex });
+      observer.disconnect();
+    }
+  }, { threshold: 0.3 });
+  observer.observe(block);
+
+  block.querySelector('.continue-btn').addEventListener('click', () => {
+    logEvent('text_image_continued', { slot: item.slot, sectionIndex });
+    onContinue();
+  });
+
+  return block;
+}
+
+// ─────────────────────────────────────────────
+// RENDER QUIZ BLOCK
+// ─────────────────────────────────────────────
+function renderQuizBlock(item, cardIndex, onComplete, onContinue = onComplete) {
+  const sectionIndex = cardIndex;
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+
+  const letters = ['A','B','C','D','E'];
+  const q = Array.isArray(item.questions) ? item.questions[0] : item.quizQuestion;
+  if (!q) {
+    return renderIncompleteCard(item, cardIndex, onComplete, 'Quiz card is missing a question.');
+  }
+
+  const sectionState = quizStates[sectionIndex] || {
+    answered: false,
+    selectedText: null,
+    isCorrect: false,
+    isIdk: false,
+    optionOrder: null,
+    completed: false
+  };
+  quizStates[sectionIndex] = sectionState;
+
+  if (!sectionState.optionOrder || sectionState.optionOrder.length === 0) {
+    const shuffledDistractors = shuffleArray(q.distractors || []);
+    const insertPos = Math.floor(Math.random() * (shuffledDistractors.length + 1));
+    shuffledDistractors.splice(insertPos, 0, q.correct);
+    sectionState.optionOrder = shuffledDistractors;
+  }
+
+  const allOptions = sectionState.optionOrder;
+  let optionsHTML = allOptions.map((opt, oi) => `
+    <li>
+      <button class="option-btn"
+        data-oi="${oi}"
+        data-is-correct="${opt === q.correct ? 'true' : 'false'}"
+        data-is-idk="false">
+        <span class="option-letter">${letters[oi]}</span>
+        <span class="option-text">${html(opt)}</span>
+      </button>
+    </li>
+  `).join('');
+
+  if (q.showIdk) {
+    optionsHTML += `
+      <li>
+        <button class="option-btn idk-option"
+          data-oi="${allOptions.length}"
+          data-is-correct="false"
+          data-is-idk="true">
+          <span class="option-letter">?</span>
+          <span class="option-text">I don't know</span>
+        </button>
+      </li>
+    `;
+  }
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Card ${cardIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Knowledge Check</span>
+    </div>
+    <div class="quiz-card">
+      <div class="quiz-header">
+        <p class="quiz-header-label">Knowledge Check</p>
+      </div>
+      <div class="question-block active" data-qi="0">
+        <p class="question-stem">${html(q.stem)}</p>
+        <ul class="options-list">${optionsHTML}</ul>
+        <div class="feedback-box">
+          <span class="feedback-label"></span>
+          <span class="feedback-text"></span>
+        </div>
+      </div>
+    </div>
+    <div class="continue-row">
+      <button class="action-btn continue-btn">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  let quizStartTime = null;
+
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && !quizStartTime) {
+      quizStartTime = Date.now();
+      logEvent('quiz_visible', { slot: item.slot, sectionIndex, quizNum: item.quizNum });
+    }
+  }, { threshold: 0.2 });
+  observer.observe(block);
+
+  block.addEventListener('click', e => {
+    const btn = e.target.closest('.option-btn');
+    if (!btn || btn.disabled) return;
+    markInteraction();
+
+    const isCorrect = btn.dataset.isCorrect === 'true';
+    const isIdk = btn.dataset.isIdk === 'true';
+    const answerMs = quizStartTime ? Date.now() - quizStartTime : null;
+
+    const isFirstAttempt = !sectionState.answered;
+    if (isFirstAttempt) {
+      totalQuestions++;
+      if (isCorrect && !isIdk) correctFirst++;
+    }
+
+    sectionState.answered = true;
+    sectionState.selectedText = isIdk ? "I don't know" : btn.querySelector('.option-text').textContent;
+    sectionState.isCorrect = isCorrect && !isIdk;
+    sectionState.isIdk = isIdk;
+    sectionState.completed = true;
+    saveProgress();
+
+    logEvent('question_answered', {
+      slot: item.slot,
+      sectionIndex,
+      quizNum: item.quizNum,
+      questionNum: q.questionNum,
+      stem: q.stem,
+      selected: sectionState.selectedText,
+      correct: q.correct,
+      is_correct: sectionState.isCorrect,
+      is_idk: isIdk,
+      is_first_attempt: isFirstAttempt,
+      answer_duration_ms: answerMs
+    });
+
+    const qBlock = block.querySelector('.question-block');
+    qBlock.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      if (b === btn) {
+        b.classList.add(isCorrect && !isIdk ? 'correct' : 'incorrect');
+      } else if (b.dataset.isCorrect === 'true') {
+        b.classList.add(!isCorrect || isIdk ? 'correct' : 'dimmed');
+      } else {
+        b.classList.add('dimmed');
+      }
+    });
+
+    const fbBox = qBlock.querySelector('.feedback-box');
+    const fbLabel = qBlock.querySelector('.feedback-label');
+    const fbText = qBlock.querySelector('.feedback-text');
+    if (isCorrect && !isIdk) {
+      fbBox.className = 'feedback-box show correct-fb';
+      fbLabel.textContent = '✓ Correct';
+      fbText.textContent = q.feedback || 'Well done!';
+    } else {
+      fbBox.className = 'feedback-box show incorrect-fb';
+      fbLabel.textContent = isIdk ? "Here's the explanation:" : '✗ Not quite';
+      fbText.textContent = q.feedback || `The correct answer is: ${q.correct}`;
+    }
+
+    logEvent('quiz_completed', {
+      slot: item.slot,
+      sectionIndex,
+      quizNum: item.quizNum,
+      correct_first: isCorrect && !isIdk ? 1 : 0,
+      total: 1,
+      duration_ms: quizStartTime ? Date.now() - quizStartTime : null
+    });
+
+    const continueRow = block.querySelector('.continue-row');
+    continueRow.classList.add('show');
+    saveProgress();
+    scrollToEl(continueRow, 100);
+  });
+
+  if (sectionState.answered) {
+    const qBlock = block.querySelector('.question-block');
+    qBlock.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      const text = b.querySelector('.option-text')?.textContent;
+      const isSelected = sectionState.isIdk
+        ? b.dataset.isIdk === 'true'
+        : text === sectionState.selectedText;
+      const isCorrectOpt = b.dataset.isCorrect === 'true';
+      if (isSelected) {
+        b.classList.add(sectionState.isCorrect ? 'correct' : 'incorrect');
+      } else if (isCorrectOpt) {
+        b.classList.add(sectionState.isCorrect ? 'dimmed' : 'correct');
+      } else {
+        b.classList.add('dimmed');
+      }
+    });
+
+    const fbBox = qBlock.querySelector('.feedback-box');
+    const fbLabel = qBlock.querySelector('.feedback-label');
+    const fbText = qBlock.querySelector('.feedback-text');
+    if (sectionState.isCorrect) {
+      fbBox.className = 'feedback-box show correct-fb';
+      fbLabel.textContent = '✓ Correct';
+      fbText.textContent = q.feedback || 'Well done!';
+    } else {
+      fbBox.className = 'feedback-box show incorrect-fb';
+      fbLabel.textContent = sectionState.isIdk ? "Here's the explanation:" : '✗ Not quite';
+      fbText.textContent = q.feedback || `The correct answer is: ${q.correct}`;
+    }
+    block.querySelector('.continue-row').classList.add('show');
+  }
+
+  const continueBtn = block.querySelector('.continue-btn');
+  continueBtn.addEventListener('click', () => {
+    markInteraction();
+    logEvent('continue_clicked', { slot: item.slot, sectionIndex });
+    onContinue();
+  });
+
+  return block;
+}
+
+
+// ─────────────────────────────────────────────
+// RENDER STRICT QUESTION BLOCKS
+// ─────────────────────────────────────────────
+function renderSBABlock(item, cardIndex, onComplete, onContinue = onComplete) {
+  const sectionIndex = cardIndex;
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+  if (!item.stem || !item.correct || !Array.isArray(item.distractors) || !item.distractors.length) {
+    return renderIncompleteCard(item, cardIndex, onComplete, 'SBA card is missing stem, correct_blob, or distractors_blob.');
+  }
+
+  const letters = ['A','B','C','D','E','F'];
+  const state = quizStates[sectionIndex] || { answered: false, selectedText: null, isCorrect: false, isIdk: false, optionOrder: null };
+  quizStates[sectionIndex] = state;
+  if (!state.optionOrder) {
+    const opts = shuffleArray(item.distractors || []);
+    opts.splice(Math.floor(Math.random() * (opts.length + 1)), 0, item.correct);
+    state.optionOrder = opts;
+  }
+
+  const imageUrl = getPreferredImageUrl(item);
+  const imageHtml = imageUrl ? `<div class="text-image-img" style="margin: 0 0 18px;"><img src="${html(imageUrl)}" alt="" /></div>` : '';
+  let optionsHTML = state.optionOrder.map((opt, oi) => `
+    <li><button class="option-btn" data-is-correct="${opt === item.correct ? 'true' : 'false'}" data-is-idk="false">
+      <span class="option-letter">${letters[oi] || ''}</span><span class="option-text">${html(opt)}</span>
+    </button></li>
+  `).join('');
+
+  if (item.showIdk) {
+    optionsHTML += `<li><button class="option-btn idk-option" data-is-correct="false" data-is-idk="true"><span class="option-letter">?</span><span class="option-text">I don't know</span></button></li>`;
+  }
+
+  block.innerHTML = `
+    <div class="section-label"><span class="section-num">Card ${cardIndex + 1}</span><div class="section-rule"></div><span class="section-type-badge">Knowledge Check</span></div>
+    <div class="quiz-card">
+      <div class="quiz-header"><p class="quiz-header-label">Knowledge Check</p></div>
+      <div class="question-block active">
+        ${imageHtml}
+        <p class="question-stem">${html(item.stem)}</p>
+        <ul class="options-list">${optionsHTML}</ul>
+        <div class="feedback-box"><span class="feedback-label"></span><span class="feedback-text"></span></div>
+      </div>
+    </div>
+    <div class="continue-row"><button class="action-btn continue-btn">Continue<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 7h10M8 3l4 4-4 4"/></svg></button></div>
+  `;
+
+  let questionStartTime = null;
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && !questionStartTime) {
+      questionStartTime = Date.now();
+      logEvent('sba_visible', { slot: item.slot, sectionIndex });
+    }
+  }, { threshold: 0.2 });
+  observer.observe(block);
+
+  function showFeedback() {
+    const fbBox = block.querySelector('.feedback-box');
+    const fbLabel = block.querySelector('.feedback-label');
+    const fbText = block.querySelector('.feedback-text');
+    fbBox.className = `feedback-box show ${state.isCorrect ? 'correct-fb' : 'incorrect-fb'}`;
+    fbLabel.textContent = state.isCorrect ? '✓ Correct' : (state.isIdk ? "Here's the explanation:" : '✗ Not quite');
+    fbText.textContent = item.feedback || (state.isCorrect ? 'Well done!' : `The correct answer is: ${item.correct}`);
+    block.querySelector('.continue-row').classList.add('show');
+  }
+
+  block.addEventListener('click', e => {
+    const btn = e.target.closest('.option-btn');
+    if (!btn || btn.disabled) return;
+    markInteraction();
+    const isCorrect = btn.dataset.isCorrect === 'true';
+    const isIdk = btn.dataset.isIdk === 'true';
+    const first = !state.answered;
+    if (first) {
+      totalQuestions++;
+      if (isCorrect && !isIdk) correctFirst++;
+    }
+    state.answered = true;
+    state.selectedText = isIdk ? "I don't know" : btn.querySelector('.option-text').textContent;
+    state.isCorrect = isCorrect && !isIdk;
+    state.isIdk = isIdk;
+    saveProgress();
+    logEvent('sba_answered', { slot: item.slot, sectionIndex, selected: state.selectedText, correct: item.correct, is_correct: state.isCorrect, is_idk: isIdk, is_first_attempt: first, answer_duration_ms: questionStartTime ? Date.now() - questionStartTime : null });
+
+    block.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      if (b === btn) b.classList.add(state.isCorrect ? 'correct' : 'incorrect');
+      else if (b.dataset.isCorrect === 'true') b.classList.add(state.isCorrect ? 'dimmed' : 'correct');
+      else b.classList.add('dimmed');
+    });
+    showFeedback();
+    scrollToEl(block.querySelector('.continue-row'), 100);
+  });
+
+  if (state.answered) {
+    block.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      const text = b.querySelector('.option-text')?.textContent;
+      const selected = state.isIdk ? b.dataset.isIdk === 'true' : text === state.selectedText;
+      const correct = b.dataset.isCorrect === 'true';
+      if (selected) b.classList.add(state.isCorrect ? 'correct' : 'incorrect');
+      else if (correct) b.classList.add(state.isCorrect ? 'dimmed' : 'correct');
+      else b.classList.add('dimmed');
+    });
+    showFeedback();
+  }
+
+  block.querySelector('.continue-btn').addEventListener('click', () => {
+    markInteraction();
+    logEvent('continue_clicked', { slot: item.slot, sectionIndex });
+    onContinue();
+  });
+  return block;
+}
+
+function renderSATABlock(item, cardIndex, onComplete, onContinue = onComplete) {
+  const sectionIndex = cardIndex;
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+  const correctAnswers = Array.isArray(item.correctAnswers) ? item.correctAnswers : [];
+  const distractors = Array.isArray(item.distractors) ? item.distractors : [];
+  if (!item.stem || correctAnswers.length < 2) return renderIncompleteCard(item, cardIndex, onComplete, 'SATA card is missing stem or correct answers.');
+
+  const letters = ['A','B','C','D','E','F'];
+  const state = quizStates[sectionIndex] || { submitted: false, selectedAnswers: [], optionOrder: null, isCorrect: false };
+  quizStates[sectionIndex] = state;
+  if (!state.optionOrder) state.optionOrder = shuffleArray([...new Set([...correctAnswers, ...distractors])]);
+  const correctNorm = correctAnswers.map(normalizeGradedText).sort();
+
+  block.innerHTML = `
+    <div class="section-label"><span class="section-num">Card ${cardIndex + 1}</span><div class="section-rule"></div><span class="section-type-badge">Knowledge Check</span></div>
+    <div class="quiz-card"><div class="quiz-header"><p class="quiz-header-label">Select All That Apply</p></div>
+      <div class="question-block active"><p class="question-stem">${html(item.stem)}</p><p class="quiz-header-sub" style="margin-bottom:12px;">Select all that apply.</p>
+      <ul class="options-list">${state.optionOrder.map((opt, oi) => `<li><button class="option-btn ${(!state.submitted && state.selectedAnswers.includes(opt)) ? 'selected' : ''}" data-answer="${html(opt)}"><span class="option-letter">${letters[oi] || ''}</span><span class="option-text">${html(opt)}</span></button></li>`).join('')}</ul>
+      ${!state.submitted ? '<div class="feedback-actions"><button class="feedback-next-btn show sata-check-btn" type="button">Check Answer</button></div>' : ''}
+      <div class="feedback-box"></div></div></div>
+    <div class="continue-row"><button class="action-btn continue-btn">Continue<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 7h10M8 3l4 4-4 4"/></svg></button></div>
+  `;
+
+  const buttons = [...block.querySelectorAll('.option-btn')];
+  buttons.forEach(btn => {
+    if (!state.submitted) {
+      btn.addEventListener('click', () => {
+        markInteraction();
+        btn.classList.toggle('selected');
+        state.selectedAnswers = [...block.querySelectorAll('.option-btn.selected')].map(node => node.dataset.answer || '');
+        saveProgress();
+      });
+    }
+  });
+
+  function applySubmittedState() {
+    buttons.forEach(btn => {
+      const answer = btn.dataset.answer || '';
+      const selected = state.selectedAnswers.includes(answer);
+      const actuallyCorrect = correctNorm.includes(normalizeGradedText(answer));
+      btn.disabled = true;
+      btn.classList.remove('selected');
+      if (selected && actuallyCorrect) btn.classList.add('correct');
+      else if (selected && !actuallyCorrect) btn.classList.add('incorrect');
+      else if (!selected && actuallyCorrect) btn.classList.add('missed-correct');
+      else btn.classList.add('dimmed');
+    });
+    const fb = block.querySelector('.feedback-box');
+    fb.className = `feedback-box show ${state.isCorrect ? 'correct-fb' : 'incorrect-fb'}`;
+    fb.innerHTML = `<span class="feedback-label">${state.isCorrect ? '✓ Correct' : '✗ Not quite'}</span><span class="feedback-text">${html(item.feedback || `Correct answers: ${correctAnswers.join(', ')}`)}</span>`;
+    block.querySelector('.continue-row').classList.add('show');
+  }
+
+  block.querySelector('.sata-check-btn')?.addEventListener('click', () => {
+    markInteraction();
+    const selectedNorm = (state.selectedAnswers || []).map(normalizeGradedText).sort();
+    const isCorrect = selectedNorm.length === correctNorm.length && selectedNorm.every((v, idx) => v === correctNorm[idx]);
+    if (!state.submitted) {
+      totalQuestions++;
+      if (isCorrect) correctFirst++;
+    }
+    state.submitted = true;
+    state.isCorrect = isCorrect;
+    block.querySelector('.sata-check-btn')?.remove();
+    logEvent('sata_answered', { slot: item.slot, sectionIndex, is_correct: isCorrect, selected: state.selectedAnswers, correct: correctAnswers });
+    saveProgress();
+    applySubmittedState();
+    scrollToEl(block.querySelector('.continue-row'), 100);
+  });
+
+  if (state.submitted) applySubmittedState();
+  block.querySelector('.continue-btn').addEventListener('click', () => { markInteraction(); onContinue(); });
+  return block;
+}
+
+function renderFITBBlock(item, cardIndex, onComplete, onContinue = onComplete) {
+  const sectionIndex = cardIndex;
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+  const answerGroups = Array.isArray(item.answerGroups) ? item.answerGroups : [];
+  if (!item.stem || !answerGroups.length) return renderIncompleteCard(item, cardIndex, onComplete, 'FITB card is missing stem or correct_blob.');
+
+  const state = quizStates[sectionIndex] || { submitted: false, responses: [], isCorrect: false };
+  quizStates[sectionIndex] = state;
+
+  block.innerHTML = `
+    <div class="section-label"><span class="section-num">Card ${cardIndex + 1}</span><div class="section-rule"></div><span class="section-type-badge">Knowledge Check</span></div>
+    <div class="quiz-card"><div class="quiz-header"><p class="quiz-header-label">Fill in the Blank</p></div>
+      <div class="question-block active"><p class="question-stem">${buildFITBStemHtml(item.stem)}</p>
+      <div class="fitb-input-row">${answerGroups.map((group, idx) => `<input class="gate-input fitb-answer-input" data-index="${idx}" type="text" value="${html(state.responses[idx] || '')}" placeholder="Blank ${idx + 1}" autocomplete="off" autocapitalize="off" spellcheck="false" ${state.submitted ? 'disabled' : ''} />`).join('')}</div>
+      ${!state.submitted ? '<div class="feedback-actions"><button class="feedback-next-btn show fitb-check-btn" type="button">Check Answer</button></div>' : ''}
+      <div class="feedback-box"></div></div></div>
+    <div class="continue-row"><button class="action-btn continue-btn">Continue<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 7h10M8 3l4 4-4 4"/></svg></button></div>
+  `;
+
+  const inputs = [...block.querySelectorAll('.fitb-answer-input')];
+  inputs.forEach(input => input.addEventListener('input', () => {
+    state.responses = inputs.map(node => String(node.value || '').trim());
+    saveProgress();
+  }));
+
+  function applySubmittedState() {
+    const fb = block.querySelector('.feedback-box');
+    const correctText = answerGroups.map(group => group[0] || '').join(', ');
+    fb.className = `feedback-box show ${state.isCorrect ? 'correct-fb' : 'incorrect-fb'}`;
+    fb.innerHTML = `<span class="feedback-label">${state.isCorrect ? '✓ Correct' : '✗ Not quite'}</span><span class="feedback-text">${html(item.feedback || `Correct answer: ${correctText}`)}</span>`;
+    block.querySelector('.continue-row').classList.add('show');
+  }
+
+  block.querySelector('.fitb-check-btn')?.addEventListener('click', () => {
+    markInteraction();
+    state.responses = inputs.map(node => String(node.value || '').trim());
+    const isCorrect = answerGroups.every((group, idx) => isFitbAnswerCorrect(state.responses[idx] || '', group));
+    if (!state.submitted) {
+      totalQuestions++;
+      if (isCorrect) correctFirst++;
+    }
+    state.submitted = true;
+    state.isCorrect = isCorrect;
+    inputs.forEach(input => input.disabled = true);
+    block.querySelector('.fitb-check-btn')?.remove();
+    logEvent('fitb_answered', { slot: item.slot, sectionIndex, is_correct: isCorrect });
+    saveProgress();
+    applySubmittedState();
+    scrollToEl(block.querySelector('.continue-row'), 100);
+  });
+
+  if (state.submitted) applySubmittedState();
+  block.querySelector('.continue-btn').addEventListener('click', () => { markInteraction(); onContinue(); });
+  return block;
+}
+
+function renderEssayBlock(item, cardIndex, onComplete, onContinue = onComplete) {
+  const sectionIndex = cardIndex;
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+  const state = quizStates[sectionIndex] || { submitted: false, text: '' };
+  quizStates[sectionIndex] = state;
+  const wordLimit = item.settings?.word_limit_max ? Number(item.settings.word_limit_max) : 0;
+  const bodyHtml = formatBodyText(pickBodyText(item));
+
+  block.innerHTML = `
+    <div class="section-label"><span class="section-num">Card ${cardIndex + 1}</span><div class="section-rule"></div><span class="section-type-badge">Reflection</span></div>
+    <div class="quiz-card"><div class="quiz-header"><p class="quiz-header-label">Written Response</p>${wordLimit ? `<p class="quiz-header-sub">Suggested limit: ${wordLimit} words</p>` : ''}</div>
+      <div class="question-block active">${item.header ? `<h2 class="content-header">${html(item.header)}</h2>` : ''}${bodyHtml ? `<div class="content-body">${bodyHtml}</div>` : ''}
+      <p class="question-stem">${html(item.stem || '')}</p><textarea class="essay-input" ${state.submitted ? 'disabled' : ''}>${html(state.text || '')}</textarea>
+      ${!state.submitted ? '<div class="feedback-actions"><button class="feedback-next-btn show essay-submit-btn" type="button">Submit</button></div>' : ''}<div class="feedback-box"></div></div></div>
+    <div class="continue-row"><button class="action-btn continue-btn">Continue<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 7h10M8 3l4 4-4 4"/></svg></button></div>
+  `;
+
+  const textarea = block.querySelector('.essay-input');
+  textarea?.addEventListener('input', () => { state.text = textarea.value; saveProgress(); });
+
+  function applySubmittedState() {
+    const fb = block.querySelector('.feedback-box');
+    if (item.feedback) {
+      fb.className = 'feedback-box show correct-fb';
+      fb.innerHTML = `<span class="feedback-label">Submitted</span><span class="feedback-text">${html(item.feedback)}</span>`;
+    }
+    block.querySelector('.continue-row').classList.add('show');
+  }
+
+  block.querySelector('.essay-submit-btn')?.addEventListener('click', () => {
+    markInteraction();
+    state.text = textarea?.value || '';
+    if (!String(state.text || '').trim()) return;
+    if (!state.submitted) totalQuestions++;
+    state.submitted = true;
+    textarea.disabled = true;
+    block.querySelector('.essay-submit-btn')?.remove();
+    logEvent('essay_submitted', { slot: item.slot, sectionIndex, text_length: state.text.length });
+    saveProgress();
+    applySubmittedState();
+    scrollToEl(block.querySelector('.continue-row'), 100);
+  });
+
+  if (state.submitted) applySubmittedState();
+  block.querySelector('.continue-btn').addEventListener('click', () => { markInteraction(); onContinue(); });
+  return block;
+}
+
+// ─────────────────────────────────────────────
+// RENDER CATEGORIZE BLOCK
+// ─────────────────────────────────────────────
+function renderCategorizeBlock(item, cardIndex, onComplete, onContinue = onComplete) {
+  const sectionIndex = cardIndex;
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+
+  const isMatching = String(item.type || '').trim().toLowerCase() === 'matching';
+  const { mappings, categories, items } = getCategorizeMappingsAndCategories(item.correctBlob, item.type);
+  const sectionState = quizStates[sectionIndex] || {
+    itemOrder: null,
+    placements: {},
+    submitted: false,
+    countedQuestion: false,
+    isCorrect: false,
+    continued: false
+  };
+  quizStates[sectionIndex] = sectionState;
+
+  if (!sectionState.itemOrder || sectionState.itemOrder.length !== items.length) {
+    sectionState.itemOrder = shuffleArray(items);
+  }
+
+  const headerHtml = item.header ? `<h2 class="content-header">${html(item.header)}</h2>` : '';
+  const bodyHtml = formatBodyText(pickBodyText(item));
+  const stemHtml = item.stem ? `<p class="question-stem">${html(item.stem)}</p>` : '';
+  const mobileMode = isMobileLikeViewport();
+  const helperText = mobileMode
+    ? (isMatching
+      ? 'Tap an item to select it, then tap a matching option to place it. Leave unmatched distractors in the item pool.'
+      : 'Tap an item to select it, then tap a category area to place it. Leave unrelated items in the item pool.')
+    : (isMatching
+      ? 'Drag each item to its correct match. Leave unmatched distractors in the item pool.'
+      : 'Drag each item into the correct category. Leave unrelated items in the item pool.');
+
+  const poolItemsHtml = sectionState.itemOrder
+    .map((text, idx) => `<button class="categorize-item" data-item="${html(text)}" data-item-index="${idx}" type="button">${html(text)}</button>`)
+    .join('');
+
+  const zonesHtml = categories.map(category => `
+    <div class="categorize-zone" data-category="${html(category)}">
+      <p class="categorize-zone-title">${html(category)}</p>
+      <div class="categorize-items"></div>
+    </div>
+  `).join('');
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Card ${cardIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Knowledge Check</span>
+    </div>
+    <div class="categorize-card">
+      ${headerHtml}
+      ${bodyHtml ? `<div class="content-body">${bodyHtml}</div>` : ''}
+      ${stemHtml}
+      <p class="categorize-helper">${html(helperText)}</p>
+      <div class="categorize-layout">
+        <div class="categorize-pool" data-category="pool">
+          <p class="categorize-pool-title">${html(isMatching ? 'Items to match' : 'Items to place')}</p>
+          <div class="categorize-items">${poolItemsHtml}</div>
+          <p class="categorize-mobile-hint"${mobileMode ? '' : ' style="display:none;"'}>No item selected.</p>
+        </div>
+        <div class="categorize-zones">${zonesHtml}</div>
+      </div>
+      <div class="categorize-controls">
+        <button class="action-btn secondary categorize-reset-btn" type="button">Reset placements</button>
+        <button class="action-btn categorize-check-btn" type="button">Check Answer</button>
+      </div>
+      <div class="feedback-box"></div>
+    </div>
+    <div class="continue-row">
+      <button class="action-btn continue-btn">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  const pool = block.querySelector('.categorize-pool');
+  const poolItems = pool.querySelector('.categorize-items');
+  const hintEl = block.querySelector('.categorize-mobile-hint');
+  const zones = [...block.querySelectorAll('.categorize-zone')];
+  const checkBtn = block.querySelector('.categorize-check-btn');
+  const resetBtn = block.querySelector('.categorize-reset-btn');
+  const feedbackBox = block.querySelector('.feedback-box');
+  const continueRow = block.querySelector('.continue-row');
+  const continueBtn = block.querySelector('.continue-btn');
+  let selectedItem = null;
+  let draggedItem = null;
+  const answerMap = new Map(
+    mappings
+      .filter(mapping => mapping.item)
+      .map(mapping => [
+        normalizeGradedText(mapping.item),
+        normalizeGradedText(mapping.category || '')
+      ])
+  );
+
+  function isItemPlacementCorrect(itemEl) {
+    const itemKey = normalizeGradedText(itemEl.dataset.item);
+    const expected = answerMap.get(itemKey) || '';
+    const actual = normalizeGradedText(
+      itemEl.closest('[data-category]')?.dataset.category || 'pool'
+    );
+
+    if (!expected) {
+      return actual === 'pool';
+    }
+
+    return actual === expected;
+  }
+
+  function setHint(text) {
+    if (!mobileMode || !hintEl) return;
+    hintEl.textContent = text || 'No item selected.';
+  }
+
+  function clearItemMarks() {
+    block.querySelectorAll('.categorize-item').forEach(el => {
+      el.classList.remove('selected', 'correct', 'incorrect');
+    });
+  }
+
+  function syncPlacementsFromDom() {
+    const placements = {};
+    block.querySelectorAll('.categorize-item').forEach(el => {
+      const category = el.closest('[data-category]')?.dataset.category || 'pool';
+      placements[el.dataset.item] = category;
+    });
+    sectionState.placements = placements;
+    saveProgress();
+  }
+
+  function moveItemToCategory(itemEl, category) {
+    if (!itemEl || sectionState.submitted) return;
+    const targetWrap = category === 'pool'
+      ? pool
+      : zones.find(z => normalizeGradedText(z.dataset.category) === normalizeGradedText(category));
+    const targetContainer = targetWrap?.querySelector('.categorize-items');
+    if (!targetContainer) return;
+    targetContainer.appendChild(itemEl);
+    markInteraction();
+    syncPlacementsFromDom();
+  }
+
+  function setSelectedItem(itemEl) {
+    if (sectionState.submitted || !mobileMode) return;
+    if (itemEl) markInteraction();
+    block.querySelectorAll('.categorize-item').forEach(el => el.classList.remove('selected'));
+    selectedItem = itemEl;
+    if (selectedItem) {
+      selectedItem.classList.add('selected');
+      setHint(`Selected: ${selectedItem.dataset.item}`);
+    } else {
+      setHint('No item selected.');
+    }
+  }
+
+  function applySavedPlacements() {
+    block.querySelectorAll('.categorize-item').forEach(itemEl => {
+      const savedCategory = sectionState.placements[itemEl.dataset.item] || 'pool';
+      moveItemToCategory(itemEl, savedCategory);
+    });
+  }
+
+  function showFeedback(allCorrect) {
+    const baseText = allCorrect ? 'Correct ✅' : 'Incorrect ❌';
+    const feedbackParts = [`<span class="feedback-label">${html(baseText)}</span>`];
+    if (item.feedback) {
+      feedbackParts.push(`<p>${html(item.feedback).replace(/\n/g, '<br />')}</p>`);
+    }
+    feedbackBox.className = `feedback-box show ${allCorrect ? 'correct-fb' : 'incorrect-fb'}`;
+    feedbackBox.innerHTML = feedbackParts.join('');
+  }
+
+  function lockCard() {
+    sectionState.submitted = true;
+    block.querySelectorAll('.categorize-item').forEach(el => {
+      el.draggable = false;
+      el.style.cursor = 'default';
+    });
+    resetBtn.disabled = true;
+    checkBtn.disabled = true;
+    saveProgress();
+  }
+
+  block.addEventListener('click', e => {
+    const itemEl = e.target.closest('.categorize-item');
+    if (!itemEl || sectionState.submitted) return;
+    if (!mobileMode) return;
+    if (selectedItem === itemEl) setSelectedItem(null);
+    else setSelectedItem(itemEl);
+  });
+
+  if (!mobileMode) {
+    block.querySelectorAll('.categorize-item').forEach(itemEl => {
+      itemEl.draggable = !sectionState.submitted;
+      itemEl.addEventListener('dragstart', e => {
+        if (sectionState.submitted) return;
+        draggedItem = itemEl;
+        itemEl.classList.remove('selected');
+        if (e.dataTransfer) e.dataTransfer.setData('text/plain', itemEl.dataset.item);
+      });
+      itemEl.addEventListener('dragend', () => {
+        draggedItem = null;
+        block.querySelectorAll('.categorize-drop-target-active').forEach(el => el.classList.remove('categorize-drop-target-active'));
+      });
+    });
+
+    const targets = [pool, ...zones];
+    targets.forEach(target => {
+      const itemContainer = target.querySelector('.categorize-items');
+      const activate = evt => {
+        evt.preventDefault();
+        if (sectionState.submitted) return;
+        target.classList.add('categorize-drop-target-active');
+      };
+      target.addEventListener('dragenter', activate);
+      target.addEventListener('dragover', activate);
+      target.addEventListener('dragleave', () => target.classList.remove('categorize-drop-target-active'));
+      target.addEventListener('drop', evt => {
+        evt.preventDefault();
+        target.classList.remove('categorize-drop-target-active');
+        if (sectionState.submitted || !draggedItem) return;
+        itemContainer.appendChild(draggedItem);
+        markInteraction();
+        syncPlacementsFromDom();
+      });
+    });
+  } else {
+    [pool, ...zones].forEach(target => {
+      target.addEventListener('click', e => {
+        if (sectionState.submitted) return;
+        if (e.target.closest('.categorize-item')) return;
+        if (!selectedItem) return;
+        const destination = target.dataset.category || 'pool';
+        moveItemToCategory(selectedItem, destination);
+        setSelectedItem(null);
+      });
+    });
+  }
+
+  resetBtn.addEventListener('click', () => {
+    if (sectionState.submitted) return;
+    markInteraction();
+    clearItemMarks();
+    block.querySelectorAll('.categorize-item').forEach(itemEl => poolItems.appendChild(itemEl));
+    setSelectedItem(null);
+    feedbackBox.className = 'feedback-box';
+    feedbackBox.innerHTML = '';
+    continueRow.classList.remove('show');
+    syncPlacementsFromDom();
+  });
+
+  checkBtn.addEventListener('click', () => {
+    if (sectionState.submitted) return;
+    markInteraction();
+
+    clearItemMarks();
+    let allCorrect = true;
+
+    block.querySelectorAll('.categorize-item').forEach(itemEl => {
+      const isCorrect = isItemPlacementCorrect(itemEl);
+      itemEl.classList.add(isCorrect ? 'correct' : 'incorrect');
+      if (!isCorrect) allCorrect = false;
+    });
+
+    if (!sectionState.countedQuestion) {
+      totalQuestions++;
+      if (allCorrect) correctFirst++;
+      sectionState.countedQuestion = true;
+    }
+    sectionState.isCorrect = allCorrect;
+
+    logEvent(isMatching ? 'matching_answered' : 'categorize_answered', {
+      slot: item.slot,
+      sectionIndex,
+      is_correct: allCorrect
+    });
+
+    lockCard();
+    showFeedback(allCorrect);
+    continueRow.classList.add('show');
+    scrollToEl(continueRow, 100);
+  });
+
+  continueBtn.addEventListener('click', () => {
+    markInteraction();
+    onContinue();
+  });
+
+  applySavedPlacements();
+  setSelectedItem(null);
+
+  if (sectionState.submitted) {
+    checkBtn.disabled = true;
+    resetBtn.disabled = true;
+    block.querySelectorAll('.categorize-item').forEach(itemEl => {
+      itemEl.draggable = false;
+      itemEl.style.cursor = 'default';
+      itemEl.classList.add(isItemPlacementCorrect(itemEl) ? 'correct' : 'incorrect');
+    });
+    showFeedback(!!sectionState.isCorrect);
+    continueRow.classList.add('show');
+  }
+
+  return block;
+}
+
+// ─────────────────────────────────────────────
+// RENDER QUESTION + IMAGE BLOCK  (question left, image right)
+// ─────────────────────────────────────────────
+function renderQuestionImageBlock(item, cardIndex, onComplete, onContinue = onComplete) {
+  const sectionIndex = cardIndex;
+  const imageUrl = getPreferredImageUrl(item);
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${sectionIndex}`;
+
+  const letters = ['A','B','C','D','E'];
+
+  const sectionState = quizStates[sectionIndex] || {
+    answered: false, selectedText: null, isCorrect: false, isIdk: false, optionOrder: null
+  };
+  quizStates[sectionIndex] = sectionState;
+
+  if (!sectionState.optionOrder) {
+    const shuffled = shuffleArray(item.distractors);
+    const pos = Math.floor(Math.random() * (shuffled.length + 1));
+    shuffled.splice(pos, 0, item.correct);
+    sectionState.optionOrder = shuffled;
+  }
+
+  const allOptions = sectionState.optionOrder;
+
+  let optionsHTML = allOptions.map((opt, oi) => `
+    <li>
+      <button class="option-btn"
+        data-oi="${oi}"
+        data-is-correct="${opt === item.correct ? 'true' : 'false'}"
+        data-is-idk="false">
+        <span class="option-letter">${letters[oi]}</span>
+        <span class="option-text">${html(opt)}</span>
+      </button>
+    </li>
+  `).join('');
+
+  if (item.showIdk) {
+    optionsHTML += `
+      <li>
+        <button class="option-btn idk-option"
+          data-oi="${allOptions.length}"
+          data-is-correct="false"
+          data-is-idk="true">
+          <span class="option-letter">?</span>
+          <span class="option-text">I don't know</span>
+        </button>
+      </li>
+    `;
+  }
+
+  block.innerHTML = `
+    <div class="section-label">
+      <span class="section-num">Card ${cardIndex + 1}</span>
+      <div class="section-rule"></div>
+      <span class="section-type-badge">Knowledge Check</span>
+    </div>
+    <div class="question-image-card">
+      <div class="question-image-inner">
+        <div class="question-image-question">
+          <p class="question-stem">${html(item.stem)}</p>
+          <ul class="options-list">${optionsHTML}</ul>
+          <div class="feedback-box">
+            <span class="feedback-label"></span>
+            <span class="feedback-text"></span>
+          </div>
+        </div>
+        <div class="question-image-aside">
+          <img src="${html(imageUrl)}" alt="" />
+        </div>
+      </div>
+    </div>
+    <div class="continue-row">
+      <button class="action-btn continue-btn">
+        Continue
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  let questionStartTime = null;
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && !questionStartTime) {
+      questionStartTime = Date.now();
+      logEvent('question_image_visible', { slot: item.slot, sectionIndex });
+    }
+  }, { threshold: 0.2 });
+  observer.observe(block);
+
+  function showFeedback(isCorrect, isIdk) {
+    const fbBox   = block.querySelector('.feedback-box');
+    const fbLabel = block.querySelector('.feedback-label');
+    const fbText  = block.querySelector('.feedback-text');
+    if (isCorrect && !isIdk) {
+      fbBox.className     = 'feedback-box show correct-fb';
+      fbLabel.textContent = '✓ Correct';
+      fbText.textContent  = item.feedback || 'Well done!';
+    } else {
+      fbBox.className     = 'feedback-box show incorrect-fb';
+      fbLabel.textContent = isIdk ? "Here's the explanation:" : '✗ Not quite';
+      fbText.textContent  = item.feedback || `The correct answer is: ${item.correct}`;
+    }
+  }
+
+  function showContinue() {
+    const continueRow = block.querySelector('.continue-row');
+    continueRow.classList.add('show');
+    block.querySelector('.continue-btn').addEventListener('click', () => {
+      markInteraction();
+      logEvent('continue_clicked', { slot: item.slot, sectionIndex });
+      onContinue();
+    });
+    scrollToEl(continueRow, 100);
+  }
+
+  block.addEventListener('click', e => {
+    const btn = e.target.closest('.option-btn');
+    if (!btn || btn.disabled) return;
+    markInteraction();
+
+    const isCorrect = btn.dataset.isCorrect === 'true';
+    const isIdk     = btn.dataset.isIdk === 'true';
+    const answerMs  = questionStartTime ? Date.now() - questionStartTime : null;
+
+    if (!sectionState.answered) {
+      totalQuestions++;
+      if (isCorrect && !isIdk) correctFirst++;
+    }
+
+    sectionState.answered     = true;
+    sectionState.selectedText = isIdk ? "I don't know" : btn.querySelector('.option-text').textContent;
+    sectionState.isCorrect    = isCorrect && !isIdk;
+    sectionState.isIdk        = isIdk;
+    saveProgress();
+
+    logEvent('question_answered', {
+      slot: item.slot, sectionIndex,
+      stem:     item.stem,
+      selected: sectionState.selectedText,
+      correct:  item.correct,
+      is_correct:       sectionState.isCorrect,
+      is_idk:           isIdk,
+      is_first_attempt: true,
+      answer_duration_ms: answerMs
+    });
+
+    block.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      if (b === btn) {
+        b.classList.add(isCorrect && !isIdk ? 'correct' : 'incorrect');
+      } else if (b.dataset.isCorrect === 'true') {
+        b.classList.add(!isCorrect || isIdk ? 'correct' : 'dimmed');
+      } else {
+        b.classList.add('dimmed');
+      }
+    });
+
+    showFeedback(isCorrect, isIdk);
+    showContinue();
+  });
+
+  // Restore previously answered state
+  if (sectionState.answered) {
+    block.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      const text       = b.querySelector('.option-text')?.textContent;
+      const isSelected = sectionState.isIdk
+        ? b.dataset.isIdk === 'true'
+        : text === sectionState.selectedText;
+      const isCorrect  = b.dataset.isCorrect === 'true';
+      if (isSelected) {
+        b.classList.add(sectionState.isCorrect ? 'correct' : 'incorrect');
+      } else if (isCorrect) {
+        b.classList.add(sectionState.isCorrect ? 'dimmed' : 'correct');
+      } else {
+        b.classList.add('dimmed');
+      }
+    });
+    showFeedback(sectionState.isCorrect, sectionState.isIdk);
+    showContinue();
+  }
+
+  return block;
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (!trainingActive || hasSuccessfulSubmission) return;
+  if (document.hidden) { Object.keys(cardTimingState).forEach(key => markCardPaused(key)); interactionTimes = []; saveProgress(); }
+  else { const card = getCurrentCardNumber() - 1; if (card >= 0 && !completedSlots.has(card)) markCardEntered(card); }
+});
+
+// Warn before leaving while training is active
+window.addEventListener('beforeunload', e => {
+  if (!shouldWarnBeforeUnload()) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
+
+// ─────────────────────────────────────────────
+// RENDER ALL SECTIONS
+// ─────────────────────────────────────────────
+function renderTraining(structure, savedState = null) {
+  const container = $('sections-container');
+  container.innerHTML = '';
+  allSections = structure.map(section => ({ ...section, completed: false, unlocked: false }));
+  totalSlots = allSections.reduce((sum, section) => sum + section.cards.length, 0);
+  completedSlots = new Set();
+  trainingActive = true;
+
+  const sectionCounter = $('section-counter');
+  if (sectionCounter) {
+    sectionCounter.innerHTML = '';
+    sectionCounter.style.removeProperty('--mobile-progress-angle');
+    sectionCounter.style.opacity = '0';
+  }
+  completionReached = !!savedState?.completionReached;
+
+  const preRevealCount  = savedState ? Math.min(savedState.revealedSlots || 1, totalSlots) : 1;
+  const preCompletedSet = savedState ? new Set(savedState.completedSlotIndices || []) : new Set();
+
+  let globalCardIndex = 0;
+  const cardLookup = [];
+
+  // DESKTOP BLOCKING: future sections remain locked/collapsed until progression unlocks them.
+  sectionState = allSections.map((section, sectionIdx) => ({
+    visibleCards: sectionIdx === 0 ? 1 : 0,
+    completedCards: 0,
+    expanded: sectionIdx === 0,
+    unlocked: sectionIdx === 0,
+    cardEls: []
+  }));
+
+
+  function sectionCompletionState(idx) {
+    const st = sectionState[idx];
+    const total = allSections[idx].cards.length;
+    if (st.completedCards === 0) return 'Not started';
+    if (st.completedCards >= total) return 'Completed';
+    return 'In progress';
+  }
+
+  function updateSectionUI(idx) {
+    const wrap = container.querySelector(`[data-section-idx="${idx}"]`);
+    if (!wrap) return;
+    const st = sectionState[idx];
+    const statusEl = wrap.querySelector('.section-status');
+    statusEl.textContent = sectionCompletionState(idx);
+    wrap.classList.toggle('collapsed', !st.expanded);
+    wrap.classList.toggle('locked', !st.unlocked);
+    wrap.querySelector('.section-toggle').disabled = !st.unlocked;
+    allSections[idx].completed = st.completedCards >= allSections[idx].cards.length;
+    allSections[idx].unlocked = st.unlocked;
+  }
+
+  // SECTION PROGRESSION TRACKING: progressionSectionIndex is the learner's true position.
+  // Manual review can open completed sections without changing this index.
+  function setOnlyExpanded(idx, updateProgressPointer = true) {
+    sectionState.forEach((st, i) => {
+      st.expanded = i === idx;
+      updateSectionUI(i);
+    });
+    if (updateProgressPointer) progressionSectionIndex = idx;
+    updateProgress();
+  }
+
+  function refreshExpandedSections(updateProgressPointer = false, progressIdx = null) {
+    sectionState.forEach((st, i) => updateSectionUI(i));
+    if (updateProgressPointer && Number.isInteger(progressIdx)) {
+      progressionSectionIndex = progressIdx;
+    }
+    updateProgress();
+  }
+
+  // NEXT CARD REVEAL: only reveal completed-through cards; hidden cards stay display:none
+  // so they do not reserve blank layout space.
+  function revealCard(sectionIdx, cardIdx) {
+    const el = sectionState[sectionIdx].cardEls[cardIdx];
+    if (el) {
+      el.classList.add('revealed');
+      const revealedCardIndex = Number(el.dataset.cardIndex);
+      if (Number.isInteger(revealedCardIndex) && !completedSlots.has(revealedCardIndex)) {
+        markCardEntered(revealedCardIndex);
+      }
+    }
+    sectionState[sectionIdx].visibleCards = Math.max(sectionState[sectionIdx].visibleCards, cardIdx + 1);
+    revealedSlots = Math.max(revealedSlots, completedSlots.size + 1);
+  }
+
+  allSections.forEach((section, sectionIdx) => {
+    const accordion = document.createElement('section');
+    accordion.className = 'section-accordion';
+    accordion.dataset.sectionIdx = sectionIdx;
+    accordion.innerHTML = `
+      <button class="section-toggle" type="button">
+        <span class="section-title-wrap">
+          <strong>Section ${sectionIdx + 1}: ${html(section.title)}</strong>
+          <span class="section-status">Not started</span>
+        </span>
+        <span class="section-chevron">▾</span>
+      </button>
+      <div class="section-content"></div>
+    `;
+
+    accordion.querySelector('.section-toggle').addEventListener('click', () => {
+      if (!sectionState[sectionIdx].unlocked) return;
+      markInteraction();
+      sectionState[sectionIdx].expanded = !sectionState[sectionIdx].expanded;
+      refreshExpandedSections(false);
+    });
+
+    const content = accordion.querySelector('.section-content');
+    section.cards.forEach((item, localCardIdx) => {
+      const cardIndex = globalCardIndex++;
+      cardLookup[cardIndex] = { sectionIdx, cardIdx: localCardIdx };
+
+      const advanceFromCard = ({ markComplete = true } = {}) => {
+        if (markComplete && completedSlots.has(cardIndex)) return;
+
+        if (markComplete) {
+          markCardCompleted(cardIndex);
+          completedSlots.add(cardIndex);
+          sectionState[sectionIdx].completedCards += 1;
+        }
+
+        let didAdvanceToNextCard = false;
+        let didAdvanceToNextSection = false;
+        let nextGlobalCardNumber = null;
+
+        const hasNextCard = localCardIdx + 1 < section.cards.length;
+
+        if (hasNextCard) {
+          revealCard(sectionIdx, localCardIdx + 1);
+          appendTrainingEvent('card_entered', {
+            section_index: sectionIdx + 1,
+            card_index: cardIndex + 2,
+            detail_text: `Entered card ${cardIndex + 2}`,
+            detail_json: {
+              from_card: cardIndex + 1,
+              to_card: cardIndex + 2,
+              section_index: sectionIdx + 1
+            }
+          });
+          didAdvanceToNextCard = true;
+          nextGlobalCardNumber = cardIndex + 2;
+          sectionState[sectionIdx].expanded = true;
+          updateSectionUI(sectionIdx);
+          scrollToEl(sectionState[sectionIdx].cardEls[localCardIdx + 1], 80);
+        } else {
+          const nextSection = sectionIdx + 1;
+          if (nextSection < allSections.length) {
+            sectionState[nextSection].unlocked = true;
+            revealCard(nextSection, 0);
+            appendTrainingEvent('section_entered', {
+              section_index: nextSection + 1,
+              card_index: cardIndex + 2,
+              detail_text: `Entered section ${nextSection + 1}, card ${cardIndex + 2}`,
+              detail_json: {
+                from_section: sectionIdx + 1,
+                to_section: nextSection + 1,
+                from_card: cardIndex + 1,
+                to_card: cardIndex + 2
+              }
+            });
+            didAdvanceToNextSection = true;
+            nextGlobalCardNumber = cardIndex + 2;
+            setOnlyExpanded(nextSection, true);
+            scrollToEl(container.querySelector(`[data-section-idx="${nextSection}"]`), 80);
+          } else if (markComplete) {
+            completionReached = true;
+            showCompletion();
+          } else if (completionReached) {
+            showCompletion();
+          }
+        }
+
+        updateSectionUI(sectionIdx);
+        if (sectionIdx + 1 < allSections.length) updateSectionUI(sectionIdx + 1);
+        saveProgress();
+        updateProgress();
+
+        if (didAdvanceToNextCard) {
+          syncMilestoneProgress('card_entered', {
+            section_index: sectionIdx + 1,
+            card_index: nextGlobalCardNumber
+          });
+        } else if (didAdvanceToNextSection) {
+          syncMilestoneProgress('section_entered', {
+            section_index: sectionIdx + 2,
+            card_index: nextGlobalCardNumber
+          });
+        } else if (!completionReached) {
+          queueLiveSessionUpdate('in_progress');
+        }
+      };
+
+      const onComplete = () => {
+        advanceFromCard({ markComplete: true });
+      };
+
+      const onContinue = () => {
+        markInteraction();
+        if (completedSlots.has(cardIndex)) {
+          advanceFromCard({ markComplete: false });
+        } else {
+          advanceFromCard({ markComplete: true });
+        }
+      };
+
+      let block;
+      if (item.type === 'video') block = renderVideoBlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'text') block = renderTextBlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'text_image') block = renderTextImageBlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'sba') block = renderSBABlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'sata') block = renderSATABlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'fitb') block = renderFITBBlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'categorization' || item.type === 'matching') block = renderCategorizeBlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'essay') block = renderEssayBlock(item, cardIndex, onComplete, onContinue);
+      else block = renderIncompleteCard(item, cardIndex, onComplete, `Unsupported strict card type: ${item.type || 'unknown'}`);
+      block.dataset.cardIndex = String(cardIndex);
+
+      if (localCardIdx >= sectionState[sectionIdx].visibleCards) block.classList.remove('revealed');
+      else {
+        block.classList.add('revealed');
+        if (!completedSlots.has(cardIndex)) markCardEntered(cardIndex);
+      }
+
+      sectionState[sectionIdx].cardEls.push(block);
+      content.appendChild(block);
+    });
+
+    container.appendChild(accordion);
+  });
+
+  for (let i = 0; i < preRevealCount; i++) {
+    const found = cardLookup[i];
+    if (!found) continue;
+    for (let cardIdx = 0; cardIdx <= found.cardIdx; cardIdx++) {
+      revealCard(found.sectionIdx, cardIdx);
+    }
+  }
+
+
+  preCompletedSet.forEach(idx => {
+    const found = cardLookup[idx];
+    if (!found) return;
+    markCardCompleted(idx);
+    completedSlots.add(idx);
+    sectionState[found.sectionIdx].completedCards += 1;
+  });
+
+  sectionState.forEach((st, idx) => {
+    if (st.visibleCards > 0 || st.completedCards > 0) st.unlocked = true;
+    const isComplete = st.completedCards >= allSections[idx].cards.length;
+    if (isComplete) {
+      st.visibleCards = allSections[idx].cards.length;
+      st.cardEls.forEach(el => el.classList.add('revealed'));
+    }
+    updateSectionUI(idx);
+  });
+
+  const firstIncomplete = sectionState.findIndex((st, idx) => st.completedCards < allSections[idx].cards.length && st.unlocked);
+  const initialSection = firstIncomplete >= 0 ? firstIncomplete : 0;
+  progressionSectionIndex = initialSection;
+  setOnlyExpanded(initialSection, false);
+
+  revealedSlots = Math.max(preRevealCount, completedSlots.size);
+  if (completionReached) showCompletion();
+
+  sectionState.forEach(st => {
+    for (let cardIdx = 0; cardIdx < st.visibleCards; cardIdx++) {
+      const el = st.cardEls[cardIdx];
+      if (!el || !el.classList.contains('revealed')) continue;
+      const visibleCardIndex = Number(el.dataset.cardIndex);
+      if (Number.isInteger(visibleCardIndex) && !completedSlots.has(visibleCardIndex)) {
+        markCardEntered(visibleCardIndex);
+      }
+    }
+  });
+
+  saveProgress();
+  updateProgress();
+  refreshSaveExitAvailability();
+}
+
+
+// ─────────────────────────────────────────────
+// COMPLETION + SUBMIT
+// ─────────────────────────────────────────────
+function showCompletion() {
+  const completion = $('completion');
+  completionReached = true;
+  refreshSaveExitAvailability();
+  completion.style.display = 'block';
+  scrollToEl(completion, 60);
+
+  const elapsed = sessionStart ? Date.now() - sessionStart : 0;
+
+  if (!completionLogged) {
+    logEvent('training_completed', {
+      total_questions: totalQuestions,
+      correct_first:   correctFirst,
+      duration_ms:     elapsed,
+      active_seconds:  computeActiveSeconds(interactionTimes)
+    });
+    appendTrainingEvent('training_completed', {
+      detail_text: 'Training module completed',
+      detail_json: {
+        total_questions: totalQuestions,
+        correct_first: correctFirst,
+        duration_ms: elapsed,
+        active_seconds: computeActiveSeconds(interactionTimes)
+      }
+    });
+    completionLogged = true;
+  }
+
+  cancelQueuedLiveSessionUpdate();
+  saveProgress();
+
+  if (!hasSuccessfulSubmission && !submitInFlight) {
+    submitSession();
+  }
+}
+
+async function submitSession() {
+  if (submitInFlight || hasSuccessfulSubmission) return;
+
+  submitInFlight = true;
+
+  const btn    = $('btn-submit-final');
+  const status = $('submit-status');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+  }
+  if (status) status.textContent = '';
+
+  const elapsed = sessionStart ? Date.now() - sessionStart : 0;
+  const activeSeconds = computeActiveSeconds(interactionTimes);
+  const { itemValues, itemMap, itemMeta } = buildCardResponseValues();
+  const { itemMsValues, itemMsMap } = buildCardMsValues();
+  const payload = {
+    completion_milestone_reached: isTrainingMilestoneReached(),
+    completion_milestone_id: 'video-wrapup',
+    action:           'submitSession',
+    source:           'training',
+    app_version:      APP_VERSION,
+    content_version:  trainingContentVersion,
+    device_label:     getCompactDeviceLabel(),
+    device_card_number: getCurrentCardNumber(),
+    participant_code: participantCode,
+    session_id:       sessionId,
+    session_seq:     trainingSessionSeq,
+    session_start:    sessionStart ? new Date(sessionStart).toISOString() : null,
+    session_end:      now(),
+    duration_ms:      elapsed,
+    duration_formatted: formatDuration(elapsed),
+    active_seconds:   activeSeconds,
+    total_questions:  totalQuestions,
+    correct_first:    correctFirst,
+    item_values:      itemValues,
+    item_ms_values:   itemMsValues,
+    item_map:         itemMap,
+    item_ms_map:      itemMsMap,
+    item_meta:        itemMeta,
+    item_count:       itemValues.length,
+    progress_json:    buildProgressSnapshot(),
+    progress_saved_at: now(),
+    events: getSubmissionEvents()
+  };
+
+  try {
+    const data = await trainingSaveQueue.submit(payload);
+
+    if (data && data.ok) {
+      hasSuccessfulSubmission = true;
+      document.querySelector('.completion-note').textContent = 'Your session has been recorded. You may now close this window.';
+      refreshSaveExitAvailability();
+      trainingActive = false;
+      completionReached = true;
+      clearSavedProgress();
+      if (btn) {
+        btn.textContent = '✓ Submitted';
+        btn.style.background = '#166534';
+        btn.disabled = true;
+      }
+      if (status) status.textContent = 'Session data submitted successfully. You may now close this window.';
+      logEvent('session_submitted', { ok: true, duplicate: !!data.duplicate, fileName: data.fileName || '' });
+      appendTrainingEvent('session_submitted', {
+        detail_text: 'Training session submitted',
+        detail_json: { duplicate: !!data.duplicate }
+      });
+    } else {
+      throw new Error(data?.error || 'unknown_error');
+    }
+  } catch (err) {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Retry submission';
+    }
+    document.querySelector('.completion-note').textContent = 'Your session has not been confirmed yet. Please retry before closing this window.';
+    logEvent('session_submit_failed', { error: String(err.message) });
+    offerDownload(payload);
+  } finally {
+    submitInFlight = false;
+  }
+}
+
+async function handleSaveAndExit() {
+  if (completionReached || hasSuccessfulSubmission) {
+    refreshSaveExitAvailability();
+    return;
+  }
+
+  const btn = $('btn-save-exit');
+  const originalText = btn ? btn.textContent : 'Save and exit';
+
+  try {
+    markInteraction();
+    saveProgress();
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+    }
+
+    logEvent('save_exit_clicked', {
+      revealed_slots: revealedSlots,
+      completed_cards: completedSlots.size,
+      total_questions: totalQuestions,
+      correct_first: correctFirst
+    });
+
+    appendTrainingEvent('save_exit_clicked', {
+      detail_text: 'Save and exit clicked',
+      detail_json: {
+        revealed_slots: revealedSlots,
+        completed_cards: completedSlots.size,
+        total_questions: totalQuestions,
+        correct_first: correctFirst
+      }
+    });
+
+    Object.keys(cardTimingState).forEach(key => markCardPaused(key));
+    await syncLiveSessionUpdate('in_progress');
+    trainingActive = false; trainingSaveQueue.detach();
+    $('loading').style.display = 'none';
+    $('training').style.display = 'none';
+    $('completion').style.display = 'none';
+    returnToGate();
+  } catch (err) {
+    console.warn('Save and exit failed', err);
+    const currentCard = getCurrentCardNumber() - 1; if (currentCard >= 0) markCardEntered(currentCard);
+    alert('We could not confirm your progress was saved. Keep this page open and retry saving.');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
+
+function buildCardResponseValues() {
+  const itemValues = [];
+  const itemMap = {};
+  const itemMeta = [];
+  let globalCardIndex = 0;
+
+  allSections.forEach(section => {
+    const sectionTitle = section?.title || '';
+    const cards = Array.isArray(section?.cards) ? section.cards : [];
+
+    cards.forEach(card => {
+      const state = quizStates?.[globalCardIndex] || {};
+      let value = '';
+
+      if (card?.type === 'sba') {
+        if (state.answered) value = state.isCorrect ? 1 : 0;
+      } else if (card?.type === 'sata' || card?.type === 'fitb') {
+        if (state.submitted) value = state.isCorrect ? 1 : 0;
+      } else if (card?.type === 'categorization' || card?.type === 'matching') {
+        if (state.submitted) value = state.isCorrect ? 1 : 0;
+      } else if (card?.type === 'essay') {
+        if (state.submitted) value = String(state.text || '').trim();
+      } else if (card?.type === 'video' || card?.type === 'text' || card?.type === 'text_image') {
+        value = '';
+      } else {
+        value = '';
+      }
+
+      itemValues.push(value);
+      itemMap[`item_${globalCardIndex + 1}`] = value;
+      itemMeta.push({
+        item_index: globalCardIndex + 1,
+        type: card?.type || '',
+        slot: card?.slot != null ? String(card.slot) : '',
+        section_title: String(sectionTitle)
+      });
+      globalCardIndex += 1;
+    });
+  });
+
+  return { itemValues, itemMap, itemMeta };
+}
+
+function buildCardMsValues() {
+  const itemMsValues = [];
+  const itemMsMap = {};
+  let globalCardIndex = 0;
+
+  allSections.forEach(section => {
+    const cards = Array.isArray(section?.cards) ? section.cards : [];
+
+    cards.forEach(() => {
+      const entry = cardTimingState?.[globalCardIndex];
+      const value = entry ? getCardMs(globalCardIndex) : '';
+      itemMsValues.push(value);
+      itemMsMap[`item_${globalCardIndex + 1}_ms`] = value;
+      globalCardIndex += 1;
+    });
+  });
+
+  return { itemMsValues, itemMsMap };
+}
+
+function getTotalCardCount() {
+  return allSections.reduce((count, sec) => count + (Array.isArray(sec?.cards) ? sec.cards.length : 0), 0);
+}
+
+function getCurrentCardNumber() {
+  const totalCards = getTotalCardCount();
+  if (!totalCards) return 0;
+
+  let bestCardIndex = -1;
+
+  sectionState.forEach(st => {
+    for (let localIdx = 0; localIdx < st.visibleCards; localIdx++) {
+      const el = st.cardEls?.[localIdx];
+      if (!el || !el.classList.contains('revealed')) continue;
+      const globalIdx = Number(el.dataset.cardIndex);
+      if (Number.isInteger(globalIdx) && !completedSlots.has(globalIdx)) {
+        if (bestCardIndex === -1 || globalIdx < bestCardIndex) {
+          bestCardIndex = globalIdx;
+        }
+      }
+    }
+  });
+
+  if (bestCardIndex >= 0) return bestCardIndex + 1;
+
+  const fallback = Math.min(Math.max(completedSlots.size + 1, 1), totalCards);
+  return completionReached ? totalCards : fallback;
+}
+
+function getCurrentSectionNumber() {
+  const currentCard = getCurrentCardNumber();
+  if (!currentCard) return 0;
+
+  let runningTotal = 0;
+  for (let i = 0; i < allSections.length; i++) {
+    const count = Array.isArray(allSections[i]?.cards) ? allSections[i].cards.length : 0;
+    runningTotal += count;
+    if (currentCard <= runningTotal) return i + 1;
+  }
+
+  return 0;
+}
+
+function getCurrentSectionTitle() {
+  const sectionNumber = getCurrentSectionNumber();
+  if (!sectionNumber) return '';
+  return String(allSections[sectionNumber - 1]?.title || '');
+}
+
+function buildProgressSnapshot() {
+  return {
+    events: getSubmissionEvents(),
+    contentVersion: trainingContentVersion,
+    contentFingerprint: trainingContentFingerprint,
+    participantCode,
+    sessionId,
+    sessionStart,
+    revealedSlots,
+    completedSlotIndices: [...completedSlots],
+    totalQuestions,
+    correctFirst,
+    interactionTimes: Array.isArray(interactionTimes) ? interactionTimes.slice(-1) : [],
+    activeMsBase,
+    completionReached,
+    hasSuccessfulSubmission,
+    quizStates,
+    cardTimingState: snapshotCardTiming(),
+    sessionSeq: trainingSessionSeq
+  };
+}
+
+function buildLiveSessionProgressSnapshot() {
+  return {
+    events: getSubmissionEvents(),
+    contentVersion: trainingContentVersion,
+    contentFingerprint: trainingContentFingerprint,
+    participantCode,
+    sessionId,
+    sessionStart,
+    revealedSlots,
+    completedSlotIndices: [...completedSlots],
+    totalQuestions,
+    correctFirst,
+    interactionTimes: Array.isArray(interactionTimes) ? interactionTimes.slice(-1) : [],
+    activeMsBase,
+    completionReached,
+    hasSuccessfulSubmission,
+    quizStates,
+    cardTimingState: snapshotCardTiming(),
+    sessionSeq: trainingSessionSeq
+  };
+}
+
+function buildLiveSessionSnapshot(statusOverride = 'in_progress') {
+  const { itemValues, itemMap, itemMeta } = buildCardResponseValues();
+  const { itemMsValues, itemMsMap } = buildCardMsValues();
+
+  return {
+    completion_milestone_reached: isTrainingMilestoneReached(),
+    completion_milestone_id: 'video-wrapup',
+    action: 'updateLiveSession',
+    source: 'training',
+    user_id: participantCode,
+    participant_code: participantCode,
+    session_id: sessionId,
+    session_seq: trainingSessionSeq,
+    session_start: sessionStart ? new Date(sessionStart).toISOString() : null,
+    last_activity_at: now(),
+    status: statusOverride,
+    app_version: APP_VERSION,
+    content_version: trainingContentVersion,
+    device_label: getCompactDeviceLabel(),
+    device_card_number: getCurrentCardNumber(),
+    progress_json: buildLiveSessionProgressSnapshot(),
+    progress_saved_at: now(),
+    item_values: itemValues,
+    item_ms_values: itemMsValues,
+    item_map: itemMap,
+    item_ms_map: itemMsMap,
+    item_meta: itemMeta,
+    item_count: itemValues.length
+  };
+}
+
+function cancelQueuedLiveSessionUpdate() { clearTimeout(trainingSaveQueue.timer); trainingSaveQueue.timer = null; }
+
+async function sendLiveSessionUpdate() { trainingSaveQueue.changed(0); return trainingSaveQueue.flush(); }
+
+function queueLiveSessionUpdate(statusOverride = 'in_progress', delay = LIVE_UPDATE_DEBOUNCE_MS) { trainingSaveQueue.changed(delay); }
+
+async function syncLiveSessionUpdate() { trainingSaveQueue.changed(); return trainingSaveQueue.flush(); }
+
+function syncMilestoneProgress() { trainingSaveQueue.changed(); }
+
+function openFeedbackModal() {
+  const modal = $('feedback-modal');
+  const textarea = $('feedback-textarea');
+  const status = $('feedback-status');
+
+  if (!modal || !textarea) return;
+
+  if (status) {
+    status.textContent = '';
+    status.className = 'feedback-status';
+  }
+
+  textarea.value = '';
+  modal.style.display = 'flex';
+  requestAnimationFrame(() => textarea.focus());
+}
+
+function closeFeedbackModal() {
+  const modal = $('feedback-modal');
+  const textarea = $('feedback-textarea');
+  const status = $('feedback-status');
+  const submitBtn = $('feedback-submit-btn');
+
+  if (!modal) return;
+  modal.style.display = 'none';
+
+  if (textarea) textarea.value = '';
+  if (status) {
+    status.textContent = '';
+    status.className = 'feedback-status';
+  }
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send feedback';
+  }
+}
+
+async function submitTrainingFeedback() {
+  const textarea = $('feedback-textarea');
+  const status = $('feedback-status');
+  const submitBtn = $('feedback-submit-btn');
+
+  if (!textarea || !submitBtn || submitBtn.disabled) return;
+
+  const text = String(textarea.value || '').trim();
+  if (!text) {
+    if (status) {
+      status.textContent = 'Please enter a short note first.';
+      status.className = 'feedback-status is-error';
+    }
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Sending…';
+
+  const currentCardNumber = getCurrentCardNumber();
+  const currentSectionNumber = getCurrentSectionNumber();
+  const currentSectionTitle = getCurrentSectionTitle();
+  const deviceLabel = getCompactDeviceLabel();
+  const feedbackSource = isMobileLikeViewport() ? 'mobile_drawer' : 'desktop_modal';
+
+  try {
+    const result = await postToAppsScript(API_URL, {
+      action: 'sendFeedbackAlert',
+
+      participant_code: participantCode,
+      participantCode: participantCode,
+      user_id: participantCode,
+      userId: participantCode,
+      code: participantCode,
+
+      session_id: sessionId,
+      sessionId: sessionId,
+      session_seq: trainingSessionSeq,
+      sessionSeq: trainingSessionSeq,
+
+      current_card_number: currentCardNumber,
+      currentCardNumber: currentCardNumber,
+
+      section_index: currentSectionNumber,
+      sectionIndex: currentSectionNumber,
+
+      section_title: currentSectionTitle,
+      sectionTitle: currentSectionTitle,
+
+      device_label: deviceLabel,
+      deviceLabel: deviceLabel,
+
+      feedback_source: feedbackSource,
+      feedbackSource: feedbackSource,
+
+      text_feedback: text,
+      textFeedback: text
+    });
+
+    if (!result || result.ok === false) {
+      throw new Error(result?.error || 'Failed to send feedback.');
+    }
+
+    logEvent('feedback_sent', {
+      current_card_number: currentCardNumber,
+      section_index: currentSectionNumber,
+      text_length: text.length
+    });
+
+    if (status) {
+      status.textContent = 'Thanks — your note was sent.';
+      status.className = 'feedback-status is-success';
+    }
+
+    textarea.value = '';
+
+    window.setTimeout(() => {
+      closeFeedbackModal();
+    }, 900);
+  } catch (err) {
+    const message = String(err?.message || 'Could not send feedback.');
+
+    console.warn('Training feedback failed', err);
+
+    logEvent('feedback_send_failed', {
+      current_card_number: currentCardNumber,
+      section_index: currentSectionNumber,
+      error: message
+    });
+
+    if (status) {
+      status.textContent = `Could not send feedback: ${message}`;
+      status.className = 'feedback-status is-error';
+    }
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send feedback';
+  }
+}
+
+function offerDownload(payload) {
+  const existing = $('download-backup-wrap');
+  if (existing) return;
+
+  const status = $('submit-status');
+  const completion = $('completion');
+
+  const wrap = document.createElement('div');
+  wrap.id = 'download-backup-wrap';
+  wrap.style.cssText = 'margin-top:14px; padding:14px 16px; background:#fef9ec; border:1px solid #c8a84b; border-radius:10px; font-size:0.88rem; line-height:1.6; color:#10213d;';
+  wrap.innerHTML = `
+    <strong style="display:block; margin-bottom:6px;">Automatic submission failed.</strong>
+    Please save your session data manually:
+    <ol style="margin: 8px 0 12px 18px; padding:0;">
+      <li>Click <strong>Download session file</strong> below.</li>
+      <li>Email the downloaded file to <strong>tjin@crimson.ua.edu</strong>.</li>
+    </ol>
+  `;
+
+  const dlBtn = document.createElement('button');
+  dlBtn.className = 'action-btn';
+  dlBtn.style.cssText = 'background:#2f6edc; font-size:0.82rem;';
+  dlBtn.innerHTML = `
+    Download session file (.json)
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" style="flex:0 0 14px">
+      <path d="M7 2v8M3 7l4 4 4-4M2 12h10"/>
+    </svg>
+  `;
+
+  dlBtn.addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${payload.participant_code}_${payload.session_id}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    logEvent('backup_downloaded', { participant: payload.participant_code });
+
+    dlBtn.remove();
+    const confirm = document.createElement('p');
+    confirm.style.cssText = 'margin-top:8px; font-size:0.85rem; color:#166534; font-weight:600;';
+    confirm.textContent = '✓ File downloaded. Please email it to tjin@crimson.ua.edu.';
+    wrap.appendChild(confirm);
+  });
+
+  wrap.appendChild(dlBtn);
+  if (status) {
+    status.insertAdjacentElement('afterend', wrap);
+  } else if (completion) {
+    completion.appendChild(wrap);
+  }
+}
+
+// ─────────────────────────────────────────────
+// IMAGE LIGHTBOX
+// ─────────────────────────────────────────────
+(function () {
+  const lightbox   = $('img-lightbox');
+  const lightboxImg = $('img-lightbox-img');
+  const closeBtn   = $('img-lightbox-close');
+
+  function openLightbox(src, alt) {
+    lightboxImg.src = src;
+    lightboxImg.alt = alt || '';
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    document.body.style.overflow = '';
+    lightboxImg.src = '';
+  }
+
+  // Delegate clicks on zoomable images
+  document.addEventListener('click', e => {
+    const img = e.target.closest('.text-image-img img, .question-image-aside img');
+    if (img) openLightbox(img.src, img.alt);
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+})();
+
+// ─────────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  $('btn-submit-final').addEventListener('click',submitSession);
+  const gateForm = $('gate-form');
+  const codeInput = $('code-input');
+  const gateError = $('gate-error');
+  const gateSubmitBtn = $('gate-submit-btn');
+  const gateSubmitLabel = gateSubmitBtn?.querySelector('.gate-btn-label');
+  const reportIssueBtn = $('btn-report-issue');
+  const feedbackModal = $('feedback-modal');
+  const feedbackCloseBtn = $('feedback-modal-close');
+  const feedbackCancelBtn = $('feedback-cancel-btn');
+  const feedbackSubmitBtn = $('feedback-submit-btn');
+  $('btn-save-exit')?.addEventListener('click', handleSaveAndExit);
+
+  reportIssueBtn?.addEventListener('click', openFeedbackModal);
+  feedbackCloseBtn?.addEventListener('click', closeFeedbackModal);
+  feedbackCancelBtn?.addEventListener('click', closeFeedbackModal);
+  feedbackSubmitBtn?.addEventListener('click', submitTrainingFeedback);
+
+  feedbackModal?.addEventListener('click', e => {
+    if (e.target === feedbackModal) closeFeedbackModal();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && feedbackModal?.style.display === 'flex') {
+      closeFeedbackModal();
+    }
+  });
+
+  setGateLoading = function setGateLoadingState(isLoading, text = 'Loading') {
+    if (!gateSubmitBtn || !gateSubmitLabel) return;
+    gateSubmitBtn.disabled = !!isLoading;
+    gateSubmitBtn.classList.toggle('is-loading', !!isLoading);
+    gateSubmitBtn.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+    gateSubmitLabel.textContent = isLoading ? text : 'Begin';
+  };
+
+  function focusCodeInput() {
+    if (!codeInput) return;
+    requestAnimationFrame(() => {
+      codeInput.focus({ preventScroll: true });
+      codeInput.select();
+    });
+  }
+
+  setTrainingMode(false);
+  focusCodeInput();
+  window.addEventListener('pageshow', focusCodeInput);
+
+  codeInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      gateForm.requestSubmit();
+    }
+  });
+
+  gateForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (gateSubmitBtn?.disabled) return;
+    gateError.textContent = '';
+    setGateLoading(true, 'Checking');
+    const entered = codeInput.value.trim().toLowerCase();
+
+    let validateData = null;
+    try {
+      validateData = await postToAppsScript(API_URL, {
+        action: 'validateCode',
+        code: entered,
+        client_key: getOrCreateClientKey()
+      });
+    } catch (err) {
+      setGateLoading(false);
+      focusCodeInput();
+      gateError.textContent = `Failed to load training content: ${err.message}. Please refresh the page.`;
+      logEvent('content_load_failed', { error: String(err.message) });
+      return;
+    }
+
+    if (!validateData.valid) {
+      setGateLoading(false);
+      focusCodeInput();
+
+      if (validateData.locked) {
+        const seconds = Number(validateData.retryAfterSeconds || 0);
+        gateError.textContent = seconds > 0
+          ? `Too many failed attempts. Please wait about ${seconds} seconds and try again.`
+          : 'Too many failed attempts. Please wait and try again.';
+      } else {
+        gateError.textContent = 'Access code not recognized. Please check your code and try again.';
+      }
+      return;
+    }
+
+    let saved = null;
+    let resuming = false;
+    let loadedContent;
+    try { loadedContent = await loadTrainingContent(); }
+    catch (error) { setGateLoading(false); gateError.textContent = error.message; return; }
+
+    clearSavedProgress();
+
+    try {
+      const serverSaved = await loadServerSavedProgress(entered);
+      if (isResumableSavedState(serverSaved) && serverSaved.participantCode === entered) {
+        saved = serverSaved;
+      }
+    } catch (err) {
+      setGateLoading(false); gateError.textContent = 'We could not check your saved work. Please try again before starting a new session.'; return;
+    }
+
+    const recovery = trainingSaveQueue.findRecovery(entered);
+    if (recovery) { const payload = recovery.draft || recovery.inflight?.payload; if (payload?.progress_json) saved = {...payload.progress_json,_revision:recovery.revision}; }
+    if (saved) {
+      const choice = await askResumeChoice();
+      if (choice === 'continue') {
+        if ((saved.contentFingerprint && saved.contentFingerprint !== trainingContentFingerprint) || (saved.contentVersion && saved.contentVersion !== trainingContentVersion)) {
+          setGateLoading(false); gateError.textContent = 'The module content has changed. Choose Start over, or contact the researcher to continue the earlier version.'; return;
+        }
+        applySavedProgress(saved);
+        logEvent('resume_selected', { source: 'server' });
+        resuming = true;
+      } else {
+        logEvent('resume_declined', { source: 'server' });
+        clearSavedProgress();
+        if (recovery) { trainingSaveQueue.start(entered,recovery.session,recovery.revision); try { await trainingSaveQueue.flush(); } catch (error) { setGateLoading(false); gateError.textContent = 'Save or download the previous session before starting over.'; return; } trainingSaveQueue.detach(); }
+      }
+    }
+
+    if (!resuming) {
+      participantCode = entered;
+
+      try {
+        const createdSession = await createSessionIdFromBackend(entered);
+        sessionId = createdSession.sessionId;
+        trainingSessionSeq = createdSession.sessionSeq || 0;
+        window.trainingSessionSeq = trainingSessionSeq;
+      } catch (err) {
+        setGateLoading(false);
+        focusCodeInput();
+        gateError.textContent = `We could not start a new training session: ${err.message}. Please refresh the page and try again.`;
+        logEvent('session_create_failed', { error: String(err.message) });
+        return;
+      }
+
+      sessionStart = Date.now();
+      completionReached = false;
+      hasSuccessfulSubmission = false;
+      setSaveExitEnabled(true);
+      events = [];
+      quizStates = {};
+      interactionTimes = [];
+      activeMsBase = 0;
+      cardTimingState = {};
+      completionLogged = false;
+      submitInFlight = false;
+    }
+
+    trainingSaveQueue.start(participantCode,sessionId,resuming ? (saved._revision || 0) : 0);
+    markInteraction();
+
+    setGateLoading(true, 'Loading');
+    $('gate').style.display    = 'none';
+    $('loading').style.display = 'flex';
+    setTrainingMode(false);
+
+    if (!resuming) {
+      logEvent('access_granted', { participantCode, sessionId, sessionSeq: trainingSessionSeq });
+      appendTrainingEvent('access_granted', {
+        detail_text: 'Training access granted',
+        detail_json: { resumed: false }
+      });
+    }
+
+    try {
+      const data = loadedContent;
+      const rows = Array.isArray(data.rows) ? data.rows : [];
+      const structure = buildStructure(rows);
+
+      if (structure.length === 0) throw new Error('No training content was returned.');
+
+      $('loading').style.display    = 'none';
+      $('training').style.display   = 'block';
+      setTrainingMode(true);
+
+      renderTraining(structure, resuming ? saved : null);
+
+      logEvent('content_loaded', { sections: structure.length, cards: structure.reduce((n, sec) => n + sec.cards.length, 0), resumed: resuming });
+      queueLiveSessionUpdate('in_progress', 0);
+
+    } catch (err) {
+      setGateLoading(false);
+      $('loading').style.display = 'none';
+      $('gate').style.display = 'flex';
+      setTrainingMode(false);
+      focusCodeInput();
+      gateError.textContent = `Failed to load training content: ${err.message}. Please refresh the page.`;
+      logEvent('content_load_failed', { error: String(err.message) });
+    }
+  });
+});
+</script>
+
+<script>
+  document.getElementById('last-updated').textContent = document.lastModified;
+</script>
+</body>
+</html>
