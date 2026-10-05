@@ -1523,7 +1523,8 @@
       <div class="completion-icon">✓</div>
       <h2 class="completion-title">Training Complete</h2>
       <p class="completion-sub">Thank you for completing this module.</p>
-      <p class="completion-note">Your session has been recorded. You may now close this browser window.</p>
+      <p class="completion-note" id="submit-status" role="status" aria-live="polite">Saving your completed session. Please keep this window open until saving is confirmed.</p>
+      <button class="action-btn" id="btn-submit-final" type="button">Save completed session</button>
       <p class="completion-contact">If you have any remaining questions, please contact <a href="mailto:tjin@crimson.ua.edu">tjin@crimson.ua.edu</a>.</p>
     </div>
   </div>
@@ -1627,6 +1628,8 @@ let liveSaveChain = Promise.resolve();
 let pendingSessionCreateRequestId = '';
 let pendingSubmissionRequestId = '';
 let pendingSubmissionPayload = null;
+let pendingLivePayload = null;
+const PENDING_REQUESTS_KEY = 'dissertation.training.pendingRequests.v1';
 window.trainingSessionSeq = trainingSessionSeq;
 
 // ─────────────────────────────────────────────
@@ -1634,6 +1637,48 @@ window.trainingSessionSeq = trainingSessionSeq;
 // ─────────────────────────────────────────────
 const $  = id => document.getElementById(id);
 const now = () => new Date().toISOString();
+
+// Server remains the source of resumable training progress. This tab-scoped
+// journal holds only operations awaiting acknowledgement, including their
+// exact timestamps/revision/ID. It is cleared after acknowledgement.
+function readPendingTraining(code = participantCode) {
+  const raw = sessionStorage.getItem(PENDING_REQUESTS_KEY);
+  if (!raw) return {};
+  const journal = JSON.parse(raw);
+  if (journal.owner !== String(code).trim().toLowerCase()) {
+    throw new Error('This tab has an unfinished session. Re-enter its code or use a new tab.');
+  }
+  return journal;
+}
+
+function storePendingTraining(kind, payload) {
+  const journal = readPendingTraining();
+  journal.owner = participantCode;
+  if (payload) journal[kind] = payload;
+  else delete journal[kind];
+  if (journal.live || journal.next || journal.submission) sessionStorage.setItem(PENDING_REQUESTS_KEY, JSON.stringify(journal));
+  else sessionStorage.removeItem(PENDING_REQUESTS_KEY);
+}
+
+async function replayPendingTraining(code) {
+  const journal = readPendingTraining(code);
+  for (const kind of ['live', 'next', 'submission']) {
+    const payload = journal[kind];
+    if (!payload) continue;
+    if (!payload.request_id || !payload.session_id || payload.user_id !== code || payload.participant_code !== code) {
+      throw new Error('Pending operation does not match this session. Its backup has been retained.');
+    }
+    const data = await postToAppsScript(`${WORKER_API_URL}/v1/training/${kind === 'submission' ? 'submit-session' : 'save-session'}`, payload);
+    if (!data.ok || !Number.isInteger(Number(data.revision))) throw new Error('Pending operation was not confirmed saved.');
+    delete journal[kind];
+    if (journal.live || journal.next || journal.submission) sessionStorage.setItem(PENDING_REQUESTS_KEY, JSON.stringify(journal));
+    else sessionStorage.removeItem(PENDING_REQUESTS_KEY);
+    if (kind === 'submission') return { ...payload.progress_json, participantCode: code,
+      sessionId: payload.session_id, completionReached: true, hasSuccessfulSubmission: true,
+      liveRevision: Number(data.revision), liveLastSaveId: payload.request_id };
+  }
+  return null;
+}
 
 function getOrCreateClientKey() {
   try {
@@ -1776,7 +1821,7 @@ function appendTrainingEvent(eventType, data = {}, options = {}) {
   if (options.awaitResponse) return request;
 
   request.catch(err => {
-    console.warn('appendEvent failed', err, payload);
+    console.warn('appendEvent failed', { event_type: eventType, request_id: eventId });
   });
 
   return Promise.resolve(null);
@@ -1828,7 +1873,7 @@ function ensureCardTimingEntry(cardIndex) {
 function markCardEntered(cardIndex) {
   const entry = ensureCardTimingEntry(cardIndex);
   if (entry.completed) return;
-  if (!entry.enteredAt) entry.enteredAt = Date.now();
+  if (!document.hidden && !entry.enteredAt) entry.enteredAt = Date.now();
 }
 
 function markCardPaused(cardIndex) {
@@ -2226,12 +2271,12 @@ async function postToAppsScript(url, payload, options = {}) {
         throw new Error(`Invalid JSON response from server (HTTP ${response.status})`);
       }
 
-      if (!response.ok) {
-        throw new Error(data?.error || `HTTP ${response.status}`);
-      }
-
-      if (!data || data.ok === false) {
-        throw new Error(data?.error || 'unknown_error');
+      if (!response.ok || !data || data.ok === false) {
+        throw Object.assign(new Error(data?.error || `HTTP ${response.status}`), {
+          status: response.status, code: data?.code,
+          retryable: data?.retryable ?? response.status >= 500,
+          retryAfterSeconds: data?.retryAfterSeconds
+        });
       }
 
       return data;
@@ -2240,7 +2285,7 @@ async function postToAppsScript(url, payload, options = {}) {
         ? new Error(`Request timed out after ${Math.round(timeoutMs / 1000)} seconds.`)
         : err;
 
-      if (attempt >= retries) break;
+      if (attempt >= retries || err?.retryable === false || err?.status === 429) break;
       await new Promise(resolve => window.setTimeout(resolve, 400 * (attempt + 1)));
     } finally {
       window.clearTimeout(timeoutId);
@@ -2303,8 +2348,9 @@ function setSaveExitEnabled(isEnabled) {
 }
 
 function refreshSaveExitAvailability() {
-  const shouldEnable = !completionReached && !hasSuccessfulSubmission;
+  const shouldEnable = !hasSuccessfulSubmission && !submitInFlight;
   setSaveExitEnabled(shouldEnable);
+  if (completionReached && shouldEnable) $('btn-save-exit').textContent = 'Save completed session';
 }
 
 function shouldWarnBeforeUnload() {
@@ -2312,7 +2358,6 @@ function shouldWarnBeforeUnload() {
   return !!(
     trainingVisible &&
     participantCode &&
-    !completionReached &&
     !hasSuccessfulSubmission
   );
 }
@@ -2325,6 +2370,16 @@ function shouldWarnBeforeUnload() {
 // ─────────────────────────────────────────────
 function saveProgress() {
   clearSavedProgress();
+  // If an earlier save is awaiting acknowledgement, retain newer edits as a
+  // queued operation as well. Reload must not restore only the older snapshot.
+  const journal = readPendingTraining();
+  if (journal.live && !journal.submission && !pendingSubmissionPayload) {
+    storePendingTraining('next', {
+      ...buildLiveSessionSnapshot('in_progress'),
+      request_id: createRequestId('training-save'),
+      base_revision: Number(journal.live.base_revision) + 1
+    });
+  }
 }
 
 function loadSavedProgress() {
@@ -2357,19 +2412,20 @@ function applySavedProgress(saved) {
   pendingSubmissionPayload = null;
   quizStates = saved.quizStates && typeof saved.quizStates === 'object' ? saved.quizStates : {};
   interactionTimes = Array.isArray(saved.interactionTimes)
-    ? saved.interactionTimes.map(Number).filter(Number.isFinite).slice(-1)
+    ? [] // A new visit must not count time spent away as active time.
     : [];
   activeMsBase = Number.isFinite(Number(saved.activeMsBase)) ? Number(saved.activeMsBase) : 0;
-  cardTimingState = saved.cardTimingState && typeof saved.cardTimingState === 'object'
-    ? saved.cardTimingState
-    : {};
+  const storedTiming = saved.cardTimingState && typeof saved.cardTimingState === 'object' ? saved.cardTimingState : {};
+  cardTimingState = Object.fromEntries(Object.entries(storedTiming).map(([key, entry]) => [key, {
+    totalMs: Math.max(0, Number(entry.totalMs) || 0), completed: Boolean(entry.completed), enteredAt: null
+  }]));
 }
 
 function isResumableSavedState(saved) {
   return !!(
     saved &&
     saved.participantCode &&
-    saved.revealedSlots > 1 &&
+    saved.revealedSlots >= 1 &&
     saved.hasSuccessfulSubmission !== true
   );
 }
@@ -4151,6 +4207,11 @@ function showCompletion() {
   refreshSaveExitAvailability();
   completion.style.display = 'block';
   scrollToEl(completion, 60);
+  if (hasSuccessfulSubmission) {
+    $('submit-status').textContent = 'Your session has been recorded. You may now close this browser window.';
+    $('btn-submit-final').textContent = '✓ Submitted';
+    $('btn-submit-final').disabled = true;
+  }
 
   const elapsed = sessionStart ? Date.now() - sessionStart : 0;
 
@@ -4185,6 +4246,7 @@ async function submitSession() {
   if (submitInFlight || hasSuccessfulSubmission) return;
 
   submitInFlight = true;
+  refreshSaveExitAvailability();
 
   const btn    = $('btn-submit-final');
   const status = $('submit-status');
@@ -4192,13 +4254,14 @@ async function submitSession() {
     btn.disabled = true;
     btn.textContent = 'Submitting…';
   }
-  if (status) status.textContent = '';
+  if (status) status.textContent = 'Saving your completed session. Please keep this window open until saving is confirmed.';
 
   try {
     cancelQueuedLiveSessionUpdate();
     await liveSaveChain.catch(() => null);
 
     if (!pendingSubmissionPayload) {
+      if (pendingLivePayload || readPendingTraining().live) await enqueueLiveSessionUpdate('in_progress');
       const elapsed = sessionStart ? Date.now() - sessionStart : 0;
       const activeSeconds = computeActiveSeconds(interactionTimes);
       const { itemValues, itemMap, itemMeta } = buildCardResponseValues();
@@ -4241,6 +4304,7 @@ async function submitSession() {
     }
 
     const payload = pendingSubmissionPayload;
+    storePendingTraining('submission', payload);
     const data = await postToAppsScript(
       `${WORKER_API_URL}/v1/training/submit-session`,
       payload,
@@ -4252,6 +4316,7 @@ async function submitSession() {
       currentLiveLastSaveId = pendingSubmissionRequestId;
       pendingSubmissionRequestId = '';
       pendingSubmissionPayload = null;
+      storePendingTraining('submission', null);
       hasSuccessfulSubmission = true;
       refreshSaveExitAvailability();
       trainingActive = false;
@@ -4277,15 +4342,21 @@ async function submitSession() {
       btn.textContent = 'Retry submission';
     }
     logEvent('session_submit_failed', { error: String(err.message) });
+    if (status) status.textContent = 'Saving has not been confirmed. Keep this window open and use Retry submission. A backup download is available below.';
     offerDownload(pendingSubmissionPayload || {});
   } finally {
     submitInFlight = false;
+    refreshSaveExitAvailability();
   }
 }
 
 async function handleSaveAndExit() {
-  if (completionReached || hasSuccessfulSubmission) {
+  if (hasSuccessfulSubmission) {
     refreshSaveExitAvailability();
+    return;
+  }
+  if (completionReached) {
+    await submitSession();
     return;
   }
 
@@ -4294,6 +4365,8 @@ async function handleSaveAndExit() {
 
   try {
     markInteraction();
+    Object.keys(cardTimingState).forEach(key => markCardPaused(Number(key)));
+    interactionTimes = [];
     saveProgress();
 
     if (btn) {
@@ -4324,7 +4397,9 @@ async function handleSaveAndExit() {
     $('completion').style.display = 'none';
     returnToGate();
   } catch (err) {
-    console.warn('Save and exit failed', err);
+    const current = getCurrentCardNumber() - 1;
+    if (current >= 0) markCardEntered(current);
+    console.warn('Save and exit failed', { code: err?.code || 'SAVE_FAILED' });
     alert('We could not confirm your progress was saved. Choosing "Save and exit" usually makes it more likely that your place will be saved, but it is not guaranteed. Please try again before closing this window.');
   } finally {
     if (btn) {
@@ -4446,6 +4521,23 @@ function getCurrentSectionTitle() {
   return String(allSections[sectionNumber - 1]?.title || '');
 }
 
+function snapshotCardTiming() {
+  return Object.fromEntries(Object.entries(cardTimingState).map(([key, entry]) => [key, {
+    totalMs: getCardMs(Number(key)), completed: Boolean(entry.completed), enteredAt: null
+  }]));
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    Object.keys(cardTimingState).forEach(key => markCardPaused(Number(key)));
+    interactionTimes = [];
+    if (participantCode && sessionId && !hasSuccessfulSubmission) queueLiveSessionUpdate('in_progress');
+  } else if ($('training')?.style.display !== 'none') {
+    const current = getCurrentCardNumber() - 1;
+    if (current >= 0) markCardEntered(current);
+  }
+});
+
 function buildProgressSnapshot() {
   return {
     participantCode,
@@ -4460,7 +4552,7 @@ function buildProgressSnapshot() {
     completionReached,
     hasSuccessfulSubmission,
     quizStates,
-    cardTimingState,
+    cardTimingState: snapshotCardTiming(),
     sessionSeq: trainingSessionSeq
   };
 }
@@ -4479,7 +4571,7 @@ function buildLiveSessionProgressSnapshot() {
     completionReached,
     hasSuccessfulSubmission,
     quizStates,
-    cardTimingState,
+    cardTimingState: snapshotCardTiming(),
     sessionSeq: trainingSessionSeq
   };
 }
@@ -4521,24 +4613,51 @@ function cancelQueuedLiveSessionUpdate() {
 }
 
 async function performLiveSessionUpdate(statusOverride = 'in_progress') {
-  const payload = {
+  if (pendingSubmissionPayload || hasSuccessfulSubmission || readPendingTraining().submission) {
+    throw new Error('Final submission is awaiting confirmation or has already completed.');
+  }
+  const previousPayload = pendingLivePayload || readPendingTraining().live;
+  let payload = previousPayload || {
     ...buildLiveSessionSnapshot(statusOverride),
     request_id: createRequestId('training-save'),
     base_revision: currentLiveRevision
   };
-
-  const data = await postToAppsScript(
-    `${WORKER_API_URL}/v1/training/save-session`,
-    payload,
-    { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS }
-  );
-
-  if (!data?.ok || !Number.isInteger(Number(data.revision))) {
-    throw new Error(data?.error || 'Training session save failed.');
+  if (payload.user_id !== participantCode || payload.session_id !== sessionId) {
+    throw new Error('Pending save does not match this session. Its backup has been retained.');
   }
+  if (previousPayload) storePendingTraining('next', {
+    ...buildLiveSessionSnapshot(statusOverride),
+    request_id: createRequestId('training-save'),
+    base_revision: Number(previousPayload.base_revision) + 1
+  });
+  let data;
+  do {
+    pendingLivePayload = payload;
+    storePendingTraining('live', payload);
 
-  currentLiveRevision = Number(data.revision);
-  currentLiveLastSaveId = payload.request_id;
+    data = await postToAppsScript(
+      `${WORKER_API_URL}/v1/training/save-session`,
+      payload,
+      { retries: 1, timeoutMs: REQUEST_TIMEOUT_MS }
+    );
+
+    if (!data?.ok || !Number.isInteger(Number(data.revision))) {
+      throw new Error(data?.error || 'Training session save failed.');
+    }
+
+    currentLiveRevision = Number(data.revision);
+    currentLiveLastSaveId = payload.request_id;
+    const next = readPendingTraining().next;
+    // Freeze the queued operation before removing its previous journal entry.
+    // If the browser stops between these writes, replaying the same ID twice is
+    // harmless. It is never posted with changed timestamps or request contents.
+    if (next) {
+      storePendingTraining('live', next);
+      storePendingTraining('next', null);
+    } else storePendingTraining('live', null);
+    payload = next;
+    pendingLivePayload = next || null;
+  } while (payload);
   return data;
 }
 
@@ -4829,6 +4948,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const feedbackCancelBtn = $('feedback-cancel-btn');
   const feedbackSubmitBtn = $('feedback-submit-btn');
   $('btn-save-exit')?.addEventListener('click', handleSaveAndExit);
+  $('btn-submit-final')?.addEventListener('click', submitSession);
 
   reportIssueBtn?.addEventListener('click', openFeedbackModal);
   feedbackCloseBtn?.addEventListener('click', closeFeedbackModal);
@@ -4914,16 +5034,19 @@ document.addEventListener('DOMContentLoaded', () => {
     clearSavedProgress();
 
     try {
-      const serverSaved = await loadServerSavedProgress(entered);
-      if (isResumableSavedState(serverSaved) && serverSaved.participantCode === entered) {
+      const recovered = await replayPendingTraining(entered);
+      const serverSaved = recovered || await loadServerSavedProgress(entered);
+      if ((serverSaved?.hasSuccessfulSubmission || isResumableSavedState(serverSaved)) && serverSaved.participantCode === entered) {
         saved = serverSaved;
       }
     } catch (err) {
-      console.warn('Server resume lookup failed', err);
+      setGateLoading(false);
+      gateError.textContent = `We could not confirm session recovery: ${err.message}. Please retry; your pending operation has been retained.`;
+      return;
     }
 
     if (saved) {
-      const choice = await askResumeChoice();
+      const choice = saved.hasSuccessfulSubmission ? 'continue' : await askResumeChoice();
       if (choice === 'continue') {
         applySavedProgress(saved);
         logEvent('resume_selected', { source: 'server' });
@@ -4964,6 +5087,7 @@ document.addEventListener('DOMContentLoaded', () => {
       submitInFlight = false;
       pendingSubmissionRequestId = '';
       pendingSubmissionPayload = null;
+      pendingLivePayload = null;
     }
 
     markInteraction();
@@ -4998,7 +5122,7 @@ document.addEventListener('DOMContentLoaded', () => {
       renderTraining(structure, resuming ? saved : null);
 
       logEvent('content_loaded', { sections: structure.length, cards: structure.reduce((n, sec) => n + sec.cards.length, 0), resumed: resuming });
-      queueLiveSessionUpdate('in_progress', 0);
+      if (!hasSuccessfulSubmission) queueLiveSessionUpdate('in_progress', 0);
 
     } catch (err) {
       setGateLoading(false);

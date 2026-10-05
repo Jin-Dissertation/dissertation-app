@@ -1,7 +1,13 @@
-# Local development files
-.wrangler
-.dev.vars*
-!.dev.vars.example
-.env*
-!.env.example
+# Only the generated, reviewed static artifact belongs in this repository.
+backend/
+reporting/
+docs/
+publishing/
 node_modules/
+.wrangler/
+.dev.vars*
+.env*
+**/private-reporting-exports/
+**/private-audio-archives/
+**/private-d1-backups/
+.public-site-staging/

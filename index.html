@@ -2907,7 +2907,7 @@
     <button class="timerNoticeClose" id="timerNoticeClose" type="button" aria-label="Dismiss notification" aria-hidden="true" disabled>×</button>
   </div>
 
-  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  <script>
     window.addEventListener("error", (e) => {
       console.error("Global script error:", e.message, "at", e.filename, "line", e.lineno);
     });
@@ -2916,19 +2916,6 @@
     // Config
     // -----------------------------
 
-    /*
-     * JAVASCRIPT MAINTAINER MAP
-     *
-     * The script below has six big jobs:
-     *   • participant access + AI product selection;
-     *   • local browser/recovery state;
-     *   • setup → making questions → finalize workflow;
-     *   • serialized live saves using request IDs + revisions;
-     *   • feedback/audio/final submission;
-     *   • restoration of the latest saved Worker state.
-     *
-     * The Worker is the security and durable-data boundary.
-     */
 
     // One backend origin handles every AQG API call.
     const WORKER_API_URL = "https://dissertation-study-api.professor-jin.workers.dev";
@@ -3029,6 +3016,7 @@ const PROMPT_META = [
     const KEYS = {
       accessVerified: `${STORAGE_PREFIX}.accessVerified`,
       accessCode: `${STORAGE_PREFIX}.accessCode`,
+      accessExpiresAt: `${STORAGE_PREFIX}.accessExpiresAt`,
       clientKey: `${STORAGE_PREFIX}.clientKey`,
       sessionId: `${STORAGE_PREFIX}.sessionId`,
       sessionCreateRequestId: `${STORAGE_PREFIX}.sessionCreateRequestId`,
@@ -3037,6 +3025,11 @@ const PROMPT_META = [
       liveRevision: `${STORAGE_PREFIX}.liveRevision`,
       liveLastSaveId: `${STORAGE_PREFIX}.liveLastSaveId`,
       pendingServerEvents: `${STORAGE_PREFIX}.pendingServerEvents`,
+      pendingLiveSave: `${STORAGE_PREFIX}.pendingLiveSave`,
+      pendingSubmissionPayload: `${STORAGE_PREFIX}.pendingSubmissionPayload`,
+      llmResponseDraft: `${STORAGE_PREFIX}.llmResponseDraft`,
+      sessionNotesDraft: `${STORAGE_PREFIX}.sessionNotesDraft`,
+      draftDirty: `${STORAGE_PREFIX}.draftDirty`,
       audioObjectKey: `${STORAGE_PREFIX}.audioObjectKey`,
       audioDurationSeconds: `${STORAGE_PREFIX}.audioDurationSeconds`,
       sessionStartTime: `${STORAGE_PREFIX}.sessionStartTime`,
@@ -3164,14 +3157,19 @@ const PROMPT_META = [
             throw new Error(`Invalid JSON response from server (HTTP ${response.status})`);
           }
 
-          if (!response.ok) throw new Error(data?.error || `HTTP ${response.status}`);
-          if (!data || data.ok === false) throw new Error(data?.error || "unknown_error");
+          if (!response.ok || !data || data.ok === false) {
+            throw Object.assign(new Error(data?.error || `HTTP ${response.status}`), {
+              status: response.status, code: data?.code,
+              retryable: data?.retryable ?? response.status >= 500,
+              retryAfterSeconds: data?.retryAfterSeconds
+            });
+          }
           return data;
         } catch (err) {
           lastError = err?.name === "AbortError"
             ? new Error(`Request timed out after ${Math.round(timeoutMs / 1000)} seconds.`)
             : err;
-          if (attempt >= retries) break;
+          if (attempt >= retries || err?.retryable === false || err?.status === 429) break;
           await new Promise((resolve) => window.setTimeout(resolve, 400 * (attempt + 1)));
         } finally {
           window.clearTimeout(timeoutId);
@@ -3782,6 +3780,7 @@ const PROMPT_META = [
 
     function buildLiveSessionSnapshot(statusOverride = "in_progress") {
       const accessCode = localStorage.getItem(KEYS.accessCode) || "";
+      const accessExpiresAt = localStorage.getItem(KEYS.accessExpiresAt) || "";
       const sessionId = localStorage.getItem(KEYS.sessionId) || "";
       const sessionStart = localStorage.getItem(KEYS.sessionStartTime) || "";
       const stage = getStage();
@@ -3838,16 +3837,22 @@ const PROMPT_META = [
     }
 
     async function performLiveSessionUpdate(statusOverride = "in_progress") {
-      const requestId = "aqg-save-" + crypto.randomUUID();
-      const baseRevision = Number(localStorage.getItem(KEYS.liveRevision) || "0");
-      const pendingEvents = loadJSON(KEYS.pendingServerEvents, []);
-      const batchEvents = Array.isArray(pendingEvents) ? pendingEvents.slice(0, 80) : [];
-      const payload = {
+      if (localStorage.getItem(KEYS.pendingSubmissionPayload) || localStorage.getItem(KEYS.submissionStatus) === "success") {
+        throw new Error("Final submission is awaiting confirmation or has already completed.");
+      }
+      const previousPayload = loadJSON(KEYS.pendingLiveSave, null);
+      const payload = previousPayload || {
         ...buildLiveSessionSnapshot(statusOverride),
-        request_id: requestId,
-        base_revision: baseRevision,
-        batch_events: batchEvents
+        request_id: "aqg-save-" + crypto.randomUUID(),
+        base_revision: Number(localStorage.getItem(KEYS.liveRevision) || "0"),
+        batch_events: loadJSON(KEYS.pendingServerEvents, []).slice(0, 80)
       };
+      assertPendingAqgOwner(payload);
+      // Persist the entire operation before sending. After a lost response,
+      // replay this exact operation before creating a newer one.
+      saveJSON(KEYS.pendingLiveSave, payload);
+      const requestId = payload.request_id;
+      const batchEvents = payload.batch_events;
 
       const data = await postToAppsScript(
         `${WORKER_API_URL}/v1/aqg/save-session`,
@@ -3861,6 +3866,11 @@ const PROMPT_META = [
 
       localStorage.setItem(KEYS.liveRevision, String(Number(data.revision)));
       localStorage.setItem(KEYS.liveLastSaveId, requestId);
+      localStorage.removeItem(KEYS.pendingLiveSave);
+      if (($("llmResponse")?.value || "").trim() === payload.llm_response &&
+          ($("sessionNotes")?.value || "").trim() === payload.session_notes) {
+        localStorage.removeItem(KEYS.draftDirty);
+      }
 
       if (batchEvents.length) {
         const savedIds = new Set(batchEvents.map((event) => event.event_id));
@@ -3874,7 +3884,16 @@ const PROMPT_META = [
         }
       }
 
-      return data;
+      // Edits made while an earlier save was unacknowledged remain in the DOM
+      // and local draft. Save that newer snapshot only after the replay succeeds.
+      return previousPayload ? performLiveSessionUpdate(statusOverride) : data;
+    }
+
+    function assertPendingAqgOwner(payload) {
+      if (!payload?.request_id || normalizeCode(payload.user_id) !== normalizeCode(localStorage.getItem(KEYS.accessCode)) ||
+          payload.session_id !== localStorage.getItem(KEYS.sessionId)) {
+        throw new Error("Pending save does not match this session. Your local backup has been retained.");
+      }
     }
 
     function enqueueLiveSessionUpdate(statusOverride = "in_progress") {
@@ -3891,6 +3910,9 @@ const PROMPT_META = [
         return await enqueueLiveSessionUpdate(statusOverride);
       } catch (err) {
         console.warn("Live session update failed", err);
+        if (!localStorage.getItem(KEYS.pendingSubmissionPayload) && localStorage.getItem(KEYS.submissionStatus) !== "success") {
+          toast("Your latest changes have not been confirmed saved. Keep this tab open and retry when your connection returns.", { duration: 6000 });
+        }
         return null;
       }
     }
@@ -3916,6 +3938,7 @@ const PROMPT_META = [
       const events = loadJSON(KEYS.events, []);
       const stage = getStage();
       const accessCode = localStorage.getItem(KEYS.accessCode) || "";
+      const accessExpiresAt = localStorage.getItem(KEYS.accessExpiresAt) || "";
       const sessionId = localStorage.getItem(KEYS.sessionId) || "";
       const modelUsed = localStorage.getItem(KEYS.modelUsed) || "";
       const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
@@ -4301,14 +4324,20 @@ const PROMPT_META = [
 
     function clearSessionData() {
       Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+      // Session reset saves this fallback again; explicit logout removes it too.
+      localStorage.removeItem(LAST_PREVIOUS_SETTINGS_KEY);
       lastCopiedText = "";
       lastCopiedLabel = "";
       lastCopiedAt = null;
     }
 
     async function resetCurrentSessionKeepLogin(options = {}) {
+      if (localStorage.getItem(KEYS.pendingSubmissionPayload)) {
+        throw new Error("Please retry the pending final submission before starting a new session.");
+      }
       const accessVerified = localStorage.getItem(KEYS.accessVerified) || "";
       const accessCode = localStorage.getItem(KEYS.accessCode) || "";
+      const accessExpiresAt = localStorage.getItem(KEYS.accessExpiresAt) || "";
       const clientKey = localStorage.getItem(KEYS.clientKey) || "";
       const closedSessionId = localStorage.getItem(KEYS.sessionId) || "";
       const closedContextId = localStorage.getItem(KEYS.contextId) || "";
@@ -4330,18 +4359,18 @@ const PROMPT_META = [
             context_id: closedContextId || ""
           }
         );
-        try {
-          await liveSaveChain;
-        } catch (err) {
-          console.warn("Reset close event could not be persisted before starting the new session.", err);
-        }
+        await syncLiveSessionUpdate("in_progress");
+        while (loadJSON(KEYS.pendingServerEvents, []).length) await enqueueLiveSessionUpdate("in_progress");
       }
 
       saveCurrentSettingsAsPrevious();
+      const previousSettings = localStorage.getItem(LAST_PREVIOUS_SETTINGS_KEY);
       clearSessionData();
+      if (previousSettings) localStorage.setItem(LAST_PREVIOUS_SETTINGS_KEY, previousSettings);
 
       if (accessVerified) localStorage.setItem(KEYS.accessVerified, accessVerified);
       if (accessCode) localStorage.setItem(KEYS.accessCode, accessCode);
+      if (accessExpiresAt) localStorage.setItem(KEYS.accessExpiresAt, accessExpiresAt);
       if (clientKey) localStorage.setItem(KEYS.clientKey, clientKey);
 
       const newSessionStart = nowIso();
@@ -4901,6 +4930,17 @@ ${persistentInstructions}`;
         if (view.stateRow) view.stateRow.style.display = showActive ? "flex" : "none";
         if (view.actionRow) view.actionRow.style.display = showActive ? "grid" : "none";
       });
+      getAudioRecorderViews().forEach(view => {
+        if (!view.playbackRow) return;
+        let download = view.playbackRow.querySelector("[data-download-recording]");
+        if (!download) {
+          download = document.createElement("button"); download.type = "button";
+          download.className = "btn secondary"; download.dataset.downloadRecording = "true";
+          download.textContent = "Download recording"; download.addEventListener("click", downloadRecording);
+          view.playbackRow.append(download);
+        }
+        download.disabled = !hasRecording;
+      });
       if (audioSubmitted) {
         setAudioUploadButtonState("success", "Uploaded");
       } else if (!audioUploadInProgress) {
@@ -4996,14 +5036,22 @@ ${persistentInstructions}`;
         await setupAudioMeter(currentAudioStream);
         audioChunks = [];
         mediaRecorder = new MediaRecorder(currentAudioStream);
+        const recorder = mediaRecorder;
+        const chunks = audioChunks;
 
         mediaRecorder.ondataavailable = (event) => {
-          if (event.data && event.data.size > 0) audioChunks.push(event.data);
+          if (mediaRecorder !== recorder) return;
+          if (event.data && event.data.size > 0) chunks.push(event.data);
+          if (chunks.reduce((bytes, chunk) => bytes + chunk.size, 0) >= 8 * 1024 * 1024 && recorder.state !== "inactive") {
+            stopAudioRecording();
+            toast("The recording reached the upload limit. Download it before making a shorter recording.");
+          }
         };
 
         mediaRecorder.onstop = () => {
-          audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || "audio/webm" });
-          audioDuration = audioStartedAt ? Math.max(0, Date.now() - audioStartedAt) : 0;
+          if (mediaRecorder !== recorder) return; // A reset discarded this recording.
+          audioBlob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+          audioDuration = Math.max(0, audioElapsedMs);
           releaseAudioFeedbackUrl();
           audioUrl = URL.createObjectURL(audioBlob);
           getAudioRecorderViews().forEach((view) => {
@@ -5023,7 +5071,7 @@ ${persistentInstructions}`;
         audioElapsedLastStartedAt = Date.now();
         renderAudioElapsed();
         startAudioElapsedTicker();
-        mediaRecorder.start();
+        mediaRecorder.start(1000);
         startAudioMeterLoop();
         updateAudioRecorderUI();
       } catch (err) {
@@ -5096,6 +5144,17 @@ ${persistentInstructions}`;
       });
     }
 
+    function audioExtension(mime) {
+      return ({ "audio/ogg": "ogg", "audio/mp4": "m4a", "audio/mpeg": "mp3", "audio/wav": "wav", "audio/webm": "webm" })[String(mime || "").split(";")[0].toLowerCase()] || "webm";
+    }
+    function downloadRecording() {
+      if (!audioBlob) return;
+      const a = document.createElement("a");
+      const url = URL.createObjectURL(audioBlob);
+      a.href = url; a.download = "study-feedback." + audioExtension(audioBlob.type);
+      a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
     async function submitAudioRecording() {
       if (!audioBlob || audioUploadInProgress || audioSubmitted) return;
 
@@ -5106,9 +5165,13 @@ ${persistentInstructions}`;
         return { ok: false };
       }
 
-      const safeUser = sanitizeFilenamePart(accessCode);
+      if (audioBlob.size > 8 * 1024 * 1024) {
+        toast("This recording exceeds the 8 MB upload limit. Download it and make a shorter recording.");
+        return { ok: false };
+      }
+      const safeUser = "feedback";
       const safeSession = sanitizeFilenamePart(sessionId);
-      const ext = (audioBlob.type || "").includes("ogg") ? "ogg" : "webm";
+      const ext = audioExtension(audioBlob.type);
       const filename = `${safeUser}_${getYYMMDD()}_${safeSession}.${ext}`;
       const mimeType = audioBlob.type || `audio/${ext}`;
       const durationSeconds = Math.max(0, Number(audioDuration || 0) / 1000);
@@ -6043,7 +6106,7 @@ ${persistentInstructions}`;
         validationResult = await validateAccessCodeWithBackend(code);
       } catch (err) {
         setLockedState(true, "Couldn't verify your code right now — please check your connection and try again.");
-        logEvent("access_verification_error", { code_entered: code, error: String(err && err.message ? err.message : err) });
+        logEvent("access_verification_error", { error: "VALIDATION_UNAVAILABLE" });
         if (verifyBtn) {
           verifyBtn.dataset.verifying = "false";
           verifyBtn.disabled = false;
@@ -6061,7 +6124,7 @@ ${persistentInstructions}`;
               : `Too many failed attempts. Please wait ${retryAfterSeconds} seconds and try again.`)
           : "Too many failed attempts. Please wait and try again.";
         setLockedState(true, waitMessage);
-        logEvent("access_locked_out", { code_entered: code, retryAfterSeconds });
+        logEvent("access_locked_out", { retryAfterSeconds });
         if (verifyBtn) {
           verifyBtn.dataset.verifying = "false";
           verifyBtn.disabled = false;
@@ -6073,7 +6136,7 @@ ${persistentInstructions}`;
       const isValidCode = response.ok && data && data.ok === true && data.valid === true;
       if (!isValidCode) {
         setLockedState(true, "Participant code not recognized. Please contact the researcher at tjin@crimson.ua.edu if you think something is wrong.");
-        logEvent("access_denied", { code_entered: code });
+        logEvent("access_denied", {});
         if (verifyBtn) {
           verifyBtn.dataset.verifying = "false";
           verifyBtn.disabled = false;
@@ -6082,13 +6145,61 @@ ${persistentInstructions}`;
         return false;
       }
 
+      const owner = normalizeCode(localStorage.getItem(KEYS.accessCode) || "");
+      if (owner && owner !== code) {
+        if (localStorage.getItem(KEYS.pendingLiveSave) || localStorage.getItem(KEYS.pendingSubmissionPayload) || localStorage.getItem(KEYS.draftDirty) === "true") {
+          setLockedState(true, "This browser has unfinished work for another participant. Sign in with that code to save it, or log out to clear this browser.");
+          if (verifyBtn) { verifyBtn.dataset.verifying = "false"; verifyBtn.disabled = false; verifyBtn.textContent = originalBtnText; }
+          return false;
+        }
+        clearSessionData();
+        $("llmResponse").value = ""; $("sessionNotes").value = "";
+      }
       localStorage.setItem(KEYS.accessVerified, "true");
       localStorage.setItem(KEYS.accessCode, code);
+      // An explicit sign-in starts a bounded automatic-return window. Refresh
+      // still revalidates with the Worker and never trusts the local flag.
+      if (!localStorage.getItem(KEYS.accessExpiresAt) || Number(localStorage.getItem(KEYS.accessExpiresAt)) <= Date.now()) {
+        localStorage.setItem(KEYS.accessExpiresAt, String(Date.now() + 24 * 60 * 60 * 1000));
+      }
 
-      const latestLiveSession = await fetchLatestLiveSession();
-      const restored = latestLiveSession?.ok === true && latestLiveSession?.found === true
-        ? await restoreLiveSessionFromServer(latestLiveSession)
-        : false;
+      let restored = false;
+      try {
+        if (localStorage.getItem(KEYS.pendingSubmissionPayload)) {
+          const submitted = await submitSession();
+          if (!submitted.ok) throw submitted.error;
+          clearSessionData();
+          sessionStorage.setItem("dissertation.ended", "true");
+          location.reload();
+          return false;
+        }
+        if (localStorage.getItem(KEYS.pendingLiveSave)) await enqueueLiveSessionUpdate("in_progress");
+        const draft = localStorage.getItem(KEYS.draftDirty) === "true"
+          ? { response: $("llmResponse").value, notes: $("sessionNotes").value,
+              sessionId: localStorage.getItem(KEYS.sessionId) }
+          : null;
+        const latestLiveSession = await fetchLatestLiveSession();
+        if (latestLiveSession?.ok !== true) throw new Error("Session recovery could not be confirmed. Please retry.");
+        if (draft && latestLiveSession.found && latestLiveSession.session?.session_id !== draft.sessionId) {
+          throw new Error("Another session is active. Your unsaved local draft has been retained; contact the study team before resetting.");
+        }
+        restored = latestLiveSession.found === true ? await restoreLiveSessionFromServer(latestLiveSession) : false;
+        if (draft) {
+          $("llmResponse").value = draft.response;
+          $("sessionNotes").value = draft.notes;
+          localStorage.setItem(KEYS.llmResponseDraft, draft.response);
+          localStorage.setItem(KEYS.sessionNotesDraft, draft.notes);
+          localStorage.setItem(KEYS.draftDirty, "true");
+        }
+      } catch (err) {
+        setLockedState(true, err?.message || "Session recovery failed. Please retry.");
+        if (verifyBtn) {
+          verifyBtn.dataset.verifying = "false";
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = originalBtnText;
+        }
+        return false;
+      }
 
       if (!restored) {
         // Start timestamp is the first step at sign-in (your request)
@@ -6117,7 +6228,7 @@ ${persistentInstructions}`;
       startSessionTimerLoop();
       if ($("topUser")) $("topUser").textContent = code || "User";
       markInteraction();
-      logEvent("access_verified", { accessCode: code });
+      logEvent("access_verified", {});
       queueLiveSessionUpdate("in_progress", 0);
       appendServerEvent(
         "session_started",
@@ -6144,6 +6255,7 @@ ${persistentInstructions}`;
       const llmResponse = ($("llmResponse")?.value || "").trim();
       const sessionNotes = ($("sessionNotes")?.value || "").trim();
       const accessCode = localStorage.getItem(KEYS.accessCode) || "";
+      const accessExpiresAt = localStorage.getItem(KEYS.accessExpiresAt) || "";
       const sessionStartRaw = localStorage.getItem(KEYS.sessionStartTime) || "";
 
       return {
@@ -6220,7 +6332,7 @@ ${persistentInstructions}`;
       localStorage.setItem(KEYS.submitClicked, "true");
       markInteraction();
 
-      let payload = buildSessionRecord();
+      let payload = loadJSON(KEYS.pendingSubmissionPayload, null) || buildSessionRecord();
 
       try {
         // Stop a not-yet-started autosave and wait for any save already in flight.
@@ -6228,67 +6340,73 @@ ${persistentInstructions}`;
         cancelQueuedLiveSessionUpdate();
         await liveSaveChain;
 
-        // The submit endpoint accepts at most 80 durable events. Keep two slots
-        // for the final close/submitted events and flush older queued events first.
-        while (true) {
-          const pending = loadJSON(KEYS.pendingServerEvents, []);
-          if (!Array.isArray(pending) || pending.length <= 78) break;
-          await enqueueLiveSessionUpdate("in_progress");
-        }
+        if (!localStorage.getItem(KEYS.pendingSubmissionPayload)) {
+          if (localStorage.getItem(KEYS.pendingLiveSave)) await enqueueLiveSessionUpdate("in_progress");
 
-        let requestId = (localStorage.getItem(KEYS.submitRequestId) || "").trim();
-        if (!requestId) {
-          requestId = "aqg-submit-" + crypto.randomUUID();
-          localStorage.setItem(KEYS.submitRequestId, requestId);
-        }
-
-        const closeTimestamp = nowIso();
-        const pendingEvents = loadJSON(KEYS.pendingServerEvents, []);
-        const durablePending = Array.isArray(pendingEvents) ? pendingEvents.slice() : [];
-        const contextId = (localStorage.getItem(KEYS.contextId) || "").trim();
-        const deviceLabel = getCompactDeviceLabel();
-        const submissionRecord = buildSessionRecord();
-
-        const finalEvents = [
-          {
-            event_id: "aqg-event-" + crypto.randomUUID(),
-            timestamp: closeTimestamp,
-            context_id: contextId,
-            event_type: "session_closed",
-            button_id: "btnEndConfirm",
-            detail_text: "Session closed by end session.",
-            detail_json: {
-              SessionCloseType: "end_session",
-              SessionCloseAt: closeTimestamp,
-              llm_response_present: !!(submissionRecord.llm_response || "").trim(),
-              session_notes_present: !!(submissionRecord.session_notes || "").trim(),
-              audio_present: !!uploadedAudioInfo
-            },
-            device_label: deviceLabel
-          },
-          {
-            event_id: "aqg-event-" + crypto.randomUUID(),
-            timestamp: closeTimestamp,
-            context_id: contextId,
-            event_type: "session_submitted",
-            button_id: "btnEndConfirm",
-            detail_text: "Session submitted.",
-            detail_json: {
-              submitted_session_id: submissionRecord.session_id || "",
-              submitted_context_id: submissionRecord.context_id || ""
-            },
-            device_label: deviceLabel
+          // The submit endpoint accepts at most 80 durable events. Keep two slots
+          // for the final close/submitted events and flush older queued events first.
+          while (true) {
+            const pending = loadJSON(KEYS.pendingServerEvents, []);
+            if (!Array.isArray(pending) || pending.length <= 78) break;
+            await enqueueLiveSessionUpdate("in_progress");
           }
-        ];
 
-        payload = {
-          ...submissionRecord,
-          request_id: requestId,
-          base_revision: Number(localStorage.getItem(KEYS.liveRevision) || "0"),
-          session_close_type: "end_session",
-          session_close_at: closeTimestamp,
-          batch_events: [...durablePending, ...finalEvents]
-        };
+          let requestId = (localStorage.getItem(KEYS.submitRequestId) || "").trim();
+          if (!requestId) {
+            requestId = "aqg-submit-" + crypto.randomUUID();
+            localStorage.setItem(KEYS.submitRequestId, requestId);
+          }
+
+          const closeTimestamp = nowIso();
+          const pendingEvents = loadJSON(KEYS.pendingServerEvents, []);
+          const durablePending = Array.isArray(pendingEvents) ? pendingEvents.slice() : [];
+          const contextId = (localStorage.getItem(KEYS.contextId) || "").trim();
+          const deviceLabel = getCompactDeviceLabel();
+          const submissionRecord = buildSessionRecord();
+
+          const finalEvents = [
+            {
+              event_id: "aqg-event-" + crypto.randomUUID(),
+              timestamp: closeTimestamp,
+              context_id: contextId,
+              event_type: "session_closed",
+              button_id: "btnEndConfirm",
+              detail_text: "Session closed by end session.",
+              detail_json: {
+                SessionCloseType: "end_session",
+                SessionCloseAt: closeTimestamp,
+                llm_response_present: !!(submissionRecord.llm_response || "").trim(),
+                session_notes_present: !!(submissionRecord.session_notes || "").trim(),
+                audio_present: !!uploadedAudioInfo
+              },
+              device_label: deviceLabel
+            },
+            {
+              event_id: "aqg-event-" + crypto.randomUUID(),
+              timestamp: closeTimestamp,
+              context_id: contextId,
+              event_type: "session_submitted",
+              button_id: "btnEndConfirm",
+              detail_text: "Session submitted.",
+              detail_json: {
+                submitted_session_id: submissionRecord.session_id || "",
+                submitted_context_id: submissionRecord.context_id || ""
+              },
+              device_label: deviceLabel
+            }
+          ];
+
+          payload = {
+            ...submissionRecord,
+            request_id: requestId,
+            base_revision: Number(localStorage.getItem(KEYS.liveRevision) || "0"),
+            session_close_type: "end_session",
+            session_close_at: closeTimestamp,
+            batch_events: [...durablePending, ...finalEvents]
+          };
+          saveJSON(KEYS.pendingSubmissionPayload, payload);
+        }
+        assertPendingAqgOwner(payload);
 
         const data = await postToAppsScript(
           `${WORKER_API_URL}/v1/aqg/submit-session`,
@@ -6300,11 +6418,12 @@ ${persistentInstructions}`;
         if (!success) throw new Error(data?.error || "unknown_error");
 
         localStorage.setItem(KEYS.liveRevision, String(Number(data.revision || localStorage.getItem(KEYS.liveRevision) || "0")));
-        localStorage.setItem(KEYS.liveLastSaveId, requestId);
+        localStorage.setItem(KEYS.liveLastSaveId, payload.request_id);
         localStorage.setItem(KEYS.submissionStatus, "success");
         localStorage.setItem(KEYS.submissionCompletedAt, nowIso());
         localStorage.removeItem(KEYS.submissionError);
         localStorage.removeItem(KEYS.submitRequestId);
+        localStorage.removeItem(KEYS.pendingSubmissionPayload);
         saveJSON(KEYS.pendingServerEvents, []);
         logEvent("session_submitted", { ok: true, duplicate: !!data.duplicate });
         return { ok: true, data };
@@ -6312,7 +6431,7 @@ ${persistentInstructions}`;
         localStorage.setItem(KEYS.submissionStatus, "failed");
         localStorage.setItem(KEYS.submissionError, String(err?.message || err || "unknown_error"));
         logEvent("session_submit_failed", { error: String(err?.message || err || "unknown_error") });
-        queueLiveSessionUpdate("in_progress", 250);
+        if (!localStorage.getItem(KEYS.pendingSubmissionPayload)) queueLiveSessionUpdate("in_progress", 250);
         offerSubmissionDownload(payload);
         return { ok: false, error: err };
       } finally {
@@ -6520,18 +6639,15 @@ ${persistentInstructions}`;
     }
 
     function initAccessGate() {
-      const verified = localStorage.getItem(KEYS.accessVerified) === "true";
+      const verified = localStorage.getItem(KEYS.accessVerified) === "true" &&
+        Number(localStorage.getItem(KEYS.accessExpiresAt)) > Date.now();
       const endedFlag = sessionStorage.getItem("dissertation.ended");
       if (endedFlag === "true") {
         sessionStorage.removeItem("dissertation.ended");
         toast("Session complete — thank you! Your session has been submitted.", { duration: 5000 });
       }
-      if (verified) {
-        setLockedState(false);
-        initializeSessionTimerIfNeeded();
-      } else {
-        setLockedState(true);
-      }
+      setLockedState(true);
+      if (verified) $("accessCodeInput").value = localStorage.getItem(KEYS.accessCode) || "";
       requestAnimationFrame(() => {
         if ($("accessGate")?.style.display !== "none") {
           $("accessCodeInput")?.focus();
@@ -6710,6 +6826,8 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
 
       if ($("llmResponse")) $("llmResponse").value = restoredLlmResponse;
       if ($("sessionNotes")) $("sessionNotes").value = restoredSessionNotes;
+      localStorage.setItem(KEYS.llmResponseDraft, restoredLlmResponse);
+      localStorage.setItem(KEYS.sessionNotesDraft, restoredSessionNotes);
       if ($("sidebarSessionNotes")) $("sidebarSessionNotes").value = "";
       if ($("mobileSessionNotes")) $("mobileSessionNotes").value = "";
       setPersistentFeedbackStatus(restoredSessionNotes ? "Text feedback saved." : "");
@@ -6810,6 +6928,8 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
       localStorage.setItem(KEYS.productVersionConfirmed, "false");
 
       // Hydrate fields
+      $("llmResponse").value = localStorage.getItem(KEYS.llmResponseDraft) || "";
+      $("sessionNotes").value = localStorage.getItem(KEYS.sessionNotesDraft) || "";
       const storedModelProduct = normalizeLlmProduct(localStorage.getItem(KEYS.modelUsed) || "");
       const storedLlmProduct = normalizeLlmProduct(localStorage.getItem(KEYS.llmProduct) || "");
       const initialProduct = storedLlmProduct || storedModelProduct || "";
@@ -6984,7 +7104,7 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
           }
 
           // Log + copy only
-          logEvent("starter_prepared", { accessCode: code, sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
+          logEvent("starter_prepared", { sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
           refreshCopyCardPreviews();
           starterCard = $("starterCopyCard");
           showCopyCardActiveState(starterCard);
@@ -7142,10 +7262,7 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
         logEvent("done_making_questions_clicked");
         queueLiveSessionUpdate("in_progress");
         const fp = buildFinalPrompt();
-        console.info("AQG final prompt generated", {
-          llmProduct: localStorage.getItem(KEYS.llmProduct) || "",
-          finalPrompt: fp
-        });
+
         localStorage.setItem(KEYS.finalPrompt, fp);
         if ($("finalCopyPreview")) $("finalCopyPreview").textContent = fp;
         localStorage.setItem(KEYS.finalPromptCopied, "false");
@@ -7203,6 +7320,8 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
       updateProceedToPromptsAvailability();
 
       $("llmResponse").addEventListener("input", () => {
+        localStorage.setItem(KEYS.llmResponseDraft, $("llmResponse").value);
+        localStorage.setItem(KEYS.draftDirty, "true");
         updateFinalizeContentUI();
         updateEndSessionState();
         debounceSingle(
@@ -7232,6 +7351,8 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
       setPersistentFeedbackStatus((sessionNotesInput?.value || "").trim() ? "Text feedback saved." : "");
 
       sessionNotesInput?.addEventListener("input", () => {
+        localStorage.setItem(KEYS.sessionNotesDraft, sessionNotesInput.value);
+        localStorage.setItem(KEYS.draftDirty, "true");
         debounceSingle(
           () => sessionNotesEditTimer,
           (timerId) => { sessionNotesEditTimer = timerId; },
@@ -7293,6 +7414,8 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
         try {
           await resetCurrentSessionKeepLogin();
           closeModal("modalReset");
+        } catch (err) {
+          toast("Reset paused because saving has not been confirmed. Your current session is retained. Please retry when your connection returns.", { duration: 6000 });
         } finally {
           if (confirmBtn) {
             confirmBtn.disabled = false;
@@ -7416,6 +7539,7 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
 
       // Finally apply stage UI if already verified
       if (alreadyVerified) {
+        await verifyAccessCode();
         // Ensure stage exists
         if (!localStorage.getItem(KEYS.stage)) {
           localStorage.setItem(KEYS.stage, "setup");
