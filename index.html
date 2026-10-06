@@ -3026,6 +3026,7 @@ const PROMPT_META = [
       liveLastSaveId: `${STORAGE_PREFIX}.liveLastSaveId`,
       pendingServerEvents: `${STORAGE_PREFIX}.pendingServerEvents`,
       pendingLiveSave: `${STORAGE_PREFIX}.pendingLiveSave`,
+      revisionConflictBackup: `${STORAGE_PREFIX}.revisionConflictBackup`,
       pendingSubmissionPayload: `${STORAGE_PREFIX}.pendingSubmissionPayload`,
       llmResponseDraft: `${STORAGE_PREFIX}.llmResponseDraft`,
       sessionNotesDraft: `${STORAGE_PREFIX}.sessionNotesDraft`,
@@ -6164,6 +6165,7 @@ ${persistentInstructions}`;
       }
 
       let restored = false;
+      let recoveredRevisionConflict = false;
       try {
         if (localStorage.getItem(KEYS.pendingSubmissionPayload)) {
           const submitted = await submitSession();
@@ -6173,17 +6175,52 @@ ${persistentInstructions}`;
           location.reload();
           return false;
         }
-        if (localStorage.getItem(KEYS.pendingLiveSave)) await enqueueLiveSessionUpdate("in_progress");
-        const draft = localStorage.getItem(KEYS.draftDirty) === "true"
+
+        let latestLiveSession = null;
+        const pendingLiveSave = loadJSON(KEYS.pendingLiveSave, null);
+
+        if (pendingLiveSave) {
+          try {
+            await enqueueLiveSessionUpdate("in_progress");
+          } catch (err) {
+            if (err?.code !== "REVISION_CONFLICT") throw err;
+
+            latestLiveSession = await fetchLatestLiveSession();
+            const localSessionId = String(localStorage.getItem(KEYS.sessionId) || "").trim();
+            const pendingSessionId = String(pendingLiveSave?.session_id || "").trim();
+            const remoteSessionId = String(latestLiveSession?.session?.session_id || "").trim();
+
+            if (
+              latestLiveSession?.ok !== true ||
+              latestLiveSession?.found !== true ||
+              !localSessionId ||
+              pendingSessionId !== localSessionId ||
+              remoteSessionId !== localSessionId
+            ) {
+              throw new Error("A newer session is active. Your browser copy was retained; contact the study team before resetting.");
+            }
+
+            captureRevisionConflictBackup(pendingLiveSave);
+            localStorage.removeItem(KEYS.pendingLiveSave);
+            saveJSON(KEYS.pendingServerEvents, []);
+            localStorage.removeItem(KEYS.draftDirty);
+            recoveredRevisionConflict = true;
+          }
+        }
+
+        const draft = !recoveredRevisionConflict && localStorage.getItem(KEYS.draftDirty) === "true"
           ? { response: $("llmResponse").value, notes: $("sessionNotes").value,
               sessionId: localStorage.getItem(KEYS.sessionId) }
           : null;
-        const latestLiveSession = await fetchLatestLiveSession();
+
+        if (!latestLiveSession) latestLiveSession = await fetchLatestLiveSession();
         if (latestLiveSession?.ok !== true) throw new Error("Session recovery could not be confirmed. Please retry.");
         if (draft && latestLiveSession.found && latestLiveSession.session?.session_id !== draft.sessionId) {
           throw new Error("Another session is active. Your unsaved local draft has been retained; contact the study team before resetting.");
         }
+
         restored = latestLiveSession.found === true ? await restoreLiveSessionFromServer(latestLiveSession) : false;
+
         if (draft) {
           $("llmResponse").value = draft.response;
           $("sessionNotes").value = draft.notes;
@@ -6236,6 +6273,7 @@ ${persistentInstructions}`;
         "Participant code verified."
       );
       toast("Access verified ✅");
+      if (recoveredRevisionConflict) showRevisionConflictRecoveryNotice();
 
       applyStageUI();
       if (verifyBtn) {
@@ -6712,6 +6750,67 @@ ${persistentInstructions}`;
     return { ok: false, found: false, error: String(err?.message || err || "unknown_error") };
   }
 }
+
+    function sanitizeRevisionConflictBackup(value) {
+      if (Array.isArray(value)) return value.map(sanitizeRevisionConflictBackup);
+      if (!value || typeof value !== "object") return value;
+
+      const sanitized = {};
+      for (const [key, child] of Object.entries(value)) {
+        if (["user_id", "accessCode", "access_code", "participant_id"].includes(key)) continue;
+        sanitized[key] = sanitizeRevisionConflictBackup(child);
+      }
+      return sanitized;
+    }
+
+    function captureRevisionConflictBackup(pendingLiveSave) {
+      const backup = {
+        captured_at: nowIso(),
+        reason: "REVISION_CONFLICT",
+        session_id: String(pendingLiveSave?.session_id || localStorage.getItem(KEYS.sessionId) || "").trim(),
+        pending_live_save: sanitizeRevisionConflictBackup(pendingLiveSave || null),
+        pending_server_events: sanitizeRevisionConflictBackup(loadJSON(KEYS.pendingServerEvents, [])),
+        llm_response_draft: localStorage.getItem(KEYS.llmResponseDraft) || "",
+        session_notes_draft: localStorage.getItem(KEYS.sessionNotesDraft) || "",
+        draft_dirty: localStorage.getItem(KEYS.draftDirty) === "true"
+      };
+      saveJSON(KEYS.revisionConflictBackup, backup);
+      return backup;
+    }
+
+    function showRevisionConflictRecoveryNotice() {
+      const msg = $("setupMsg");
+      if (!msg) return;
+
+      msg.textContent = "";
+      const text = document.createElement("span");
+      text.textContent = "A newer saved copy of this session was found and restored. This browser’s older unsaved copy was kept as a local backup.";
+      msg.appendChild(text);
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn";
+      button.style.marginLeft = "10px";
+      button.textContent = "Download browser backup";
+      button.addEventListener("click", () => {
+        const backup = loadJSON(KEYS.revisionConflictBackup, null);
+        if (!backup) {
+          toast("No browser backup is available.");
+          return;
+        }
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "aqg-browser-recovery-backup.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+      msg.appendChild(button);
+      msg.style.display = "block";
+    }
 
 async function sendFeedbackAlert({ textFeedback = "" } = {}) {
   const accessCode = (localStorage.getItem(KEYS.accessCode) || "").trim();
