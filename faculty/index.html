@@ -618,25 +618,6 @@
     .helpFaqLink:hover {
       text-decoration: underline;
     }
-    .trainingTipsLink {
-      color: var(--muted);
-      text-decoration: underline;
-      text-underline-offset: 2px;
-      font-size: 13px;
-      font-weight: 500;
-      background: none;
-      border: 0;
-      padding: 0;
-      cursor: pointer;
-      font-family: inherit;
-    }
-    .trainingTipsLink:hover {
-      color: var(--accent);
-    }
-    .trainingTipsDivider {
-      color: var(--muted);
-      margin: 0 8px;
-    }
     .btn.ghost { background:#f1f7ff; border:1px solid var(--border); color:var(--text); padding:6px 10px; }
         .modalBackdrop { position:fixed; inset:0; background:rgba(16,33,61,.35); display:none; align-items:center; justify-content:center; z-index:10000; }
     .modalCard { width:min(460px, calc(100vw - 24px)); background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; }
@@ -2432,7 +2413,6 @@ textarea:focus {
   color: var(--accent-deep);
 }
 
-.trainingTipsLink:hover,
 .helpFaqLink:hover {
   color: var(--accent-ink);
 }
@@ -2725,8 +2705,7 @@ details.band[open] > summary {
 .feedbackSummaryHint,
 .feedbackSummaryChevron,
 .pageFooterMeta,
-.pageFooterLink,
-.trainingTipsDivider {
+.pageFooterLink {
   color: var(--muted);
 }
 
@@ -2837,8 +2816,7 @@ details.band > summary:hover, details.band[open] > summary {
 #starterCopyCard .copyCardTitle, #finalCopyCard .copyCardTitle { color:#22544d; }
 #starterCopyCard .promptDesc, #starterCopyCard .copyCardPreview,
 #finalCopyCard .promptDesc, #finalCopyCard .copyCardPreview { color:#42675f; }
-.trainingTipsLink:hover { color:var(--accent-ink); }
-.pageFooterMeta, .pageFooterLink, .trainingTipsDivider { color:var(--muted); }
+.pageFooterMeta, .pageFooterLink { color:var(--muted); }
 .contextChoiceNote { margin:8px 0 0; }
 .noSaveNote { margin-top:8px; }
 
@@ -2853,7 +2831,7 @@ details.band > summary:hover, details.band[open] > summary {
 
       <div id="trainingTopNote" class="training-tip">
         <span class="training-tip-label"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
-        <p>These “Training tip” boxes explain the workflow as you move through the app. You can show or hide them at any time using the link at the bottom of the page.</p>
+        <p>These “Training tip” boxes explain the workflow as you move through the app.</p>
       </div>
 
       <div class="card accessCard" id="accessGate">
@@ -3163,9 +3141,6 @@ details.band > summary:hover, details.band[open] > summary {
     <div class="pageFooter is-landing" id="pageFooter">
       <div class="pageFooterInner">
         <footer class="pageFooterMeta">Developed by Taemin Jin · Faculty version</footer>
-        <div class="pageFooterLink">
-          <button id="btnToggleTrainingTipsFooter" class="trainingTipsLink" type="button" aria-pressed="true">Hide training tips</button>
-        </div>
       </div>
     </div>
   </div>
@@ -3206,7 +3181,6 @@ details.band > summary:hover, details.band[open] > summary {
       starterCopied: false,
       promptsUnlocked: false,
       finalUnlocked: false,
-      tipsVisible: true,
       clipboardHistory: []
     };
 
@@ -3407,17 +3381,6 @@ details.band > summary:hover, details.band[open] > summary {
       $("sidebarHistoryView").classList.toggle("is-visible", !preview);
       $("sidebarBtnPreview").classList.toggle("is-active", preview);
       $("sidebarBtnHistory").classList.toggle("is-active", !preview);
-    }
-
-    function setTrainingTipsVisible(visible) {
-      state.tipsVisible = visible;
-      document.querySelectorAll(".trainingTip, .training-tip").forEach(el => {
-        if (el.id === "trainingTopNote" && $("appShell").style.display !== "none") return;
-        el.style.display = visible ? "" : "none";
-      });
-      const btn = $("btnToggleTrainingTipsFooter");
-      btn.textContent = visible ? "Hide training tips" : "Show training tips";
-      btn.setAttribute("aria-pressed", String(visible));
     }
 
     function flashCard(card) {
@@ -3692,7 +3655,6 @@ details.band > summary:hover, details.band[open] > summary {
       $("pageShell").classList.add("is-app");
       $("pageFooter").classList.remove("is-landing");
       $("pageFooter").classList.add("is-app");
-      setTrainingTipsVisible(state.tipsVisible);
     });
 
     document.querySelectorAll(".productButton").forEach(btn => {
@@ -3800,8 +3762,6 @@ details.band > summary:hover, details.band[open] > summary {
       if (latest) copyText(latest.title, latest.text);
     });
 
-    $("btnToggleTrainingTipsFooter").addEventListener("click", () => setTrainingTipsVisible(!state.tipsVisible));
-
     $("btnResetSession").addEventListener("click", () => openModal("modalReset"));
     $("btnResetCancel").addEventListener("click", () => closeModal("modalReset"));
     $("btnResetConfirm").addEventListener("click", () => { closeModal("modalReset"); resetSession(); });
@@ -3814,7 +3774,7 @@ details.band > summary:hover, details.band[open] > summary {
       $("appShell").style.display = "none";
       $("accessGate").style.display = "";
       $("landingSubtitle").style.display = "";
-      $("trainingTopNote").style.display = state.tipsVisible ? "" : "none";
+      $("trainingTopNote").style.display = "";
       $("pageShell").classList.remove("is-app");
       $("pageShell").classList.add("is-landing");
       $("pageFooter").classList.remove("is-app");
@@ -3830,7 +3790,6 @@ details.band > summary:hover, details.band[open] > summary {
     renderPromptLibrary();
     renderClipboard();
     updateStarterState();
-    setTrainingTipsVisible(true);
   })();
   </script>
 </body>
