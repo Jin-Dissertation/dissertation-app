@@ -1,4 +1,25 @@
 <!DOCTYPE html>
+<!--
+  MAINTAINER GUIDE — STUDY PARTICIPANT AQG FRONTEND
+
+  This is the main GitHub Pages participant application. It is intentionally a
+  large self-contained HTML/CSS/JavaScript file.
+
+  Mental model:
+    1. HTML = what the participant sees.
+    2. CSS = layout/appearance.
+    3. JavaScript = access gate, workflow, prompt construction, browser recovery,
+       event logging, Worker saves, feedback, audio, and final submission.
+    4. Cloudflare Worker/D1/R2 = security + operational study storage.
+    5. UA OneDrive/Excel = verified institutional archive.
+
+  localStorage is useful for navigation/recovery, but it is not the durable
+  research archive. Never move Worker secrets or private R2 access into this
+  browser file.
+
+  Training Mode intentionally disables "Skip contextual details." The
+  "Show first question" prompt is generic/hard-coded and its use is logged.
+-->
 <html lang="en">
 <head>
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -2386,24 +2407,10 @@
         </summary>
         <div class="bandBody">
           <div class="card">
-            <div class="subBand" style="margin-top:0;">
-              <h4 class="subBandTitle">A. Select AI product</h4>
-              <div class="row" id="productGridWrap">
-                <div style="flex:1; min-width: 240px;">
-                  <input type="hidden" id="modelUsed" />
-                  <div class="modelGrid product-grid" id="modelGrid">
+            <input type="hidden" id="modelUsed" value="ChatGPT" />
 
-                  <button class="modelOption product-card productButton" data-model="ChatGPT" type="button"><div class="productIconCircle"><img src="images/chatgpt.png" class="productIconImage" alt="ChatGPT"></div><span>ChatGPT</span></button>
-<button class="modelOption product-card productButton" data-model="Gemini" type="button"><div class="productIconCircle"><img src="images/gemini.png" class="productIconImage" alt="Gemini"></div><span>Gemini</span></button>
-<button class="modelOption product-card productButton" data-model="Copilot" type="button"><div class="productIconCircle"><img src="images/copilot.png" class="productIconImage" alt="Copilot"></div><span>Copilot</span></button>
-<button class="modelOption product-card productButton" data-model="Other AI" type="button"><div class="productIconCircle"><img src="images/otherai.png" class="productIconImage" alt="Other AI"></div><span>Other AI</span></button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div id="contextSubband" class="subBand hidden" style="margin-top:10px;">
-              <h4 class="subBandTitle">B. Question context</h4>
+            <div id="contextSubband" class="subBand" style="margin-top:0;">
+              <h4 class="subBandTitle">Question context</h4>
               <div class="row" style="margin:10px 0 0;">
                 <button class="btn" id="btnSkipContext" type="button" aria-describedby="skipContextHint" disabled>Skip contextual details</button>
               </div>
@@ -2916,6 +2923,19 @@
     // Config
     // -----------------------------
 
+    /*
+     * JAVASCRIPT MAINTAINER MAP
+     *
+     * The script below has six big jobs:
+     *   • participant access + shared prompt setup;
+     *   • local browser/recovery state;
+     *   • setup → making questions → finalize workflow;
+     *   • serialized live saves using request IDs + revisions;
+     *   • feedback/audio/final submission;
+     *   • restoration of the latest saved Worker state.
+     *
+     * The Worker is the security and durable-data boundary.
+     */
 
     // One backend origin handles every AQG API call.
     const WORKER_API_URL = "https://dissertation-study-api.professor-jin.workers.dev";
@@ -2923,6 +2943,9 @@
     const REQUEST_TIMEOUT_MS = 15000;
     const LIVE_UPDATE_DEBOUNCE_MS = 400;
     const ACTIVE_IDLE_CAP_MS = 180000;
+
+    // Shared prompt source; this does not identify the chatbot a person uses.
+    const PROMPT_SET_KEY = "chatgpt";
 
     let remoteConfig = {
       llmOptions: {},
@@ -3076,11 +3099,8 @@ const PROMPT_META = [
     const isTrainingMode = currentUrl.searchParams.get("mode") === "training";
     let trainingTipsVisible = isTrainingMode;
     function getSelectedLlmKey() {
-      return normalizeLlmProduct(
-        localStorage.getItem(KEYS.llmProduct)
-        || localStorage.getItem(KEYS.modelUsed)
-        || ""
-      ) || "chatgpt";
+      // Saved product choices cannot select a different prompt family.
+      return PROMPT_SET_KEY;
     }
 
     function getRemoteLlmOptions(llmKey) {
@@ -3310,7 +3330,7 @@ const PROMPT_META = [
         event_type: eventType,
         button_id: buttonId,
         detail_text: detailText,
-        detail_json: detailJson,
+        detail_json: { ...detailJson, promptSet: PROMPT_SET_KEY, productSelectionCollected: false },
         device_label: deviceLabel
       });
       saveJSON(KEYS.pendingServerEvents, pending);
@@ -3506,7 +3526,7 @@ const PROMPT_META = [
       const area = ($("ctxArea")?.value || "").trim();
       const questionCount = ($("ctxQuestionCount")?.value || "10").trim() || "10";
       const notes = ($("ctxNotes")?.value || "").trim();
-      const llmProduct = (localStorage.getItem(KEYS.llmProduct) || "").trim();
+      const llmProduct = PROMPT_SET_KEY;
 
       return JSON.stringify({
         llmProduct,
@@ -3800,10 +3820,10 @@ const PROMPT_META = [
         status: statusOverride,
         app_version: getAppVersion(),
         mode: modeParam || "standard",
-        llm_product: localStorage.getItem(KEYS.llmProduct) || "",
-        model_used: localStorage.getItem(KEYS.modelUsed) || "",
-        llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
-        llm_mismatch_description: localStorage.getItem(KEYS.llmMismatchDescription) || "",
+        llm_product: "", // Product selection is no longer collected.
+        model_used: "", // Product selection is no longer collected.
+        llm_expected_choice: "", // Product selection is no longer collected.
+        llm_mismatch_description: "", // Product selection is no longer collected.
         desired_questions: ctx.questionCount || "",
         course_context: ctx.course || "",
         question_context: ctx.area || "",
@@ -3818,6 +3838,8 @@ const PROMPT_META = [
         event_count: events.length,
         device_label: getCompactDeviceLabel(),
         progress_json: {
+          promptSet: PROMPT_SET_KEY,
+          productSelectionCollected: false,
           stage,
           starterPromptCopied: localStorage.getItem(KEYS.starterCopied) === "true",
           contextSkipped: hasSkippedContext(),
@@ -3941,9 +3963,9 @@ const PROMPT_META = [
       const accessCode = localStorage.getItem(KEYS.accessCode) || "";
       const accessExpiresAt = localStorage.getItem(KEYS.accessExpiresAt) || "";
       const sessionId = localStorage.getItem(KEYS.sessionId) || "";
-      const modelUsed = localStorage.getItem(KEYS.modelUsed) || "";
-      const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-      const llmExpectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
+      const modelUsed = "";
+      const llmProduct = "";
+      const llmExpectedChoice = "";
       events.push({
         t: nowIso(),
         type,
@@ -3953,6 +3975,8 @@ const PROMPT_META = [
         modelUsed,
         llmProduct,
         llmExpectedChoice,
+        promptSet: PROMPT_SET_KEY,
+        productSelectionCollected: false,
         ...data
       });
       saveJSON(KEYS.events, events);
@@ -4215,13 +4239,12 @@ const PROMPT_META = [
 
     function updateSetupSubbandVisibility() {
       const contextSubband = $("contextSubband");
-      const contextFields = $("contextFields");
-      const selectedProduct = normalizeLlmProduct(localStorage.getItem(KEYS.llmProduct) || "");
-      const showContextSubband = !!selectedProduct;
-      if (contextSubband) contextSubband.classList.toggle("hidden", !showContextSubband);
-      // contextFields visibility is controlled by its parent contextSubband —
-      // toggling hidden on both caused layout issues on first-load confirm flow.
-      if (contextFields) contextFields.classList.remove("hidden");
+      if (contextSubband) {
+        contextSubband.classList.remove("hidden");
+        contextSubband.hidden = false;
+        contextSubband.style.display = "";
+      }
+      $("contextFields")?.classList.remove("hidden");
       updateStarterCopyAvailability();
     }
 
@@ -4260,19 +4283,8 @@ const PROMPT_META = [
     }
 
 
-    function getFinalizeCopyInstructionLine(model) {
-      const m = String(model || "").trim();
-      const caption = "Click the copy button beneath the AI response.";
-      if (m === "ChatGPT") {
-        return `<div class="copyHelpExample"><img src="images/chatgpt-copy.png" class="copyHelpImage" alt="ChatGPT copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
-      }
-      if (m === "Gemini") {
-        return `<div class="copyHelpExample"><img src="images/gemini-copy.png" class="copyHelpImage" alt="Gemini copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
-      }
-      if (m === "Copilot") {
-        return `<div class="copyHelpExample"><img src="images/copilot-copy.png" class="copyHelpImage" alt="Copilot copy button location"><div class="copyHelpCaption">${caption}</div></div>`;
-      }
-      return `Look for a copy button, usually located just below the AI's response.`;
+    function getFinalizeCopyInstructionLine() {
+      return "Look for a copy button, usually located just below the AI's response.";
     }
 
     function updateFinalizeContentUI() {
@@ -4408,7 +4420,7 @@ const PROMPT_META = [
       localStorage.removeItem(KEYS.timerWarned40);
       localStorage.removeItem(KEYS.trainingTenMinuteNoticeShown);
 
-      if ($("modelUsed")) $("modelUsed").value = "";
+      selectModel();
       if ($("ctxCourse")) $("ctxCourse").value = "";
       if ($("ctxArea")) $("ctxArea").value = "";
       if ($("ctxNotes")) $("ctxNotes").value = "";
@@ -4517,7 +4529,7 @@ ${persistentInstructions}`;
     }
 
     function getSafeStoredFinalPrompt() {
-      return localStorage.getItem(KEYS.finalPrompt) || "";
+      return appBootReady ? buildFinalPrompt() : "";
     }
 
     // Preview text for prompt card panels. Uses natural-language fallbacks.
@@ -5499,14 +5511,13 @@ ${persistentInstructions}`;
     // Accordion gating
     // -----------------------------
     function hasRequiredContextFields() {
-      const model = (localStorage.getItem(KEYS.modelUsed) || "").trim();
       const ctx = getContext();
-      return !!model && !!ctx.course.trim() && !!ctx.area.trim();
+      return !!ctx.course.trim() && !!ctx.area.trim();
     }
 
     function isProductSelected() {
-      return localStorage.getItem(KEYS.productVersionConfirmed) === "true" &&
-        !!normalizeLlmProduct(localStorage.getItem(KEYS.llmProduct) || "");
+      // Legacy workflow hook: the shared prompt set is always available.
+      return true;
     }
 
     function hasSkippedContext() {
@@ -6154,6 +6165,7 @@ ${persistentInstructions}`;
           return false;
         }
         clearSessionData();
+        selectModel();
         $("llmResponse").value = ""; $("sessionNotes").value = "";
       }
       localStorage.setItem(KEYS.accessVerified, "true");
@@ -6306,10 +6318,10 @@ ${persistentInstructions}`;
         status: "submitted",
         app_version: getAppVersion(),
         mode: new URLSearchParams(window.location.search).get("mode") || "standard",
-        llm_product: localStorage.getItem(KEYS.llmProduct) || "",
-        model_used: localStorage.getItem(KEYS.modelUsed) || "",
-        llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
-        llm_mismatch_description: (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim(),
+        llm_product: "", // Product selection is no longer collected.
+        model_used: "", // Product selection is no longer collected.
+        llm_expected_choice: "", // Product selection is no longer collected.
+        llm_mismatch_description: "",
         desired_questions: ctx.questionCount || "",
         course_context: ctx.course || "",
         question_context: ctx.area || "",
@@ -6324,6 +6336,8 @@ ${persistentInstructions}`;
         event_count: events.length,
         device_label: getCompactDeviceLabel(),
         progress_json: {
+          promptSet: PROMPT_SET_KEY,
+          productSelectionCollected: false,
           stage: getStage(),
           starterPromptCopied: localStorage.getItem(KEYS.starterCopied) === "true",
           contextSkipped: hasSkippedContext(),
@@ -6588,32 +6602,20 @@ ${persistentInstructions}`;
     };
     const closeMobileFeedbackSheet = () => closeModal("modalMobileFeedback");
 
-    function selectModel(model, { logSelection = true } = {}) {
-      const llmProduct = normalizeLlmProduct(model) || "chatgpt";
-      const selectedModelLabel = MODEL_LABEL_BY_PRODUCT[llmProduct] || "ChatGPT";
-      $("modelUsed").value = selectedModelLabel;
-      localStorage.setItem(KEYS.modelUsed, selectedModelLabel);
-      document.querySelectorAll(".modelOption").forEach((btn) => {
-        const isSelected = btn.dataset.model === selectedModelLabel;
-        btn.classList.toggle("active", isSelected);
-        btn.classList.toggle("selected", isSelected);
-      });
-      localStorage.setItem(KEYS.llmProduct, llmProduct);
+    function selectModel() {
+      // Compatibility hook for startup/recovery. No user product is selected
+      // or logged, and legacy callers cannot switch the prompt set.
+      $("modelUsed").value = "ChatGPT";
+      localStorage.setItem(KEYS.modelUsed, "ChatGPT");
+      localStorage.setItem(KEYS.llmProduct, PROMPT_SET_KEY);
       localStorage.removeItem(KEYS.llmExpectedChoice);
       localStorage.removeItem(KEYS.llmMismatchDescription);
       localStorage.setItem(KEYS.productVersionConfirmed, "true");
-      if (logSelection) {
-        markInteraction();
-        logEvent("llm_product_selected", { llmProduct });
-      }
       invalidateStarterIfSignatureChanged();
       updateSetupSubbandVisibility();
       renderPromptList();
       renderSetupSamplePromptBox();
       renderCopyCardPromptText();
-      if (logSelection) {
-        queueLiveSessionUpdate("in_progress");
-      }
     }
 
     function refreshCopyCardPreviews() {
@@ -6623,7 +6625,7 @@ ${persistentInstructions}`;
       const finalPreview = $("finalCopyPreview");
       if (finalPreview) {
         if (getStage() === "finalize") {
-          finalPreview.textContent = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+          finalPreview.textContent = buildFinalPrompt();
         } else {
           finalPreview.textContent = getSafeStoredFinalPrompt();
         }
@@ -6938,9 +6940,7 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
         notes: restoredNotes
       }, { skipStarterInvalidation: true });
 
-      if (restoredProduct) {
-        selectModel(restoredProduct, { logSelection: false });
-      }
+      selectModel();
       starterPromptCopied = starterCopied;
       if (starterCopied) {
         localStorage.setItem(KEYS.starterCopied, "true");
@@ -7029,18 +7029,6 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
       // Hydrate fields
       $("llmResponse").value = localStorage.getItem(KEYS.llmResponseDraft) || "";
       $("sessionNotes").value = localStorage.getItem(KEYS.sessionNotesDraft) || "";
-      const storedModelProduct = normalizeLlmProduct(localStorage.getItem(KEYS.modelUsed) || "");
-      const storedLlmProduct = normalizeLlmProduct(localStorage.getItem(KEYS.llmProduct) || "");
-      const initialProduct = storedLlmProduct || storedModelProduct || "";
-      if (initialProduct) {
-        const initialModel = MODEL_LABEL_BY_PRODUCT[initialProduct] || "";
-        $("modelUsed").value = initialModel;
-        localStorage.setItem(KEYS.modelUsed, initialModel);
-        localStorage.setItem(KEYS.llmProduct, initialProduct);
-      } else {
-        // No product previously selected — leave the grid unselected.
-        $("modelUsed").value = "";
-      }
       const ctx = getContext();
       $("ctxCourse").value = ctx.course || "";
       $("ctxArea").value = ctx.area || "";
@@ -7048,16 +7036,7 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
       $("ctxQuestionCount").value = ctx.questionCount || "10";
       if (!localStorage.getItem(KEYS.starterCopied)) localStorage.setItem(KEYS.starterCopied, "false");
 
-      document.querySelectorAll(".modelOption").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          selectModel(btn.dataset.model || "", { logSelection: true });
-          applyStageUI();
-        });
-      });
-      if (initialProduct) {
-        selectModel($("modelUsed").value || "", { logSelection: false });
-      }
+      selectModel();
       updateSetupSubbandVisibility();
 
       const btnLoadPreviousSettings = $("btnLoadPreviousSettings");
@@ -7176,8 +7155,8 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
         const notes = ($("ctxNotes").value || "").trim();
         const questionCount = ($("ctxQuestionCount").value || "10").trim() || "10";
 
-        if (!model || !isStarterSetupValid()) {
-          $("setupMsg").textContent = "Please select an AI product and fill in course + content area before continuing.";
+        if (!isStarterSetupValid()) {
+          $("setupMsg").textContent = "Please fill in Course and Topic before continuing.";
           $("setupMsg").style.display = "block";
           showExistingErrorToast("Complete required fields");
           return;
@@ -7203,7 +7182,7 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
           }
 
           // Log + copy only
-          logEvent("starter_prepared", { sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
+          logEvent("starter_prepared", { sessionId: localStorage.getItem(KEYS.sessionId), promptSet: PROMPT_SET_KEY });
           refreshCopyCardPreviews();
           starterCard = $("starterCopyCard");
           showCopyCardActiveState(starterCard);
@@ -7254,8 +7233,8 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
                   buildContextDetailText(getContext()),
                   {
                     context: getContext(),
-                    LLM_Product: localStorage.getItem(KEYS.llmProduct) || "",
-                    LLM_Model: localStorage.getItem(KEYS.llmExpectedChoice) || "",
+                    LLM_Product: "",
+                    LLM_Model: "",
                     LLM_Description: localStorage.getItem(KEYS.llmMismatchDescription) || ""
                   }
                 );
@@ -7387,7 +7366,7 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
 
       const copyFinalPrompt = async () => {
         refreshCopyCardPreviews();
-        const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+        const fp = buildFinalPrompt();
         const finalCard = $("finalCopyCard");
         showCopyCardActiveState(finalCard);
         const finalPromptTitle = getPromptTitle("final_prompt", "Final prompt");
