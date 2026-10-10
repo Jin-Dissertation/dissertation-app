@@ -2814,46 +2814,10 @@ details.band[open] > summary {
         </summary>
         <div class="bandBody">
           <div class="card">
-            <div class="subBand" style="margin-top:0;">
-              <h4 class="subBandTitle">A. Select AI product</h4>
-              <div class="row" id="productGridWrap">
-                <div style="flex:1; min-width: 240px;">
-                  <input type="hidden" id="modelUsed" />
-                  <div class="modelGrid product-grid" id="modelGrid">
+            <input type="hidden" id="modelUsed" value="ChatGPT" />
 
-                  <button class="modelOption product-card productButton" data-model="ChatGPT" type="button"><div class="productIconCircle"><img src="images/chatgpt.png" class="productIconImage" alt="ChatGPT"></div><span>ChatGPT</span></button>
-<button class="modelOption product-card productButton" data-model="Gemini" type="button"><div class="productIconCircle"><img src="images/gemini.png" class="productIconImage" alt="Gemini"></div><span>Gemini</span></button>
-<button class="modelOption product-card productButton" data-model="Copilot" type="button"><div class="productIconCircle"><img src="images/copilot.png" class="productIconImage" alt="Copilot"></div><span>Copilot</span></button>
-<button class="modelOption product-card productButton" data-model="Other AI" type="button"><div class="productIconCircle"><img src="images/otherai.png" class="productIconImage" alt="Other AI"></div><span>Other AI</span></button>
-                  </div>
-                </div>
-              </div>
-
-              <div id="productVersionEditor" class="hidden" hidden style="display:none;">
-                <p class="muted small llmConfirmIntro" id="llmConfirmIntro"></p>
-                <div id="llmConfirmPanel" style="display:none; margin-top:8px;">
-                  <p id="llmInstructionText" class="muted small" style="margin:0 0 6px;"></p>
-                  <p id="llmWhereText" class="muted small" style="margin:0;"></p>
-                  <div id="llmImage1"></div>
-                  <div id="llmImage2"></div>
-                  <label id="llmConfirmLabel"></label>
-                  <select id="llmExpectedChoice" class="llmCompactSelect"></select>
-                  <p class="muted small" id="llmMismatchNote" style="display:none; margin:8px 0 0;"></p>
-                  <div id="llmMismatchWrap" style="display:none; margin-top:10px;">
-                    <label for="llmMismatchDescription">Please briefly describe the options you see in the menu.</label>
-                    <textarea id="llmMismatchDescription" placeholder="Example: Auto, Quick response, Think deeper"></textarea>
-                  </div>
-                </div>
-                <button class="btn" id="btnConfirmProductVersion" type="button" hidden style="display:none;">Confirm product and mode</button>
-              </div>
-
-              <div id="productVersionSummary" class="hidden" hidden style="display:none;" aria-hidden="true">
-                <div class="title"></div>
-                <div class="muted small" id="productVersionSummaryText"></div>
-              </div>
-
-            <div id="contextSubband" class="subBand hidden" style="margin-top:10px;">
-              <h4 class="subBandTitle">B. Question context</h4>
+            <div id="contextSubband" class="subBand" style="margin-top:0;">
+              <h4 class="subBandTitle">Question context</h4>
               <div class="row" style="margin:10px 0 0;">
                 <button class="btn" id="btnSkipContext" type="button" aria-describedby="skipContextHint" disabled>Skip contextual details</button>
               </div>
@@ -3331,6 +3295,9 @@ details.band[open] > summary {
 
     const ACTIVE_IDLE_CAP_MS = 180000;
 
+    // Shared prompt source; this does not identify the chatbot a person uses.
+    const PROMPT_SET_KEY = "chatgpt";
+
     let remoteConfig = {
       llmOptions: {},
       prompts: {},
@@ -3559,11 +3526,8 @@ const PROMPT_META = [
       refreshTrainingTipsFooterLink();
     }
     function getSelectedLlmKey() {
-      return normalizeLlmProduct(
-        localStorage.getItem(KEYS.llmProduct)
-        || localStorage.getItem(KEYS.modelUsed)
-        || ""
-      ) || "chatgpt";
+      // Saved product choices cannot select a different prompt family.
+      return PROMPT_SET_KEY;
     }
 
     function getRemoteLlmOptions(llmKey) {
@@ -3861,10 +3825,10 @@ const PROMPT_META = [
       const area = ($("ctxArea")?.value || "").trim();
       const questionCount = ($("ctxQuestionCount")?.value || "10").trim() || "10";
       const notes = ($("ctxNotes")?.value || "").trim();
-      const llmProduct = (localStorage.getItem(KEYS.llmProduct) || "").trim();
-      const llmExpectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      const llmMismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
-      const productVersionConfirmed = localStorage.getItem(KEYS.productVersionConfirmed) === "true" ? "true" : "false";
+      const llmProduct = PROMPT_SET_KEY;
+      const llmExpectedChoice = PROMPT_SET_KEY;
+      const llmMismatchDescription = "";
+      const productVersionConfirmed = "true";
 
       return JSON.stringify({
         llmProduct,
@@ -4169,10 +4133,10 @@ const PROMPT_META = [
         status: statusOverride,
         app_version: getAppVersion(),
         mode: modeParam || "standard",
-        llm_product: localStorage.getItem(KEYS.llmProduct) || "",
-        model_used: localStorage.getItem(KEYS.modelUsed) || "",
-        llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
-        llm_mismatch_description: localStorage.getItem(KEYS.llmMismatchDescription) || "",
+        llm_product: "", // Product selection is no longer collected.
+        model_used: "", // Product selection is no longer collected.
+        llm_expected_choice: "", // Product selection is no longer collected.
+        llm_mismatch_description: "", // Product selection is no longer collected.
         desired_questions: ctx.questionCount || "",
         course_context: ctx.course || "",
         question_context: ctx.area || "",
@@ -4186,6 +4150,8 @@ const PROMPT_META = [
         event_count: events.length,
         device_label: getCompactDeviceLabel(),
         progress_json: {
+          promptSet: PROMPT_SET_KEY,
+          productSelectionCollected: false,
           stage,
           starterPromptCopied: localStorage.getItem(KEYS.starterCopied) === "true",
           contextSkipped: hasSkippedContext(),
@@ -4222,9 +4188,9 @@ const PROMPT_META = [
       const stage = getStage();
       const accessCode = localStorage.getItem(KEYS.accessCode) || "";
       const sessionId = localStorage.getItem(KEYS.sessionId) || "";
-      const modelUsed = localStorage.getItem(KEYS.modelUsed) || "";
-      const llmProduct = localStorage.getItem(KEYS.llmProduct) || "";
-      const llmExpectedChoice = localStorage.getItem(KEYS.llmExpectedChoice) || "";
+      const modelUsed = "";
+      const llmProduct = "";
+      const llmExpectedChoice = "";
       events.push({
         t: nowIso(),
         type,
@@ -4234,6 +4200,8 @@ const PROMPT_META = [
         modelUsed,
         llmProduct,
         llmExpectedChoice,
+        promptSet: PROMPT_SET_KEY,
+        productSelectionCollected: false,
         ...data
       });
       saveJSON(KEYS.events, events);
@@ -4557,14 +4525,6 @@ const PROMPT_META = [
     }
 
     function isLlmConfirmationComplete() {
-      const product = localStorage.getItem(KEYS.llmProduct) || "";
-      const expectedChoice = (localStorage.getItem(KEYS.llmExpectedChoice) || "").trim();
-      const mismatchDescription = (localStorage.getItem(KEYS.llmMismatchDescription) || "").trim();
-
-      if (!product) return false;
-      if (!["chatgpt", "gemini", "copilot", "otherai"].includes(product)) return false;
-      if (!expectedChoice) return false;
-      if (expectedChoice === "different" && !mismatchDescription) return false;
       return true;
     }
 
@@ -4594,28 +4554,12 @@ const PROMPT_META = [
 
     function updateSetupSubbandVisibility() {
       const contextSubband = $("contextSubband");
-      const productGridWrap = $("productGridWrap");
-      const editor = $("productVersionEditor");
-      const summary = $("productVersionSummary");
-      const productSelected = !!(localStorage.getItem(KEYS.llmProduct) || "");
-
-      if (productGridWrap) {
-        productGridWrap.hidden = false;
-        productGridWrap.style.display = "";
-      }
-      if (editor) {
-        editor.hidden = true;
-        editor.style.display = "none";
-      }
-      if (summary) {
-        summary.hidden = true;
-        summary.style.display = "none";
-      }
       if (contextSubband) {
-        contextSubband.classList.toggle("hidden", !productSelected);
-        contextSubband.hidden = !productSelected;
-        contextSubband.style.display = productSelected ? "" : "none";
+        contextSubband.classList.remove("hidden");
+        contextSubband.hidden = false;
+        contextSubband.style.display = "";
       }
+      $("contextFields")?.classList.remove("hidden");
       updateStarterCopyAvailability();
     }
 
@@ -4760,7 +4704,7 @@ const PROMPT_META = [
       localStorage.removeItem(KEYS.timerWarned40);
       localStorage.removeItem(KEYS.trainingTenMinuteNoticeShown);
 
-      if ($("modelUsed")) $("modelUsed").value = "";
+      selectModel();
       if ($("ctxCourse")) $("ctxCourse").value = "";
       if ($("ctxArea")) $("ctxArea").value = "";
       if ($("ctxNotes")) $("ctxNotes").value = "";
@@ -4888,7 +4832,7 @@ ${persistentInstructions}`;
     }
 
     function getSafeStoredFinalPrompt() {
-      return localStorage.getItem(KEYS.finalPrompt) || "";
+      return appBootReady ? buildFinalPrompt() : "";
     }
 
     // Preview text for prompt card panels. Uses natural-language fallbacks.
@@ -5724,14 +5668,13 @@ ${persistentInstructions}`;
     // Accordion gating
     // -----------------------------
     function hasRequiredContextFields() {
-      const model = (localStorage.getItem(KEYS.modelUsed) || "").trim();
       const ctx = getContext();
-      return !!model && !!ctx.course.trim() && !!ctx.area.trim();
+      return !!ctx.course.trim() && !!ctx.area.trim();
     }
 
     function isProductSelected() {
-      return localStorage.getItem(KEYS.productVersionConfirmed) === "true" &&
-        !!normalizeLlmProduct(localStorage.getItem(KEYS.llmProduct) || "");
+      // Legacy workflow hook: the shared prompt set is always available.
+      return true;
     }
 
     function hasSkippedContext() {
@@ -6329,9 +6272,9 @@ ${persistentInstructions}`;
         status: "submitted",
         app_version: getAppVersion(),
         mode: new URLSearchParams(window.location.search).get("mode") || "standard",
-        llm_product: localStorage.getItem(KEYS.llmProduct) || "",
-        model_used: localStorage.getItem(KEYS.modelUsed) || "",
-        llm_expected_choice: localStorage.getItem(KEYS.llmExpectedChoice) || "",
+        llm_product: "", // Product selection is no longer collected.
+        model_used: "", // Product selection is no longer collected.
+        llm_expected_choice: "", // Product selection is no longer collected.
         llm_mismatch_description: ($("llmMismatchDescription")?.value || localStorage.getItem(KEYS.llmMismatchDescription) || "").trim(),
         desired_questions: ctx.questionCount || "",
         course_context: ctx.course || "",
@@ -6346,6 +6289,8 @@ ${persistentInstructions}`;
         event_count: events.length,
         device_label: getCompactDeviceLabel(),
         progress_json: {
+          promptSet: PROMPT_SET_KEY,
+          productSelectionCollected: false,
           stage: getStage(),
           starterPromptCopied: localStorage.getItem(KEYS.starterCopied) === "true",
           contextSkipped: hasSkippedContext(),
@@ -6431,38 +6376,20 @@ ${persistentInstructions}`;
     };
     const closeMobileFeedbackSheet = () => closeModal("modalMobileFeedback");
 
-    function selectModel(model, { logSelection = true } = {}) {
-      const llmProduct = normalizeLlmProduct(model) || "chatgpt";
-      const selectedModelLabel = MODEL_LABEL_BY_PRODUCT[llmProduct] || "ChatGPT";
-      $("modelUsed").value = selectedModelLabel;
-      localStorage.setItem(KEYS.modelUsed, selectedModelLabel);
-      document.querySelectorAll(".modelOption").forEach((btn) => {
-        const isSelected = btn.dataset.model === selectedModelLabel;
-        btn.classList.toggle("active", isSelected);
-        btn.classList.toggle("selected", isSelected);
-      });
-      localStorage.setItem(KEYS.llmProduct, llmProduct);
-      localStorage.setItem(KEYS.llmExpectedChoice, llmProduct);
+    function selectModel() {
+      // Compatibility hook for startup/recovery. No user product is selected
+      // or logged, and legacy callers cannot switch the prompt set.
+      $("modelUsed").value = "ChatGPT";
+      localStorage.setItem(KEYS.modelUsed, "ChatGPT");
+      localStorage.setItem(KEYS.llmProduct, PROMPT_SET_KEY);
+      localStorage.removeItem(KEYS.llmExpectedChoice);
       localStorage.removeItem(KEYS.llmMismatchDescription);
-      setProductVersionConfirmedState(true);
-      if (logSelection) {
-        markInteraction();
-        logEvent("llm_product_selected", { llmProduct });
-        queueLiveSessionUpdate("in_progress");
-      }
+      localStorage.setItem(KEYS.productVersionConfirmed, "true");
       invalidateStarterIfSignatureChanged();
+      updateSetupSubbandVisibility();
       renderPromptList();
       renderSetupSamplePromptBox();
       renderCopyCardPromptText();
-      updateSetupSubbandVisibility();
-      applyStageUI();
-      const contextSubband = $("contextSubband");
-      if (contextSubband) {
-        contextSubband.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-      window.setTimeout(() => {
-        $("ctxCourse")?.focus();
-      }, 50);
     }
 
     function refreshCopyCardPreviews() {
@@ -6472,7 +6399,7 @@ ${persistentInstructions}`;
       const finalPreview = $("finalCopyPreview");
       if (finalPreview) {
         if (getStage() === "finalize") {
-          finalPreview.textContent = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+          finalPreview.textContent = buildFinalPrompt();
         } else {
           finalPreview.textContent = getSafeStoredFinalPrompt();
         }
@@ -6667,10 +6594,7 @@ async function sendFeedbackAlert() {
         notes: restoredNotes
       }, { skipStarterInvalidation: true });
 
-      if (restoredProduct) {
-        selectModel(restoredProduct, { logSelection: false });
-        renderLlmConfirmPanel(restoredProduct);
-      }
+      selectModel();
       starterPromptCopied = starterCopied;
       if (starterCopied) {
         localStorage.setItem(KEYS.starterCopied, "true");
@@ -6753,18 +6677,6 @@ async function sendFeedbackAlert() {
 
 
       // Hydrate fields
-      const storedModelProduct = normalizeLlmProduct(localStorage.getItem(KEYS.modelUsed) || "");
-      const storedLlmProduct = normalizeLlmProduct(localStorage.getItem(KEYS.llmProduct) || "");
-      const initialProduct = storedLlmProduct || storedModelProduct || "";
-      if (initialProduct) {
-        const initialModel = MODEL_LABEL_BY_PRODUCT[initialProduct] || "";
-        $("modelUsed").value = initialModel;
-        localStorage.setItem(KEYS.modelUsed, initialModel);
-        localStorage.setItem(KEYS.llmProduct, initialProduct);
-      } else {
-        // No product previously selected — leave the grid unselected.
-        $("modelUsed").value = "";
-      }
       const ctx = getContext();
       $("ctxCourse").value = ctx.course || "";
       $("ctxArea").value = ctx.area || "";
@@ -6772,17 +6684,7 @@ async function sendFeedbackAlert() {
       $("ctxQuestionCount").value = ctx.questionCount || "10";
       if (!localStorage.getItem(KEYS.starterCopied)) localStorage.setItem(KEYS.starterCopied, "false");
 
-      document.querySelectorAll(".modelOption").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          selectModel(btn.dataset.model || "", { logSelection: true });
-          applyStageUI();
-        });
-      });
-      if (initialProduct) {
-        selectModel($("modelUsed").value || "", { logSelection: false });
-      }
-      renderLlmConfirmPanel(localStorage.getItem(KEYS.llmProduct) || "");
+      selectModel();
       updateSetupSubbandVisibility();
 
       const btnLoadPreviousSettings = $("btnLoadPreviousSettings");
@@ -6986,15 +6888,8 @@ async function sendFeedbackAlert() {
         const notes = ($("ctxNotes").value || "").trim();
         const questionCount = ($("ctxQuestionCount").value || "10").trim() || "10";
 
-        if (!model || !isStarterSetupValid()) {
-          $("setupMsg").textContent = "Please select a model and fill in course + content area before continuing.";
-          $("setupMsg").style.display = "block";
-          showExistingErrorToast("Complete required fields");
-          return;
-        }
-
-        if (!isLlmConfirmationComplete() || localStorage.getItem(KEYS.productVersionConfirmed) !== "true") {
-          $("setupMsg").textContent = "Please confirm product mode before continuing.";
+        if (!isStarterSetupValid()) {
+          $("setupMsg").textContent = "Please fill in Course and Topic before continuing.";
           $("setupMsg").style.display = "block";
           showExistingErrorToast("Complete required fields");
           return;
@@ -7016,7 +6911,7 @@ async function sendFeedbackAlert() {
           }
 
           // Log + copy only
-          logEvent("starter_prepared", { accessCode: code, sessionId: localStorage.getItem(KEYS.sessionId), modelUsed: model });
+          logEvent("starter_prepared", { accessCode: code, sessionId: localStorage.getItem(KEYS.sessionId), promptSet: PROMPT_SET_KEY });
           refreshCopyCardPreviews();
           starterCard = $("starterCopyCard");
           showCopyCardActiveState(starterCard);
@@ -7068,8 +6963,8 @@ async function sendFeedbackAlert() {
                   buildContextDetailText(getContext()),
                   {
                     context: getContext(),
-                    LLM_Product: localStorage.getItem(KEYS.llmProduct) || "",
-                    LLM_Model: localStorage.getItem(KEYS.llmExpectedChoice) || "",
+                    LLM_Product: "",
+                    LLM_Model: "",
                     LLM_Description: localStorage.getItem(KEYS.llmMismatchDescription) || ""
                   }
                 );
@@ -7210,7 +7105,7 @@ async function sendFeedbackAlert() {
 
       const copyFinalPrompt = async () => {
         refreshCopyCardPreviews();
-        const fp = localStorage.getItem(KEYS.finalPrompt) || buildFinalPrompt();
+        const fp = buildFinalPrompt();
         const finalCard = $("finalCopyCard");
         showCopyCardActiveState(finalCard);
         const finalPromptTitle = getPromptTitle("final_prompt", "Final prompt");
