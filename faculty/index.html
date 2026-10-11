@@ -2922,6 +2922,43 @@ details.band > summary:hover, details.band[open] > summary {
         font-size: 16px;
       }
     }
+  
+    /* Same section treatment as "Accept or Replace Question"; only the chevron differs. */
+    #setupSamplePromptBox.setupPromptBox {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #d8cce5;
+      border-left: 4px solid #7d5fa5;
+      border-radius: 10px;
+      background: #f7f2fb;
+    }
+    #setupSamplePromptBox .facultySampleDisclosure > summary.promptSectionTitle {
+      min-height: 0;
+      margin: 0;
+      padding: 0;
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: 0.005em;
+      color: #40344d;
+    }
+    #setupSamplePromptBox .facultySampleDisclosure[open] > summary.promptSectionTitle {
+      margin-bottom: 8px;
+    }
+    #setupSamplePromptBox .setupPromptList { gap: 8px; }
+    @media (min-width: 1100px) {
+      #setupSamplePromptBox.setupPromptBox { padding: 9px; }
+      #setupSamplePromptBox .setupPromptList { gap: 6px; }
+    }
+    @media (max-width: 900px) {
+      #setupSamplePromptBox.setupPromptBox {
+        padding: 10px 10px 12px;
+        border-radius: 14px;
+      }
+      #setupSamplePromptBox .facultySampleDisclosure > summary.promptSectionTitle {
+        font-size: 15px;
+      }
+    }
   </style>
 </head>
 
@@ -3085,8 +3122,7 @@ details.band > summary:hover, details.band[open] > summary {
 
                 <div id="setupSamplePromptBox" class="setupPromptBox" hidden>
                   <details class="facultySampleDisclosure">
-                    <summary><strong>Optional: Use sample questions</strong></summary>
-                    <p class="setupPromptBoxSub">If you have sample questions, you can use one of these prompts to guide the AI.</p>
+                    <summary class="promptSectionTitle">Optional: Use sample questions</summary>
                   <div id="trainingTipSamplePrompts" class="trainingTip trainingTipSmall">
                     <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
                     <p>If you have existing questions you'd like to use as a reference, first copy one of these prompts into your AI conversation, then paste your sample questions. If you do not have samples, simply continue to the next step.</p>
