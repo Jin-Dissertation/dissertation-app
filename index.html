@@ -2432,6 +2432,71 @@
       color: #2d5a3a;
     }
 
+  
+    /* Shared faculty layout: section headings and the optional sample-question
+       disclosure use matching type metrics, padding and vertical rhythm.
+       Participant-only instructions, access controls and event logic are unchanged. */
+    .promptSectionTitle,
+    #setupSamplePromptBox > summary.setupPromptBoxHeader.promptSectionTitle {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: 0.005em;
+    }
+    #setupSamplePromptBox.setupPromptBox {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #bdcde5;
+      border-left: 4px solid #9ab7e8;
+      border-radius: 10px;
+      background: #f3f8ff;
+    }
+    #setupSamplePromptBox > summary.setupPromptBoxHeader.promptSectionTitle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 0;
+      margin: 0;
+      padding: 0;
+      color: #0f1f39;
+    }
+    #setupSamplePromptBox > summary.setupPromptBoxHeader.promptSectionTitle::after {
+      content: "›";
+      flex: 0 0 auto;
+      color: #527bb4;
+      font-size: 19px;
+      line-height: 1;
+      transition: transform 0.15s ease;
+    }
+    #setupSamplePromptBox[open] > summary.setupPromptBoxHeader.promptSectionTitle::after {
+      transform: rotate(90deg);
+    }
+    #setupSamplePromptBox[open] > summary.setupPromptBoxHeader.promptSectionTitle {
+      margin-bottom: 8px;
+    }
+    #setupSamplePromptBox .setupPromptBoxContent {
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+    #setupSamplePromptBox .setupPromptList { gap: 8px; }
+    @media (min-width: 1100px) {
+      #setupSamplePromptBox.setupPromptBox { padding: 9px; }
+      #setupSamplePromptBox .setupPromptList { gap: 6px; }
+    }
+    @media (max-width: 900px) {
+      .promptSectionTitle,
+      #setupSamplePromptBox > summary.setupPromptBoxHeader.promptSectionTitle {
+        font-size: 15px;
+      }
+      #setupSamplePromptBox.setupPromptBox {
+        padding: 10px 10px 12px;
+        border-radius: 14px;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -2585,13 +2650,7 @@
             </div>
 
             <details id="setupSamplePromptBox" class="setupPromptBox" hidden>
-              <summary class="setupPromptBoxHeader">
-                <span class="setupPromptHeaderText">
-                  <span class="setupPromptBoxTitle" style="display:block;">Optional: Use sample questions</span>
-                  <span class="setupPromptBoxSub" style="display:block;">Expand to copy prompts that use your existing questions as examples.</span>
-                </span>
-                <span class="setupPromptChevron" aria-hidden="true">›</span>
-              </summary>
+              <summary class="setupPromptBoxHeader promptSectionTitle">Optional: Use sample questions</summary>
               <div class="setupPromptBoxContent">
               <div id="trainingTipSamplePrompts" class="trainingTip trainingTipSmall">
                 <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>

@@ -2959,6 +2959,24 @@ details.band > summary:hover, details.band[open] > summary {
         font-size: 15px;
       }
     }
+  
+    /* The sample-question disclosure is a peer of the prompt section headings.
+       Use one explicit type scale so summary and h4 render identically. */
+    .promptSectionTitle,
+    #setupSamplePromptBox .facultySampleDisclosure > summary.promptSectionTitle {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: 0.005em;
+    }
+    @media (max-width: 900px) {
+      .promptSectionTitle,
+      #setupSamplePromptBox .facultySampleDisclosure > summary.promptSectionTitle {
+        font-size: 15px;
+      }
+    }
+
   </style>
 </head>
 
