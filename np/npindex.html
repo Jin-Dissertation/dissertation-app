@@ -72,6 +72,9 @@
     }
     .accessIntro p { margin: 0; color: #3d5370; }
     .accessIntro p + p { margin-top: 8px; }
+    /* Consistent separation between each landing section and its body text. */
+    .accessIntro p.landingSectionHeading { margin-top: 16px; }
+    .accessIntro p.landingSectionHeading + p { margin-top: 4px; }
     .accessAction {
       margin-top: 16px;
       padding-top: 16px;
@@ -2907,11 +2910,13 @@ details.band[open] > summary {
       <div class="card accessCard" id="accessGate">
         <div class="accessIntro muted small">
           <p>The original version of this app was developed as part of a research study exploring how prelicensure nurse educators experience using AI for question writing. This version was made for people who are not participating in the study but would still like to use the app. It preserves all the core features of the original app but does not collect participant-specific research data. Limited anonymous usage data may be collected to monitor and improve the app.</p>
-          <p><strong>Interested in being a part of the study?</strong><br>To be eligible, you must be an actively working prelicensure nurse faculty whose institution has provided its faculty with institutional access to ChatGPT, Gemini, or Copilot. You can review the study information by <a href="npstudyinfo.html">clicking here</a>, or express interest by completing <a href="https://universityofalabama.az1.qualtrics.com/jfe/form/SV_3HNWUTbF6MYFWlw">this form.</a></p>
-          <p><strong>Training and additional guidance</strong></p>
+          <p class="landingSectionHeading"><strong>Interested in being a part of the study?</strong></p>
+          <p>To be eligible, you must be an actively working prelicensure nurse faculty whose institution has provided its faculty with institutional access to ChatGPT, Gemini, or Copilot. You can review the study information by <a href="npstudyinfo.html">clicking here</a>, or express interest by completing <a href="https://universityofalabama.az1.qualtrics.com/jfe/form/SV_3HNWUTbF6MYFWlw">this form.</a></p>
+          <p class="landingSectionHeading"><strong>Training and additional guidance</strong></p>
           <p>For a guided introduction to using this app, <a href="../training/nptraining.html">click here to access the training module</a>.</p>
           <p>If you need help using the app, you can visit the <a href="nphelp.html">Help / FAQ</a> page or use the <strong>Show training tips</strong> button at the bottom of the page for additional guidance.</p>
-          <p><strong>Are you a study participant?</strong><br><a href="../index.html">Click here</a> to switch to the participant version of this app.</p>
+          <p class="landingSectionHeading"><strong>Are you a study participant?</strong></p>
+          <p><a href="../index.html">Click here</a> to switch to the participant version of this app.</p>
 
         </div>
 
