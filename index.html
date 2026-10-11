@@ -6272,6 +6272,12 @@ ${persistentInstructions}`;
       try {
         const latest = await fetchLatestLiveSession();
         if (latest?.ok === true && latest.found === true) {
+          // Remote session wins; never replay stale browser saves onto it.
+          localStorage.removeItem(KEYS.pendingLiveSave);
+          localStorage.removeItem(KEYS.pendingSubmissionPayload);
+          localStorage.removeItem(KEYS.draftDirty);
+          localStorage.removeItem(KEYS.revisionConflictBackup);
+          saveJSON(KEYS.pendingServerEvents, []);
           restored = await restoreLiveSessionFromServer(latest);
         }
       } catch (err) {
