@@ -3001,6 +3001,7 @@
           <span>I confirm that anything I have chosen to share, including my question set, written feedback, or audio recording, does not contain personal, protected, or confidential information of any kind.</span>
         </label>
       </div>
+      <div id="endMsg" class="muted small" role="status" aria-live="polite" style="display:none; margin:10px 0;"></div>
       <div class="row" style="justify-content:flex-end;">
         <button class="btn" id="btnEndCancel" type="button">Cancel</button>
         <button class="btn finishSessionBtn" id="btnEndConfirm" type="button">End session</button>
@@ -7726,7 +7727,11 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
             return;
           }
           if (endMsg) {
-            endMsg.textContent = "Submission failed. Please use the download button below to save a backup of your session, then send it to the researcher so your data isn't lost.";
+            // submitSession() may have attached the recovery download here.
+            // Preserve that button instead of overwriting it with plain text.
+            if (!$("submissionFallbackWrap")) {
+              endMsg.textContent = "Submission failed. Your session remains saved in this browser. Please try again.";
+            }
             endMsg.style.display = "block";
           }
           toast("Submission failed. Data is still saved in this browser.", { duration: 3500 });
