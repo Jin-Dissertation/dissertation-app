@@ -3271,6 +3271,14 @@ details.band > summary:hover, details.band[open] > summary {
         "Only suggest changes that would meaningfully improve the balance across my current set of accepted questions.";
     }
 
+    // Generalize the reviewed core/peripheral audit outside nursing.
+    for (const key of ["pt", "health", "general"]) {
+      MODE[key].breadth = BASE.core_or_peripheral.prompt_body
+        .replace(/clinical decisions/g, "decisions")
+        .replace(/clinically important/g, "important")
+        .replace(/clinically relevant/g, "relevant");
+    }
+
     const PROMPT_META = {
       next_question: ["Accept & Continue", "Accept this question and generate the next one."],
       replace_question: ["Generate Alternatives", "Generate replacement versions of this question."],
@@ -3348,6 +3356,12 @@ details.band > summary:hover, details.band[open] > summary {
         return BASE.rebalance_content.prompt_body.replace("nursing practice and NCLEX preparation", priorities[state.teachingContext] || "the course and discipline");
       }
       if (id === "rebalance_question_type") return currentMode().questionType;
+      if (id === "distractor_options" && state.teachingContext !== "nursing") {
+        return BASE.distractor_options.prompt_body.replace("a nursing student", "a student");
+      }
+      if (id === "difficulty_audit" && state.teachingContext === "general") {
+        return BASE.difficulty_audit.prompt_body.replace("complexity of the clinical reasoning required", "complexity of the reasoning required");
+      }
       if (id === "instructions_reminder") return buildReminderPrompt();
       if (id === "sample_practice") return buildPracticePrompt();
       return BASE[id]?.prompt_body || "";
