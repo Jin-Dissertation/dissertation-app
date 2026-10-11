@@ -6251,97 +6251,39 @@ ${persistentInstructions}`;
         return false;
       }
 
+      // A verified code always owns its own records. Discard cached records
+      // from a different participant rather than blocking their login.
       const owner = normalizeCode(localStorage.getItem(KEYS.accessCode) || "");
       if (owner && owner !== code) {
-        if (localStorage.getItem(KEYS.pendingLiveSave) || localStorage.getItem(KEYS.pendingSubmissionPayload) || localStorage.getItem(KEYS.draftDirty) === "true") {
-          setLockedState(true, "This browser has unfinished work for another participant. Sign in with that code to save it, or log out to clear this browser.");
-          if (verifyBtn) { verifyBtn.dataset.verifying = "false"; verifyBtn.disabled = false; verifyBtn.textContent = originalBtnText; }
-          return false;
-        }
         clearSessionData();
         selectModel();
-        $("llmResponse").value = ""; $("sessionNotes").value = "";
+        $("llmResponse").value = "";
+        $("sessionNotes").value = "";
       }
       localStorage.setItem(KEYS.accessVerified, "true");
       localStorage.setItem(KEYS.accessCode, code);
-      // An explicit sign-in starts a bounded automatic-return window. Refresh
-      // still revalidates with the Worker and never trusts the local flag.
-      if (!localStorage.getItem(KEYS.accessExpiresAt) || Number(localStorage.getItem(KEYS.accessExpiresAt)) <= Date.now()) {
-        localStorage.setItem(KEYS.accessExpiresAt, String(Date.now() + 24 * 60 * 60 * 1000));
-      }
+      localStorage.setItem(KEYS.accessExpiresAt, String(Date.now() + 24 * 60 * 60 * 1000));
 
+      // Prefer Cloudflare's latest saved record. Unconfirmed browser saves,
+      // drafts and revision-conflict backups are intentionally nonauthoritative.
+      // Neither stale drafts nor a temporary failure to retrieve the latest
+      // session should prevent a verified participant from beginning again.
       let restored = false;
-      let recoveredRevisionConflict = false;
       try {
-        if (localStorage.getItem(KEYS.pendingSubmissionPayload)) {
-          const submitted = await submitSession();
-          if (!submitted.ok) throw submitted.error;
-          clearSessionData();
-          sessionStorage.setItem("dissertation.ended", "true");
-          location.reload();
-          return false;
-        }
-
-        let latestLiveSession = null;
-        const pendingLiveSave = loadJSON(KEYS.pendingLiveSave, null);
-
-        if (pendingLiveSave) {
-          try {
-            await enqueueLiveSessionUpdate("in_progress");
-          } catch (err) {
-            if (err?.code !== "REVISION_CONFLICT") throw err;
-
-            latestLiveSession = await fetchLatestLiveSession();
-            const localSessionId = String(localStorage.getItem(KEYS.sessionId) || "").trim();
-            const pendingSessionId = String(pendingLiveSave?.session_id || "").trim();
-            const remoteSessionId = String(latestLiveSession?.session?.session_id || "").trim();
-
-            if (
-              latestLiveSession?.ok !== true ||
-              latestLiveSession?.found !== true ||
-              !localSessionId ||
-              pendingSessionId !== localSessionId ||
-              remoteSessionId !== localSessionId
-            ) {
-              throw new Error("A newer session is active. Your browser copy was retained; contact the study team before resetting.");
-            }
-
-            captureRevisionConflictBackup(pendingLiveSave);
-            localStorage.removeItem(KEYS.pendingLiveSave);
-            saveJSON(KEYS.pendingServerEvents, []);
-            localStorage.removeItem(KEYS.draftDirty);
-            recoveredRevisionConflict = true;
-          }
-        }
-
-        const draft = !recoveredRevisionConflict && localStorage.getItem(KEYS.draftDirty) === "true"
-          ? { response: $("llmResponse").value, notes: $("sessionNotes").value,
-              sessionId: localStorage.getItem(KEYS.sessionId) }
-          : null;
-
-        if (!latestLiveSession) latestLiveSession = await fetchLatestLiveSession();
-        if (latestLiveSession?.ok !== true) throw new Error("Session recovery could not be confirmed. Please retry.");
-        if (draft && latestLiveSession.found && latestLiveSession.session?.session_id !== draft.sessionId) {
-          throw new Error("Another session is active. Your unsaved local draft has been retained; contact the study team before resetting.");
-        }
-
-        restored = latestLiveSession.found === true ? await restoreLiveSessionFromServer(latestLiveSession) : false;
-
-        if (draft) {
-          $("llmResponse").value = draft.response;
-          $("sessionNotes").value = draft.notes;
-          localStorage.setItem(KEYS.llmResponseDraft, draft.response);
-          localStorage.setItem(KEYS.sessionNotesDraft, draft.notes);
-          localStorage.setItem(KEYS.draftDirty, "true");
+        const latest = await fetchLatestLiveSession();
+        if (latest?.ok === true && latest.found === true) {
+          restored = await restoreLiveSessionFromServer(latest);
         }
       } catch (err) {
-        setLockedState(true, err?.message || "Session recovery failed. Please retry.");
-        if (verifyBtn) {
-          verifyBtn.dataset.verifying = "false";
-          verifyBtn.disabled = false;
-          verifyBtn.textContent = originalBtnText;
-        }
-        return false;
+        console.warn("Session restore skipped; a new session will be started", err);
+      }
+
+      if (!restored) {
+        clearSessionData();
+        selectModel();
+        localStorage.setItem(KEYS.accessVerified, "true");
+        localStorage.setItem(KEYS.accessCode, code);
+        localStorage.setItem(KEYS.accessExpiresAt, String(Date.now() + 24 * 60 * 60 * 1000));
       }
 
       if (!restored) {
@@ -6352,7 +6294,18 @@ ${persistentInstructions}`;
 
         // Create a session id at sign-in (so it exists for starter prompt + logs)
         if (!localStorage.getItem(KEYS.sessionId)) {
-          await requestNewSessionId();
+          try {
+            await requestNewSessionId();
+          } catch (err) {
+            console.warn("Could not start a tracked study session", err);
+            setLockedState(true, "Couldn't verify your code right now — please check your connection and try again.");
+            if (verifyBtn) {
+              verifyBtn.dataset.verifying = "false";
+              verifyBtn.disabled = false;
+              verifyBtn.textContent = originalBtnText;
+            }
+            return false;
+          }
         }
 
         // Initialize stage
@@ -6379,7 +6332,7 @@ ${persistentInstructions}`;
         "Participant code verified."
       );
       toast("Access verified ✅");
-      if (recoveredRevisionConflict) showRevisionConflictRecoveryNotice();
+      // No revision-conflict backup UI is required in the simplified workflow.
 
       applyStageUI();
       if (verifyBtn) {
