@@ -2860,6 +2860,68 @@ details.band > summary:hover, details.band[open] > summary {
       line-height:1;
       margin:1px 0 -3px;
     }
+  
+    /* Faculty optional sample prompts: one light frame, compact text and spacing. */
+    #setupSamplePromptBox.setupPromptBox {
+      margin-top: 8px;
+      padding: 8px 10px;
+    }
+    #setupSamplePromptBox .facultySampleDisclosure {
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+    }
+    #setupSamplePromptBox .facultySampleDisclosure > summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 28px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      color: #40344d;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.25;
+      cursor: pointer;
+    }
+    #setupSamplePromptBox .facultySampleDisclosure > summary strong {
+      font-weight: 600;
+    }
+    #setupSamplePromptBox .facultySampleDisclosure > summary::-webkit-details-marker {
+      display: none;
+    }
+    #setupSamplePromptBox .facultySampleDisclosure > summary::after {
+      content: "›";
+      flex: 0 0 auto;
+      color: #755b9b;
+      font-size: 19px;
+      line-height: 1;
+      transition: transform 0.15s ease;
+    }
+    #setupSamplePromptBox .facultySampleDisclosure[open] > summary::after {
+      transform: rotate(90deg);
+    }
+    #setupSamplePromptBox .facultySampleDisclosure[open] > summary {
+      margin-bottom: 4px;
+    }
+    #setupSamplePromptBox .facultySampleDisclosure > .setupPromptBoxSub {
+      margin: 0 0 8px;
+      color: #70617d;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    #setupSamplePromptBox .setupSamplePromptList,
+    #setupSamplePromptBox .setupPromptList {
+      gap: 6px;
+    }
+    @media (max-width: 900px) {
+      #setupSamplePromptBox .facultySampleDisclosure > summary {
+        font-size: 16px;
+      }
+    }
   </style>
 </head>
 
@@ -3023,7 +3085,7 @@ details.band > summary:hover, details.band[open] > summary {
 
                 <div id="setupSamplePromptBox" class="setupPromptBox" hidden>
                   <details class="facultySampleDisclosure">
-                    <summary><strong>Optional: Use sample questions</strong> — expand to view sample prompts</summary>
+                    <summary><strong>Optional: Use sample questions</strong></summary>
                     <p class="setupPromptBoxSub">If you have sample questions, you can use one of these prompts to guide the AI.</p>
                   <div id="trainingTipSamplePrompts" class="trainingTip trainingTipSmall">
                     <span class="trainingTipLabel"><span class="training-tip-icon" aria-hidden="true">ⓘ</span><span>Training tip</span></span>
