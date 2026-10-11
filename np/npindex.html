@@ -5693,7 +5693,7 @@ ${persistentInstructions}`;
       if (copied) {
         toast("Copied ✅");
       } else {
-        toast("Couldn't copy the prompt automatically. Your browser may be restricting clipboard access. Please try again or copy the prompt manually. If the problem continues, please contact me at tjin@crimson.ua.edu so I can investigate.");
+        toast("Couldn't copy the prompt automatically. Your browser may be restricting clipboard access. Please try again or copy the prompt manually. If the problem continues, please contact me at tjin@crimson.ua.edu so I can investigate.", { duration: 12000 });
       }
 
       return copied;
