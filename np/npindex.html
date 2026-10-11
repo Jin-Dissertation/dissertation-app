@@ -2880,11 +2880,13 @@ details.band[open] > summary {
       <!-- Non-participant landing card -->
       <div class="card accessCard" id="accessGate">
         <div class="accessIntro muted small">
-          <p>This app was originally developed as part of a research study exploring how prelicensure nurse educators use AI for multiple-choice question writing. As a non-participant, your use of the app is not being directly studied. Limited anonymous technical data will be collected only to keep the app functional and make improvements.</p>
+          <p>The original version of this app was developed as part of a research study exploring how prelicensure nurse educators experience using AI for question writing. This version was made for people who are not participating in the study but would still like to use the app. It preserves all the core features of the original app but does not collect participant-specific research data. Limited anonymous usage data may be collected to monitor and improve the app.</p>
           <p><strong>Interested in being a part of the study?</strong><br>To be eligible, you must be an actively working prelicensure nurse faculty whose institution has provided its faculty with institutional access to ChatGPT, Gemini, or Copilot. You can review the study information by <a href="npstudyinfo.html">clicking here</a>, or express interest by completing <a href="https://universityofalabama.az1.qualtrics.com/jfe/form/SV_3HNWUTbF6MYFWlw">this form.</a></p>
-          <p><strong>Self-guided training module:</strong> <a href="../training/nptraining.html">Coming soon</a>. You can use the question-writing app now without the module.</p>
-          <p>If you forget how to use the app at any point, use the Help / FAQ link at the bottom of the page. You can also click Show training tips at any time for additional guidance.</p>
-          <p><strong>Are you a study participant?</strong><br><a href="https://jin-dissertation.github.io/dissertation-app/">Click here</a> to switch to the participant version of this app.</p>
+          <p><strong>Training and additional guidance</strong></p>
+          <p>For a guided introduction to using this app, <a href="../training/nptraining.html">click here to access the training module</a>.</p>
+          <p>If you need help using the app, you can visit the <a href="nphelp.html">Help / FAQ</a> page or use the <strong>Show training tips</strong> button at the bottom of the page for additional guidance.</p>
+          <p><strong>Are you a study participant?</strong><br><a href="../index.html">Click here</a> to switch to the participant version of this app.</p>
+
         </div>
 
         <div class="accessAction">
@@ -2931,7 +2933,7 @@ details.band[open] > summary {
             <div id="contextSubband" class="subBand" style="margin-top:0;">
               <h4 class="subBandTitle">Question context</h4>
               <div class="row" style="margin:10px 0 0;">
-                <button class="btn" id="btnSkipContext" type="button" aria-describedby="skipContextHint" disabled>Skip contextual details</button>
+                <button class="btn" id="btnSkipContext" type="button" aria-describedby="skipContextHint" disabled>Skip context</button>
               </div>
               <p id="skipContextHint" class="muted small" style="margin:8px 0 0;">Unlock all prompts without filling in context or copying a starter prompt.</p>
               <div class="row" style="margin:10px 0 0;">
@@ -3133,15 +3135,9 @@ details.band[open] > summary {
                 </div>
               </div>
 
-              <div id="trainingTipFinalizeIntro" class="trainingTip trainingTipSmall">
-                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>TRAINING TIP</span></div>
-                <p>Copy the final prompt into your AI product by clicking the above <strong>Copy final prompt</strong> button. It will ask the AI to compile all accepted questions into a clean list.</p>
-              </div>
+              
 
-              <div id="finalCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
-                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>Training tip</span></div>
-                <p><strong>Note:</strong> This last step goes in the opposite direction from what you've been doing. Instead of pasting <em>into</em> your AI product, you'll be copying <em>from</em> it.</p>
-              </div>
+              
 
               <div id="finalizeLockedArea" class="finalizeLockedContent" style="margin-top:8px; display:none;">
                 <div class="muted small finalizeNotice" id="finalizeCopyNotice"></div>
@@ -3207,8 +3203,7 @@ details.band[open] > summary {
                 <p>Ending the session will submit some information about your session and reset the app.</p>
               </div>
               <div class="finalActionRow" id="endSessionRow" style="display:none;">
-                <button id="btnEndSession" class="btn finalActionBtn finishSessionBtn" type="button">
-                  End session
+                <button id="btnEndSession" class="btn finalActionBtn finishSessionBtn" type="button">Finish session
                 </button>
               </div>
             </div>
@@ -3687,7 +3682,7 @@ const PROMPT_META = [
       }
 
       const llmKey = getSelectedLlmKey();
-      const msg = `Missing required prompt "${promptId}" for "${llmKey}". Please refresh and contact the study team if this continues.`;
+      const msg = "One of the app's prompts could not be loaded. Please refresh the page. If the problem continues, please contact me at tjin@crimson.ua.edu so I can investigate."; 
       console.error("AQG prompt missing", {
         promptId,
         llmKey,
@@ -5698,7 +5693,7 @@ ${persistentInstructions}`;
       if (copied) {
         toast("Copied ✅");
       } else {
-        toast("Couldn’t copy automatically. Please copy the text manually. See Help / FAQ if this keeps happening.");
+        toast("Couldn't copy the prompt automatically. Your browser may be restricting clipboard access. Please try again or copy the prompt manually. If the problem continues, please contact me at tjin@crimson.ua.edu so I can investigate.");
       }
 
       return copied;
