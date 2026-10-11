@@ -453,11 +453,25 @@
       // Bold
       html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
 
-      // Email addresses → mailto links
+      // Render Markdown links before auto-linking plain email addresses. Previously,
+      // [address](mailto:address) appeared literally, with nested/broken mailto text.
+      const markdownLinks = [];
+      html = html.replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, (original, label, target) => {
+        const href = target.replace(/&amp;/g, "&");
+        if (!/^(?:https?:\/\/[^\s"'<>]+|mailto:[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}|(?:\.{0,2}\/)?[a-zA-Z0-9_./\-]+(?:\?[a-zA-Z0-9_=&%\-]+)?)$/.test(href)) {
+          return original;
+        }
+        const token = `FAQ_LINK_TOKEN_${markdownLinks.length}_END`;
+        markdownLinks.push(`<a href="${escapeHTML(href)}" style="color:var(--accent);">${label}</a>`);
+        return token;
+      });
+
+      // Linkify plain email addresses without interfering with Markdown links.
       html = html.replace(
         /([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/g,
         '<a href="mailto:$1" style="color:var(--accent);">$1</a>'
       );
+      html = html.replace(/FAQ_LINK_TOKEN_(\d+)_END/g, (token, index) => markdownLinks[Number(index)] ?? token);
 
       const rawLines = html.split("\n").map(line => line.trim());
 
