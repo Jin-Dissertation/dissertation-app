@@ -2823,9 +2823,43 @@ details.band > summary:hover, details.band[open] > summary {
 .facultySampleDisclosure { border:1px solid #c6e0da; border-radius:10px; padding:12px 16px; background:#f7fdfb; }
     .facultySampleDisclosure > summary { cursor:pointer; }
     .facultySampleDisclosure[open] > summary { margin-bottom:12px; }
-    .facultyFirstQuestionCard { background:#e9f5f1; border:1px solid #92c7b9; border-radius:10px; padding:14px; width:100%; }
-    .facultyFirstQuestionCard h4 { margin:0 0 6px; }
-    .facultyStepArrow { font-size:26px; color:#317d70; text-align:center; font-weight:700; line-height:1.2; }
+    .facultyFirstQuestionStep {
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:8px 12px;
+      box-sizing:border-box;
+      width: min(100%, 560px);
+      background:#f6fbf9;
+      border:1px solid #bddad1;
+      border-radius:10px;
+      padding:8px 10px;
+    }
+    .facultyFirstQuestionStep p { flex:1 1 170px; margin:0; font-size:12px; line-height:1.35; color:#42675f; }
+    .btn.facultyFirstQuestionButton {
+      width:auto;
+      min-height:38px;
+      padding:7px 12px;
+      border-radius:8px;
+      background:#e8f4ef;
+      border-color:#aacdc3;
+      color:#22544d;
+      font-size:13px;
+      font-weight:600;
+    }
+    .btn.facultyFirstQuestionButton:hover:not(:disabled) {
+      background:#d9eee5;
+      border-color:#72ac9e;
+    }
+    .facultyStepArrow {
+      width:min(100%, 560px);
+      font-size:19px;
+      color:#317d70;
+      text-align:center;
+      font-weight:700;
+      line-height:1;
+      margin:1px 0 -3px;
+    }
   </style>
 </head>
 
@@ -2999,11 +3033,10 @@ details.band > summary:hover, details.band[open] > summary {
                   </details>
                 </div>
 
-                <div class="row" id="firstQuestionRow" hidden style="margin-top:16px; display:none; flex-direction:column; align-items:stretch;">
-                  <div class="facultyFirstQuestionCard">
-                    <h4>Next: Ask the AI to show the first question</h4>
-                    <p id="firstQuestionHint" class="muted small" hidden style="margin:8px 0; display:none;">Copy this request and paste it into your AI chat. Then continue below to the question-writing tools.</p>
-                    <button class="btn" id="btnShowFirstQuestion" type="button">Show first question (copy prompt)</button>
+                <div class="row" id="firstQuestionRow" hidden style="margin-top:12px; display:none; flex-direction:column; align-items:stretch;">
+                  <div class="facultyFirstQuestionStep">
+                    <button class="btn facultyFirstQuestionButton" id="btnShowFirstQuestion" type="button" aria-describedby="firstQuestionHint">Show first question (copy prompt)</button>
+                    <p id="firstQuestionHint" class="muted small" hidden style="display:none;">Paste into your AI, then continue below.</p>
                   </div>
                   <div class="facultyStepArrow" aria-hidden="true">↓</div>
                 </div>
@@ -3568,7 +3601,7 @@ details.band > summary:hover, details.band[open] > summary {
       $("btnGoPrompts").disabled = !canProceed;
       $("btnGoPrompts").classList.toggle("is-ready", canProceed);
 
-      const canFirst = state.starterCopied;
+      const canFirst = canProceed;
       $("firstQuestionRow").hidden = !canFirst;
       $("firstQuestionRow").style.display = canFirst ? "" : "none";
       $("firstQuestionHint").hidden = !canFirst;
