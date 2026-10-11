@@ -2701,6 +2701,75 @@
               </div>
 
               
+
+              <div id="finalCopiedTrainingTip" class="trainingTip trainingTipSmall" hidden>
+                <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>Training tip</span></div>
+                <p>The remaining two boxes are not part of the question-writing process. If you are willing, I would appreciate the chance to see your finalized question set so we can discuss it during the closing interview, and I would also welcome any feedback you would like to share.</p>
+              </div>
+
+              <div id="finalizeLockedArea" class="finalizeLockedContent" style="margin-top:8px; display:none;">
+                <details class="feedbackCollapsible" id="finalModelOutputSection">
+                  <summary class="feedbackSummary">
+                    <div class="feedbackSummaryLeft">
+                      <span class="feedbackSummaryLabel">Share question set (optional)</span>
+                      <span class="feedbackSummaryHint">— share your final question set here</span>
+                    </div>
+                    <span class="feedbackSummaryChevron" aria-hidden="true">›</span>
+                  </summary>
+                  <div class="feedbackInner">
+                    <div class="muted small finalizeNotice" id="finalizeCopyNotice"></div>
+                    <textarea id="llmResponse" placeholder="Paste your final question set here."></textarea>
+                  </div>
+                </details>
+
+                <details class="feedbackCollapsible" id="finalFeedbackSection">
+                  <summary class="feedbackSummary">
+                    <div class="feedbackSummaryLeft">
+                      <span class="feedbackSummaryLabel">Share feedback (optional)</span>
+                      <span class="feedbackSummaryHint">— leave a text comment or voice recording</span>
+                    </div>
+                    <span class="feedbackSummaryChevron" aria-hidden="true">›</span>
+                  </summary>
+                  <div class="feedbackInner">
+                    <div id="trainingTipFinalizeFeedback" class="trainingTip trainingTipSmall">
+                      <div class="trainingTipLabel"><span aria-hidden="true">ⓘ</span><span>Training tip</span></div>
+                      <p>Feel free to share anything about the workflow that felt confusing, helpful, or otherwise worth noting.<span class="mobile-only"> In the future, if you think of feedback in the middle of the process that you want to share, you can also click the feedback button near the top of the page to submit quick feedback.</span><span class="desktop-only"> In the future, if you think of feedback in the middle of the process that you want to share, you can also click the feedback button in the right-side panel to submit quick feedback.</span></p>
+                    </div>
+
+                    <p class="muted small" style="margin:0 0 10px;">I would appreciate any feedback you have for me, which you may provide in writing and/or as an audio recording.</p>
+
+                    <textarea
+                      id="sessionNotes"
+                      placeholder="Provide written feedback here"
+                    ></textarea>
+
+                    <div class="audioFeedbackSection" id="audioRecorderPanel" style="margin-top:8px;">
+                      <div class="audioControlRow" id="audioPrimaryControls">
+                        <button class="btn" id="btnAudioStart" type="button">Start recording</button>
+                        <span class="audioStateStatus" id="btnAudioState" aria-live="polite"></span>
+                        <button class="btn" id="btnAudioPauseResume" type="button">Pause</button>
+                        <button class="btn" id="btnAudioStop" type="button">Stop</button>
+                      </div>
+                      <div class="audioElapsedRow" id="audioElapsedRow" aria-live="polite">
+                        <span class="audioElapsedLabel">Recording time</span>
+                        <span class="audioElapsedValue" id="audioElapsedValue">00:00</span>
+                      </div>
+                      <div class="audioMeterRow" id="audioMeterRow">
+                        <canvas
+                          class="audioMeterHistory"
+                          id="audioMeterHistory"
+                          width="420"
+                          height="28"
+                          aria-label="Live microphone level"
+                        ></canvas>
+                      </div>
+
+                      <div class="audioPlaybackRow" id="audioPlaybackRow">
+                        <audio id="audioFeedbackPlayer" controls preload="metadata"></audio>
+                        <button class="btn" id="btnAudioSubmit" type="button">Submit audio</button>
+                        <button class="btn" id="btnAudioDelete" type="button">Delete recording</button>
+                      </div>
+                    </div>
                   </div>
                 </details>
 
@@ -3162,7 +3231,7 @@ const PROMPT_META = [
       }
 
       const llmKey = getSelectedLlmKey();
-      const msg = "One of the app's prompts could not be loaded. Please refresh the page. If the problem continues, please contact me at tjin@crimson.ua.edu so I can investigate.";
+      const msg = "One of the app's prompts could not be loaded. Please refresh the page. If the problem continues, please contact me at tjin@crimson.ua.edu so I can investigate."; 
       console.error("AQG prompt missing", {
         promptId,
         llmKey,
@@ -4209,7 +4278,7 @@ const PROMPT_META = [
       if (accessMsgEl) {
         const connectionError = "Couldn't verify your code right now — please check your connection and try again.";
         if (msg === connectionError) {
-          accessMsgEl.innerHTML = 'Couldn\'t verify your code right now. Please check your connection and try again. If the problem continues, you can use the <a href="np/npindex.html">non-participant version</a>, which includes all the core features and does not require a code.';
+          accessMsgEl.innerHTML = "Couldn't verify your code right now. Please check your connection and try again. If the problem continues, you can use the <a href=\"np/npindex.html\">non-participant version</a>, which includes all the core features and does not require a code.";
         } else {
           accessMsgEl.textContent = msg;
         }
@@ -7266,7 +7335,7 @@ async function sendFeedbackAlert({ textFeedback = "" } = {}) {
               })
               .catch((err) => {
                 console.warn("requestNewContextId failed", err);
-                // The clipboard action succeeded. Background research logging must not interrupt question writing.
+                // Clipboard copying succeeded. The technical logging failure is non-blocking.
               });
           }
 
