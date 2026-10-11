@@ -3372,7 +3372,7 @@ details.band > summary:hover, details.band[open] > summary {
       el.textContent = message;
       el.style.display = "block";
       clearTimeout(showToast._timer);
-      showToast._timer = setTimeout(() => { el.style.display = "none"; }, 1600);
+      showToast._timer = setTimeout(() => { el.style.display = "none"; }, message.startsWith("Couldn\'t copy") ? 12000 : 1600);
     }
 
     async function writeClipboard(text) {
@@ -3398,7 +3398,7 @@ details.band > summary:hover, details.band[open] > summary {
       state.clipboardHistory.unshift({ title, text, time: new Date() });
       if (state.clipboardHistory.length > 20) state.clipboardHistory.pop();
       renderClipboard();
-      showToast(ok ? "Copied to clipboard" : "Couldn’t copy automatically");
+      showToast(ok ? "Copied to clipboard" : "Couldn\'t copy the prompt automatically. Your browser may be restricting clipboard access. Please try again or copy the prompt manually. If the problem continues, please contact me at tjin@crimson.ua.edu so I can investigate.");
       return ok;
     }
 
