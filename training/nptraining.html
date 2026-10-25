@@ -1,28 +1,36 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="robots" content="noindex, nofollow" />
-  <title>Self-Guided Training Module — Coming Soon</title>
-  <style>
-    :root { --bg: #f6f2e8; --card: #ffffff; --text: #30291b; --muted: #625b4b; --accent: #496b4f; --border: #dfd4bd; }
-    * { box-sizing: border-box; }
-    body { min-height: 100vh; margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; display: grid; place-items: center; padding: 24px; }
-    main { width: min(100%, 620px); padding: clamp(24px, 5vw, 44px); border: 1px solid var(--border); border-radius: 16px; background: var(--card); box-shadow: 0 6px 24px rgba(70, 52, 19, 0.06); }
-    .eyebrow { color: var(--accent); font-size: 0.78rem; letter-spacing: .075em; text-transform: uppercase; font-weight: 750; }
-    h1 { margin: 12px 0 16px; font-size: clamp(1.7rem, 5vw, 2.2rem); line-height: 1.2; }
-    p { color: var(--muted); line-height: 1.65; }
-    .return { display: inline-flex; align-items: center; min-height: 44px; padding: 12px 18px; margin-top: 12px; border-radius: 9px; color: white; background: var(--accent); font-weight: 700; text-decoration: none; }
-    .return:hover, .return:focus-visible { background: #38543f; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI-Assisted MCQ Development — Open Training</title>
+<link rel="stylesheet" href="beginner-help.css">
+<link rel="stylesheet" href="open-training.css">
 </head>
 <body>
-  <main>
-    <div class="eyebrow">Non-Participant Version</div>
-    <h1>Self-guided training module — coming soon</h1>
-    <p>The non-participant training module is still being developed. You can use the question-writing app now; no training module or participant code is required.</p>
-    <a class="return" href="../np/npindex.html">Return to the question-writing app →</a>
-  </main>
+<main class="shell">
+<header class="banner">
+<p class="kicker">Open training · Outside the research study</p>
+<h1>AI-Assisted Multiple-Choice Question Development</h1>
+<p>Learn how to use an AI chatbot and the question-writing app to create nursing multiple-choice questions. No participant code required.</p>
+</header>
+<div class="panel">
+<div class="notice">This open module does not ask for your name or participant code and does not send training responses, quiz answers, or progress to the researcher. Your current place is remembered in this browser only. Videos and images are fetched for display.</div>
+<div class="row" style="margin-top:18px">
+<div><div class="kicker" id="counter">Loading...</div><h2 id="chapter"></h2></div>
+<button class="btn alt" id="basics" type="button">New to AI? Quick guide</button>
+</div>
+<div class="progress" aria-hidden="true"><div id="progress-fill"></div></div>
+<section id="content" class="content" aria-live="polite"><p>Loading module…</p></section>
+<nav class="row controls" aria-label="Module navigation">
+<button class="btn alt" type="button" id="back">← Previous</button>
+<span class="small" id="status">No grades or submitted answers</span>
+<button class="btn" type="button" id="next">Continue →</button>
+</nav>
+<p class="small links"><a href="../np/npindex.html">Open the question-writing app</a> · <a href="about.html">About this module</a></p>
+</div>
+</main>
+<script src="beginner-help.js"></script>
+<script src="open-training.js"></script>
 </body>
 </html>
