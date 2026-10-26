@@ -3,10 +3,6 @@
  */
 (() => {
   'use strict';
-  const TOPICS = [
-    { id: 'chatbot', label: 'Using an AI chatbot (such as ChatGPT, Gemini, or Copilot)' },
-    { id: 'clipboard', label: 'Copying and pasting text, including what the clipboard is' }
-  ];
   let activeOverlay = null;
   const e = (tag, cls, text) => {
     const node = document.createElement(tag);
@@ -59,9 +55,8 @@
     const hint = add(section, e('div', 'aqg-basics-hint'));
     hint.textContent = 'In the AQG app, you do NOT have to highlight a prompt: clicking Copy Starter Prompt (or another prompt button) copies its text automatically. Switch to the AI chatbot, paste the text into its message box, and press Send. The two websites do not send messages to one another automatically.';
   }
-  function open(selected = ['chatbot', 'clipboard'], onFinish = null) {
+  function open() {
     close();
-    const chosen = new Set(selected.length ? selected : TOPICS.map(x => x.id));
     const focusBefore = document.activeElement;
     const overlay = e('div', 'aqg-basics-overlay');
     const drawer = add(overlay, e('aside', 'aqg-basics-drawer'));
@@ -72,11 +67,11 @@
     add(top, e('h2', '', 'Quick start guide'));
     const x = add(top, e('button', 'aqg-basics-dismiss', '×'));
     x.type='button'; x.setAttribute('aria-label', 'Close quick start guide'); x.addEventListener('click', close);
-    if (chosen.has('chatbot')) chatbotContent(drawer);
-    if (chosen.has('clipboard')) clipboardContent(drawer);
+    chatbotContent(drawer);
+    clipboardContent(drawer);
     const footer = add(drawer, e('div', 'aqg-basics-footer'));
-    const done = add(footer, e('button', 'aqg-basics-btn', onFinish ? 'Continue training' : 'Close guide'));
-    done.type='button'; done.addEventListener('click', () => { close(); onFinish?.(); });
+    const done = add(footer, e('button', 'aqg-basics-btn', 'Close guide'));
+    done.type='button'; done.addEventListener('click', close);
     overlay.addEventListener('click', event => { if(event.target === overlay) close(); });
     const keydown = event => {
       if (event.key === 'Escape') close();
