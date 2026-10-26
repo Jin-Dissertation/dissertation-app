@@ -2536,7 +2536,8 @@ function buildCardsForSection(rows) {
         slot: slotCounter++,
         header: row.header,
         body: row.body,
-        body_mobile: row.body_mobile
+        body_mobile: row.body_mobile,
+        settings: parseSettings(row.settings)
       });
       return;
     }
@@ -3230,16 +3231,23 @@ function renderBeginnerHelpBlock(item, cardIndex, onComplete, onContinue = onCom
   block.id = `section-${cardIndex}`;
   const label = document.createElement('div');
   label.className = 'section-label';
-  label.innerHTML = `<span class="section-num">Card ${cardIndex + 1}</span><div class="section-rule"></div><span class="section-type-badge">Optional skills check</span>`;
+  label.innerHTML = `<span class="section-num">Card ${cardIndex + 1}</span><div class="section-rule"></div><span class="section-type-badge">Guide</span>`;
   block.appendChild(label);
-  // Deliberately not a graded SATA: no answer key, score, or stored selections.
-  // The selected topics only control the local, optional teaching sidebar.
-  block.appendChild(AQGBeginnerHelp.renderCard({
-    title: 'Getting started: a quick skills check',
-    stem: item.stem,
-    options: item.correctAnswers,
-    onContinue
-  }));
+  // No assessment or topic selection; the guide is optional and read-only.
+  block.appendChild(AQGBeginnerHelp.renderCard());
+  const continueRow = document.createElement('div');
+  continueRow.className = 'continue-row show';
+  const continueButton = document.createElement('button');
+  continueButton.className = 'action-btn continue-btn';
+  continueButton.type = 'button';
+  continueButton.textContent = 'Continue';
+  continueButton.addEventListener('click', () => {
+    markInteraction();
+    logEvent('continue_clicked', { slot: item.slot, sectionIndex: cardIndex });
+    onContinue();
+  });
+  continueRow.appendChild(continueButton);
+  block.appendChild(continueRow);
   return block;
 }
 
@@ -4148,11 +4156,11 @@ function renderTraining(structure, savedState = null) {
       };
 
       let block;
-      if (item.type === 'video') block = renderVideoBlock(item, cardIndex, onComplete, onContinue);
+      if (item.settings?.beginnerHelp === 'true') block = renderBeginnerHelpBlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'video') block = renderVideoBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'text') block = renderTextBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'text_image') block = renderTextImageBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'sba') block = renderSBABlock(item, cardIndex, onComplete, onContinue);
-      else if (item.type === 'sata' && item.settings?.beginnerHelp === 'true') block = renderBeginnerHelpBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'sata') block = renderSATABlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'fitb') block = renderFITBBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'categorization' || item.type === 'matching') block = renderCategorizeBlock(item, cardIndex, onComplete, onContinue);
