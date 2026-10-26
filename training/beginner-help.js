@@ -58,15 +58,21 @@
     richLine(flow, 'span', [{term:'Clipboard'}]);
     add(flow, e('b', '', '→'));
     richLine(flow, 'span', [{term:'Paste'}, ' in chatbot → Send']);
-    richLine(section, 'p', [
-      'On Windows or Chromebook, select text and press ', {key:'Ctrl+C'}, ' to ',
-      {term:'Copy'}, ', then ', {key:'Ctrl+V'}, ' to ', {term:'Paste'},
-      '. On a Mac, use ', {key:'Command+C'}, ' and ', {key:'Command+V'},
+    paragraph(section, 'Choose the instructions for your device:');
+    const devices = add(section, e('ul', 'aqg-basics-device-list'));
+    richLine(devices, 'li', [
+      {term:'Windows / Chromebook'}, ': Select text and press ', {key:'Ctrl+C'},
+      ' to ', {term:'Copy'}, ', then ', {key:'Ctrl+V'}, ' to ', {term:'Paste'},
       '. You can also right-click and choose ', {term:'Copy'}, ' or ', {term:'Paste'}, '.'
     ]);
-    richLine(section, 'p', [
-      'On a phone or tablet, press and hold to select text, then tap ', {term:'Copy'},
-      '. Press and hold in the destination text box, then tap ', {term:'Paste'}, '.'
+    richLine(devices, 'li', [
+      {term:'Mac'}, ': Select text and press ', {key:'Command+C'}, ' to ', {term:'Copy'},
+      ', then ', {key:'Command+V'}, ' to ', {term:'Paste'},
+      '. You can also right-click and choose ', {term:'Copy'}, ' or ', {term:'Paste'}, '.'
+    ]);
+    richLine(devices, 'li', [
+      {term:'Phone / Tablet'}, ': Press and hold to select text, then tap ', {term:'Copy'},
+      '. Press and hold where you want to insert the text, then tap ', {term:'Paste'}, '.'
     ]);
     const hint = add(section, e('div', 'aqg-basics-hint'));
     richLine(hint, 'span', [
