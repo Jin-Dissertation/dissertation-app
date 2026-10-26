@@ -304,7 +304,7 @@
       "section_title": "The Tool & the Technique",
       "type": "text",
       "header": "Let's open the app",
-      "body": "Now let's look at the question-writing app. You'll select which AI chatbot you're using, enter a course and topic, and copy a starter prompt. The same prompts are used with every AI chatbot. The app copies text to your clipboard; you'll paste it into your chatbot and send it yourself.",
+      "body": "Now let's look at the question-writing app. You'll enter a course and topic, then copy a starter prompt. The same prompts are used with every AI chatbot; the app does not ask you to select one. It simply copies text to your clipboard, which you'll paste into your chatbot and send yourself.",
       "body_mobile": "",
       "question_num": "",
       "stem": "",
