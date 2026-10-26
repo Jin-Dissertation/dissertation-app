@@ -125,16 +125,10 @@
     $('chapter').textContent=r.section_title||'Training';
     $('progress-fill').style.width=(100*(idx+1)/rows.length)+'%';
     const c=$('content');c.replaceChildren();
-    if(r.type==='video')showVideo(r,c);
-    else if(r.type==='sba'||r.type==='sata'){
-      if(String(r.settings).includes('beginnerHelp')){
-        put(c,AQGBeginnerHelp.renderCard({
-          stem:r.stem,
-          options:split(r.correct_blob),
-          onContinue:next
-        }));
-      }else showQuestion(r,c);
-    }else if(r.type==='matching'||r.type==='categorization')showMatching(r,c);
+    if(String(r.settings||'').includes('beginnerHelp')) put(c,AQGBeginnerHelp.renderCard());
+    else if(r.type==='video')showVideo(r,c);
+    else if(r.type==='sba'||r.type==='sata')showQuestion(r,c);
+    else if(r.type==='matching'||r.type==='categorization')showMatching(r,c);
     else showText(r,c);
     $('back').disabled=idx===0;
     $('next').textContent=idx===rows.length-1?'Finish training':'Continue →';
