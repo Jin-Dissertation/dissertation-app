@@ -25,12 +25,20 @@
   function chatbotContent(parent) {
     const section = add(parent, e('section', 'aqg-basics-section'));
     heading(section, 'What is an AI chatbot?');
-    paragraph(section, 'Artificial intelligence (AI) is a broad term for computer systems that do things we normally associate with human intelligence. AI can take many forms, but much of the recent excitement is about AI chatbots, such as ChatGPT, Gemini, Copilot, and Claude. A chatbot works a lot like a text-message conversation: you send it a message, and it sends a reply that can sound as though a person wrote it. But you are communicating with software, not another person.');
+    richLine(section, 'p', [
+      'Artificial intelligence (AI) is a broad term for any technology that performs tasks that ordinarily require human intelligence. However, much of the recent excitement about AI is specifically about ',
+      {term:'AI chatbots'}, ', such as ChatGPT, Gemini, Copilot, and Claude.'
+    ]);
+    paragraph(section, 'These chatbots are designed to mimic a human text message conversation: you send a message to the AI chatbot, and it then responds in a way that resembles a human.');
+
     heading(section, 'How do I use an AI chatbot?');
-    paragraph(section, "Think of it as texting someone who is always ready to try to respond right away. Open the chatbot, type a message, and press Send. If you ask a question, it will try to answer. If you give instructions, it will try to follow them. If you share an observation, it will try to react to what you said. You can send another message to keep the conversation going.");
-    paragraph(section, 'Each message you send to the chatbot is called a prompt.');
-    paragraph(section, 'An AI chatbot can make mistakes. Check clinical facts and never paste protected patient, student, confidential, or restricted information into a chatbot.');
-    paragraph(section, 'For this training, use the AI chatbot provided or approved by your institution. If you need an account, follow your institution’s instructions.');
+    paragraph(section, 'When speaking to an AI chatbot, it might help to imagine that you are texting someone who is ready to do their best to respond to whatever you send them.');
+    richLine(section, 'p', [
+      'For example, if you ', {term:'ask a question'}, ', the chatbot will try to answer it. If you ',
+      {term:'give it instructions'}, ', it will try to follow them. If you ',
+      {term:'share an observation'}, ', it will react to it.'
+    ]);
+    paragraph(section, 'You can continue the conversation by sending additional messages, just as you would when conversing with a person by text messages.');
   }
   // Emphasize interface commands and shortcut keys without using HTML strings.
   function richLine(parent, tag, parts) {
@@ -109,37 +117,39 @@
   }
   function clipboardContent(parent) {
     const section = add(parent, e('section', 'aqg-basics-section'));
-    heading(section, 'What are Copy, Paste, and the Clipboard?');
+    heading(section, 'What do "copying," "pasting," and "clipboard" mean?');
     richLine(section, 'p', [
-      'On a computer or phone, you can highlight a portion of text and choose ',
-      {term:'Copy'}, '. This places that text in a temporary holding area called the ',
-      {term:'Clipboard'}, '. If you ', {term:'Copy'}, ' something else, the new text replaces what was there before. ',
-      'You can then go to another document, app, or website and choose ', {term:'Paste'},
-      '. This inserts whatever text is currently on the ', {term:'Clipboard'},
-      ' wherever your cursor is.'
+      'When using a computer or phone, you can highlight a portion of text and perform the ',
+      {term:'Copy'}, " function. Doing so places the selected text into a temporary holding area in the computer's memory called the ",
+      {term:'clipboard'}, '.'
     ]);
+    paragraph(section, 'If you then copy something else, the previous contents of the clipboard are immediately forgotten and replaced with the new text.');
+    richLine(section, 'p', [
+      'You can then point to another location and use the ', {term:'Paste'},
+      ' function to insert whatever is currently on the clipboard into the selected location.'
+    ]);
+    paragraph(section, "Here's how to perform these functions on different devices:");
+    const devices = add(section, e('ul', 'aqg-basics-device-list'));
+    richLine(devices, 'li', [
+      {term:'Windows or Chromebook'}, ': Highlight the text and press ', {key:'Ctrl + C'},
+      ' to copy it. Click where you want the text to go and press ', {key:'Ctrl + V'}, ' to paste it.'
+    ]);
+    richLine(devices, 'li', [
+      {term:'Mac'}, ': Highlight the text and press ', {key:'⌘ + C'},
+      ' to copy it. Click where you want the text to go and press ', {key:'⌘ + V'}, ' to paste it.'
+    ]);
+    richLine(devices, 'li', [
+      {term:'Phone or tablet'}, ': Long-press the text to select it, adjust the selection if necessary, and tap ',
+      {term:'Copy'}, '. Then long-press where you want to insert the text and tap ', {term:'Paste'}, '.'
+    ]);
+
     const flow = add(section, e('div', 'aqg-basics-flow'));
     richLine(flow, 'span', [{term:'Copy'}, ' a prompt in the AQG app']);
     add(flow, e('b', '', '→'));
     richLine(flow, 'span', [{term:'Clipboard'}]);
     add(flow, e('b', '', '→'));
     richLine(flow, 'span', [{term:'Paste'}, ' in chatbot → Send']);
-    paragraph(section, 'Choose the instructions for your device:');
-    const devices = add(section, e('ul', 'aqg-basics-device-list'));
-    richLine(devices, 'li', [
-      {term:'Windows / Chromebook'}, ': Select text and press ', {key:'Ctrl+C'},
-      ' to ', {term:'Copy'}, ', then ', {key:'Ctrl+V'}, ' to ', {term:'Paste'},
-      '. You can also right-click and choose ', {term:'Copy'}, ' or ', {term:'Paste'}, '.'
-    ]);
-    richLine(devices, 'li', [
-      {term:'Mac'}, ': Select text and press ', {key:'Command+C'}, ' to ', {term:'Copy'},
-      ', then ', {key:'Command+V'}, ' to ', {term:'Paste'},
-      '. You can also right-click and choose ', {term:'Copy'}, ' or ', {term:'Paste'}, '.'
-    ]);
-    richLine(devices, 'li', [
-      {term:'Phone / Tablet'}, ': Press and hold to select text, then tap ', {term:'Copy'},
-      '. Press and hold where you want to insert the text, then tap ', {term:'Paste'}, '.'
-    ]);
+
     clipboardPractice(section);
     const hint = add(section, e('div', 'aqg-basics-hint'));
     richLine(hint, 'span', [
