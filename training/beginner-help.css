@@ -1,0 +1,28 @@
+/* Shared, optional AI/clipboard orientation. No participant telemetry. */
+.aqg-basics-card { background: #fff; border: 1px solid #d4dce7; border-radius: 15px; padding: 24px; box-shadow: 0 3px 12px rgba(16,33,61,.06); }
+.aqg-basics-card h2 { margin: 0 0 10px; color:#10213d; font-size:1.2rem; }
+.aqg-basics-card .basics-sub { margin: 0 0 18px; color:#4b5563; line-height:1.55; }
+.aqg-basics-options { display:grid; gap:11px; margin:16px 0; }
+.aqg-basics-option { display:flex; align-items:flex-start; gap:12px; padding:13px; border:1px solid #cbd5e1; border-radius:10px; cursor:pointer; line-height:1.45; background:#f9fbfd; }
+.aqg-basics-option:has(input:checked) { background:#ebf4ff; border-color:#3265a3; }
+.aqg-basics-option input { margin-top:3px; width:19px; height:19px; accent-color:#20558f; flex:none; }
+.aqg-basics-card .basics-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:16px; }
+.aqg-basics-btn { appearance:none; font:inherit; font-weight:650; border:1px solid #244d78; border-radius:9px; background:#244d78; color:white; padding:10px 15px; cursor:pointer; }
+.aqg-basics-btn.secondary { background:white; color:#244d78; }
+.aqg-basics-btn:focus-visible, .aqg-basics-option:focus-within { outline:3px solid #f2be55; outline-offset:2px; }
+.aqg-basics-overlay { position:fixed; inset:0; z-index:100000; background:rgba(10,24,44,.55); display:flex; align-items:stretch; justify-content:flex-end; }
+.aqg-basics-drawer { width:min(100%, 510px); background:#fff; color:#15263e; box-shadow:-10px 0 35px #0002; padding:22px 25px 34px; overflow:auto; overscroll-behavior:contain; }
+.aqg-basics-drawer h2 { font-size:1.45rem; margin:0; font-family:inherit; }
+.aqg-basics-drawer h3 { font-size:1.08rem; margin:19px 0 8px; }
+.aqg-basics-drawer p, .aqg-basics-drawer li { line-height:1.6; }
+.aqg-basics-drawer a { color:#1453a0; text-decoration:underline; }
+.aqg-basics-drawer code { font-size:.95em; background:#eef2f6; padding:2px 5px; border-radius:4px; }
+.aqg-basics-top { display:flex; gap:12px; align-items:start; justify-content:space-between; margin-bottom:14px; }
+.aqg-basics-dismiss { background:none; border:1px solid #b8c4d1; border-radius:8px; cursor:pointer; padding:7px 11px; font-size:1.1rem; }
+.aqg-basics-section { border-top:1px solid #e2e8f0; padding-top:8px; }
+.aqg-basics-flow { display:flex; flex-wrap:wrap; gap:7px; align-items:center; margin:14px 0; font-size:.86rem; }
+.aqg-basics-flow span { border-radius:8px; background:#f1f5fa; padding:9px 11px; }
+.aqg-basics-hint { padding:12px; border-left:3px solid #1f6b98; background:#f0f6fb; border-radius:5px; line-height:1.5; }
+.aqg-basics-footer { display:flex; gap:10px; flex-wrap:wrap; margin-top:22px; }
+.aqg-basics-open { display:inline-flex; align-items:center; gap:5px; }
+@media(max-width:680px) { .aqg-basics-overlay { align-items:flex-end; } .aqg-basics-drawer { width:100%; max-height:89dvh; border-radius:16px 16px 0 0; padding:22px 17px 28px; } .aqg-basics-card { padding:17px; } .aqg-basics-btn { min-height:44px; } }
