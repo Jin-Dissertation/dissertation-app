@@ -14,6 +14,18 @@
 .aqg-basics-drawer a { color:#1453a0; text-decoration:underline; }
 .aqg-basics-device-list { margin:10px 0 18px; padding-left:1.35rem; }
 .aqg-basics-device-list li { padding-left:3px; margin:9px 0; }
+.aqg-basics-practice { margin:19px 0 12px; border-top:1px solid #dbe3ec; }
+.aqg-basics-practice-step { padding:15px 0 6px; }
+.aqg-basics-practice-step + .aqg-basics-practice-step { border-top:1px solid #e2e8f0; margin-top:12px; }
+.aqg-basics-practice-step h4 { font-size:1rem; line-height:1.45; margin:0 0 8px; }
+.aqg-basics-practice-step p { margin:5px 0 12px; }
+.aqg-basics-practice-label { display:block; font-weight:600; font-size:.9rem; margin:12px 0; }
+.aqg-basics-practice-label span { display:block; margin-bottom:6px; }
+.aqg-basics-practice-input { display:block; box-sizing:border-box; width:100%; min-height:68px; padding:10px 12px; font:inherit; font-size:1rem; line-height:1.45; color:#15263e; background:#fff; border:1px solid #9aaabd; border-radius:8px; resize:vertical; }
+.aqg-basics-practice-input[readonly] { background:#f4f7fa; cursor:text; }
+.aqg-basics-practice-input:focus-visible { outline:3px solid #f2be55; outline-offset:2px; }
+.aqg-basics-practice-step .aqg-basics-practice-status { min-height:1.4rem; margin:7px 0 0; font-size:.9rem; color:#35506a; }
+.aqg-basics-practice-status.is-success { color:#17643a; font-weight:700; }
 .aqg-basics-drawer code { font-size:.95em; background:#eef2f6; padding:2px 5px; border-radius:4px; }
 .aqg-basics-top { display:flex; gap:12px; align-items:start; justify-content:space-between; margin-bottom:14px; }
 .aqg-basics-dismiss { background:none; border:1px solid #b8c4d1; border-radius:8px; cursor:pointer; padding:7px 11px; font-size:1.1rem; }
