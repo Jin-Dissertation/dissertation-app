@@ -125,7 +125,7 @@
     $('chapter').textContent=r.section_title||'Training';
     $('progress-fill').style.width=(100*(idx+1)/rows.length)+'%';
     const c=$('content');c.replaceChildren();
-    if(String(r.settings||'').includes('beginnerHelp')) put(c,AQGBeginnerHelp.renderCard());
+    if(String(r.settings||'').includes('beginnerHelp')) put(c,AQGBeginnerHelp.renderCard(r));
     else if(r.type==='video')showVideo(r,c);
     else if(r.type==='sba'||r.type==='sata')showQuestion(r,c);
     else if(r.type==='matching'||r.type==='categorization')showMatching(r,c);

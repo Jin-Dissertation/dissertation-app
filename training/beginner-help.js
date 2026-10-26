@@ -88,12 +88,13 @@
 
     const automatic = add(practice, e('div', 'aqg-basics-practice-step'));
     add(automatic, e('h4', '', 'Try it: Copy with a button'));
-    paragraph(automatic, 'Websites such as the AQG app can copy a predetermined message with one click or tap. Select the button below, then Paste the copied message into the box.');
+    paragraph(automatic, 'Websites can make it quick and easy to copy a block of text with a single click or tap. To try this, push the button below, then paste the copied message into the box.');
+    add(automatic, e('p', 'aqg-basics-step-label', 'First, push this button'));
     const secondMessage = 'This text was copied to the clipboard the moment you pushed the button.';
     const copyButton = add(automatic, e('button', 'aqg-basics-btn secondary', 'Copy sample text'));
     copyButton.type = 'button';
     const copyStatus = practiceStatus(automatic);
-    const automaticDestination = practiceTextArea(automatic, 'Paste the text copied by the button here');
+    const automaticDestination = practiceTextArea(automatic, 'Second, paste the text in the box below');
     const automaticStatus = practiceStatus(automatic);
     let copiedByButton = false;
     const updateAutomatic = () => {
@@ -151,13 +152,7 @@
     richLine(flow, 'span', [{term:'Paste'}, ' in chatbot → Send']);
 
     clipboardPractice(section);
-    const hint = add(section, e('div', 'aqg-basics-hint'));
-    richLine(hint, 'span', [
-      'In the AQG app, you do not need to highlight a prompt. Selecting ',
-      {term:'Copy Starter Prompt'}, ' (or another prompt button) copies its text automatically. ',
-      'Switch to your AI chatbot, ', {term:'Paste'},
-      ' the text into its message box, and press Send. The two websites do not send messages to one another automatically.'
-    ]);
+    paragraph(section, 'You now have the basic knowledge you need to continue with this training module.');
   }
   function open() {
     close();
@@ -194,13 +189,23 @@
     activeOverlay = { overlay, focusBefore, keydown, overflow };
     x.focus();
   }
-  function renderCard() {
+  function renderCard(item = {}) {
     const card = e('div', 'aqg-basics-card');
-    add(card, e('h2', '', 'Quick start guide'));
-    add(card, e('p', 'basics-sub',
-      "If you aren't confident about what I mean when I say AI chatbot, or what it means to copy and paste something, here is a quick start guide that will give you the basic information you need to get started."));
+    add(card, e('h2', '', item.header || 'Using AI Chatbots'));
+    // Display this non-graded reading and its list before offering the guide.
+    // Build DOM nodes rather than injecting HTML from editable curriculum text.
+    const body = String(item.body || '');
+    for (const chunk of body.split(/\n\s*\n/).map(part => part.trim()).filter(Boolean)) {
+      const lines = chunk.split(/\n/).map(line => line.trim()).filter(Boolean);
+      if (lines.every(line => line.startsWith('-- '))) {
+        const list = add(card, e('ul', 'aqg-basics-intro-list'));
+        for (const line of lines) add(list, e('li', '', line.slice(3)));
+      } else {
+        add(card, e('p', 'basics-sub', lines.join(' ')));
+      }
+    }
     const actions = add(card, e('div', 'basics-actions'));
-    const guide = add(actions, e('button', 'aqg-basics-btn secondary', 'Quick start guide'));
+    const guide = add(actions, e('button', 'aqg-basics-btn secondary', 'Quick Start Guide'));
     guide.type = 'button';
     guide.addEventListener('click', () => open());
     return card;

@@ -1,7 +1,10 @@
 /* Shared, optional AI/clipboard orientation. No participant telemetry. */
 .aqg-basics-card { background: #fff; border: 1px solid #d4dce7; border-radius: 15px; padding: 24px; box-shadow: 0 3px 12px rgba(16,33,61,.06); }
 .aqg-basics-card h2 { margin: 0 0 10px; color:#10213d; font-size:1.2rem; }
-.aqg-basics-card .basics-sub { margin: 0 0 18px; color:#4b5563; line-height:1.55; }
+.aqg-basics-card .basics-sub { margin: 0 0 12px; color:#4b5563; line-height:1.55; }
+.aqg-basics-intro-list { margin: 0 0 12px; padding-left: 1.4rem; color:#2e415a; line-height:1.6; }
+.aqg-basics-intro-list li { margin:4px 0; }
+.aqg-basics-step-label { font-weight:700; margin: 14px 0 7px; }
 .aqg-basics-card .basics-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:16px; }
 .aqg-basics-btn { appearance:none; font:inherit; font-weight:650; border:1px solid #244d78; border-radius:9px; background:#244d78; color:white; padding:10px 15px; cursor:pointer; }
 .aqg-basics-btn.secondary { background:white; color:#244d78; }

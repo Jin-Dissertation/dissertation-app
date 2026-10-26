@@ -3234,7 +3234,7 @@ function renderBeginnerHelpBlock(item, cardIndex, onComplete, onContinue = onCom
   label.innerHTML = `<span class="section-num">Card ${cardIndex + 1}</span><div class="section-rule"></div><span class="section-type-badge">Guide</span>`;
   block.appendChild(label);
   // No assessment or topic selection; the guide is optional and read-only.
-  block.appendChild(AQGBeginnerHelp.renderCard());
+  block.appendChild(AQGBeginnerHelp.renderCard(item));
   const continueRow = document.createElement('div');
   continueRow.className = 'continue-row show';
   const continueButton = document.createElement('button');
