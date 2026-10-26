@@ -3,10 +3,6 @@
  */
 (() => {
   'use strict';
-  const TOPICS = [
-    { id: 'chatbot', label: 'Using an AI chatbot (such as ChatGPT, Gemini, or Copilot)' },
-    { id: 'clipboard', label: 'Copying and pasting text, including what the clipboard is' }
-  ];
   let activeOverlay = null;
   const e = (tag, cls, text) => {
     const node = document.createElement(tag);
@@ -28,40 +24,133 @@
   function heading(parent, text) { return add(parent, e('h3', '', text)); }
   function chatbotContent(parent) {
     const section = add(parent, e('section', 'aqg-basics-section'));
-    heading(section, 'Using an AI chatbot');
-    paragraph(section, 'ChatGPT, Gemini, Copilot, and Claude are examples of AI chatbots. They look a little different, but most have a message box where you type something and a Send button.');
-    paragraph(section, 'Type a question or instruction and press Send. The AI responds; then you can type another message to continue the same conversation, much like texting someone. The message you send is called a prompt.');
-    const box = add(section, e('div', 'aqg-basics-hint'));
-    box.textContent = 'Example prompt: Suggest three ways to help beginning nursing students practice recalling common diabetes symptoms.';
-    const btn = add(section, e('button', 'aqg-basics-btn secondary', 'Copy this example prompt'));
-    btn.type = 'button';
-    btn.style.marginTop = '10px';
-    const sample = 'Suggest three ways to help beginning nursing students practice recalling common diabetes symptoms.';
-    btn.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(sample); btn.textContent = 'Copied! Paste it into your chatbot.'; }
-      catch { btn.textContent = 'Copy unavailable. Select the example text above and copy it manually.'; }
-    });
+    heading(section, 'What is an AI chatbot?');
+    paragraph(section, 'Artificial intelligence (AI) is a broad term for computer systems that do things we normally associate with human intelligence. AI can take many forms, but much of the recent excitement is about AI chatbots, such as ChatGPT, Gemini, Copilot, and Claude. A chatbot works a lot like a text-message conversation: you send it a message, and it sends a reply that can sound as though a person wrote it. But you are communicating with software, not another person.');
+    heading(section, 'How do I use an AI chatbot?');
+    paragraph(section, "Think of it as texting someone who is always ready to try to respond right away. Open the chatbot, type a message, and press Send. If you ask a question, it will try to answer. If you give instructions, it will try to follow them. If you share an observation, it will try to react to what you said. You can send another message to keep the conversation going.");
+    paragraph(section, 'Each message you send to the chatbot is called a prompt.');
     paragraph(section, 'An AI chatbot can make mistakes. Check clinical facts and never paste protected patient, student, confidential, or restricted information into a chatbot.');
     paragraph(section, 'For this training, use the AI chatbot provided or approved by your institution. If you need an account, follow your institution’s instructions.');
   }
+  // Emphasize interface commands and shortcut keys without using HTML strings.
+  function richLine(parent, tag, parts) {
+    const node = add(parent, e(tag));
+    for (const part of parts) {
+      if (typeof part === 'string') add(node, document.createTextNode(part));
+      else add(node, e(part.key ? 'code' : 'strong', '', part.key || part.term));
+    }
+    return node;
+  }
+  // Clipboard exercises are optional and local to this drawer. Nothing is sent or stored.
+  function practiceTextArea(parent, description, initialText = null) {
+    const label = add(parent, e('label', 'aqg-basics-practice-label'));
+    add(label, e('span', '', description));
+    const field = add(label, e('textarea', 'aqg-basics-practice-input'));
+    field.rows = 2;
+    field.spellcheck = false;
+    if (initialText !== null) {
+      field.value = initialText;
+      field.readOnly = true;
+      field.setAttribute('aria-readonly', 'true');
+    } else {
+      field.placeholder = 'Paste the text here';
+    }
+    return field;
+  }
+  function practiceStatus(parent) {
+    const status = add(parent, e('p', 'aqg-basics-practice-status'));
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    return status;
+  }
+  function clipboardPractice(parent) {
+    const practice = add(parent, e('div', 'aqg-basics-practice'));
+    const manual = add(practice, e('div', 'aqg-basics-practice-step'));
+    add(manual, e('h4', '', 'Try it: Copy and Paste'));
+    paragraph(manual, 'Select the text in the first box, Copy it using your device, and Paste it into the second box.');
+    const firstMessage = 'Practice makes progress. I copied this message myself.';
+    practiceTextArea(manual, 'Text to copy (read-only)', firstMessage);
+    const manualDestination = practiceTextArea(manual, 'Paste the text here');
+    const manualStatus = practiceStatus(manual);
+    manualDestination.addEventListener('input', () => {
+      const success = manualDestination.value === firstMessage;
+      manualStatus.textContent = success ? 'Success! You copied and pasted the text correctly.' : '';
+      manualStatus.classList.toggle('is-success', success);
+    });
+
+    const automatic = add(practice, e('div', 'aqg-basics-practice-step'));
+    add(automatic, e('h4', '', 'Try it: Copy with a button'));
+    paragraph(automatic, 'Websites such as the AQG app can copy a predetermined message with one click or tap. Select the button below, then Paste the copied message into the box.');
+    const secondMessage = 'This text was copied to the clipboard the moment you pushed the button.';
+    const copyButton = add(automatic, e('button', 'aqg-basics-btn secondary', 'Copy sample text'));
+    copyButton.type = 'button';
+    const copyStatus = practiceStatus(automatic);
+    const automaticDestination = practiceTextArea(automatic, 'Paste the text copied by the button here');
+    const automaticStatus = practiceStatus(automatic);
+    let copiedByButton = false;
+    const updateAutomatic = () => {
+      const success = copiedByButton && automaticDestination.value === secondMessage;
+      automaticStatus.textContent = success ? 'Success! The button copied the message to your Clipboard.' : '';
+      automaticStatus.classList.toggle('is-success', success);
+    };
+    automaticDestination.addEventListener('input', updateAutomatic);
+    copyButton.addEventListener('click', async () => {
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard access unavailable');
+        await navigator.clipboard.writeText(secondMessage);
+        copiedByButton = true;
+        copyStatus.textContent = 'Copied! Now Paste the message into the box below.';
+      } catch {
+        copiedByButton = false;
+        copyStatus.textContent = 'Automatic copying is unavailable in this browser. You can still continue the training.';
+      }
+      updateAutomatic();
+    });
+  }
   function clipboardContent(parent) {
     const section = add(parent, e('section', 'aqg-basics-section'));
-    heading(section, 'Copying, pasting, and the clipboard');
-    paragraph(section, 'The clipboard is a temporary holding place for text you copy. After copying, you can paste the same text into another text box, including one on a different website.');
+    heading(section, 'What are Copy, Paste, and the Clipboard?');
+    richLine(section, 'p', [
+      'On a computer or phone, you can highlight a portion of text and choose ',
+      {term:'Copy'}, '. This places that text in a temporary holding area called the ',
+      {term:'Clipboard'}, '. If you ', {term:'Copy'}, ' something else, the new text replaces what was there before. ',
+      'You can then go to another document, app, or website and choose ', {term:'Paste'},
+      '. This inserts whatever text is currently on the ', {term:'Clipboard'},
+      ' wherever your cursor is.'
+    ]);
     const flow = add(section, e('div', 'aqg-basics-flow'));
-    add(flow, e('span', '', 'Copy prompt in the AQG app'));
+    richLine(flow, 'span', [{term:'Copy'}, ' a prompt in the AQG app']);
     add(flow, e('b', '', '→'));
-    add(flow, e('span', '', 'Clipboard'));
+    richLine(flow, 'span', [{term:'Clipboard'}]);
     add(flow, e('b', '', '→'));
-    add(flow, e('span', '', 'Paste in chatbot → Send'));
-    paragraph(section, 'On Windows or Chromebook, highlight text and press Ctrl+C to copy, then Ctrl+V to paste. On a Mac, use Command+C and Command+V. You can also right-click to choose Copy or Paste.');
-    paragraph(section, 'On a phone or tablet, press and hold text to select and copy it. Press and hold the message box to bring up Paste.');
+    richLine(flow, 'span', [{term:'Paste'}, ' in chatbot → Send']);
+    paragraph(section, 'Choose the instructions for your device:');
+    const devices = add(section, e('ul', 'aqg-basics-device-list'));
+    richLine(devices, 'li', [
+      {term:'Windows / Chromebook'}, ': Select text and press ', {key:'Ctrl+C'},
+      ' to ', {term:'Copy'}, ', then ', {key:'Ctrl+V'}, ' to ', {term:'Paste'},
+      '. You can also right-click and choose ', {term:'Copy'}, ' or ', {term:'Paste'}, '.'
+    ]);
+    richLine(devices, 'li', [
+      {term:'Mac'}, ': Select text and press ', {key:'Command+C'}, ' to ', {term:'Copy'},
+      ', then ', {key:'Command+V'}, ' to ', {term:'Paste'},
+      '. You can also right-click and choose ', {term:'Copy'}, ' or ', {term:'Paste'}, '.'
+    ]);
+    richLine(devices, 'li', [
+      {term:'Phone / Tablet'}, ': Press and hold to select text, then tap ', {term:'Copy'},
+      '. Press and hold where you want to insert the text, then tap ', {term:'Paste'}, '.'
+    ]);
+    clipboardPractice(section);
     const hint = add(section, e('div', 'aqg-basics-hint'));
-    hint.textContent = 'In the AQG app, you do NOT have to highlight a prompt: clicking Copy Starter Prompt (or another prompt button) copies its text automatically. Switch to the AI chatbot, paste the text into its message box, and press Send. The two websites do not send messages to one another automatically.';
+    richLine(hint, 'span', [
+      'In the AQG app, you do not need to highlight a prompt. Selecting ',
+      {term:'Copy Starter Prompt'}, ' (or another prompt button) copies its text automatically. ',
+      'Switch to your AI chatbot, ', {term:'Paste'},
+      ' the text into its message box, and press Send. The two websites do not send messages to one another automatically.'
+    ]);
   }
-  function open(selected = ['chatbot', 'clipboard'], onFinish = null) {
+  function open() {
     close();
-    const chosen = new Set(selected.length ? selected : TOPICS.map(x => x.id));
     const focusBefore = document.activeElement;
     const overlay = e('div', 'aqg-basics-overlay');
     const drawer = add(overlay, e('aside', 'aqg-basics-drawer'));
@@ -72,14 +161,11 @@
     add(top, e('h2', '', 'Quick start guide'));
     const x = add(top, e('button', 'aqg-basics-dismiss', '×'));
     x.type='button'; x.setAttribute('aria-label', 'Close quick start guide'); x.addEventListener('click', close);
-    paragraph(drawer, 'These explanations are optional. You can revisit them anytime, and nothing here is graded.');
-    if (chosen.has('chatbot')) chatbotContent(drawer);
-    if (chosen.has('clipboard')) clipboardContent(drawer);
+    chatbotContent(drawer);
+    clipboardContent(drawer);
     const footer = add(drawer, e('div', 'aqg-basics-footer'));
-    const all = add(footer, e('button', 'aqg-basics-btn secondary', 'Show both topics'));
-    all.type='button'; all.addEventListener('click', () => open(['chatbot', 'clipboard'], onFinish));
-    const done = add(footer, e('button', 'aqg-basics-btn', onFinish ? 'Continue training' : 'Close guide'));
-    done.type='button'; done.addEventListener('click', () => { close(); onFinish?.(); });
+    const done = add(footer, e('button', 'aqg-basics-btn', 'Close guide'));
+    done.type='button'; done.addEventListener('click', close);
     overlay.addEventListener('click', event => { if(event.target === overlay) close(); });
     const keydown = event => {
       if (event.key === 'Escape') close();
@@ -98,31 +184,15 @@
     activeOverlay = { overlay, focusBefore, keydown, overflow };
     x.focus();
   }
-  function renderCard({title = 'Getting started: a quick skills check', stem = '', options = null, onContinue}) {
-    const card=e('div', 'aqg-basics-card');
-    add(card,e('h2','',title));
-    add(card,e('p','basics-sub',stem || 'Which skills would you like a quick explanation or refresher on? Select all that apply.'));
-    const optionsBox=add(card,e('div','aqg-basics-options'));
-    optionsBox.setAttribute('role','group'); optionsBox.setAttribute('aria-label','Choose optional help topics');
-    const opts=options?.length===2 ? options : TOPICS.map(x=>x.label);
-    TOPICS.forEach((topic,i)=>{
-      const label=add(optionsBox,e('label','aqg-basics-option'));
-      const input=add(label,e('input'));
-      input.type='checkbox'; input.value=topic.id;
-      add(label,e('span','',opts[i]));
-    });
-    paragraph(card,'Nothing is graded here. Leave both unchecked if you are comfortable with both skills.');
-    const actions=add(card,e('div','basics-actions'));
-    const next=add(actions,e('button','aqg-basics-btn','Continue'));
-    next.type='button';
-    const show=add(actions,e('button','aqg-basics-btn secondary','Preview both topics'));
-    show.type='button';
-    show.addEventListener('click',()=>open());
-    next.addEventListener('click',()=>{
-      const selected=[...card.querySelectorAll('input:checked')].map(x=>x.value);
-      if (!selected.length) { onContinue?.(); return; }
-      open(selected,onContinue);
-    });
+  function renderCard() {
+    const card = e('div', 'aqg-basics-card');
+    add(card, e('h2', '', 'Quick start guide'));
+    add(card, e('p', 'basics-sub',
+      "If you aren't confident about what I mean when I say AI chatbot, or what it means to copy and paste something, here is a quick start guide that will give you the basic information you need to get started."));
+    const actions = add(card, e('div', 'basics-actions'));
+    const guide = add(actions, e('button', 'aqg-basics-btn secondary', 'Quick start guide'));
+    guide.type = 'button';
+    guide.addEventListener('click', () => open());
     return card;
   }
   window.AQGBeginnerHelp = Object.freeze({ renderCard, open, close });

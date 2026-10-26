@@ -2,20 +2,30 @@
 .aqg-basics-card { background: #fff; border: 1px solid #d4dce7; border-radius: 15px; padding: 24px; box-shadow: 0 3px 12px rgba(16,33,61,.06); }
 .aqg-basics-card h2 { margin: 0 0 10px; color:#10213d; font-size:1.2rem; }
 .aqg-basics-card .basics-sub { margin: 0 0 18px; color:#4b5563; line-height:1.55; }
-.aqg-basics-options { display:grid; gap:11px; margin:16px 0; }
-.aqg-basics-option { display:flex; align-items:flex-start; gap:12px; padding:13px; border:1px solid #cbd5e1; border-radius:10px; cursor:pointer; line-height:1.45; background:#f9fbfd; }
-.aqg-basics-option:has(input:checked) { background:#ebf4ff; border-color:#3265a3; }
-.aqg-basics-option input { margin-top:3px; width:19px; height:19px; accent-color:#20558f; flex:none; }
 .aqg-basics-card .basics-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:16px; }
 .aqg-basics-btn { appearance:none; font:inherit; font-weight:650; border:1px solid #244d78; border-radius:9px; background:#244d78; color:white; padding:10px 15px; cursor:pointer; }
 .aqg-basics-btn.secondary { background:white; color:#244d78; }
-.aqg-basics-btn:focus-visible, .aqg-basics-option:focus-within { outline:3px solid #f2be55; outline-offset:2px; }
+.aqg-basics-btn:focus-visible { outline:3px solid #f2be55; outline-offset:2px; }
 .aqg-basics-overlay { position:fixed; inset:0; z-index:100000; background:rgba(10,24,44,.55); display:flex; align-items:stretch; justify-content:flex-end; }
 .aqg-basics-drawer { width:min(100%, 510px); background:#fff; color:#15263e; box-shadow:-10px 0 35px #0002; padding:22px 25px 34px; overflow:auto; overscroll-behavior:contain; }
 .aqg-basics-drawer h2 { font-size:1.45rem; margin:0; font-family:inherit; }
 .aqg-basics-drawer h3 { font-size:1.08rem; margin:19px 0 8px; }
 .aqg-basics-drawer p, .aqg-basics-drawer li { line-height:1.6; }
 .aqg-basics-drawer a { color:#1453a0; text-decoration:underline; }
+.aqg-basics-device-list { margin:10px 0 18px; padding-left:1.35rem; }
+.aqg-basics-device-list li { padding-left:3px; margin:9px 0; }
+.aqg-basics-practice { margin:19px 0 12px; border-top:1px solid #dbe3ec; }
+.aqg-basics-practice-step { padding:15px 0 6px; }
+.aqg-basics-practice-step + .aqg-basics-practice-step { border-top:1px solid #e2e8f0; margin-top:12px; }
+.aqg-basics-practice-step h4 { font-size:1rem; line-height:1.45; margin:0 0 8px; }
+.aqg-basics-practice-step p { margin:5px 0 12px; }
+.aqg-basics-practice-label { display:block; font-weight:600; font-size:.9rem; margin:12px 0; }
+.aqg-basics-practice-label span { display:block; margin-bottom:6px; }
+.aqg-basics-practice-input { display:block; box-sizing:border-box; width:100%; min-height:68px; padding:10px 12px; font:inherit; font-size:1rem; line-height:1.45; color:#15263e; background:#fff; border:1px solid #9aaabd; border-radius:8px; resize:vertical; }
+.aqg-basics-practice-input[readonly] { background:#f4f7fa; cursor:text; }
+.aqg-basics-practice-input:focus-visible { outline:3px solid #f2be55; outline-offset:2px; }
+.aqg-basics-practice-step .aqg-basics-practice-status { min-height:1.4rem; margin:7px 0 0; font-size:.9rem; color:#35506a; }
+.aqg-basics-practice-status.is-success { color:#17643a; font-weight:700; }
 .aqg-basics-drawer code { font-size:.95em; background:#eef2f6; padding:2px 5px; border-radius:4px; }
 .aqg-basics-top { display:flex; gap:12px; align-items:start; justify-content:space-between; margin-bottom:14px; }
 .aqg-basics-dismiss { background:none; border:1px solid #b8c4d1; border-radius:8px; cursor:pointer; padding:7px 11px; font-size:1.1rem; }
