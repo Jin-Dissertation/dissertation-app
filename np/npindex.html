@@ -2976,7 +2976,7 @@ details.band[open] > summary {
           <p class="landingSectionHeading"><strong>Interested in being a part of the study?</strong></p>
           <p>To be eligible, you must be an actively working prelicensure nurse faculty whose institution has provided its faculty with institutional access to ChatGPT, Gemini, or Copilot. You can review the study information by <a href="npstudyinfo.html">clicking here</a>, or express interest by completing <a href="https://universityofalabama.az1.qualtrics.com/jfe/form/SV_3HNWUTbF6MYFWlw">this form.</a></p>
           <p class="landingSectionHeading"><strong>Training and additional guidance</strong></p>
-          <p>For guidance, visit the <a href="nphelp.html">Help / FAQ</a> page or use <strong>Show training tips</strong> at the bottom of the app. A separate self-guided training module is not yet available for this version.</p>
+          <p>If you are new to the app, you can complete the <a href="../training/nptraining.html">self-guided training module</a> to learn how it works. You can also visit the <a href="nphelp.html">Help / FAQ</a> page or use <strong>Show training tips</strong> while using the app.</p>
           <p class="landingSectionHeading"><strong>Are you a study participant?</strong></p>
           <p><a href="../index.html">Click here</a> to switch to the participant version of this app.</p>
 
@@ -3660,6 +3660,7 @@ const PROMPT_META = [
       timerStartedAt: `${STORAGE_PREFIX}.timerStartedAt`,
       timerElapsedBeforePause: `${STORAGE_PREFIX}.timerElapsedBeforePause`,
       timerPaused: `${STORAGE_PREFIX}.timerPaused`,
+      timerLastActivityAt: `${STORAGE_PREFIX}.timerLastActivityAt`,
       timerWarned35: `${STORAGE_PREFIX}.timerWarned35`,
       timerWarned40: `${STORAGE_PREFIX}.timerWarned40`,
       trainingTenMinuteNoticeShown: `${STORAGE_PREFIX}.trainingTenMinuteNoticeShown`,
@@ -4408,6 +4409,56 @@ const PROMPT_META = [
     }
 
     const TIMER_TRAINING_NOTICE_15_MIN_MS = 15 * 60 * 1000;
+    const TIMER_BREAK_RESET_MS = 60 * 60 * 1000;
+    let timerTrackingEnabled = false;
+    let lastTimerActivityWrite = 0;
+
+    function resetTrainingTimer(nowMs = Date.now()) {
+      localStorage.setItem(KEYS.timerStartedAt, String(nowMs));
+      localStorage.setItem(KEYS.timerElapsedBeforePause, "0");
+      localStorage.setItem(KEYS.timerPaused, "false");
+      localStorage.setItem(KEYS.timerLastActivityAt, String(nowMs));
+      localStorage.removeItem(KEYS.trainingTenMinuteNoticeShown);
+      localStorage.removeItem(KEYS.timerWarned35);
+      localStorage.removeItem(KEYS.timerWarned40);
+      lastTimerActivityWrite = nowMs;
+      restoreTimerButtonState();
+    }
+
+    function trainingBreakExpired(nowMs = Date.now()) {
+      const lastActivityAt = Number(localStorage.getItem(KEYS.timerLastActivityAt) || "0");
+      // Existing browsers may have timerStartedAt from before inactivity tracking.
+      const fallbackStartAt = Number(localStorage.getItem(KEYS.timerStartedAt) || "0");
+      const lastSeenAt = lastActivityAt || fallbackStartAt;
+      return lastSeenAt > 0 && nowMs - lastSeenAt >= TIMER_BREAK_RESET_MS;
+    }
+
+    function rememberTrainingActivity(nowMs = Date.now(), force = false) {
+      if (!timerTrackingEnabled || !isTrainingMode) return;
+      if (trainingBreakExpired(nowMs)) resetTrainingTimer(nowMs);
+      if (force || nowMs - lastTimerActivityWrite >= 15000) {
+        localStorage.setItem(KEYS.timerLastActivityAt, String(nowMs));
+        lastTimerActivityWrite = nowMs;
+      }
+    }
+
+    // A break means no interaction with the open practice page. A return after
+    // more than an hour starts a new practice timer, without clearing answers
+    // or question-writing work in the nonparticipant app.
+    for (const type of ["pointerdown", "keydown", "scroll"]) {
+      document.addEventListener(type, () => {
+        if (document.visibilityState === "visible") rememberTrainingActivity();
+      }, { passive: true });
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (!timerTrackingEnabled || !isTrainingMode) return;
+      if (document.visibilityState === "hidden") rememberTrainingActivity(Date.now(), true);
+      else {
+        rememberTrainingActivity(Date.now(), true);
+        updateSessionTimer();
+      }
+    });
+    window.addEventListener("pagehide", () => rememberTrainingActivity(Date.now(), true));
     const TIMER_NOTICE_MIN_VISIBLE_MS = 5000;
     const TIMER_NOTICE_AUTO_HIDE_MS = 60000;
 
@@ -4447,20 +4498,27 @@ const PROMPT_META = [
 
     function initializeSessionTimerIfNeeded() {
       if (!isTrainingMode) return;
-      const startedAt = localStorage.getItem(KEYS.timerStartedAt);
-      const elapsed = localStorage.getItem(KEYS.timerElapsedBeforePause);
-      const paused = localStorage.getItem(KEYS.timerPaused);
-
-      if (!elapsed) localStorage.setItem(KEYS.timerElapsedBeforePause, "0");
-      if (!paused) localStorage.setItem(KEYS.timerPaused, "false");
-      if (!localStorage.getItem(KEYS.trainingTenMinuteNoticeShown)) localStorage.setItem(KEYS.trainingTenMinuteNoticeShown, "false");
-
-      const isPaused = localStorage.getItem(KEYS.timerPaused) === "true";
-      if (!startedAt && !isPaused) {
-        localStorage.setItem(KEYS.timerStartedAt, String(Date.now()));
-        logEvent("timer_started");
+      const nowMs = Date.now();
+      if (trainingBreakExpired(nowMs)) {
+        resetTrainingTimer(nowMs);
+      } else {
+        if (!localStorage.getItem(KEYS.timerElapsedBeforePause)) {
+          localStorage.setItem(KEYS.timerElapsedBeforePause, "0");
+        }
+        if (!localStorage.getItem(KEYS.timerPaused)) {
+          localStorage.setItem(KEYS.timerPaused, "false");
+        }
+        if (!localStorage.getItem(KEYS.trainingTenMinuteNoticeShown)) {
+          localStorage.setItem(KEYS.trainingTenMinuteNoticeShown, "false");
+        }
+        if (!localStorage.getItem(KEYS.timerStartedAt) &&
+            localStorage.getItem(KEYS.timerPaused) !== "true") {
+          localStorage.setItem(KEYS.timerStartedAt, String(nowMs));
+          logEvent("timer_started");
+        }
+        localStorage.setItem(KEYS.timerLastActivityAt, String(nowMs));
+        lastTimerActivityWrite = nowMs;
       }
-
       restoreTimerButtonState();
     }
 
@@ -4469,6 +4527,9 @@ const PROMPT_META = [
       const card = $("sessionTimerCard");
       if (!display || !card) return;
 
+      if (isTrainingMode && timerTrackingEnabled && document.visibilityState === "visible" && trainingBreakExpired()) {
+        resetTrainingTimer();
+      }
       const elapsed = getTimerElapsedMs();
       display.textContent = formatElapsed(elapsed);
       // Sync mobile timer display
@@ -4900,6 +4961,8 @@ const PROMPT_META = [
       localStorage.setItem(KEYS.timerStartedAt, String(Date.now()));
       localStorage.setItem(KEYS.timerElapsedBeforePause, "0");
       localStorage.setItem(KEYS.timerPaused, "false");
+      localStorage.setItem(KEYS.timerLastActivityAt, String(Date.now()));
+      lastTimerActivityWrite = Date.now();
       localStorage.removeItem(KEYS.timerWarned35);
       localStorage.removeItem(KEYS.timerWarned40);
       localStorage.removeItem(KEYS.trainingTenMinuteNoticeShown);
@@ -6667,6 +6730,11 @@ ${persistentInstructions}`;
         if (!ready) return;
 
         await initializeNonparticipantSession();
+        if (isTrainingMode) {
+          timerTrackingEnabled = true;
+          initializeSessionTimerIfNeeded();
+          updateSessionTimer();
+        }
         trackNpButtonPress("btnOpenTool");
         setLockedState(false);
         syncStarterPromptCopiedState();
@@ -7482,7 +7550,7 @@ async function sendFeedbackAlert() {
         }
         if (confirmBtn) {
           confirmBtn.disabled = true;
-          confirmBtn.textContent = "Submitting…";
+          confirmBtn.textContent = "Finishing…";
         }
         if (cancelBtn) cancelBtn.disabled = true;
 
@@ -7544,7 +7612,7 @@ async function sendFeedbackAlert() {
               sessionStorage.setItem("dissertation.ended", "true");
               await resetCurrentSessionKeepLogin({ suppressResetCloseEvent: true });
               closeModal("modalEnd");
-              window.location.href = "training-complete.html";
+              window.location.href = "../training/nptraining.html";
               return;
             }
 
