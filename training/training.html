@@ -1592,9 +1592,10 @@
 // Durable training data flows through this Cloudflare Worker.
 const WORKER_API_URL = 'https://dissertation-study-api.professor-jin.workers.dev';
 const APP_VERSION = '2026-04-27-strict-a';
-// Opt-in preview only. The ordinary study module stays on its approved content.
-const CONTENT_VERSION = new URLSearchParams(window.location.search).get('preview_v2') === '1'
-  ? '2026-10-25-module-v2' : '2026-04-27-strict-content-a';
+// Use the updated eight-week study curriculum by default. The previous
+// curriculum remains accessible by explicit legacy link for existing sessions.
+const CONTENT_VERSION = new URLSearchParams(window.location.search).get('legacy_v1') === '1'
+  ? '2026-04-27-strict-content-a' : '2026-10-25-module-v2';
 const STORAGE_KEY = `training_progress_${APP_VERSION}_${CONTENT_VERSION}`;
 const LEGACY_STORAGE_KEYS = ['training_progress_v1'];
 const REQUEST_TIMEOUT_MS = 15000;
