@@ -32,20 +32,49 @@
     paragraph(section, 'An AI chatbot can make mistakes. Check clinical facts and never paste protected patient, student, confidential, or restricted information into a chatbot.');
     paragraph(section, 'For this training, use the AI chatbot provided or approved by your institution. If you need an account, follow your institution’s instructions.');
   }
+  // Emphasize interface commands and shortcut keys without using HTML strings.
+  function richLine(parent, tag, parts) {
+    const node = add(parent, e(tag));
+    for (const part of parts) {
+      if (typeof part === 'string') add(node, document.createTextNode(part));
+      else add(node, e(part.key ? 'code' : 'strong', '', part.key || part.term));
+    }
+    return node;
+  }
   function clipboardContent(parent) {
     const section = add(parent, e('section', 'aqg-basics-section'));
-    heading(section, 'What do copying, pasting, and the clipboard mean?');
-    paragraph(section, 'The clipboard is a temporary holding place for text you copy. After copying, you can paste the same text into another text box, including one on a different website.');
+    heading(section, 'What are Copy, Paste, and the Clipboard?');
+    richLine(section, 'p', [
+      'On a computer or phone, you can highlight a portion of text and choose ',
+      {term:'Copy'}, '. This places that text in a temporary holding area called the ',
+      {term:'Clipboard'}, '. If you ', {term:'Copy'}, ' something else, the new text replaces what was there before. ',
+      'You can then go to another document, app, or website and choose ', {term:'Paste'},
+      '. This inserts whatever text is currently on the ', {term:'Clipboard'},
+      ' wherever your cursor is.'
+    ]);
     const flow = add(section, e('div', 'aqg-basics-flow'));
-    add(flow, e('span', '', 'Copy prompt in the AQG app'));
+    richLine(flow, 'span', [{term:'Copy'}, ' a prompt in the AQG app']);
     add(flow, e('b', '', '→'));
-    add(flow, e('span', '', 'Clipboard'));
+    richLine(flow, 'span', [{term:'Clipboard'}]);
     add(flow, e('b', '', '→'));
-    add(flow, e('span', '', 'Paste in chatbot → Send'));
-    paragraph(section, 'On Windows or Chromebook, highlight text and press Ctrl+C to copy, then Ctrl+V to paste. On a Mac, use Command+C and Command+V. You can also right-click to choose Copy or Paste.');
-    paragraph(section, 'On a phone or tablet, press and hold text to select and copy it. Press and hold the message box to bring up Paste.');
+    richLine(flow, 'span', [{term:'Paste'}, ' in chatbot → Send']);
+    richLine(section, 'p', [
+      'On Windows or Chromebook, select text and press ', {key:'Ctrl+C'}, ' to ',
+      {term:'Copy'}, ', then ', {key:'Ctrl+V'}, ' to ', {term:'Paste'},
+      '. On a Mac, use ', {key:'Command+C'}, ' and ', {key:'Command+V'},
+      '. You can also right-click and choose ', {term:'Copy'}, ' or ', {term:'Paste'}, '.'
+    ]);
+    richLine(section, 'p', [
+      'On a phone or tablet, press and hold to select text, then tap ', {term:'Copy'},
+      '. Press and hold in the destination text box, then tap ', {term:'Paste'}, '.'
+    ]);
     const hint = add(section, e('div', 'aqg-basics-hint'));
-    hint.textContent = 'In the AQG app, you do NOT have to highlight a prompt: clicking Copy Starter Prompt (or another prompt button) copies its text automatically. Switch to the AI chatbot, paste the text into its message box, and press Send. The two websites do not send messages to one another automatically.';
+    richLine(hint, 'span', [
+      'In the AQG app, you do not need to highlight a prompt. Selecting ',
+      {term:'Copy Starter Prompt'}, ' (or another prompt button) copies its text automatically. ',
+      'Switch to your AI chatbot, ', {term:'Paste'},
+      ' the text into its message box, and press Send. The two websites do not send messages to one another automatically.'
+    ]);
   }
   function open() {
     close();
