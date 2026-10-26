@@ -27,24 +27,14 @@
     heading(section, 'What is an AI chatbot?');
     paragraph(section, 'Artificial intelligence (AI) is a broad term for computer systems that do things we normally associate with human intelligence. AI can take many forms, but much of the recent excitement is about AI chatbots, such as ChatGPT, Gemini, Copilot, and Claude. A chatbot works a lot like a text-message conversation: you send it a message, and it sends a reply that can sound as though a person wrote it. But you are communicating with software, not another person.');
     heading(section, 'How do I use an AI chatbot?');
-    paragraph(section, 'Imagine texting someone. Open the chatbot website or app, find the message box, type what you want to say, and press Send. You might ask a question or request help with a task. The chatbot replies, and you can text back to ask a follow-up question, give more information, or ask it to change its answer. You can keep going back and forth in the same conversation.');
-    paragraph(section, 'Each message or instruction you send to the chatbot is called a prompt.');
-    const box = add(section, e('div', 'aqg-basics-hint'));
-    box.textContent = 'Example prompt: Suggest three ways to help beginning nursing students practice recalling common diabetes symptoms.';
-    const btn = add(section, e('button', 'aqg-basics-btn secondary', 'Copy this example prompt'));
-    btn.type = 'button';
-    btn.style.marginTop = '10px';
-    const sample = 'Suggest three ways to help beginning nursing students practice recalling common diabetes symptoms.';
-    btn.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(sample); btn.textContent = 'Copied! Paste it into your chatbot.'; }
-      catch { btn.textContent = 'Copy unavailable. Select the example text above and copy it manually.'; }
-    });
+    paragraph(section, "Think of it as texting someone who is always ready to try to respond right away. Open the chatbot, type a message, and press Send. If you ask a question, it will try to answer. If you give instructions, it will try to follow them. If you share an observation, it will try to react to what you said. You can send another message to keep the conversation going.");
+    paragraph(section, 'Each message you send to the chatbot is called a prompt.');
     paragraph(section, 'An AI chatbot can make mistakes. Check clinical facts and never paste protected patient, student, confidential, or restricted information into a chatbot.');
     paragraph(section, 'For this training, use the AI chatbot provided or approved by your institution. If you need an account, follow your institution’s instructions.');
   }
   function clipboardContent(parent) {
     const section = add(parent, e('section', 'aqg-basics-section'));
-    heading(section, 'Copying, pasting, and the clipboard');
+    heading(section, 'What do copying, pasting, and the clipboard mean?');
     paragraph(section, 'The clipboard is a temporary holding place for text you copy. After copying, you can paste the same text into another text box, including one on a different website.');
     const flow = add(section, e('div', 'aqg-basics-flow'));
     add(flow, e('span', '', 'Copy prompt in the AQG app'));
