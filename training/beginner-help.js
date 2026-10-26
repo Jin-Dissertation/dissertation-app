@@ -72,12 +72,9 @@
     add(top, e('h2', '', 'Quick start guide'));
     const x = add(top, e('button', 'aqg-basics-dismiss', '×'));
     x.type='button'; x.setAttribute('aria-label', 'Close quick start guide'); x.addEventListener('click', close);
-    paragraph(drawer, 'These explanations are optional. You can revisit them anytime, and nothing here is graded.');
     if (chosen.has('chatbot')) chatbotContent(drawer);
     if (chosen.has('clipboard')) clipboardContent(drawer);
     const footer = add(drawer, e('div', 'aqg-basics-footer'));
-    const all = add(footer, e('button', 'aqg-basics-btn secondary', 'Show both topics'));
-    all.type='button'; all.addEventListener('click', () => open(['chatbot', 'clipboard'], onFinish));
     const done = add(footer, e('button', 'aqg-basics-btn', onFinish ? 'Continue training' : 'Close guide'));
     done.type='button'; done.addEventListener('click', () => { close(); onFinish?.(); });
     overlay.addEventListener('click', event => { if(event.target === overlay) close(); });
@@ -98,31 +95,15 @@
     activeOverlay = { overlay, focusBefore, keydown, overflow };
     x.focus();
   }
-  function renderCard({title = 'Getting started: a quick skills check', stem = '', options = null, onContinue}) {
-    const card=e('div', 'aqg-basics-card');
-    add(card,e('h2','',title));
-    add(card,e('p','basics-sub',stem || 'Which skills would you like a quick explanation or refresher on? Select all that apply.'));
-    const optionsBox=add(card,e('div','aqg-basics-options'));
-    optionsBox.setAttribute('role','group'); optionsBox.setAttribute('aria-label','Choose optional help topics');
-    const opts=options?.length===2 ? options : TOPICS.map(x=>x.label);
-    TOPICS.forEach((topic,i)=>{
-      const label=add(optionsBox,e('label','aqg-basics-option'));
-      const input=add(label,e('input'));
-      input.type='checkbox'; input.value=topic.id;
-      add(label,e('span','',opts[i]));
-    });
-    paragraph(card,'Nothing is graded here. Leave both unchecked if you are comfortable with both skills.');
-    const actions=add(card,e('div','basics-actions'));
-    const next=add(actions,e('button','aqg-basics-btn','Continue'));
-    next.type='button';
-    const show=add(actions,e('button','aqg-basics-btn secondary','Preview both topics'));
-    show.type='button';
-    show.addEventListener('click',()=>open());
-    next.addEventListener('click',()=>{
-      const selected=[...card.querySelectorAll('input:checked')].map(x=>x.value);
-      if (!selected.length) { onContinue?.(); return; }
-      open(selected,onContinue);
-    });
+  function renderCard() {
+    const card = e('div', 'aqg-basics-card');
+    add(card, e('h2', '', 'Quick start guide'));
+    add(card, e('p', 'basics-sub',
+      "If you aren't confident about what I mean when I say AI chatbot, or what it means to copy and paste something, here is a quick start guide that will give you the basic information you need to get started."));
+    const actions = add(card, e('div', 'basics-actions'));
+    const guide = add(actions, e('button', 'aqg-basics-btn secondary', 'Quick start guide'));
+    guide.type = 'button';
+    guide.addEventListener('click', () => open());
     return card;
   }
   window.AQGBeginnerHelp = Object.freeze({ renderCard, open, close });
