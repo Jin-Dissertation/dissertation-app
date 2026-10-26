@@ -41,6 +41,72 @@
     }
     return node;
   }
+  // Clipboard exercises are optional and local to this drawer. Nothing is sent or stored.
+  function practiceTextArea(parent, description, initialText = null) {
+    const label = add(parent, e('label', 'aqg-basics-practice-label'));
+    add(label, e('span', '', description));
+    const field = add(label, e('textarea', 'aqg-basics-practice-input'));
+    field.rows = 2;
+    field.spellcheck = false;
+    if (initialText !== null) {
+      field.value = initialText;
+      field.readOnly = true;
+      field.setAttribute('aria-readonly', 'true');
+    } else {
+      field.placeholder = 'Paste the text here';
+    }
+    return field;
+  }
+  function practiceStatus(parent) {
+    const status = add(parent, e('p', 'aqg-basics-practice-status'));
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    return status;
+  }
+  function clipboardPractice(parent) {
+    const practice = add(parent, e('div', 'aqg-basics-practice'));
+    const manual = add(practice, e('div', 'aqg-basics-practice-step'));
+    add(manual, e('h4', '', 'Try it: Copy and Paste'));
+    paragraph(manual, 'Select the text in the first box, Copy it using your device, and Paste it into the second box.');
+    const firstMessage = 'Practice makes progress. I copied this message myself.';
+    practiceTextArea(manual, 'Text to copy (read-only)', firstMessage);
+    const manualDestination = practiceTextArea(manual, 'Paste the text here');
+    const manualStatus = practiceStatus(manual);
+    manualDestination.addEventListener('input', () => {
+      const success = manualDestination.value === firstMessage;
+      manualStatus.textContent = success ? 'Success! You copied and pasted the text correctly.' : '';
+      manualStatus.classList.toggle('is-success', success);
+    });
+
+    const automatic = add(practice, e('div', 'aqg-basics-practice-step'));
+    add(automatic, e('h4', '', 'Try it: Copy with a button'));
+    paragraph(automatic, 'Websites such as the AQG app can copy a predetermined message with one click or tap. Select the button below, then Paste the copied message into the box.');
+    const secondMessage = 'This text was copied to the clipboard the moment you pushed the button.';
+    const copyButton = add(automatic, e('button', 'aqg-basics-btn secondary', 'Copy sample text'));
+    copyButton.type = 'button';
+    const copyStatus = practiceStatus(automatic);
+    const automaticDestination = practiceTextArea(automatic, 'Paste the text copied by the button here');
+    const automaticStatus = practiceStatus(automatic);
+    let copiedByButton = false;
+    const updateAutomatic = () => {
+      const success = copiedByButton && automaticDestination.value === secondMessage;
+      automaticStatus.textContent = success ? 'Success! The button copied the message to your Clipboard.' : '';
+      automaticStatus.classList.toggle('is-success', success);
+    };
+    automaticDestination.addEventListener('input', updateAutomatic);
+    copyButton.addEventListener('click', async () => {
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard access unavailable');
+        await navigator.clipboard.writeText(secondMessage);
+        copiedByButton = true;
+        copyStatus.textContent = 'Copied! Now Paste the message into the box below.';
+      } catch {
+        copiedByButton = false;
+        copyStatus.textContent = 'Automatic copying is unavailable in this browser. You can still continue the training.';
+      }
+      updateAutomatic();
+    });
+  }
   function clipboardContent(parent) {
     const section = add(parent, e('section', 'aqg-basics-section'));
     heading(section, 'What are Copy, Paste, and the Clipboard?');
@@ -74,6 +140,7 @@
       {term:'Phone / Tablet'}, ': Press and hold to select text, then tap ', {term:'Copy'},
       '. Press and hold where you want to insert the text, then tap ', {term:'Paste'}, '.'
     ]);
+    clipboardPractice(section);
     const hint = add(section, e('div', 'aqg-basics-hint'));
     richLine(hint, 'span', [
       'In the AQG app, you do not need to highlight a prompt. Selecting ',
