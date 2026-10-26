@@ -1439,6 +1439,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="beginner-help.css">
 </head>
 <body>
 
@@ -1503,6 +1504,7 @@
 
       <div class="module-header-bar">
         <div class="module-header-meta">
+          <button class="action-btn secondary action-btn-quiet" id="btn-beginner-guide" type="button" aria-label="Open optional AI chatbot and clipboard guide">New to AI? Quick guide</button>
           <button class="action-btn secondary action-btn-quiet" id="btn-report-issue" type="button">
             Report issue
           </button>
@@ -1582,13 +1584,17 @@
   <img id="img-lightbox-img" src="" alt="" />
 </div>
 
+<script src="beginner-help.js"></script>
 <script>
 // ─────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────
+// Durable training data flows through this Cloudflare Worker.
 const WORKER_API_URL = 'https://dissertation-study-api.professor-jin.workers.dev';
 const APP_VERSION = '2026-04-27-strict-a';
-const CONTENT_VERSION = '2026-04-27-strict-content-a';
+// Opt-in preview only. The ordinary study module stays on its approved content.
+const CONTENT_VERSION = new URLSearchParams(window.location.search).get('preview_v2') === '1'
+  ? '2026-10-25-module-v2' : '2026-04-27-strict-content-a';
 const STORAGE_KEY = `training_progress_${APP_VERSION}_${CONTENT_VERSION}`;
 const LEGACY_STORAGE_KEYS = ['training_progress_v1'];
 const REQUEST_TIMEOUT_MS = 15000;
@@ -3217,6 +3223,25 @@ function renderSBABlock(item, cardIndex, onComplete, onContinue = onComplete) {
   return block;
 }
 
+function renderBeginnerHelpBlock(item, cardIndex, onComplete, onContinue = onComplete) {
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${cardIndex}`;
+  const label = document.createElement('div');
+  label.className = 'section-label';
+  label.innerHTML = `<span class="section-num">Card ${cardIndex + 1}</span><div class="section-rule"></div><span class="section-type-badge">Optional skills check</span>`;
+  block.appendChild(label);
+  // Deliberately not a graded SATA: no answer key, score, or stored selections.
+  // The selected topics only control the local, optional teaching sidebar.
+  block.appendChild(AQGBeginnerHelp.renderCard({
+    title: 'Getting started: a quick skills check',
+    stem: item.stem,
+    options: item.correctAnswers,
+    onContinue
+  }));
+  return block;
+}
+
 function renderSATABlock(item, cardIndex, onComplete, onContinue = onComplete) {
   const sectionIndex = cardIndex;
   const block = document.createElement('div');
@@ -4126,6 +4151,7 @@ function renderTraining(structure, savedState = null) {
       else if (item.type === 'text') block = renderTextBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'text_image') block = renderTextImageBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'sba') block = renderSBABlock(item, cardIndex, onComplete, onContinue);
+      else if (item.type === 'sata' && item.settings?.beginnerHelp === 'true') block = renderBeginnerHelpBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'sata') block = renderSATABlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'fitb') block = renderFITBBlock(item, cardIndex, onComplete, onContinue);
       else if (item.type === 'categorization' || item.type === 'matching') block = renderCategorizeBlock(item, cardIndex, onComplete, onContinue);
@@ -4937,6 +4963,7 @@ function offerDownload(payload) {
 // BOOT
 // ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  $('btn-beginner-guide')?.addEventListener('click', () => AQGBeginnerHelp.open());
   const gateForm = $('gate-form');
   const codeInput = $('code-input');
   const gateError = $('gate-error');
