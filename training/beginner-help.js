@@ -24,9 +24,11 @@
   function heading(parent, text) { return add(parent, e('h3', '', text)); }
   function chatbotContent(parent) {
     const section = add(parent, e('section', 'aqg-basics-section'));
-    heading(section, 'Using an AI chatbot');
-    paragraph(section, 'ChatGPT, Gemini, Copilot, and Claude are examples of AI chatbots. They look a little different, but most have a message box where you type something and a Send button.');
-    paragraph(section, 'Type a question or instruction and press Send. The AI responds; then you can type another message to continue the same conversation, much like texting someone. The message you send is called a prompt.');
+    heading(section, 'What is an AI chatbot?');
+    paragraph(section, 'Artificial intelligence (AI) is a broad term for computer systems that do things we normally associate with human intelligence. AI can take many forms, but much of the recent excitement is about AI chatbots, such as ChatGPT, Gemini, Copilot, and Claude. A chatbot works a lot like a text-message conversation: you send it a message, and it sends a reply that can sound as though a person wrote it. But you are communicating with software, not another person.');
+    heading(section, 'How do I use an AI chatbot?');
+    paragraph(section, 'Imagine texting someone. Open the chatbot website or app, find the message box, type what you want to say, and press Send. You might ask a question or request help with a task. The chatbot replies, and you can text back to ask a follow-up question, give more information, or ask it to change its answer. You can keep going back and forth in the same conversation.');
+    paragraph(section, 'Each message or instruction you send to the chatbot is called a prompt.');
     const box = add(section, e('div', 'aqg-basics-hint'));
     box.textContent = 'Example prompt: Suggest three ways to help beginning nursing students practice recalling common diabetes symptoms.';
     const btn = add(section, e('button', 'aqg-basics-btn secondary', 'Copy this example prompt'));
